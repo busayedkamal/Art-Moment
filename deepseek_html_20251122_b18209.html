@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لحظة فن - Art Moment</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- تضمين خط عربي لتحسين الشكل -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- الشريط الجانبي -->
+    <nav class="sidebar">
+        <div class="logo">
+            <h2>لحظة فن</h2>
+            <p>Art Moment</p>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="active">📊 لوحة التحكم</a></li>
+            <li><a href="#">🖼️ الطلبات</a></li>
+            <li><a href="#">👥 العملاء</a></li>
+            <li><a href="#">💳 المدفوعات</a></li>
+            <li><a href="#">⚙️ الإعدادات</a></li>
+        </ul>
+    </nav>
+
+    <!-- المنطقة الرئيسية -->
+    <main class="main-content">
+        <!-- الشريط العلوي -->
+        <header class="top-bar">
+            <div class="search-bar">
+                <input type="text" placeholder="ابحث في الطلبات والعملاء...">
+            </div>
+            <div class="user-profile">
+                <span>مرحباً، محمد!</span>
+            </div>
+        </header>
+
+        <!-- قسم الإحصائيات -->
+        <section class="stats-section">
+            <h1>لوحة التحكم</h1>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>إجمالي الإيرادات</h3>
+                    <p class="stat-number">$12,450</p>
+                    <span class="stat-change">+12.5% من الشهر الماضي</span>
+                </div>
+                <div class="stat-card">
+                    <h3>إجمالي الطلبات</h3>
+                    <p class="stat-number">156</p>
+                    <span class="stat-change">+8.2% من الشهر الماضي</span>
+                </div>
+                <div class="stat-card">
+                    <h3>العملاء النشطين</h3>
+                    <p class="stat-number">48</p>
+                    <span class="stat-change">+3 جديد هذا الأسبوع</span>
+                </div>
+                <div class="stat-card">
+                    <h3>معدل النمو</h3>
+                    <p class="stat-number">23.5%</p>
+                    <span class="stat-change">نمو ثابت</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- جدول الطلبات الحديثة -->
+        <section class="orders-section">
+            <div class="section-header">
+                <h2>أحدث الطلبات</h2>
+                <button class="btn-primary">عرض الكل</button>
+            </div>
+            <div class="table-container">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>رقم الطلب</th>
+                            <th>العميل</th>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>الإجمالي</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ORD-001</td>
+                            <td>Acme Corporation</td>
+                            <td>Business Cards - Premium</td>
+                            <td>1000</td>
+                            <td>$245.00</td>
+                            <td><span class="status completed">مكتمل</span></td>
+                        </tr>
+                        <tr>
+                            <td>ORD-002</td>
+                            <td>TechStart Inc</td>
+                            <td>Brochures - Full Color</td>
+                            <td>500</td>
+                            <td>$420.00</td>
+                            <td><span class="status processing">قيد المعالجة</span></td>
+                        </tr>
+                        <tr>
+                            <td>ORD-003</td>
+                            <td>Green Earth Co</td>
+                            <td>Flyers - A4</td>
+                            <td>2000</td>
+                            <td>$180.00</td>
+                            <td><span class="status pending">قيد الانتظار</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

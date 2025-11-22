@@ -1,0 +1,10 @@
+{
+  "name": "لحظة فن - Art Moment",
+  "short_name": "لحظة فن",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2c3e50"
+}
