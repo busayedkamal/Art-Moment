@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لحظة فن - Art Moment</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- الشريط الجانبي -->
+    <nav class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-palette"></i>
+            </div>
+            <div class="logo-text">
+                <h2>لحظة فن</h2>
+                <p>Art Moment</p>
+            </div>
+        </div>
+
+        <ul class="nav-links">
+            <li>
+                <a href="#" class="nav-link active">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>لوحة التحكم</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>الطلبات</span>
+                    <span class="badge">15</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>العملاء</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-credit-card"></i>
+                    <span>المدفوعات</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog"></i>
+                    <span>الإعدادات</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="main-content">
+        <!-- الشريط العلوي -->
+        <header class="top-bar">
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="ابحث في الطلبات والعملاء...">
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <span>مرحباً، محمد!</span>
+            </div>
+        </header>
+
+        <!-- قسم الإحصائيات -->
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h1>لوحة التحكم</h1>
+                <p>نظرة عامة على أداء متجرك</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card revenue">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>إجمالي الإيرادات</h3>
+                        <div class="stat-number">$12,450</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            12.5% من الشهر الماضي
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card orders">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>إجمالي الطلبات</h3>
+                        <div class="stat-number">156</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            8.2% من الشهر الماضي
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card customers">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>العملاء النشطين</h3>
+                        <div class="stat-number">48</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-plus"></i>
+                            3 جديد هذا الأسبوع
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card growth">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>معدل النمو</h3>
+                        <div class="stat-number">23.5%</div>
+                        <div class="stat-change positive">
+                            نمو ثابت
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- الطلبات الحديثة -->
+        <section class="orders-section">
+            <div class="section-header">
+                <h2>أحدث الطلبات</h2>
+                <button class="btn-primary">
+                    <i class="fas fa-eye"></i>
+                    عرض الكل
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>رقم الطلب</th>
+                            <th>العميل</th>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>الإجمالي</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="order-id">#ORD-001</td>
+                            <td class="customer">
+                                <div class="customer-avatar">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <span>Acme Corporation</span>
+                            </td>
+                            <td class="product">Business Cards - Premium</td>
+                            <td class="quantity">1,000</td>
+                            <td class="amount">$245.00</td>
+                            <td class="status">
+                                <span class="status-badge completed">
+                                    <i class="fas fa-check"></i>
+                                    مكتمل
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="order-id">#ORD-002</td>
+                            <td class="customer">
+                                <div class="customer-avatar">
+                                    <i class="fas fa-laptop-code"></i>
+                                </div>
+                                <span>TechStart Inc</span>
+                            </td>
+                            <td class="product">Brochures - Full Color</td>
+                            <td class="quantity">500</td>
+                            <td class="amount">$420.00</td>
+                            <td class="status">
+                                <span class="status-badge processing">
+                                    <i class="fas fa-sync-alt"></i>
+                                    قيد المعالجة
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="order-id">#ORD-003</td>
+                            <td class="customer">
+                                <div class="customer-avatar">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                                <span>Green Earth Co</span>
+                            </td>
+                            <td class="product">Flyers - A4</td>
+                            <td class="quantity">2,000</td>
+                            <td class="amount">$180.00</td>
+                            <td class="status">
+                                <span class="status-badge pending">
+                                    <i class="fas fa-clock"></i>
+                                    قيد الانتظار
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
