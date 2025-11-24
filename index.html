@@ -7,6 +7,80 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+    <script>
+// تطبيق لحظة فن - مدمج في HTML
+console.log('🚀 تطبيق لحظة فن يعمل بنجاح!');
+
+class ArtMomentApp {
+    constructor() {
+        this.currentPage = 'dashboard';
+        this.init();
+    }
+
+    init() {
+        console.log('✅ التطبيق يعمل!');
+        this.setupNavigation();
+    }
+
+    setupNavigation() {
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.dataset.page || 'dashboard';
+                this.navigateTo(page);
+            });
+        });
+    }
+
+    navigateTo(page) {
+        console.log('التنقل إلى: ' + page);
+        
+        // تحديث القائمة النشطة
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        document.querySelector(`[data-page="${page}"]`).classList.add('active');
+
+        // إخفاء جميع الأقسام
+        document.querySelectorAll('.page-section').forEach(section => {
+            section.style.display = 'none';
+        });
+
+        // إظهار القسم المطلوب
+        const targetSection = document.getElementById(`${page}-section`);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+
+        this.showNotification('جاري التطوير: ' + page);
+    }
+
+    showNotification(message) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #667eea;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+}
+
+// تهيئة التطبيق
+window.app = new ArtMomentApp();
+</script>
 <body>
     <!-- الشريط الجانبي -->
     <nav class="sidebar">
