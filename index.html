@@ -46,8 +46,8 @@
                     <span>المدفوعات</span>
                 </a>
             </li>
-            <u1>
-                <a href="#" class="nav-link">
+            <li>
+                <a href="#" class="nav-link" data-page="settings">
                     <i class="fas fa-cog"></i>
                     <span>الإعدادات</span>
                 </a>
@@ -57,257 +57,333 @@
 
     <!-- المحتوى الرئيسي -->
     <main class="main-content">
-        <!-- الشريط العلوي -->
-        <header class="top-bar">
-            <div class="search-container">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="ابحث في الطلبات والعملاء...">
+        <!-- لوحة التحكم -->
+        <section id="dashboard-section" class="page-section">
+            <!-- الشريط العلوي -->
+            <header class="top-bar">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="ابحث في الطلبات والعملاء...">
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span>مرحباً، محمد!</span>
+                </div>
+            </header>
+
+            <!-- قسم الإحصائيات -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h1>لوحة التحكم</h1>
+                    <p>نظرة عامة على أداء متجرك</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card revenue">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>إجمالي الإيرادات</h3>
+                            <div class="stat-number">$12,450</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                12.5% من الشهر الماضي
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card orders">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>إجمالي الطلبات</h3>
+                            <div class="stat-number">156</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                8.2% من الشهر الماضي
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card customers">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>العملاء النشطين</h3>
+                            <div class="stat-number">48</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-plus"></i>
+                                3 جديد هذا الأسبوع
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card growth">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>معدل النمو</h3>
+                            <div class="stat-number">23.5%</div>
+                            <div class="stat-change positive">
+                                نمو ثابت
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="user-info">
-                <div class="user-avatar">
-                    <i class="fas fa-user"></i>
-                </div>
-                <span>مرحباً، محمد!</span>
-            </div>
-        </header>
 
-        <!-- قسم الإحصائيات -->
-        <section class="dashboard-section">
-            <div class="section-header">
-                <h1>لوحة التحكم</h1>
-                <p>نظرة عامة على أداء متجرك</p>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card revenue">
-                    <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>إجمالي الإيرادات</h3>
-                        <div class="stat-number">$12,450</div>
-                        <div class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i>
-                            12.5% من الشهر الماضي
-                        </div>
-                    </div>
+            <!-- الطلبات الحديثة -->
+            <div class="orders-section">
+                <div class="section-header">
+                    <h2>أحدث الطلبات</h2>
+                    <button class="btn-primary" onclick="app.navigateTo('orders')">
+                        <i class="fas fa-eye"></i>
+                        عرض الكل
+                    </button>
                 </div>
 
-                <div class="stat-card orders">
-                    <div class="stat-icon">
-                        <i class="fas fa-shopping-bag"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>إجمالي الطلبات</h3>
-                        <div class="stat-number">156</div>
-                        <div class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i>
-                            8.2% من الشهر الماضي
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card customers">
-                    <div class="stat-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>العملاء النشطين</h3>
-                        <div class="stat-number">48</div>
-                        <div class="stat-change positive">
-                            <i class="fas fa-plus"></i>
-                            3 جديد هذا الأسبوع
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card growth">
-                    <div class="stat-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>معدل النمو</h3>
-                        <div class="stat-number">23.5%</div>
-                        <div class="stat-change positive">
-                            نمو ثابت
-                        </div>
-                    </div>
+                <div class="table-container">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>العميل</th>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>الإجمالي</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="order-id">#ORD-001</td>
+                                <td class="customer">
+                                    <div class="customer-avatar">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <span>Acme Corporation</span>
+                                </td>
+                                <td class="product">Business Cards - Premium</td>
+                                <td class="quantity">1,000</td>
+                                <td class="amount">$245.00</td>
+                                <td class="status">
+                                    <span class="status-badge completed">
+                                        <i class="fas fa-check"></i>
+                                        مكتمل
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="order-id">#ORD-002</td>
+                                <td class="customer">
+                                    <div class="customer-avatar">
+                                        <i class="fas fa-laptop-code"></i>
+                                    </div>
+                                    <span>TechStart Inc</span>
+                                </td>
+                                <td class="product">Brochures - Full Color</td>
+                                <td class="quantity">500</td>
+                                <td class="amount">$420.00</td>
+                                <td class="status">
+                                    <span class="status-badge processing">
+                                        <i class="fas fa-sync-alt"></i>
+                                        قيد المعالجة
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="order-id">#ORD-003</td>
+                                <td class="customer">
+                                    <div class="customer-avatar">
+                                        <i class="fas fa-leaf"></i>
+                                    </div>
+                                    <span>Green Earth Co</span>
+                                </td>
+                                <td class="product">Flyers - A4</td>
+                                <td class="quantity">2,000</td>
+                                <td class="amount">$180.00</td>
+                                <td class="status">
+                                    <span class="status-badge pending">
+                                        <i class="fas fa-clock"></i>
+                                        قيد الانتظار
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
 
-        <!-- الطلبات الحديثة -->
-        <section class="orders-section">
-            <div class="section-header">
-                <h2>أحدث الطلبات</h2>
-                <button class="btn-primary">
-                    <i class="fas fa-eye"></i>
-                    عرض الكل
-                </button>
-            </div>
-
-            <div class="table-container">
-                <table class="orders-table">
-                    <thead>
-                        <tr>
-                            <th>رقم الطلب</th>
-                            <th>العميل</th>
-                            <th>المنتج</th>
-                            <th>الكمية</th>
-                            <th>الإجمالي</th>
-                            <th>الحالة</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="order-id">#ORD-001</td>
-                            <td class="customer">
-                                <div class="customer-avatar">
-                                    <i class="fas fa-building"></i>
-                                </div>
-                                <span>Acme Corporation</span>
-                            </td>
-                            <td class="product">Business Cards - Premium</td>
-                            <td class="quantity">1,000</td>
-                            <td class="amount">$245.00</td>
-                            <td class="status">
-                                <span class="status-badge completed">
-                                    <i class="fas fa-check"></i>
-                                    مكتمل
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="order-id">#ORD-002</td>
-                            <td class="customer">
-                                <div class="customer-avatar">
-                                    <i class="fas fa-laptop-code"></i>
-                                </div>
-                                <span>TechStart Inc</span>
-                            </td>
-                            <td class="product">Brochures - Full Color</td>
-                            <td class="quantity">500</td>
-                            <td class="amount">$420.00</td>
-                            <td class="status">
-                                <span class="status-badge processing">
-                                    <i class="fas fa-sync-alt"></i>
-                                    قيد المعالجة
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="order-id">#ORD-003</td>
-                            <td class="customer">
-                                <div class="customer-avatar">
-                                    <i class="fas fa-leaf"></i>
-                                </div>
-                                <span>Green Earth Co</span>
-                            </td>
-                            <td class="product">Flyers - A4</td>
-                            <td class="quantity">2,000</td>
-                            <td class="amount">$180.00</td>
-                            <td class="status">
-                                <span class="status-badge pending">
-                                    <i class="fas fa-clock"></i>
-                                    قيد الانتظار
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
         <!-- قسم الطلبات -->
-<section id="orders-section" class="page-section" style="display: none;">
-    <header class="top-bar">
-        <div class="search-container">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="ابحث في الطلبات...">
-        </div>
-        <div class="user-info">
-            <span>إدارة الطلبات</span>
-        </div>
-    </header>
+        <section id="orders-section" class="page-section" style="display: none;">
+            <header class="top-bar">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="ابحث في الطلبات...">
+                </div>
+                <div class="user-info">
+                    <span>إدارة الطلبات</span>
+                </div>
+            </header>
 
-    <div class="dashboard-section">
-        <div class="section-header">
-            <h1>إدارة الطلبات</h1>
-            <button class="btn-primary add-order-btn">
-                <i class="fas fa-plus"></i>
-                إضافة طلب جديد
-            </button>
-        </div>
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h1>إدارة الطلبات</h1>
+                    <button class="btn-primary add-order-btn">
+                        <i class="fas fa-plus"></i>
+                        إضافة طلب جديد
+                    </button>
+                </div>
 
-        <div class="table-container">
-            <table class="orders-table" id="orders-table">
-                <thead>
-                    <tr>
-                        <th>رقم الطلب</th>
-                        <th>العميل</th>
-                        <th>المنتج</th>
-                        <th>الكمية</th>
-                        <th>الإجمالي</th>
-                        <th>الحالة</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- سيتم ملؤها بواسطة JavaScript -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</section>
+                <div class="table-container">
+                    <table class="orders-table" id="orders-table">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>العميل</th>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>الإجمالي</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- سيتم ملؤها بواسطة JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
-<!-- قسم العملاء -->
-<section id="customers-section" class="page-section" style="display: none;">
-    <header class="top-bar">
-        <div class="search-container">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="ابحث في العملاء...">
-        </div>
-        <div class="user-info">
-            <span>إدارة العملاء</span>
-        </div>
-    </header>
+        <!-- قسم العملاء -->
+        <section id="customers-section" class="page-section" style="display: none;">
+            <header class="top-bar">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="ابحث في العملاء...">
+                </div>
+                <div class="user-info">
+                    <span>إدارة العملاء</span>
+                </div>
+            </header>
 
-    <div class="dashboard-section">
-        <div class="section-header">
-            <h1>إدارة العملاء</h1>
-            <button class="btn-primary">
-                <i class="fas fa-plus"></i>
-                إضافة عميل جديد
-            </button>
-        </div>
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h1>إدارة العملاء</h1>
+                    <button class="btn-primary add-customer-btn">
+                        <i class="fas fa-plus"></i>
+                        إضافة عميل جديد
+                    </button>
+                </div>
 
-        <div class="table-container">
-            <table class="orders-table">
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>البريد الإلكتروني</th>
-                        <th>الهاتف</th>
-                        <th>عدد الطلبات</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>أحمد محمد</td>
-                        <td>ahmed@example.com</td>
-                        <td>0551234567</td>
-                        <td>5</td>
-                        <td>
-                            <button class="btn-icon">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</section>
+                <div class="table-container">
+                    <table class="orders-table" id="customers-table">
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>الهاتف</th>
+                                <th>عدد الطلبات</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- سيتم ملؤها بواسطة JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- قسم المدفوعات -->
+        <section id="payments-section" class="page-section" style="display: none;">
+            <header class="top-bar">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="ابحث في المدفوعات...">
+                </div>
+                <div class="user-info">
+                    <span>إدارة المدفوعات</span>
+                </div>
+            </header>
+
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h1>إدارة المدفوعات</h1>
+                    <button class="btn-primary">
+                        <i class="fas fa-plus"></i>
+                        إضافة دفعة جديدة
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table class="orders-table" id="payments-table">
+                        <thead>
+                            <tr>
+                                <th>رقم العملية</th>
+                                <th>رقم الطلب</th>
+                                <th>المبلغ</th>
+                                <th>التاريخ</th>
+                                <th>طريقة الدفع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- سيتم ملؤها بواسطة JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- قسم الإعدادات -->
+        <section id="settings-section" class="page-section" style="display: none;">
+            <header class="top-bar">
+                <div class="user-info">
+                    <span>الإعدادات</span>
+                </div>
+            </header>
+
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h1>الإعدادات</h1>
+                    <p>إدارة إعدادات متجرك وتخصيص التطبيق</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h3>🛠️ الإعدادات العامة</h3>
+                        <p>إدارة معلومات المتجر والإعدادات الأساسية</p>
+                        <button class="btn-primary">تعديل الإعدادات</button>
+                    </div>
+
+                    <div class="setting-card">
+                        <h3>👥 إدارة المستخدمين</h3>
+                        <p>إضافة وإدارة مستخدمي النظام</p>
+                        <button class="btn-primary">إدارة المستخدمين</button>
+                    </div>
+
+                    <div class="setting-card">
+                        <h3>📊 التقارير والإحصائيات</h3>
+                        <p>عرض التقارير المفصلة عن أداء المتجر</p>
+                        <button class="btn-primary">عرض التقارير</button>
+                    </div>
+
+                    <div class="setting-card">
+                        <h3>🔒 الأمان والصلاحيات</h3>
+                        <p>إعدادات الأمان ومستويات الصلاحية</p>
+                        <button class="btn-primary">إعدادات الأمان</button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <script src="app.js"></script>
