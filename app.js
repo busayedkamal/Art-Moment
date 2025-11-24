@@ -2,14 +2,17 @@
 class ArtMomentApp {
     constructor() {
         this.currentPage = 'dashboard';
+        this.orders = [];
+        this.customers = [];
         this.init();
     }
 
     init() {
         console.log('🚀 تطبيق لحظة فن يعمل بنجاح!');
-        this.setupNavigation();
         this.loadSampleData();
+        this.setupNavigation();
         this.setupEventListeners();
+        this.showCurrentPage(); // تأكد من عرض الصفحة الحالية
     }
 
     setupNavigation() {
@@ -30,20 +33,33 @@ class ArtMomentApp {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
-        document.querySelector(`[data-page="${page}"]`).classList.add('active');
+        
+        const activeLink = document.querySelector(`[data-page="${page}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
 
-        // إخفاء جميع الأقسام
+        this.showCurrentPage();
+        this.updatePageContent(page);
+    }
+
+    showCurrentPage() {
+        // إخفاء جميع الأقسام أولاً
         document.querySelectorAll('.page-section').forEach(section => {
             section.style.display = 'none';
         });
 
-        // إظهار القسم المطلوب
-        const targetSection = document.getElementById(`${page}-section`);
-        if (targetSection) {
-            targetSection.style.display = 'block';
+        // إظهار القسم الحالي فقط
+        const currentSection = document.getElementById(`${this.currentPage}-section`);
+        if (currentSection) {
+            currentSection.style.display = 'block';
+        } else {
+            // إذا لم يكن هناك قسم، عرض لوحة التحكم
+            const dashboardSection = document.getElementById('dashboard-section');
+            if (dashboardSection) {
+                dashboardSection.style.display = 'block';
+            }
         }
-
-        this.updatePageContent(page);
     }
 
     updatePageContent(page) {
@@ -56,6 +72,9 @@ class ArtMomentApp {
                 break;
             case 'payments':
                 this.renderPaymentsTable();
+                break;
+            default:
+                this.renderDashboard();
                 break;
         }
     }
@@ -99,9 +118,31 @@ class ArtMomentApp {
         ];
     }
 
+    renderDashboard() {
+        console.log('عرض لوحة التحكم...');
+        // تحديث الإحصائيات
+        const totalRevenue = this.orders.reduce((sum, order) => sum + order.total, 0);
+        const totalOrders = this.orders.length;
+        
+        // تحديث العناصر إذا وجدت
+        const revenueElements = document.querySelectorAll('.stat-card.revenue .stat-number');
+        const ordersElements = document.querySelectorAll('.stat-card.orders .stat-number');
+        
+        revenueElements.forEach(el => {
+            if (el) el.textContent = `$${totalRevenue}`;
+        });
+        
+        ordersElements.forEach(el => {
+            if (el) el.textContent = totalOrders.toString();
+        });
+    }
+
     renderOrdersTable() {
         const tbody = document.querySelector('#orders-table tbody');
-        if (!tbody) return;
+        if (!tbody) {
+            console.error('❌ لم يتم العثور على #orders-table tbody');
+            return;
+        }
 
         tbody.innerHTML = this.orders.map(order => `
             <tr>
@@ -125,6 +166,55 @@ class ArtMomentApp {
                 </td>
             </tr>
         `).join('');
+        
+        console.log('✅ تم عرض جدول الطلبات');
+    }
+
+    renderCustomersTable() {
+        const tbody = document.querySelector('#customers-table tbody');
+        if (!tbody) {
+            console.error('❌ لم يتم العثور على #customers-table tbody');
+            return;
+        }
+
+        tbody.innerHTML = this.customers.map(customer => `
+            <tr>
+                <td>${customer.name}</td>
+                <td>${customer.email}</td>
+                <td>${customer.phone}</td>
+                <td>${customer.orders}</td>
+                <td>
+                    <button class="btn-icon" onclick="app.editCustomer(${customer.id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    renderPaymentsTable() {
+        const tbody = document.querySelector('#payments-table tbody');
+        if (!tbody) {
+            console.error('❌ لم يتم العثور على #payments-table tbody');
+            return;
+        }
+
+        // بيانات تجريبية للمدفوعات
+        const payments = [
+            { id: 'PAY-001', orderId: 'ORD-001', amount: 245, date: '2024-01-15', method: 'تحويل بنكي' },
+            { id: 'PAY-002', orderId: 'ORD-002', amount: 210, date: '2024-01-16', method: 'نقدي' },
+            { id: 'PAY-003', orderId: 'ORD-003', amount: 90, date: '2024-01-17', method: 'بطاقة ائتمان' }
+        ];
+
+        tbody.innerHTML = payments.map(payment => `
+            <tr>
+                <td>${payment.id}</td>
+                <td>${payment.orderId}</td>
+                <td>$${payment.amount}</td>
+                <td>${payment.date}</td>
+                <td>${payment.method}</td>
+            </tr>
+        `).join('');
     }
 
     getStatusText(status) {
@@ -134,6 +224,44 @@ class ArtMomentApp {
             'pending': 'قيد الانتظار'
         };
         return statusMap[status] || status;
+    }
+
+    // إضافة الدوال الناقصة
+    renderFilteredOrders(filteredOrders) {
+        const tbody = document.querySelector('#orders-table tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = filteredOrders.map(order => `
+            <tr>
+                <td>${order.id}</td>
+                <td>${order.customer}</td>
+                <td>${order.product}</td>
+                <td>${order.quantity.toLocaleString()}</td>
+                <td>$${order.total}</td>
+                <td>
+                    <span class="status-badge ${order.status}">
+                        ${this.getStatusText(order.status)}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn-icon" onclick="app.editOrder('${order.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon delete" onclick="app.deleteOrder('${order.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    filterOrders(searchTerm) {
+        const filtered = this.orders.filter(order => 
+            order.customer.includes(searchTerm) || 
+            order.product.includes(searchTerm) ||
+            order.id.includes(searchTerm)
+        );
+        this.renderFilteredOrders(filtered);
     }
 
     setupEventListeners() {
@@ -154,15 +282,6 @@ class ArtMomentApp {
         }
     }
 
-    filterOrders(searchTerm) {
-        const filtered = this.orders.filter(order => 
-            order.customer.includes(searchTerm) || 
-            order.product.includes(searchTerm) ||
-            order.id.includes(searchTerm)
-        );
-        this.renderFilteredOrders(filtered);
-    }
-
     showAddOrderForm() {
         const formHTML = `
             <div class="modal-overlay">
@@ -171,25 +290,25 @@ class ArtMomentApp {
                     <form id="add-order-form">
                         <div class="form-group">
                             <label>اسم العميل</label>
-                            <input type="text" required>
+                            <input type="text" id="customer-name" required>
                         </div>
                         <div class="form-group">
                             <label>نوع المنتج</label>
-                            <select required>
+                            <select id="product-type" required>
                                 <option value="">اختر المنتج</option>
-                                <option value="بطاقات عمل">بطاقات عمل</option>
-                                <option value="بروشورات">بروشورات</option>
-                                <option value="ملصقات">ملصقات</option>
-                                <option value="بوسترات">بوسترات</option>
+                                <option value="بطاقات عمل - متميز">بطاقات عمل - متميز</option>
+                                <option value="بروشورات - ملونة">بروشورات - ملونة</option>
+                                <option value="ملصقات - حجم A4">ملصقات - حجم A4</option>
+                                <option value="بوسترات - كبيرة">بوسترات - كبيرة</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>الكمية</label>
-                            <input type="number" required min="1">
+                            <input type="number" id="quantity" required min="1">
                         </div>
                         <div class="form-group">
                             <label>السعر الإجمالي</label>
-                            <input type="number" required min="0" step="0.01">
+                            <input type="number" id="total" required min="0" step="0.01">
                         </div>
                         <div class="form-actions">
                             <button type="button" class="btn-secondary" onclick="app.hideModal()">إلغاء</button>
@@ -209,9 +328,48 @@ class ArtMomentApp {
     }
 
     saveNewOrder() {
-        // كود حفظ الطلب الجديد
+        const customerName = document.getElementById('customer-name').value;
+        const productType = document.getElementById('product-type').value;
+        const quantity = parseInt(document.getElementById('quantity').value);
+        const total = parseFloat(document.getElementById('total').value);
+
+        const newOrder = {
+            id: 'ORD-' + (this.orders.length + 1).toString().padStart(3, '0'),
+            customer: customerName,
+            product: productType,
+            quantity: quantity,
+            total: total,
+            status: 'pending',
+            date: new Date().toISOString().split('T')[0]
+        };
+
+        this.orders.unshift(newOrder);
         this.hideModal();
         this.showNotification('تم إضافة الطلب بنجاح!');
+        
+        // تحديث العرض إذا كنا في صفحة الطلبات
+        if (this.currentPage === 'orders') {
+            this.renderOrdersTable();
+        }
+    }
+
+    editOrder(orderId) {
+        this.showNotification(`تعديل الطلب: ${orderId} - هذه الميزة قيد التطوير`);
+    }
+
+    deleteOrder(orderId) {
+        if (confirm(`هل أنت متأكد من حذف الطلب ${orderId}؟`)) {
+            this.orders = this.orders.filter(order => order.id !== orderId);
+            this.showNotification('تم حذف الطلب بنجاح!');
+            
+            if (this.currentPage === 'orders') {
+                this.renderOrdersTable();
+            }
+        }
+    }
+
+    editCustomer(customerId) {
+        this.showNotification(`تعديل العميل: ${customerId} - هذه الميزة قيد التطوير`);
     }
 
     hideModal() {
@@ -222,6 +380,12 @@ class ArtMomentApp {
     }
 
     showNotification(message) {
+        // إزالة أي إشعارات سابقة
+        const existingNotification = document.querySelector('.notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+
         const notification = document.createElement('div');
         notification.className = 'notification';
         notification.textContent = message;
@@ -233,5 +397,5 @@ class ArtMomentApp {
     }
 }
 
-// تهيئة التطبيق
-const app = new ArtMomentApp();
+// جعل الكائن متاحاً globally
+window.app = new ArtMomentApp();
