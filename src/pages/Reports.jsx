@@ -1,10 +1,6 @@
 // src/pages/Reports.jsx
 import { useMemo, useState } from 'react'
-import { loadOrders } from '../storage/orderStorage.js'
-import {
-  StatusBadge,
-  PaymentBadge,
-} from '../components/StatusBadges.jsx'
+import { useOrdersData } from '../hooks/useOrdersData.js'
 
 const MONTH_NAMES = [
   'يناير',
@@ -34,7 +30,7 @@ function getMonthInfo(dateStr) {
   return { key, label, year, monthIndex }
 }
 
-// دالة مساعدة لتصدير CSV (يُفتح في Excel)
+// دالة مساعدة لتصدير CSV
 function downloadCSV(filename, rows) {
   if (!rows || !rows.length) return
 
@@ -62,7 +58,7 @@ function downloadCSV(filename, rows) {
 }
 
 export default function Reports() {
-  const orders = loadOrders() || []
+  const { orders, loading, error, reload } = useOrdersData()
 
   const monthGroups = useMemo(() => {
     const map = new Map()
@@ -88,7 +84,6 @@ export default function Reports() {
 
     const arr = Array.from(map.values())
 
-    // ترتيب من الأحدث إلى الأقدم
     arr.sort((a, b) => {
       if (a.key === 'unknown') return 1
       if (b.key === 'unknown') return -1
@@ -115,9 +110,7 @@ export default function Reports() {
     const inProgressOrders = filteredOrders.filter(
       (o) => o.status === 'قيد الطباعة' || o.status === 'جاهز',
     ).length
-    const newOrders = filteredOrders.filter(
-      (o) => o.status === 'جديد',
-    ).length
+    const newOrders = filteredOrders.filter((o) => o.status === 'جديد').length
 
     const totalAmount = filteredOrders.reduce(
       (sum, o) => sum + (o.totalAmount || 0),
@@ -177,13 +170,7 @@ export default function Reports() {
     }
 
     const rows = [
-      [
-        'الشهر',
-        'عدد الطلبات',
-        'إجمالي الفواتير',
-        'إجمالي المدفوع',
-        'إجمالي المتبقي',
-      ],
+      ['الشهر', 'عدد الطلبات', 'إجمالي الفواتير', 'إجمالي المدفوع', 'إجمالي المتبقي'],
       ...monthlySummary.map((m) => [
         m.label,
         m.ordersCount,
@@ -196,7 +183,7 @@ export default function Reports() {
     downloadCSV('art-moment-monthly-summary.csv', rows)
   }
 
-  // تصدير الطلبات المعروضة حالياً (حسب الشهر المحدد أو الكل)
+  // تصدير الطلبات المعروضة حالياً
   const handleExportCurrentOrders = () => {
     if (!filteredOrders.length) {
       alert('لا توجد طلبات لتصديرها في هذا النطاق.')
@@ -236,23 +223,35 @@ export default function Reports() {
 
   return (
     <div className="space-y-4">
-      {/* العنوان + وصف بسيط */}
+      {/* العنوان + حالة التحميل/الخطأ + زر تحديث */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <div>
-          <h1 className="heading-main">التقارير الشهرية</h1>
-          <p className="text-[11px] md:text-xs text-slate-500">
-            تقارير الإيرادات الشهرية، حالات الطلبات، والتفاصيل المالية حسب الشهر.
-          </p>
+        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
+          التقارير الشهرية
+        </h1>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {loading && (
+            <span className="text-slate-500">جاري تحميل الطلبات من الخادم...</span>
+          )}
+          {error && !loading && (
+            <span className="text-red-500 max-w-xs text-right">{error}</span>
+          )}
+          <button
+            type="button"
+            onClick={reload}
+            className="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50"
+          >
+            تحديث
+          </button>
         </div>
       </div>
 
-      {/* اختيار الشهر + أزرار التصدير */}
-      <div className="card space-y-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 md:p-4 space-y-4">
         <div className="grid gap-2 md:grid-cols-3">
           <div className="flex flex-col gap-1">
             <span className="text-xs text-slate-600">اختر الشهر</span>
             <select
-              className="border rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className="border rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
               value={selectedMonthKey}
               onChange={(e) => setSelectedMonthKey(e.target.value)}
             >
@@ -275,13 +274,13 @@ export default function Reports() {
         <div className="flex flex-wrap gap-2 text-xs">
           <button
             onClick={handleExportMonthlySummary}
-            className="btn-secondary"
+            className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-100"
           >
             تصدير ملخص الأشهر (CSV)
           </button>
           <button
             onClick={handleExportCurrentOrders}
-            className="btn-secondary"
+            className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-100"
           >
             تصدير الطلبات المعروضة (CSV)
           </button>
@@ -311,8 +310,8 @@ export default function Reports() {
       </div>
 
       {/* جدول ملخص شهري لكل شهر */}
-      <div className="card">
-        <h2 className="font-semibold text-slate-900 text-sm md:text-base mb-3">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 md:p-4">
+        <h2 className="font-semibold text-slate-800 text-sm md:text-base mb-3">
           ملخص شهري
         </h2>
         <div className="overflow-x-auto">
@@ -337,7 +336,7 @@ export default function Reports() {
                 </tr>
               ))}
 
-              {monthlySummary.length === 0 && (
+              {monthlySummary.length === 0 && !loading && (
                 <tr>
                   <td
                     colSpan={5}
@@ -347,14 +346,25 @@ export default function Reports() {
                   </td>
                 </tr>
               )}
+
+              {monthlySummary.length === 0 && loading && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="py-4 text-center text-slate-400 text-xs"
+                  >
+                    جاري تحميل البيانات...
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* جدول الطلبات في الشهر المحدد */}
-      <div className="card">
-        <h2 className="font-semibold text-slate-900 text-sm md:text-base mb-3">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 md:p-4">
+        <h2 className="font-semibold text-slate-800 text-sm md:text-base mb-3">
           الطلبات في {currentLabel}
         </h2>
         <div className="overflow-x-auto">
@@ -365,7 +375,6 @@ export default function Reports() {
                 <th className="text-right">العميل</th>
                 <th className="text-right">الجوال</th>
                 <th className="text-right">الحالة</th>
-                <th className="text-right">حالة الدفع</th>
                 <th className="text-right">المبلغ</th>
                 <th className="text-right">المدفوع</th>
                 <th className="text-right">تاريخ الإنشاء</th>
@@ -377,25 +386,31 @@ export default function Reports() {
                   <td className="py-2 font-mono text-[11px]">{o.id}</td>
                   <td>{o.customerName}</td>
                   <td className="text-xs text-slate-600">{o.phone}</td>
-                  <td>
-                    <StatusBadge status={o.status} />
-                  </td>
-                  <td>
-                    <PaymentBadge paymentStatus={o.paymentStatus} />
-                  </td>
+                  <td className="text-xs text-slate-600">{o.status}</td>
                   <td className="text-xs">{o.totalAmount} ر.س</td>
                   <td className="text-xs">{o.paidAmount} ر.س</td>
                   <td className="text-xs text-slate-500">{o.createdAt}</td>
                 </tr>
               ))}
 
-              {filteredOrders.length === 0 && (
+              {filteredOrders.length === 0 && !loading && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={7}
                     className="py-4 text-center text-slate-400 text-xs"
                   >
                     لا توجد طلبات في هذا النطاق.
+                  </td>
+                </tr>
+              )}
+
+              {filteredOrders.length === 0 && loading && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="py-4 text-center text-slate-400 text-xs"
+                  >
+                    جاري تحميل الطلبات...
                   </td>
                 </tr>
               )}
@@ -407,30 +422,27 @@ export default function Reports() {
   )
 }
 
-/* كرت عدد بسيط */
 function StatCard({ label, value }) {
   return (
-    <div className="card">
+    <div className="rounded-2xl shadow-sm border bg-white border-slate-200 p-3 md:p-4">
       <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className="text-xl md:text-2xl font-bold text-slate-900">
-        {value}
-      </div>
+      <div className="text-xl md:text-2xl font-bold">{value}</div>
     </div>
   )
 }
 
-/* كرت مالي */
 function MoneyCard({ label, value, highlightNegative = false }) {
-  const safeValue = typeof value === 'number' ? value : 0
-  const isHighlight = highlightNegative && safeValue > 0
-  const extra =
-    isHighlight ? 'bg-amber-50 border-amber-100' : ''
+  const v = Number(value || 0)
+  const isHighlight = highlightNegative && v > 0
+  const bg = isHighlight
+    ? 'bg-amber-50 border-amber-100'
+    : 'bg-white border-slate-200'
 
   return (
-    <div className={`card ${extra}`}>
+    <div className={`rounded-2xl shadow-sm border p-3 md:p-4 ${bg}`}>
       <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className="text-xl md:text-2xl font-bold text-slate-900">
-        {safeValue.toFixed(2)} ر.س
+      <div className="text-xl md:text-2xl font-bold">
+        {v.toFixed(2)} ر.س
       </div>
     </div>
   )

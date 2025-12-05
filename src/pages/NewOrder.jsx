@@ -1,10 +1,9 @@
 // src/pages/NewOrder.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { addOrder, generateOrderId } from '../storage/orderStorage.js'
 import { loadSettings } from '../storage/settingsStorage.js'
 
-// نفس الخيارات الموجودة في OrderDetails
+// نفس الخيارات المستخدمة في OrderDetails
 const SOURCE_OPTIONS = ['واتساب', 'تيليغرام', 'إنستقرام', 'ايميل', 'مباشر']
 
 export default function NewOrder() {
@@ -27,60 +26,61 @@ export default function NewOrder() {
     notes: '',
   })
 
-  // واجهة اختيار المصادر (متعددة + حقل "أخرى")
-  const [selectedSources, setSelectedSources] = useState([])
+  const [selectedSources, setSelectedSources] = useState(['واتساب'])
   const [otherSource, setOtherSource] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleToggleSource = (opt) => {
-    setSelectedSources((prev) =>
-      prev.includes(opt) ? prev.filter((v) => v !== opt) : [...prev, opt],
-    )
-  }
+  // حاسبة تلقائية للمبلغ الإجمالي عند تغيير أعداد الصور
+  useEffect(() => {
+    if (!hasPricing) return
 
-  const handleChangeOtherSource = (e) => {
-    setOtherSource(e.target.value)
-  }
+    setForm((prev) => {
+      const c4x6 = Number(prev.photos4x6 || 0)
+      const cA4 = Number(prev.photosA4 || 0)
+      const newTotal = Number((c4x6 * price4x6 + cA4 * priceA4).toFixed(2))
+
+      if (Number(prev.totalAmount || 0) === newTotal) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        totalAmount: newTotal,
+      }
+    })
+  }, [hasPricing, price4x6, priceA4, form.photos4x6, form.photosA4])
 
   const handleChange = (e) => {
     const { name, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
 
-    setForm((prev) => {
-      let next = { ...prev, [name]: value }
-
-      // حاسبة تلقائية للمبلغ الإجمالي عند تغيير عدد الصور
-      if (hasPricing && (name === 'photos4x6' || name === 'photosA4')) {
-        const c4x6 =
-          name === 'photos4x6'
-            ? Number(value || 0)
-            : Number(next.photos4x6 || 0)
-        const cA4 =
-          name === 'photosA4'
-            ? Number(value || 0)
-            : Number(next.photosA4 || 0)
-
-        const newTotal = c4x6 * price4x6 + cA4 * priceA4
-        next.totalAmount = newTotal > 0 ? newTotal.toFixed(2) : ''
+  const handleToggleSource = (option) => {
+    setSelectedSources((prev) => {
+      if (prev.includes(option)) {
+        return prev.filter((v) => v !== option)
       }
-
-      return next
+      return [...prev, option]
     })
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleOtherSourceChange = (e) => {
+    setOtherSource(e.target.value)
+  }
 
-    const id = generateOrderId()
-    const createdAt = new Date().toISOString().slice(0, 10)
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (submitting) return
 
     const totalAmount = Number(form.totalAmount || 0)
     const paidAmount = Number(form.paidAmount || 0)
     const paymentStatus = getPaymentStatus(totalAmount, paidAmount)
+    const createdAt = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
-    // توحيد تنسيق مصدر الطلب مع OrderDetails
     const source = buildSourceString(selectedSources, otherSource)
 
     const newOrder = {
-      id,
+      // نفترض أن الـ API يولّد id إذا لم نرسله
       customerName: form.customerName.trim(),
       phone: form.phone.trim(),
       source,
@@ -93,33 +93,43 @@ export default function NewOrder() {
       createdAt,
       dueDate: form.dueDate || '',
       notes: form.notes || '',
-      // أول سجل في الـ Timeline (إنشاء الطلب)
-      logs: [
-        {
-          type: 'create',
-          field: 'order',
-          from: null,
-          to: 'إنشاء الطلب من نموذج الإضافة',
-          at: createdAt,
-          meta: {
-            customerName: form.customerName.trim() || undefined,
-            phone: form.phone.trim() || undefined,
-            source,
-          },
-        },
-      ],
     }
 
-    addOrder(newOrder)
+    try {
+      setSubmitting(true)
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder),
+      })
 
-    alert(`تم إنشاء الطلب الجديد برقم: ${id}`)
-    navigate('/app/orders')
+      if (!res.ok) {
+        let msg = 'فشل إنشاء الطلب في الخادم.'
+        try {
+          const data = await res.json()
+          if (data?.error) msg = data.error
+        } catch {
+          // تجاهل
+        }
+        throw new Error(msg)
+      }
+
+      const data = await res.json()
+      const saved = Array.isArray(data)
+        ? data[0]
+        : data.order || data
+
+      alert(`تم إنشاء الطلب الجديد برقم: ${saved?.id || '—'}`)
+      navigate('/app/orders')
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'حدث خطأ غير متوقع أثناء إنشاء الطلب.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const currentSourceDisplay = buildSourceString(
-    selectedSources,
-    otherSource,
-  )
+  const currentSourceDisplay = buildSourceString(selectedSources, otherSource)
 
   return (
     <div className="space-y-4">
@@ -128,7 +138,6 @@ export default function NewOrder() {
           إضافة طلب جديد
         </h1>
         <button
-          type="button"
           onClick={() => navigate('/app/orders')}
           className="px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-300 hover:bg-slate-100"
         >
@@ -152,6 +161,7 @@ export default function NewOrder() {
               onChange={handleChange}
               required
               className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
+              placeholder="اسم العميل"
             />
           </div>
 
@@ -170,7 +180,7 @@ export default function NewOrder() {
           </div>
         </div>
 
-        {/* مصادر الطلب + تاريخ التسليم */}
+        {/* المصادر + تاريخ التسليم */}
         <div className="grid md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs mb-1 text-slate-600">
@@ -199,15 +209,15 @@ export default function NewOrder() {
               <input
                 type="text"
                 value={otherSource}
-                onChange={handleChangeOtherSource}
+                onChange={handleOtherSourceChange}
                 className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
                 placeholder="مثال: عميل قديم، معرض، صديق..."
               />
             </div>
             <div className="mt-1 text-[11px] text-slate-500">
-              سيتم حفظ المصادر في حقل واحد بالشكل:{' '}
+              سيتم حفظ المصادر كقيمة واحدة:{' '}
               <span className="font-mono break-all">
-                {currentSourceDisplay || '(لم يتم اختيار مصدر بعد)'}
+                {currentSourceDisplay || '(بدون مصدر محدد)'}
               </span>
             </div>
           </div>
@@ -226,7 +236,7 @@ export default function NewOrder() {
           </div>
         </div>
 
-        {/* عدد الصور */}
+        {/* أعداد الصور */}
         <div className="grid md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs mb-1 text-slate-600">
@@ -269,15 +279,16 @@ export default function NewOrder() {
               name="totalAmount"
               value={form.totalAmount}
               onChange={handleChange}
-              readOnly={hasPricing}
-              className={`w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300 ${
-                hasPricing ? 'bg-slate-50 cursor-not-allowed' : ''
-              }`}
+              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
             />
-            {hasPricing && (
+            {hasPricing ? (
               <p className="mt-1 text-[11px] text-slate-500">
-                يتم احتساب المبلغ تلقائياً بناءً على عدد الصور:
-                4x6 = {price4x6} ر.س ، A4 = {priceA4} ر.س
+                حاسبة تلقائية حسب الأسعار المضبوطة في الإعدادات (4x6 = {price4x6} ر.س ،
+                A4 = {priceA4} ر.س).
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] text-amber-600">
+                لم يتم ضبط أسعار الصور بعد. يمكنك تعيينها من صفحة الإعدادات.
               </p>
             )}
           </div>
@@ -297,7 +308,7 @@ export default function NewOrder() {
           </div>
         </div>
 
-        {/* ملاحظات */}
+        {/* الملاحظات */}
         <div>
           <label className="block text-xs mb-1 text-slate-600">
             ملاحظات إضافية
@@ -311,20 +322,22 @@ export default function NewOrder() {
           />
         </div>
 
-        {/* أزرار الحفظ / الإلغاء */}
+        {/* أزرار الحفظ/إلغاء */}
         <div className="flex justify-end gap-2 pt-2">
           <button
             type="button"
             onClick={() => navigate('/app/orders')}
             className="px-3 py-2 rounded-xl border text-xs hover:bg-slate-100"
+            disabled={submitting}
           >
             إلغاء
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl text-xs bg-slate-900 text-white hover:bg-slate-800"
+            disabled={submitting}
+            className="px-4 py-2 rounded-xl text-xs bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
           >
-            حفظ الطلب
+            {submitting ? 'جاري الحفظ...' : 'حفظ الطلب'}
           </button>
         </div>
       </form>

@@ -1,10 +1,8 @@
 // src/pages/OrderDetails.jsx
 import { useParams, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-import { getOrderById, updateOrder } from '../storage/orderStorage.js'
+import { useState, useEffect } from 'react'
 import { loadSettings } from '../storage/settingsStorage.js'
 import { getReadinessInfo } from '../utils/readinessHelpers.js'
-import logoArtMoment from '../assets/logo-art-moment.svg'
 
 const SOURCE_OPTIONS = ['واتساب', 'تيليغرام', 'إنستقرام', 'ايميل', 'مباشر']
 
@@ -20,8 +18,6 @@ export default function OrderDetails() {
   const { orderId } = useParams()
   const navigate = useNavigate()
 
-  const originalOrder = getOrderById(orderId)
-
   // إعدادات من صفحة الإعدادات (أسعار + قوالب ملاحظات)
   const settings = loadSettings()
   const price4x6 = Number(settings.price4x6 ?? 0)
@@ -33,39 +29,102 @@ export default function OrderDetails() {
       ? settings.noteTemplates
       : FALLBACK_NOTE_TEMPLATES
 
-  const [order, setOrder] = useState(() => {
-    if (!originalOrder) return null
-    return {
-      ...originalOrder,
-      photos4x6: originalOrder.photos4x6 ?? 0,
-      photosA4: originalOrder.photosA4 ?? 0,
-      totalAmount: originalOrder.totalAmount ?? 0,
-      paidAmount: originalOrder.paidAmount ?? 0,
-      notes: originalOrder.notes || '',
-      paymentMethod: originalOrder.paymentMethod || 'cash',
+  const [order, setOrder] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-      // الوسوم الجديدة
-      urgency: originalOrder.urgency || 'عادي',
-      orderType: originalOrder.orderType || '',
-
-      onlinePaymentStatus: originalOrder.onlinePaymentStatus ?? null,
-      onlinePaymentId: originalOrder.onlinePaymentId ?? null,
-      onlinePaymentProvider: originalOrder.onlinePaymentProvider ?? null,
-      onlinePaymentUrl: originalOrder.onlinePaymentUrl ?? null,
-      onlinePaymentCreatedAt: originalOrder.onlinePaymentCreatedAt ?? null,
-      onlinePaymentPaidAt: originalOrder.onlinePaymentPaidAt ?? null,
-    }
-  })
-
-  // حالة واجهة مصادر الطلب (منفصلة عن order.source)
-  const initialSourceUI = parseSourceForUI(originalOrder?.source)
-  const [selectedSources, setSelectedSources] = useState(
-    initialSourceUI.selected,
-  )
-  const [otherSource, setOtherSource] = useState(initialSourceUI.other)
+  // حالة واجهة مصادر الطلب
+  const [selectedSources, setSelectedSources] = useState([])
+  const [otherSource, setOtherSource] = useState('')
 
   // إظهار/إخفاء قائمة الملاحظات الجاهزة
   const [showTemplates, setShowTemplates] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  // تحميل الطلب من /api/orders?id=...
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const res = await fetch(`/api/orders?id=${encodeURIComponent(orderId)}`)
+        if (!res.ok) {
+          let msg = 'فشل تحميل الطلب من الخادم.'
+          try {
+            const data = await res.json()
+            if (data?.error) msg = data.error
+          } catch {
+            // تجاهل
+          }
+          throw new Error(msg)
+        }
+
+        const data = await res.json()
+        const found = Array.isArray(data)
+          ? data[0]
+          : data.order || data.orders?.[0] || data
+
+        if (!found || !found.id) {
+          throw new Error('لم يتم العثور على الطلب المطلوب في الخادم.')
+        }
+
+        // ضمان قيم رقمية افتراضية
+        const normalized = {
+          ...found,
+          photos4x6: found.photos4x6 ?? 0,
+          photosA4: found.photosA4 ?? 0,
+          totalAmount: found.totalAmount ?? 0,
+          paidAmount: found.paidAmount ?? 0,
+          notes: found.notes || '',
+          paymentMethod: found.paymentMethod || 'cash',
+        }
+
+        setOrder(normalized)
+
+        const srcUI = parseSourceForUI(normalized.source)
+        setSelectedSources(srcUI.selected)
+        setOtherSource(srcUI.other)
+      } catch (err) {
+        console.error(err)
+        setError(err.message || 'حدث خطأ غير متوقع أثناء تحميل الطلب.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrder()
+  }, [orderId])
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
+          تفاصيل الطلب
+        </h1>
+        <p className="text-sm text-slate-500">
+          جاري تحميل بيانات الطلب من الخادم...
+        </p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
+          تفاصيل الطلب
+        </h1>
+        <p className="text-sm text-red-600">{error}</p>
+        <button
+          onClick={() => navigate('/app/orders')}
+          className="px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-300 hover:bg-slate-100"
+        >
+          الرجوع إلى صفحة الطلبات
+        </button>
+      </div>
+    )
+  }
 
   if (!order) {
     return (
@@ -78,7 +137,7 @@ export default function OrderDetails() {
         </p>
         <button
           onClick={() => navigate('/app/orders')}
-          className="btn-secondary"
+          className="px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-300 hover:bg-slate-100"
         >
           الرجوع إلى صفحة الطلبات
         </button>
@@ -88,13 +147,15 @@ export default function OrderDetails() {
 
   const remaining = (order.totalAmount || 0) - (order.paidAmount || 0)
   const readiness = getReadinessInfo(order)
+  const onlineStatusLabel = getOnlineStatusLabel(order.onlinePaymentStatus)
 
-  // تحديث عام للطلب + حفظ في localStorage
+  const currentSourceDisplay = buildSourceString(selectedSources, otherSource)
+
+  // تحديث عام للطلب (في الحالة فقط – الحفظ الفعلي يتم عند الضغط على "حفظ التعديلات")
   const syncAndSetOrder = (updater) => {
     setOrder((prev) => {
       if (!prev) return prev
       const next = typeof updater === 'function' ? updater(prev) : updater
-      updateOrder(next)
       return next
     })
   }
@@ -122,14 +183,6 @@ export default function OrderDetails() {
 
       return next
     })
-  }
-
-  // تغيير الوسوم (الأولوية / نوع الطلب)
-  const handleTagChange = (field, value) => {
-    syncAndSetOrder((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
   }
 
   // checkboxes لمصدر الطلب – يتم حفظها عند الضغط على "حفظ التعديلات"
@@ -194,19 +247,53 @@ export default function OrderDetails() {
     })
   }
 
-  const handleSave = () => {
+  // حفظ فعلي في Supabase عبر /api/orders (PUT)
+  const handleSave = async () => {
+    if (!order) return
+    if (saving) return
+
     const newSource = buildSourceString(selectedSources, otherSource)
-    const updated = {
+    const payload = {
       ...order,
       source: newSource,
     }
-    setOrder(updated)
-    updateOrder(updated)
-    alert('تم حفظ التعديلات في النظام (localStorage).')
-  }
 
-  const handlePrintInvoice = () => {
-    window.print()
+    try {
+      setSaving(true)
+      const res = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        let msg = 'فشل حفظ التعديلات في الخادم.'
+        try {
+          const data = await res.json()
+          if (data?.error) msg = data.error
+        } catch {
+          // تجاهل
+        }
+        throw new Error(msg)
+      }
+
+      const data = await res.json()
+      const saved = Array.isArray(data)
+        ? data[0]
+        : data.order || data
+
+      setOrder((prev) => ({
+        ...prev,
+        ...saved,
+      }))
+
+      alert('تم حفظ التعديلات في الخادم بنجاح.')
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'حدث خطأ أثناء حفظ التعديلات.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   // إنشاء دفع إلكتروني تجريبي (Mock)
@@ -246,13 +333,6 @@ export default function OrderDetails() {
     })
   }
 
-  const onlineStatusLabel = getOnlineStatusLabel(order.onlinePaymentStatus)
-
-  const currentSourceDisplay = buildSourceString(
-    selectedSources,
-    otherSource,
-  )
-
   // إضافة ملاحظة جاهزة للملاحظات الحالية
   const handleAppendNoteTemplate = (text) => {
     syncAndSetOrder((prev) => {
@@ -269,148 +349,21 @@ export default function OrderDetails() {
     <div className="space-y-4">
       {/* العنوان + رجوع */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <h1 className="heading-main">
+        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
           تفاصيل الطلب #{order.id}
         </h1>
         <button
           onClick={() => navigate('/app/orders')}
-          className="btn-secondary"
+          className="px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-300 hover:bg-slate-100"
         >
           ← الرجوع للطلبات
         </button>
-              {/* كرت الفاتورة – يظهر فقط في وضع الطباعة */}
-      <div className="invoice-print-root" dir="rtl">
-        <div className="invoice-print-card">
-          {/* رأس الفاتورة */}
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-2">
-              <img
-                src={logoArtMoment}
-                alt="لحظة فن"
-                className="h-10 w-auto"
-              />
-              <div>
-                <div className="font-semibold text-slate-800">
-                  لحظة فن – استديو طباعة
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  جوال: {settings?.businessPhone || '05xxxxxxxx'}
-                </div>
-              </div>
-            </div>
-            <div className="text-right text-xs text-slate-700">
-              <div className="font-semibold text-slate-900">
-                فاتورة طلب #{order.id}
-              </div>
-              <div>تاريخ الإنشاء: {order.createdAt}</div>
-              {order.dueDate && (
-                <div>تاريخ التسليم: {order.dueDate}</div>
-              )}
-            </div>
-          </div>
-
-          <hr className="my-3 border-slate-200" />
-
-          {/* بيانات العميل والطلب */}
-          <div className="grid md:grid-cols-2 gap-3 mb-3 text-xs">
-            <div>
-              <div className="font-semibold text-slate-800 mb-1">
-                بيانات العميل
-              </div>
-              <div>الاسم: {order.customerName || '-'}</div>
-              <div>الجوال: {order.phone || '-'}</div>
-              {order.source && (
-                <div>مصدر الطلب: {order.source}</div>
-              )}
-            </div>
-
-            <div>
-              <div className="font-semibold text-slate-800 mb-1">
-                بيانات الطلب
-              </div>
-              <div>الحالة: {order.status}</div>
-              <div>حالة الدفع: {order.paymentStatus}</div>
-              {order.urgency && (
-                <div>الأولوية: {order.urgency}</div>
-              )}
-              {order.orderType && (
-                <div>نوع الطلب: {order.orderType}</div>
-              )}
-            </div>
-          </div>
-
-          {/* تفاصيل الصور */}
-          <div className="text-xs mb-3">
-            <div className="font-semibold text-slate-800 mb-1">
-              تفاصيل الصور
-            </div>
-            <table className="w-full text-[11px] border border-slate-200 border-collapse">
-              <thead className="bg-slate-50">
-                <tr className="border-b border-slate-200">
-                  <th className="py-1 px-2 text-right">النوع</th>
-                  <th className="py-1 px-2 text-right">الكمية</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="py-1 px-2">صور 4×6</td>
-                  <td className="py-1 px-2">{order.photos4x6 || 0}</td>
-                </tr>
-                <tr>
-                  <td className="py-1 px-2">صور A4</td>
-                  <td className="py-1 px-2">{order.photosA4 || 0}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* المبالغ */}
-          <div className="text-xs mb-3">
-            <div className="font-semibold text-slate-800 mb-1">
-              المبالغ
-            </div>
-            <div>
-              إجمالي الفاتورة:{' '}
-              {(order.totalAmount || 0).toFixed(2)} ر.س
-            </div>
-            <div>
-              المبلغ المدفوع:{' '}
-              {(order.paidAmount || 0).toFixed(2)} ر.س
-            </div>
-            <div>
-              المتبقي:{' '}
-              {((order.totalAmount || 0) - (order.paidAmount || 0)).toFixed(
-                2,
-              )}{' '}
-              ر.س
-            </div>
-          </div>
-
-          {/* الملاحظات إن وجدت */}
-          {order.notes && (
-            <div className="text-xs mb-3">
-              <div className="font-semibold text-slate-800 mb-1">
-                ملاحظات
-              </div>
-              <div className="whitespace-pre-line text-slate-700">
-                {order.notes}
-              </div>
-            </div>
-          )}
-
-          {/* تذييل بسيط */}
-          <div className="mt-4 text-[11px] text-slate-500 text-center">
-            شكراً لاختيارك لحظة فن 🤍
-          </div>
-        </div>
-      </div>
-
       </div>
 
       {/* معلومات العميل + حالة الطلب */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* معلومات العميل قابلة للتعديل */}
-        <div className="card p-4 space-y-3 text-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 text-sm">
           <h2 className="font-semibold text-slate-800 mb-1 text-base">
             معلومات العميل (قابلة للتعديل)
           </h2>
@@ -484,8 +437,8 @@ export default function OrderDetails() {
           </div>
         </div>
 
-        {/* حالة الطلب والدفعة + الوسوم */}
-        <div className="card p-4 space-y-3 text-sm">
+        {/* حالة الطلب والدفعة */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-2 text-sm">
           <h2 className="font-semibold text-slate-800 mb-1 text-base">
             حالة الطلب والدفعة
           </h2>
@@ -509,58 +462,14 @@ export default function OrderDetails() {
               {renderPaymentMethod(order.paymentMethod)}
             </span>
           </div>
-
-          {/* الوسوم: الأولوية + نوع الطلب */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-            <div>
-              <label className="block text-[11px] mb-1 text-slate-600">
-                أولوية الطلب
-              </label>
-              <select
-                value={order.urgency || 'عادي'}
-                onChange={(e) =>
-                  handleTagChange('urgency', e.target.value)
-                }
-                className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-              >
-                <option value="عادي">عادي</option>
-                <option value="مستعجل">مستعجل</option>
-              </select>
-              <div className="mt-1">
-                <UrgencyTag urgency={order.urgency} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] mb-1 text-slate-600">
-                نوع الطلب
-              </label>
-              <select
-                value={order.orderType || ''}
-                onChange={(e) =>
-                  handleTagChange('orderType', e.target.value)
-                }
-                className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-              >
-                <option value="">غير محدد</option>
-                <option value="هدية">هدية</option>
-                <option value="ألبوم">ألبوم</option>
-                <option value="لوحة جدارية">لوحة جدارية</option>
-              </select>
-              <div className="mt-1 text-[11px] text-slate-600">
-                {order.orderType || 'لم يتم تحديد نوع الطلب بعد.'}
-              </div>
-            </div>
-          </div>
-
           <div>تاريخ الإنشاء: {order.createdAt}</div>
-          <div>تاريخ التسليم المطلوب: {order.dueDate || '-'}</div>
+          <div>تاريخ التسليم المطلوب: {order.dueDate}</div>
         </div>
       </div>
 
       {/* تفاصيل الصور والمبالغ */}
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="card p-4 space-y-3 text-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 text-sm">
           <h2 className="font-semibold text-slate-800 mb-1 text-base">
             تفاصيل الصور (قابلة للتعديل)
           </h2>
@@ -594,7 +503,7 @@ export default function OrderDetails() {
           </div>
         </div>
 
-        <div className="card p-4 space-y-3 text-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 text-sm">
           <h2 className="font-semibold text-slate-800 mb-1 text-base">
             تفاصيل المبلغ (قابلة للتعديل)
           </h2>
@@ -670,8 +579,8 @@ export default function OrderDetails() {
         </div>
       </div>
 
-      {/* ملاحظات + أزرار الحالة + حفظ + طباعة فاتورة */}
-      <div className="card p-4 space-y-3 text-sm">
+      {/* ملاحظات + أزرار الحالة + حفظ */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 text-sm">
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs text-slate-600">
@@ -713,49 +622,36 @@ export default function OrderDetails() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleChangeStatus('جديد')}
-            className="btn-ghost"
-            type="button"
+            className="px-3 py-2 rounded-xl border text-xs hover:bg-slate-100"
           >
             جديد
           </button>
           <button
             onClick={() => handleChangeStatus('قيد الطباعة')}
-            className="btn-ghost"
-            type="button"
+            className="px-3 py-2 rounded-xl border text-xs hover:bg-slate-100"
           >
             قيد الطباعة
           </button>
           <button
             onClick={() => handleChangeStatus('جاهز')}
-            className="btn-ghost"
-            type="button"
+            className="px-3 py-2 rounded-xl border text-xs hover:bg-slate-100"
           >
             جاهز
           </button>
           <button
             onClick={handleMarkDelivered}
-            type="button"
-            className="btn-primary"
+            className="px-3 py-2 rounded-xl text-xs bg-emerald-600 text-white hover:bg-emerald-700"
           >
             ✔️ تم التسليم
           </button>
 
-          <div className="ml-auto flex gap-2">
-            <button
-              type="button"
-              onClick={handlePrintInvoice}
-              className="btn-secondary"
-            >
-              🧾 طباعة الفاتورة
-            </button>
-            <button
-              onClick={handleSave}
-              type="button"
-              className="btn-primary"
-            >
-              حفظ التعديلات
-            </button>
-          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-2 rounded-xl text-xs bg-slate-900 text-white hover:bg-slate-800 ml-auto disabled:opacity-50"
+          >
+            {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+          </button>
         </div>
       </div>
 
@@ -852,9 +748,9 @@ export default function OrderDetails() {
         </div>
 
         <p className="text-[11px] text-slate-500 leading-relaxed">
-          * حالياً يتم تحديث حالة الدفع محلياً فقط (localStorage). عند ربط بوابة
-          الدفع الفعلية سيتم استخدام Webhook من مزود الخدمة لتحديث حالة الطلب
-          تلقائياً وبشكل موثوق.
+          * حالياً يتم تحديث حالة الدفع محلياً في هذه الصفحة فقط، ثم إرسالها عند
+          الضغط على "حفظ التعديلات". عند ربط بوابة الدفع الفعلية سيتم استخدام Webhook
+          من مزود الخدمة لتحديث حالة الطلب تلقائياً وبشكل موثوق.
         </p>
       </div>
     </div>
@@ -981,18 +877,4 @@ function getReadinessBadgeClasses(tone) {
   }
 
   return classes
-}
-
-function UrgencyTag({ urgency }) {
-  const value = urgency || 'عادي'
-  let classes =
-    'inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-medium '
-
-  if (value === 'مستعجل') {
-    classes += 'bg-red-50 text-red-700 border border-red-100'
-  } else {
-    classes += 'bg-slate-50 text-slate-700 border border-slate-200'
-  }
-
-  return <span className={classes}>{value}</span>
 }

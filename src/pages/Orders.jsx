@@ -1,93 +1,116 @@
 // src/pages/Orders.jsx
 import { useMemo, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { loadOrders } from '../storage/orderStorage.js'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useOrdersData } from '../hooks/useOrdersData.js'
 import { getReadinessInfo } from '../utils/readinessHelpers.js'
-
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'كل الحالات' },
-  { value: 'جديد', label: 'جديد' },
-  { value: 'قيد الطباعة', label: 'قيد الطباعة' },
-  { value: 'جاهز', label: 'جاهز' },
-  { value: 'تم التسليم', label: 'تم التسليم' },
-  { value: 'ملغي', label: 'ملغي' },
-]
 
 export default function Orders() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const searchParam = new URLSearchParams(location.search).get('customer') || ''
-  const [search, setSearch] = useState(searchParam)
-  const [statusFilter, setStatusFilter] = useState('all')
+  // قراءة فلتر العميل من الرابط إن وجد ?customer=
+  const params = new URLSearchParams(location.search)
+  const initialSearch = params.get('customer') || ''
 
-  // نقرأ الطلبات من LocalStorage في كل ريندر
-  const orders = loadOrders()
+  const { orders, loading, error, reload } = useOrdersData()
+
+  const [search, setSearch] = useState(initialSearch)
+  const [statusFilter, setStatusFilter] = useState('all') // all | new | inprogress | ready | delivered | canceled
+  const [paymentFilter, setPaymentFilter] = useState('all') // all | unpaid | partial | paid
+  const [todayOnly, setTodayOnly] = useState(false) // جاهز للتسليم اليوم فقط
 
   const filteredOrders = useMemo(() => {
-    let list = [...orders]
-
     const term = search.trim().toLowerCase()
-    if (term) {
-      list = list.filter((o) => {
-        const name = (o.customerName || '').toLowerCase()
-        const phone = o.phone || ''
-        const id = String(o.id || '')
-        const src = (o.source || '').toLowerCase()
-        return (
-          name.includes(term) ||
-          phone.includes(term) ||
-          id.includes(term) ||
-          src.includes(term)
-        )
+    const todayStr = new Date().toISOString().slice(0, 10)
+
+    return [...orders]
+      .filter((o) => {
+        // البحث
+        if (term) {
+          const haystack = `${o.customerName || ''} ${o.phone || ''} ${
+            o.id || ''
+          }`
+            .toLowerCase()
+            .trim()
+          if (!haystack.includes(term)) return false
+        }
+
+        // فلتر الحالة
+        if (statusFilter !== 'all') {
+          if (statusFilter === 'new' && o.status !== 'جديد') return false
+          if (statusFilter === 'inprogress' && o.status !== 'قيد الطباعة')
+            return false
+          if (statusFilter === 'ready' && o.status !== 'جاهز') return false
+          if (statusFilter === 'delivered' && o.status !== 'تم التسليم')
+            return false
+          if (statusFilter === 'canceled' && o.status !== 'ملغي') return false
+        }
+
+        // فلتر حالة الدفع
+        if (paymentFilter !== 'all') {
+          if (paymentFilter === 'unpaid' && o.paymentStatus !== 'غير مدفوع')
+            return false
+          if (paymentFilter === 'partial' && o.paymentStatus !== 'مدفوع جزئياً')
+            return false
+          if (paymentFilter === 'paid' && o.paymentStatus !== 'مدفوع بالكامل')
+            return false
+        }
+
+        // جاهز للتسليم اليوم
+        if (todayOnly) {
+          if (!o.dueDate || o.dueDate !== todayStr) return false
+          if (o.status !== 'جاهز' && o.status !== 'قيد الطباعة') return false
+        }
+
+        return true
       })
-    }
-
-    if (statusFilter !== 'all') {
-      list = list.filter((o) => o.status === statusFilter)
-    }
-
-    // الأحدث أولاً
-    list.sort((a, b) => {
-      const aDate = a.createdAt || ''
-      const bDate = b.createdAt || ''
-      if (aDate === bDate) return String(b.id).localeCompare(String(a.id))
-      return bDate.localeCompare(aDate)
-    })
-
-    return list
-  }, [orders, search, statusFilter])
-
-  const handleAddNew = () => {
-    navigate('/app/orders/new')
-  }
-
-  const handleOpenDetails = (id) => {
-    navigate(`/app/orders/${id}`)
-  }
+      .sort((a, b) => {
+        const aDate = a.createdAt || ''
+        const bDate = b.createdAt || ''
+        return bDate.localeCompare(aDate) // الأحدث أولاً
+      })
+  }, [orders, search, statusFilter, paymentFilter, todayOnly])
 
   return (
     <div className="space-y-4">
-      {/* العنوان + زر إضافة طلب */}
+      {/* العنوان + حالة التحميل/الخطأ + زر تحديث + زر إضافة طلب */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <h1 className="text-lg md:text-2xl font-bold text-slate-800">
           الطلبات
         </h1>
-        <button
-          type="button"
-          onClick={handleAddNew}
-          className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs md:text-sm font-medium bg-slate-900 text-white hover:bg-slate-800"
-        >
-          + إضافة طلب جديد
-        </button>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {loading && (
+            <span className="text-slate-500">جاري تحميل الطلبات من الخادم...</span>
+          )}
+          {error && !loading && (
+            <span className="text-red-500 max-w-xs text-right">{error}</span>
+          )}
+
+          <button
+            type="button"
+            onClick={reload}
+            className="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50"
+          >
+            تحديث
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/app/orders/new')}
+            className="px-3 py-1.5 rounded-xl text-white bg-emerald-600 hover:bg-emerald-700"
+          >
+            + إضافة طلب جديد
+          </button>
+        </div>
       </div>
 
-      {/* فلاتر البحث */}
+      {/* فلاتر أعلى الجدول */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 md:p-4 space-y-3 text-sm">
-        <div className="grid gap-2 md:grid-cols-3">
+        <div className="grid gap-2 md:grid-cols-4">
           <input
             type="text"
-            placeholder="بحث برقم الطلب، اسم العميل، الجوال أو المصدر"
+            placeholder="بحث باسم العميل / الجوال / رقم الطلب"
             className="border rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -98,17 +121,34 @@ export default function Orders() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
+            <option value="all">كل الحالات</option>
+            <option value="new">جديد</option>
+            <option value="inprogress">قيد الطباعة</option>
+            <option value="ready">جاهز</option>
+            <option value="delivered">تم التسليم</option>
+            <option value="canceled">ملغي</option>
           </select>
 
-          <div className="text-[11px] text-slate-500 flex items-center">
-            عدد الطلبات المطابقة:{' '}
-            <span className="font-semibold mr-1">{filteredOrders.length}</span>
-          </div>
+          <select
+            className="border rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+          >
+            <option value="all">كل حالات الدفع</option>
+            <option value="unpaid">غير مدفوع</option>
+            <option value="partial">مدفوع جزئياً</option>
+            <option value="paid">مدفوع بالكامل</option>
+          </select>
+
+          <label className="flex items-center gap-2 text-xs md:text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={todayOnly}
+              onChange={(e) => setTodayOnly(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span>جاهز للتسليم اليوم</span>
+          </label>
         </div>
       </div>
 
@@ -122,65 +162,64 @@ export default function Orders() {
                 <th className="text-right">العميل</th>
                 <th className="text-right">الجوال</th>
                 <th className="text-right">الحالة</th>
+                <th className="text-right">حالة الدفع</th>
                 <th className="text-right">الجاهزية</th>
                 <th className="text-right">المبلغ</th>
-                <th className="text-right">المدفوع</th>
-                <th className="text-right">تاريخ التسليم</th>
+                <th className="text-right">التسليم</th>
                 <th className="text-right">إجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((o) => {
-                const readiness = getReadinessInfo(o)
-                const remaining =
-                  Number(o.totalAmount || 0) - Number(o.paidAmount || 0)
+              {filteredOrders.map((o) => (
+                <tr
+                  key={o.id}
+                  className="border-b last:border-0 hover:bg-slate-50 cursor-pointer"
+                  onClick={() => navigate(`/app/orders/${o.id}`)}
+                >
+                  <td className="py-2 font-mono text-[11px]">{o.id}</td>
+                  <td>{o.customerName}</td>
+                  <td className="text-xs text-slate-600">{o.phone}</td>
+                  <td className="text-xs text-slate-700">{o.status}</td>
+                  <td className="text-xs">
+                    <PaymentBadge paymentStatus={o.paymentStatus} />
+                  </td>
+                  <td className="text-xs">
+                    <ReadinessBadge order={o} />
+                  </td>
+                  <td className="text-xs">
+                    {Number(o.totalAmount || 0).toFixed(2)} ر.س
+                  </td>
+                  <td className="text-xs text-slate-500">{o.dueDate || '-'}</td>
+                  <td
+                    className="text-xs text-blue-600 underline"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/app/orders/${o.id}`)
+                    }}
+                  >
+                    تفاصيل
+                  </td>
+                </tr>
+              ))}
 
-                return (
-                  <tr key={o.id} className="border-b last:border-0">
-                    <td className="py-2 font-mono text-[11px]">{o.id}</td>
-                    <td>{o.customerName}</td>
-                    <td className="text-xs text-slate-600">{o.phone}</td>
-                    <td className="text-xs">
-                      <StatusBadge status={o.status} />
-                    </td>
-                    <td className="text-xs">
-                      <span className={getReadinessBadgeClasses(readiness.tone)}>
-                        {readiness.label}
-                      </span>
-                    </td>
-                    <td className="text-xs">{o.totalAmount || 0} ر.س</td>
-                    <td className="text-xs">
-                      {o.paidAmount || 0} ر.س
-                      {remaining > 0 && (
-                        <span className="text-[10px] text-amber-600 mr-1">
-                          (متبقي {remaining} ر.س)
-                        </span>
-                      )}
-                    </td>
-                    <td className="text-xs text-slate-500">
-                      {o.dueDate || '-'}
-                    </td>
-                    <td className="text-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenDetails(o.id)}
-                        className="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100"
-                      >
-                        تفاصيل
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-
-              {filteredOrders.length === 0 && (
+              {filteredOrders.length === 0 && !loading && (
                 <tr>
                   <td
                     colSpan={9}
                     className="py-4 text-center text-slate-400 text-xs"
                   >
-                    لا توجد طلبات مطابقة حالياً. جرّب تغيير الفلاتر أو إضافة طلب
-                    جديد.
+                    لا توجد طلبات مطابقة للفلاتر الحالية.
+                  </td>
+                </tr>
+              )}
+
+              {filteredOrders.length === 0 && loading && (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="py-4 text-center text-slate-400 text-xs"
+                  >
+                    جاري تحميل الطلبات...
                   </td>
                 </tr>
               )}
@@ -192,28 +231,32 @@ export default function Orders() {
   )
 }
 
-function StatusBadge({ status }) {
+/* === مكوّنات صغيرة === */
+
+function PaymentBadge({ paymentStatus }) {
   let classes =
     'inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium '
 
-  if (status === 'جديد') {
-    classes += 'bg-blue-100 text-blue-800'
-  } else if (status === 'قيد الطباعة') {
+  if (paymentStatus === 'مدفوع بالكامل') {
+    classes += 'bg-emerالد-100 text-emerald-800'
+  } else if (paymentStatus === 'مدفوع جزئياً') {
     classes += 'bg-amber-100 text-amber-800'
-  } else if (status === 'جاهز') {
-    classes += 'bg-emerald-100 text-emerald-800'
-  } else if (status === 'تم التسليم') {
-    classes += 'bg-slate-100 text-slate-800'
-  } else if (status === 'ملغي') {
+  } else if (paymentStatus === 'غير مدفوع') {
     classes += 'bg-red-100 text-red-800'
   } else {
     classes += 'bg-slate-100 text-slate-800'
   }
 
-  return <span className={classes}>{status}</span>
+  return <span className={classes}>{paymentStatus || 'غير محدد'}</span>
 }
 
-// نفس ألوان الجاهزية المستخدمة في OrderDetails.jsx
+function ReadinessBadge({ order }) {
+  const info = getReadinessInfo(order || {})
+  const classes = getReadinessBadgeClasses(info.tone)
+
+  return <span className={classes}>{info.label}</span>
+}
+
 function getReadinessBadgeClasses(tone) {
   let classes =
     'inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium '
