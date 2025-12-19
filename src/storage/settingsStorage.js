@@ -1,70 +1,49 @@
 // src/storage/settingsStorage.js
+// إعدادات المشروع (LocalStorage) — نسخة V1
 
-const SETTINGS_KEY = 'artMomentSettings'
+const SETTINGS_KEY = 'art-moment-settings';
 
-// القوالب الافتراضية للملاحظات السريعة
-const DEFAULT_NOTE_TEMPLATES = [
-  'تم استلام العربون.',
-  'بانتظار صور إضافية من العميل.',
-  'جاهز للاستلام – تم التواصل مع العميل.',
-  'تم التسليم – بانتظار تقييمك لنا 🌟.',
-]
+export const DEFAULT_SETTINGS = {
+  brandName: 'Art-Moment',
+  whatsapp: '',
+  adminPin: '1234',
 
-// إعدادات افتراضية
-const DEFAULT_SETTINGS = {
-  price4x6: 0,
-  priceA4: 0,
-  noteTemplates: DEFAULT_NOTE_TEMPLATES,
+  currency: 'ر.س',
+  invoiceTitle: 'فاتورة',
+  invoiceFooterNote: 'شكراً لتعاملكم معنا',
+};
+
+function safeParse(raw, fallback) {
+  try {
+    const data = JSON.parse(raw);
+    return data && typeof data === 'object' ? data : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function loadSettings() {
-  if (typeof window === 'undefined') {
-    return { ...DEFAULT_SETTINGS }
-  }
-
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    if (!raw) return { ...DEFAULT_SETTINGS }
-
-    const parsed = JSON.parse(raw) || {}
-
-    // ندمج الافتراضي مع المخزَّن حتى لا نخسر أي قيمة جديدة
-    const merged = {
-      ...DEFAULT_SETTINGS,
-      ...parsed,
-    }
-
-    // تأكد أن noteTemplates مصفوفة صحيحة
-    if (
-      !Array.isArray(merged.noteTemplates) ||
-      merged.noteTemplates.length === 0
-    ) {
-      merged.noteTemplates = DEFAULT_NOTE_TEMPLATES
-    }
-
-    return merged
-  } catch {
-    return { ...DEFAULT_SETTINGS }
-  }
+  if (typeof window === 'undefined') return { ...DEFAULT_SETTINGS };
+  const raw = window.localStorage.getItem(SETTINGS_KEY);
+  if (!raw) return { ...DEFAULT_SETTINGS };
+  const parsed = safeParse(raw, {});
+  return { ...DEFAULT_SETTINGS, ...parsed };
 }
 
-export function saveSettings(partial) {
-  if (typeof window === 'undefined') return { ...DEFAULT_SETTINGS }
-
-  const current = loadSettings()
-  const next = {
-    ...current,
-    ...partial,
-  }
-
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next))
-  } catch {
-    // تجاهل أخطاء التخزين
-  }
-
-  return next
+export function saveSettings(next) {
+  if (typeof window === 'undefined') return;
+  const merged = { ...DEFAULT_SETTINGS, ...(next || {}) };
+  window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
 }
 
-// للتصدير في أماكن أخرى إذا حبّينا نرجع الافتراضي
-export { DEFAULT_NOTE_TEMPLATES }
+export function updateSettings(partial) {
+  const current = loadSettings();
+  const merged = { ...current, ...(partial || {}) };
+  saveSettings(merged);
+  return merged;
+}
+
+export function resetSettings() {
+  saveSettings({ ...DEFAULT_SETTINGS });
+  return loadSettings();
+}

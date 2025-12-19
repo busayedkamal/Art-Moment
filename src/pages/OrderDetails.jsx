@@ -1,880 +1,292 @@
 // src/pages/OrderDetails.jsx
-import { useParams, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { loadSettings } from '../storage/settingsStorage.js'
-import { getReadinessInfo } from '../utils/readinessHelpers.js'
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import useOrdersData from '../hooks/useOrdersData.js';
+import { getOrderById } from '../storage/orderStorage.js';
+import { loadSettings } from '../storage/settingsStorage.js';
 
-const SOURCE_OPTIONS = ['واتساب', 'تيليغرام', 'إنستقرام', 'ايميل', 'مباشر']
+function toDatetimeLocalValue(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
-// قوالب افتراضية احتياطية في حال ما وُجدت في الإعدادات لأي سبب
-const FALLBACK_NOTE_TEMPLATES = [
-  'تم استلام العربون.',
-  'بانتظار صور إضافية من العميل.',
-  'جاهز للاستلام – تم التواصل مع العميل.',
-  'تم التسليم – بانتظار تقييمك لنا 🌟.',
-]
+function datetimeLocalToIso(v) {
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
+
+function formatDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString('ar-SA');
+}
+
+function openA5InvoicePrint(order, settings) {
+  const companyName = settings?.companyName || 'Art Moment';
+  const footer = settings?.invoiceFooter || 'شكراً لاختيارك لنا 🌟';
+
+  const html = `
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>فاتورة ${order.id}</title>
+<style>
+  @page { size: A5; margin: 8mm; }
+  body { font-family: Arial, sans-serif; color: #111; }
+  .box { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+  h1 { font-size: 16px; margin: 0 0 8px; }
+  .muted { color: #666; font-size: 12px; }
+  .row { display: flex; justify-content: space-between; gap: 10px; }
+  .row > div { flex: 1; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border-bottom: 1px dashed #ddd; padding: 6px 0; font-size: 12px; }
+  .total { margin-top: 10px; font-weight: bold; }
+  .footer { margin-top: 12px; font-size: 11px; color: #555; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>${companyName} — فاتورة / إيصال</h1>
+    <div class="muted">رقم الطلب: ${order.id}</div>
+    <div class="muted">تاريخ الإنشاء: ${formatDateTime(order.createdAt)}</div>
+    <div class="muted">تاريخ التسليم: ${order.deliveryDate || '-'}</div>
+
+    <div style="height:8px"></div>
+    <div class="row">
+      <div>
+        <div class="muted">العميل</div>
+        <div>${order.customerName || '-'}</div>
+      </div>
+      <div>
+        <div class="muted">الجوال</div>
+        <div>${order.phone || '-'}</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th align="right">البند</th>
+          <th align="left">الكمية</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>صور 4x6</td><td align="left">${order.qty4x6 ?? 0}</td></tr>
+        <tr><td>صور A4</td><td align="left">${order.qtyA4 ?? 0}</td></tr>
+      </tbody>
+    </table>
+
+    <div class="total">الإجمالي: ${(Number(order.total)||0).toFixed(2)} ر.س</div>
+    <div class="muted">العربون: ${(Number(order.deposit)||0).toFixed(2)} ر.س</div>
+    <div class="muted">المتبقي: ${(Number(order.remaining)||0).toFixed(2)} ر.س</div>
+
+    ${order.notes ? `<div style="margin-top:10px"><div class="muted">ملاحظات</div><div style="font-size:12px">${String(order.notes).replaceAll('<','&lt;')}</div></div>` : ''}
+
+    <div class="footer">${footer}</div>
+  </div>
+
+<script>
+  window.onload = () => {
+    window.print();
+    setTimeout(() => window.close(), 300);
+  }
+</script>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) return alert('المتصفح منع نافذة الطباعة. فعّل Popups ثم جرّب مرة ثانية.');
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
 
 export default function OrderDetails() {
-  const { orderId } = useParams()
-  const navigate = useNavigate()
+  const { id } = useParams();
+  const nav = useNavigate();
+  const { update, remove } = useOrdersData();
 
-  // إعدادات من صفحة الإعدادات (أسعار + قوالب ملاحظات)
-  const settings = loadSettings()
-  const price4x6 = Number(settings.price4x6 ?? 0)
-  const priceA4 = Number(settings.priceA4 ?? 0)
-  const hasPricing = price4x6 > 0 || priceA4 > 0
+  const settings = useMemo(() => loadSettings(), []);
+  const [order, setOrder] = useState(null);
 
-  const noteTemplates =
-    Array.isArray(settings.noteTemplates) && settings.noteTemplates.length
-      ? settings.noteTemplates
-      : FALLBACK_NOTE_TEMPLATES
+  // حقول قابلة للتعديل
+  const [customerName, setCustomerName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [createdAtLocal, setCreatedAtLocal] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [source, setSource] = useState('');
 
-  const [order, setOrder] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [qty4x6, setQty4x6] = useState(0);
+  const [qtyA4, setQtyA4] = useState(0);
+  const [deposit, setDeposit] = useState(0);
+  const [notes, setNotes] = useState('');
 
-  // حالة واجهة مصادر الطلب
-  const [selectedSources, setSelectedSources] = useState([])
-  const [otherSource, setOtherSource] = useState('')
+  const price4x6 = Number(settings?.price4x6 ?? 0);
+  const priceA4 = Number(settings?.priceA4 ?? 0);
 
-  // إظهار/إخفاء قائمة الملاحظات الجاهزة
-  const [showTemplates, setShowTemplates] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const total = useMemo(() => (Number(qty4x6) * price4x6) + (Number(qtyA4) * priceA4), [qty4x6, qtyA4, price4x6, priceA4]);
+  const remaining = useMemo(() => Math.max(0, (Number(total) || 0) - (Number(deposit) || 0)), [total, deposit]);
 
-  // تحميل الطلب من /api/orders?id=...
+  const paymentStatus = useMemo(() => {
+    const t = Number(total) || 0;
+    const d = Number(deposit) || 0;
+    if (t <= 0) return 'unpaid';
+    if (d <= 0) return 'unpaid';
+    if (d >= t) return 'paid';
+    return 'partial';
+  }, [total, deposit]);
+
   useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+    const found = getOrderById(id);
+    setOrder(found);
 
-        const res = await fetch(`/api/orders?id=${encodeURIComponent(orderId)}`)
-        if (!res.ok) {
-          let msg = 'فشل تحميل الطلب من الخادم.'
-          try {
-            const data = await res.json()
-            if (data?.error) msg = data.error
-          } catch {
-            // تجاهل
-          }
-          throw new Error(msg)
-        }
+    if (found) {
+      setCustomerName(found.customerName || '');
+      setPhone(found.phone || '');
+      setCreatedAtLocal(toDatetimeLocalValue(found.createdAt));
+      setDeliveryDate(found.deliveryDate || '');
+      setSource(found.source || '');
 
-        const data = await res.json()
-        const found = Array.isArray(data)
-          ? data[0]
-          : data.order || data.orders?.[0] || data
-
-        if (!found || !found.id) {
-          throw new Error('لم يتم العثور على الطلب المطلوب في الخادم.')
-        }
-
-        // ضمان قيم رقمية افتراضية
-        const normalized = {
-          ...found,
-          photos4x6: found.photos4x6 ?? 0,
-          photosA4: found.photosA4 ?? 0,
-          totalAmount: found.totalAmount ?? 0,
-          paidAmount: found.paidAmount ?? 0,
-          notes: found.notes || '',
-          paymentMethod: found.paymentMethod || 'cash',
-        }
-
-        setOrder(normalized)
-
-        const srcUI = parseSourceForUI(normalized.source)
-        setSelectedSources(srcUI.selected)
-        setOtherSource(srcUI.other)
-      } catch (err) {
-        console.error(err)
-        setError(err.message || 'حدث خطأ غير متوقع أثناء تحميل الطلب.')
-      } finally {
-        setLoading(false)
-      }
+      setQty4x6(found.qty4x6 ?? 0);
+      setQtyA4(found.qtyA4 ?? 0);
+      setDeposit(found.deposit ?? 0);
+      setNotes(found.notes || '');
     }
-
-    fetchOrder()
-  }, [orderId])
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
-          تفاصيل الطلب
-        </h1>
-        <p className="text-sm text-slate-500">
-          جاري تحميل بيانات الطلب من الخادم...
-        </p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
-          تفاصيل الطلب
-        </h1>
-        <p className="text-sm text-red-600">{error}</p>
-        <button
-          onClick={() => navigate('/app/orders')}
-          className="px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-300 hover:bg-slate-100"
-        >
-          الرجوع إلى صفحة الطلبات
-        </button>
-      </div>
-    )
-  }
+  }, [id]);
 
   if (!order) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
-          تفاصيل الطلب
-        </h1>
-        <p className="text-sm text-red-600">
-          لم يتم العثور على الطلب المطلوب.
-        </p>
-        <button
-          onClick={() => navigate('/app/orders')}
-          className="px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-300 hover:bg-slate-100"
-        >
+      <div className="p-6">
+        <h1 className="text-2xl font-bold">تفاصيل الطلب</h1>
+        <p className="mt-3 text-red-600">لم يتم العثور على الطلب المطلوب في البيانات المحلية.</p>
+        <button onClick={() => nav('/app/orders')} className="mt-4 rounded-xl border px-4 py-2 text-sm">
           الرجوع إلى صفحة الطلبات
         </button>
       </div>
-    )
+    );
   }
 
-  const remaining = (order.totalAmount || 0) - (order.paidAmount || 0)
-  const readiness = getReadinessInfo(order)
-  const onlineStatusLabel = getOnlineStatusLabel(order.onlinePaymentStatus)
-
-  const currentSourceDisplay = buildSourceString(selectedSources, otherSource)
-
-  // تحديث عام للطلب (في الحالة فقط – الحفظ الفعلي يتم عند الضغط على "حفظ التعديلات")
-  const syncAndSetOrder = (updater) => {
-    setOrder((prev) => {
-      if (!prev) return prev
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      return next
-    })
-  }
-
-  const handleFieldChange = (e) => {
-    const { name, value } = e.target
-
-    syncAndSetOrder((prev) => {
-      let next = { ...prev }
-
-      if (name === 'photos4x6' || name === 'photosA4') {
-        next[name] = Number(value || 0)
-      } else if (name === 'totalAmount' || name === 'paidAmount') {
-        next[name] = Number(value || 0)
-        const total =
-          name === 'totalAmount' ? Number(value || 0) : next.totalAmount
-        const paid =
-          name === 'paidAmount' ? Number(value || 0) : next.paidAmount
-        next.paymentStatus = getPaymentStatus(total, paid)
-      } else if (name === 'notes') {
-        next.notes = value
-      } else if (name === 'customerName' || name === 'phone') {
-        next[name] = value
-      }
-
-      return next
-    })
-  }
-
-  // checkboxes لمصدر الطلب – يتم حفظها عند الضغط على "حفظ التعديلات"
-  const handleToggleSource = (option) => {
-    setSelectedSources((prev) => {
-      if (prev.includes(option)) {
-        return prev.filter((v) => v !== option)
-      }
-      return [...prev, option]
-    })
-  }
-
-  const handleOtherSourceChange = (e) => {
-    setOtherSource(e.target.value)
-  }
-
-  const handlePaymentMethodChange = (e) => {
-    const value = e.target.value
-    syncAndSetOrder((prev) => ({
-      ...prev,
-      paymentMethod: value,
-    }))
-  }
-
-  const handleChangeStatus = (newStatus) => {
-    syncAndSetOrder((prev) => ({
-      ...prev,
-      status: newStatus,
-    }))
-  }
-
-  const handleMarkDelivered = () => {
-    syncAndSetOrder((prev) => ({
-      ...prev,
-      status: 'تم التسليم',
-      paymentStatus: getPaymentStatus(prev.totalAmount, prev.paidAmount),
-    }))
-  }
-
-  // 🔢 زر الحاسبة التلقائية داخل صفحة التفاصيل
-  const handleAutoRecalculateTotal = () => {
-    if (!hasPricing) {
-      alert('لم يتم ضبط أسعار الصور بعد. يمكنك تعيينها من صفحة الإعدادات.')
-      return
-    }
-
-    syncAndSetOrder((prev) => {
-      const c4x6 = Number(prev.photos4x6 || 0)
-      const cA4 = Number(prev.photosA4 || 0)
-
-      const newTotal = Number(
-        (c4x6 * price4x6 + cA4 * priceA4).toFixed(2),
-      )
-
-      const newPaid = Number(prev.paidAmount || 0)
-
-      return {
-        ...prev,
-        totalAmount: newTotal,
-        paymentStatus: getPaymentStatus(newTotal, newPaid),
-      }
-    })
-  }
-
-  // حفظ فعلي في Supabase عبر /api/orders (PUT)
-  const handleSave = async () => {
-    if (!order) return
-    if (saving) return
-
-    const newSource = buildSourceString(selectedSources, otherSource)
-    const payload = {
+  const onSave = () => {
+    const next = {
       ...order,
-      source: newSource,
-    }
+      customerName: customerName.trim(),
+      phone: phone.trim(),
+      createdAt: datetimeLocalToIso(createdAtLocal), // ✅ قابل للتعديل
+      deliveryDate,
+      source: source.trim(),
 
-    try {
-      setSaving(true)
-      const res = await fetch('/api/orders', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      qty4x6: Number(qty4x6) || 0,
+      qtyA4: Number(qtyA4) || 0,
 
-      if (!res.ok) {
-        let msg = 'فشل حفظ التعديلات في الخادم.'
-        try {
-          const data = await res.json()
-          if (data?.error) msg = data.error
-        } catch {
-          // تجاهل
-        }
-        throw new Error(msg)
-      }
+      price4x6,
+      priceA4,
 
-      const data = await res.json()
-      const saved = Array.isArray(data)
-        ? data[0]
-        : data.order || data
+      total: Number(total) || 0,
+      deposit: Number(deposit) || 0,
+      remaining,
+      paymentStatus,
 
-      setOrder((prev) => ({
-        ...prev,
-        ...saved,
-      }))
+      notes: notes?.trim() || '',
+    };
 
-      alert('تم حفظ التعديلات في الخادم بنجاح.')
-    } catch (err) {
-      console.error(err)
-      alert(err.message || 'حدث خطأ أثناء حفظ التعديلات.')
-    } finally {
-      setSaving(false)
-    }
-  }
+    const updated = update(next);
+    setOrder(updated);
+    alert('تم حفظ التعديلات.');
+  };
 
-  // إنشاء دفع إلكتروني تجريبي (Mock)
-  const handleCreateMockPayment = () => {
-    const today = new Date().toISOString().slice(0, 10)
-    const random = Math.floor(100000 + Math.random() * 900000)
-    const mockId = `MOCK-${today}-${random}`
-    const mockUrl = `https://payments.art-moment.test/${mockId}`
-
-    syncAndSetOrder((prev) => ({
-      ...prev,
-      paymentMethod: 'online',
-      onlinePaymentId: mockId,
-      onlinePaymentStatus: 'pending',
-      onlinePaymentProvider: 'mock',
-      onlinePaymentUrl: mockUrl,
-      onlinePaymentCreatedAt: today,
-    }))
-  }
-
-  // اعتبار الدفع الإلكتروني تم (اختبار)
-  const handleMarkMockPaid = () => {
-    const today = new Date().toISOString().slice(0, 10)
-
-    syncAndSetOrder((prev) => {
-      const total = Number(prev.totalAmount || 0)
-      const newPaidAmount = total > 0 ? total : Number(prev.paidAmount || 0)
-
-      return {
-        ...prev,
-        paidAmount: newPaidAmount,
-        paymentStatus: getPaymentStatus(total, newPaidAmount),
-        onlinePaymentStatus: 'paid',
-        onlinePaymentPaidAt: today,
-        paymentMethod: prev.paymentMethod || 'online',
-      }
-    })
-  }
-
-  // إضافة ملاحظة جاهزة للملاحظات الحالية
-  const handleAppendNoteTemplate = (text) => {
-    syncAndSetOrder((prev) => {
-      const current = prev.notes || ''
-      const separator = current.trim() ? '\n' : ''
-      return {
-        ...prev,
-        notes: current + separator + text,
-      }
-    })
-  }
+  const onDelete = () => {
+    if (!confirm('هل أنت متأكد من حذف الطلب؟')) return;
+    remove(order.id);
+    nav('/app/orders');
+  };
 
   return (
-    <div className="space-y-4">
-      {/* العنوان + رجوع */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
-          تفاصيل الطلب #{order.id}
-        </h1>
-        <button
-          onClick={() => navigate('/app/orders')}
-          className="px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-300 hover:bg-slate-100"
-        >
-          ← الرجوع للطلبات
-        </button>
-      </div>
-
-      {/* معلومات العميل + حالة الطلب */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* معلومات العميل قابلة للتعديل */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 text-sm">
-          <h2 className="font-semibold text-slate-800 mb-1 text-base">
-            معلومات العميل (قابلة للتعديل)
-          </h2>
-
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              الاسم
-            </label>
-            <input
-              type="text"
-              name="customerName"
-              value={order.customerName || ''}
-              onChange={handleFieldChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-              placeholder="اسم العميل"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              رقم الجوال
-            </label>
-            <input
-              type="text"
-              name="phone"
-              value={order.phone || ''}
-              onChange={handleFieldChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-              placeholder="مثال: 05xxxxxxxx"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              مصدر الطلب (يمكن اختيار أكثر من واحد)
-            </label>
-            <div className="flex flex-wrap gap-2 text-[11px]">
-              {SOURCE_OPTIONS.map((opt) => (
-                <label
-                  key={opt}
-                  className="inline-flex items-center gap-1 border rounded-xl px-2 py-1 cursor-pointer text-slate-700"
-                >
-                  <input
-                    type="checkbox"
-                    className="w-3 h-3"
-                    checked={selectedSources.includes(opt)}
-                    onChange={() => handleToggleSource(opt)}
-                  />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-            <div className="mt-2">
-              <label className="block text-[11px] mb-1 text-slate-500">
-                مصادر أخرى (اختياري)
-              </label>
-              <input
-                type="text"
-                value={otherSource}
-                onChange={handleOtherSourceChange}
-                className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-                placeholder="مثال: عميل قديم، معرض، صديق..."
-              />
-            </div>
-            <div className="mt-1 text-[11px] text-slate-500">
-              سيتم حفظ المصادر في الحقل كقيمة واحدة:{' '}
-              <span className="font-mono break-all">
-                {currentSourceDisplay || '(بدون مصدر محدد)'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* حالة الطلب والدفعة */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-2 text-sm">
-          <h2 className="font-semibold text-slate-800 mb-1 text-base">
-            حالة الطلب والدفعة
-          </h2>
-          <div>
-            الحالة:{' '}
-            <StatusBadge status={order.status} />
-          </div>
-          <div>
-            حالة الدفع:{' '}
-            <PaymentBadge paymentStatus={order.paymentStatus} />
-          </div>
-          <div>
-            حالة الجاهزية:{' '}
-            <span className={getReadinessBadgeClasses(readiness.tone)}>
-              {readiness.label}
-            </span>
-          </div>
-          <div>
-            طريقة الدفع:{' '}
-            <span className="text-xs font-semibold text-slate-700">
-              {renderPaymentMethod(order.paymentMethod)}
-            </span>
-          </div>
-          <div>تاريخ الإنشاء: {order.createdAt}</div>
-          <div>تاريخ التسليم المطلوب: {order.dueDate}</div>
-        </div>
-      </div>
-
-      {/* تفاصيل الصور والمبالغ */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 text-sm">
-          <h2 className="font-semibold text-slate-800 mb-1 text-base">
-            تفاصيل الصور (قابلة للتعديل)
-          </h2>
-
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              عدد صور 4x6
-            </label>
-            <input
-              type="number"
-              min="0"
-              name="photos4x6"
-              value={order.photos4x6}
-              onChange={handleFieldChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              عدد صور A4
-            </label>
-            <input
-              type="number"
-              min="0"
-              name="photosA4"
-              value={order.photosA4}
-              onChange={handleFieldChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-            />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 text-sm">
-          <h2 className="font-semibold text-slate-800 mb-1 text-base">
-            تفاصيل المبلغ (قابلة للتعديل)
-          </h2>
-
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              المبلغ الإجمالي (ر.س)
-            </label>
-            <input
-              type="number"
-              min="0"
-              name="totalAmount"
-              value={order.totalAmount}
-              onChange={handleFieldChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              المبلغ المدفوع / العربون (ر.س)
-            </label>
-            <input
-              type="number"
-              min="0"
-              name="paidAmount"
-              value={order.paidAmount}
-              onChange={handleFieldChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-            />
-          </div>
-
-          {hasPricing ? (
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-1 gap-2">
-              <p className="text-[11px] text-slate-500">
-                التسعير الحالي: 4x6 = {price4x6} ر.س ، A4 = {priceA4} ر.س
-              </p>
-              <button
-                type="button"
-                onClick={handleAutoRecalculateTotal}
-                className="px-3 py-1.5 rounded-xl text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-              >
-                إعادة حساب المبلغ تلقائياً
-              </button>
-            </div>
-          ) : (
-            <p className="mt-1 text-[11px] text-amber-600">
-              لم يتم ضبط أسعار الصور بعد. يمكنك تعيينها من صفحة الإعدادات.
-            </p>
-          )}
-
-          <div className="text-xs text-slate-700">
-            المتبقي على العميل:{' '}
-            <span className="font-semibold">
-              {remaining} ر.س
-            </span>
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              طريقة الدفع
-            </label>
-            <select
-              value={order.paymentMethod}
-              onChange={handlePaymentMethodChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-            >
-              <option value="cash">نقداً / عند الاستلام</option>
-              <option value="transfer">تحويل بنكي</option>
-              <option value="online">دفع إلكتروني</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* ملاحظات + أزرار الحالة + حفظ */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3 text-sm">
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs text-slate-600">
-              ملاحظات إضافية
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowTemplates((v) => !v)}
-              className="text-[11px] px-2 py-1 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
-            >
-              + إضافة ملاحظة جاهزة
-            </button>
-          </div>
-
-          <textarea
-            name="notes"
-            value={order.notes}
-            onChange={handleFieldChange}
-            rows={3}
-            className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-          />
-
-          {showTemplates && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {noteTemplates.map((t, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleAppendNoteTemplate(t)}
-                  className="px-2.5 py-1.5 rounded-xl text-[11px] border border-slate-200 text-slate-700 hover:bg-slate-50"
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handleChangeStatus('جديد')}
-            className="px-3 py-2 rounded-xl border text-xs hover:bg-slate-100"
-          >
-            جديد
-          </button>
-          <button
-            onClick={() => handleChangeStatus('قيد الطباعة')}
-            className="px-3 py-2 rounded-xl border text-xs hover:bg-slate-100"
-          >
-            قيد الطباعة
-          </button>
-          <button
-            onClick={() => handleChangeStatus('جاهز')}
-            className="px-3 py-2 rounded-xl border text-xs hover:bg-slate-100"
-          >
-            جاهز
-          </button>
-          <button
-            onClick={handleMarkDelivered}
-            className="px-3 py-2 rounded-xl text-xs bg-emerald-600 text-white hover:bg-emerald-700"
-          >
-            ✔️ تم التسليم
-          </button>
-
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-3 py-2 rounded-xl text-xs bg-slate-900 text-white hover:bg-slate-800 ml-auto disabled:opacity-50"
-          >
-            {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+    <div className="p-4 md:p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold">تفاصيل الطلب</h1>
+        <div className="flex gap-2">
+          <button onClick={() => nav('/app/orders')} className="rounded-xl border px-4 py-2 text-sm">الرجوع</button>
+          <button onClick={() => openA5InvoicePrint({ ...order, customerName, phone, createdAt: datetimeLocalToIso(createdAtLocal), deliveryDate, qty4x6, qtyA4, total, deposit, remaining, notes }, settings)}
+                  className="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white">
+            طباعة فاتورة A5
           </button>
         </div>
       </div>
 
-      {/* الدفع الإلكتروني (تجريبي) */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dashed border-slate-300 p-4 space-y-3 text-sm">
-        <h2 className="font-semibold text-slate-800 mb-1 text-base">
-          الدفع الإلكتروني (تجريبي – للتحضير لبوابة الدفع)
-        </h2>
-
-        {order.onlinePaymentId ? (
-          <div className="grid md:grid-cols-2 gap-3 text-xs md:text-sm">
-            <div>
-              <div className="text-slate-500 text-[11px]">
-                رقم عملية الدفع
-              </div>
-              <div className="font-mono text-[12px] md:text-xs">
-                {order.onlinePaymentId}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-500 text-[11px]">
-                مزود الدفع
-              </div>
-              <div className="text-xs text-slate-700">
-                {order.onlinePaymentProvider || 'mock'}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-500 text-[11px]">
-                حالة الدفع الإلكتروني
-              </div>
-              <div className="text-xs font-semibold text-slate-800">
-                {onlineStatusLabel}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-500 text-[11px]">
-                رابط صفحة الدفع
-              </div>
-              {order.onlinePaymentUrl ? (
-                <a
-                  href={order.onlinePaymentUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-blue-600 underline"
-                >
-                  فتح صفحة الدفع
-                </a>
-              ) : (
-                <div className="text-xs text-slate-500">
-                  لا يوجد رابط مسجل
-                </div>
-              )}
-            </div>
-            <div>
-              <div className="text-slate-500 text-[11px]">
-                تاريخ إنشاء عملية الدفع
-              </div>
-              <div className="text-xs text-slate-700">
-                {order.onlinePaymentCreatedAt || '-'}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-500 text-[11px]">
-                تاريخ تأكيد الدفع
-              </div>
-              <div className="text-xs text-slate-700">
-                {order.onlinePaymentPaidAt || '-'}
-              </div>
-            </div>
+      <div className="grid gap-4">
+        <div className="rounded-2xl border bg-white p-4 md:grid md:grid-cols-2 md:gap-3">
+          <div>
+            <div className="text-xs text-slate-500">رقم الطلب</div>
+            <div className="text-lg font-semibold">{order.id}</div>
           </div>
-        ) : (
-          <p className="text-xs text-slate-600">
-            لا يوجد دفع إلكتروني مرتبط بهذا الطلب حتى الآن. يمكنك إنشاء عملية دفع
-            تجريبية لاختبار التدفق، وعند ربط بوابة حقيقية لاحقاً سيتم استبدال هذا
-            الجزء بنداء فعلي للـ API.
-          </p>
-        )}
+          <div>
+            <div className="text-xs text-slate-500">حالة الدفع</div>
+            <div className="text-sm">{paymentStatus === 'paid' ? 'مدفوع' : paymentStatus === 'partial' ? 'مدفوع جزئياً' : 'غير مدفوع'}</div>
+          </div>
 
-        <div className="flex flex-wrap gap-2 text-xs mt-2">
-          <button
-            onClick={handleCreateMockPayment}
-            className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-100"
-          >
-            إنشاء دفع إلكتروني تجريبي
-          </button>
-          <button
-            onClick={handleMarkMockPaid}
-            disabled={!order.onlinePaymentId}
-            className="px-3 py-2 rounded-xl border border-emerald-600 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            اعتبار الدفع الإلكتروني تم (اختبار)
-          </button>
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">اسم العميل</label>
+            <input className="w-full rounded-xl border px-3 py-2" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">رقم الجوال</label>
+            <input className="w-full rounded-xl border px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">تاريخ/وقت إنشاء الطلب</label>
+            <input type="datetime-local" className="w-full rounded-xl border px-3 py-2" value={createdAtLocal} onChange={(e) => setCreatedAtLocal(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">تاريخ التسليم</label>
+            <input type="date" className="w-full rounded-xl border px-3 py-2" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm text-slate-600">المصدر</label>
+            <input className="w-full rounded-xl border px-3 py-2" value={source} onChange={(e) => setSource(e.target.value)} />
+          </div>
         </div>
 
-        <p className="text-[11px] text-slate-500 leading-relaxed">
-          * حالياً يتم تحديث حالة الدفع محلياً في هذه الصفحة فقط، ثم إرسالها عند
-          الضغط على "حفظ التعديلات". عند ربط بوابة الدفع الفعلية سيتم استخدام Webhook
-          من مزود الخدمة لتحديث حالة الطلب تلقائياً وبشكل موثوق.
-        </p>
+        <div className="rounded-2xl border bg-white p-4 md:grid md:grid-cols-2 md:gap-3">
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">عدد صور 4x6</label>
+            <input type="number" min="0" className="w-full rounded-xl border px-3 py-2" value={qty4x6} onChange={(e) => setQty4x6(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">عدد صور A4</label>
+            <input type="number" min="0" className="w-full rounded-xl border px-3 py-2" value={qtyA4} onChange={(e) => setQtyA4(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">الإجمالي (ر.س)</label>
+            <input className="w-full rounded-xl border bg-slate-50 px-3 py-2" readOnly value={(Number(total)||0).toFixed(2)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">العربون (ر.س)</label>
+            <input type="number" min="0" className="w-full rounded-xl border px-3 py-2" value={deposit} onChange={(e) => setDeposit(e.target.value)} />
+            <div className="mt-1 text-xs text-slate-500">المتبقي: {remaining.toFixed(2)} ر.س</div>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm text-slate-600">ملاحظات</label>
+            <textarea className="min-h-[110px] w-full rounded-xl border px-3 py-2" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onSave} className="rounded-xl bg-slate-900 px-5 py-2 text-sm text-white">حفظ</button>
+          <button onClick={onDelete} className="rounded-xl border px-5 py-2 text-sm text-red-600">حذف الطلب</button>
+        </div>
       </div>
     </div>
-  )
-}
-
-/* ====== دوال مساعدة ====== */
-
-function parseSourceForUI(sourceValue) {
-  if (!sourceValue) {
-    return { selected: [], other: '' }
-  }
-
-  const raw = String(sourceValue)
-  const parts = raw
-    .split(/[\+\-,/|،]+/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-
-  const selected = []
-  const others = []
-  const optsSet = new Set(SOURCE_OPTIONS)
-
-  for (const part of parts) {
-    if (optsSet.has(part)) {
-      if (!selected.includes(part)) selected.push(part)
-    } else {
-      others.push(part)
-    }
-  }
-
-  return {
-    selected,
-    other: others.join('، '),
-  }
-}
-
-function buildSourceString(selected, other) {
-  const parts = [...selected]
-  if (other && other.trim()) {
-    parts.push(other.trim())
-  }
-  if (!parts.length) return ''
-  return parts.join(' + ')
-}
-
-function getPaymentStatus(total, paid) {
-  const t = Number(total || 0)
-  const p = Number(paid || 0)
-
-  if (t <= 0) return 'غير مدفوع'
-  if (p <= 0) return 'غير مدفوع'
-  if (p >= t) return 'مدفوع بالكامل'
-  return 'مدفوع جزئياً'
-}
-
-function getOnlineStatusLabel(status) {
-  if (!status) return 'لا يوجد عملية دفع إلكترونية'
-  if (status === 'pending') return 'قيد الانتظار'
-  if (status === 'paid') return 'مدفوع إلكترونياً'
-  if (status === 'failed') return 'فشل في الدفع الإلكتروني'
-  if (status === 'refunded') return 'تم إرجاع المبلغ'
-  return status
-}
-
-function renderPaymentMethod(method) {
-  if (method === 'cash') return 'نقداً / عند الاستلام'
-  if (method === 'transfer') return 'تحويل بنكي'
-  if (method === 'online') return 'دفع إلكتروني'
-  return 'غير محدد'
-}
-
-function StatusBadge({ status }) {
-  let classes =
-    'inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium '
-
-  if (status === 'جديد') {
-    classes += 'bg-blue-100 text-blue-800'
-  } else if (status === 'قيد الطباعة') {
-    classes += 'bg-amber-100 text-amber-800'
-  } else if (status === 'جاهز') {
-    classes += 'bg-emerald-100 text-emerald-800'
-  } else if (status === 'تم التسليم') {
-    classes += 'bg-slate-100 text-slate-800'
-  } else if (status === 'ملغي') {
-    classes += 'bg-red-100 text-red-800'
-  } else {
-    classes += 'bg-slate-100 text-slate-800'
-  }
-
-  return <span className={classes}>{status}</span>
-}
-
-function PaymentBadge({ paymentStatus }) {
-  let classes =
-    'inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium '
-
-  if (paymentStatus === 'مدفوع بالكامل') {
-    classes += 'bg-emerald-100 text-emerald-800'
-  } else if (paymentStatus === 'مدفوع جزئياً') {
-    classes += 'bg-amber-100 text-amber-800'
-  } else if (paymentStatus === 'غير مدفوع') {
-    classes += 'bg-red-100 text-red-800'
-  } else {
-    classes += 'bg-slate-100 text-slate-800'
-  }
-
-  return <span className={classes}>{paymentStatus}</span>
-}
-
-// ألوان بادج حالة الجاهزية
-function getReadinessBadgeClasses(tone) {
-  let classes =
-    'inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium '
-
-  if (tone === 'success') {
-    classes += 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-  } else if (tone === 'danger') {
-    classes += 'bg-red-50 text-red-700 border border-red-100'
-  } else if (tone === 'warning') {
-    classes += 'bg-amber-50 text-amber-800 border border-amber-100'
-  } else {
-    classes += 'bg-slate-50 text-slate-700 border border-slate-200'
-  }
-
-  return classes
+  );
 }

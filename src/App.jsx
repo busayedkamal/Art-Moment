@@ -1,18 +1,11 @@
-// src/App.jsx
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from 'react-router-dom'
+import React from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-// صفحات الموقع العام
+// صفحات عامة
 import LandingPage from './LandingPage.jsx'
 import TrackOrderPage from './pages/TrackOrderPage.jsx'
 import AdminLoginPage from './pages/AdminLoginPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
-
 
 // لوحة التحكم
 import Layout from './components/layout/Layout.jsx'
@@ -24,29 +17,29 @@ import Reports from './pages/Reports.jsx'
 import Settings from './pages/Settings.jsx'
 import NewOrder from './pages/NewOrder.jsx'
 
-// جلسة المسؤول
 import { isAdminSessionActive } from './utils/adminSession.js'
 
-export default function App() {
-  return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
-  )
+function RequireAdmin({ children }) {
+  if (!isAdminSessionActive()) return <Navigate to="/admin/login" replace />
+  return children
 }
 
-// نفصل الراوتات في كومبوننت داخلي عشان نقدر نستخدم useLocation
 function AppRoutes() {
   return (
     <Routes>
-      {/* موقع العميل */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/track" element={<TrackOrderPage />} />
 
-      {/* دخول المسؤول */}
+      {/* تتبع الطلب */}
+      <Route path="/track" element={<TrackOrderPage />} />
+      <Route path="/track-order" element={<Navigate to="/track" replace />} />
+
+      {/* تسجيل دخول الأدمن */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
 
-      {/* لوحة التحكم – كل شيء داخل /app محمي بجلسة المسؤول */}
+      {/* ✅ توافق مع المسار القديم لو كان موجود */}
+      <Route path="/admin-login" element={<Navigate to="/admin/login" replace />} />
+
+      {/* لوحة التحكم */}
       <Route
         path="/app"
         element={
@@ -55,43 +48,25 @@ function AppRoutes() {
           </RequireAdmin>
         }
       >
-        {/* صفحة الملخص الأساسية */}
         <Route index element={<Dashboard />} />
-
-        {/* الطلبات */}
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="orders" element={<Orders />} />
         <Route path="orders/new" element={<NewOrder />} />
-        <Route path="orders/:orderId" element={<OrderDetails />} />
-
-        {/* العملاء */}
+        <Route path="orders/:id" element={<OrderDetails />} />
         <Route path="customers" element={<Customers />} />
-
-        {/* التقارير */}
         <Route path="reports" element={<Reports />} />
-
-        {/* الإعدادات */}
         <Route path="settings" element={<Settings />} />
       </Route>
 
-      {/* صفحة 404 الافتراضية */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }
 
-// حماية بسيطة لمسار /app
-function RequireAdmin({ children }) {
-  const location = useLocation()
-
-  if (!isAdminSessionActive()) {
-    return (
-      <Navigate
-        to="/admin/login"
-        state={{ from: location }}
-        replace
-      />
-    )
-  }
-
-  return children
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  )
 }

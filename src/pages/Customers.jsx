@@ -1,7 +1,7 @@
 // src/pages/Customers.jsx
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useOrdersData } from '../hooks/useOrdersData.js'
+import { loadOrders } from '../storage/orderStorage.js'
 
 // دالة مساعدة لتصدير CSV (يُفتح في Excel)
 function downloadCSV(filename, rows) {
@@ -32,10 +32,17 @@ function downloadCSV(filename, rows) {
 
 export default function Customers() {
   const navigate = useNavigate()
-  const { orders, loading, error, reload } = useOrdersData()
 
-  const [sortBy, setSortBy] = useState('totalPaid')
-  const [dir, setDir] = useState('desc')
+  // لإعادة تحميل البيانات من LocalStorage عند الحاجة
+  const [reloadFlag, setReloadFlag] = useState(0)
+
+  // قراءة الطلبات من LocalStorage في كل مرة يتغير فيها reloadFlag
+  const orders = useMemo(() => {
+    return loadOrders()
+  }, [reloadFlag])
+
+  const [sortBy, setSortBy] = useState('totalPaid') // totalPaid | totalAmount | ordersCount | name
+  const [dir, setDir] = useState('desc') // desc | asc
   const [search, setSearch] = useState('')
 
   const stats = useMemo(() => {
@@ -145,25 +152,19 @@ export default function Customers() {
 
   return (
     <div className="space-y-4">
-      {/* العنوان + حالة التحميل/الخطأ + زر تحديث */}
+      {/* العنوان + زر تحديث بسيط لإعادة القراءة من LocalStorage */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <h1 className="text-lg md:text-2xl font-bold text-slate-800">
           العملاء
         </h1>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          {loading && (
-            <span className="text-slate-500">جاري تحميل الطلبات من الخادم...</span>
-          )}
-          {error && !loading && (
-            <span className="text-red-500 max-w-xs text-right">{error}</span>
-          )}
           <button
             type="button"
-            onClick={reload}
+            onClick={() => setReloadFlag((v) => v + 1)}
             className="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50"
           >
-            تحديث
+            تحديث البيانات
           </button>
         </div>
       </div>
@@ -246,7 +247,7 @@ export default function Customers() {
           </div>
         ))}
 
-        {top3.length === 0 && !loading && (
+        {top3.length === 0 && (
           <div className="md:col-span-3 text-xs text-slate-400 text-center py-4">
             لا توجد بيانات عملاء حتى الآن.
           </div>
@@ -295,24 +296,13 @@ export default function Customers() {
                 </tr>
               ))}
 
-              {stats.length === 0 && !loading && (
+              {stats.length === 0 && (
                 <tr>
                   <td
                     colSpan={8}
                     className="py-4 text-center text-slate-400 text-xs"
                   >
                     لا يوجد عملاء مطابقة لنتائج البحث.
-                  </td>
-                </tr>
-              )}
-
-              {stats.length === 0 && loading && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="py-4 text-center text-slate-400 text-xs"
-                  >
-                    جاري تحميل البيانات...
                   </td>
                 </tr>
               )}

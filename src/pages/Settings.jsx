@@ -24,7 +24,7 @@ export default function Settings() {
   )
   const [loading, setLoading] = useState(true)
 
-  // مرجع لحقل رفع ملف النسخة الاحتياطية
+  // حقل ملف النسخة الاحتياطية
   const fileInputRef = useRef(null)
 
   // تحميل الإعدادات عند فتح الصفحة
@@ -32,10 +32,14 @@ export default function Settings() {
     const s = loadSettings()
 
     setPrice4x6(
-      s.price4x6 !== undefined && s.price4x6 !== null ? String(s.price4x6) : '',
+      s.price4x6 !== undefined && s.price4x6 !== null
+        ? String(s.price4x6)
+        : '',
     )
     setPriceA4(
-      s.priceA4 !== undefined && s.priceA4 !== null ? String(s.priceA4) : '',
+      s.priceA4 !== undefined && s.priceA4 !== null
+        ? String(s.priceA4)
+        : '',
     )
     setDefaultDueDays(
       s.defaultDueDays !== undefined && s.defaultDueDays !== null
@@ -109,7 +113,7 @@ export default function Settings() {
     }
   }
 
-  // فتح حوار اختيار ملف
+  // فتح حوار اختيار ملف النسخة الاحتياطية
   const handleClickImport = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -140,7 +144,7 @@ export default function Settings() {
 
       let importedOrdersCount = 0
 
-      // دمج الطلبات بناءً على رقم الطلب id
+      // دمج الطلبات حسب رقم الطلب id
       if (importedOrders.length) {
         const existing = loadOrders()
         const existingIds = new Set(existing.map((o) => o.id))
@@ -149,23 +153,23 @@ export default function Settings() {
           if (!o || typeof o !== 'object' || !o.id) continue
 
           if (existingIds.has(o.id)) {
-            // تحديث الطلب الموجود
             updateOrder(o)
           } else {
-            // إضافة طلب جديد
             addOrder(o)
           }
           importedOrdersCount += 1
         }
       }
 
-      // استيراد الإعدادات (يتم دمج/استبدال القيم)
+      // استيراد الإعدادات
       if (importedSettings) {
         saveSettings(importedSettings)
       }
 
       alert(
-        `تم استيراد النسخة الاحتياطية بنجاح:\n- عدد الطلبات في الملف: ${importedOrders.length}\n- تم دمج/تحديث: ${importedOrdersCount} طلب.\n- تم تحديث الإعدادات: ${
+        `تم استيراد النسخة الاحتياطية بنجاح:\n- عدد الطلبات في الملف: ${
+          importedOrders.length
+        }\n- تم دمج/تحديث: ${importedOrdersCount} طلب.\n- تم تحديث الإعدادات: ${
           importedSettings ? 'نعم' : 'لا'
         }.`,
       )
@@ -197,7 +201,7 @@ export default function Settings() {
         </h1>
       </div>
 
-      {/* إعدادات التسعير + الملاحظات الجاهزة + كود المسؤول */}
+      {/* إعدادات عامة (تسعير + كود مسؤول + ملاحظات جاهزة) */}
       <form
         onSubmit={handleSaveSettings}
         className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4 text-sm"
@@ -240,7 +244,7 @@ export default function Settings() {
 
           <div>
             <label className="block text-xs mb-1 text-slate-600">
-              عدد الأيام الافتراضي لتاريخ التسليم
+              عدد الأيام الافتراضي لتاريخ التسليم{' '}
               <span className="text-[10px] text-slate-400 ml-1">
                 (اختياري)
               </span>
@@ -269,11 +273,11 @@ export default function Settings() {
             placeholder="مثال: 1234 أو أي كود تفضله"
           />
           <p className="mt-1 text-[11px] text-slate-500">
-            سيتم طلب هذا الكود عند محاولة فتح لوحة التحكم من الموقع الرئيسي.
+            سيتم طلب هذا الكود عند محاولة فتح لوحة التحكم من الصفحة الرئيسية.
           </p>
         </div>
 
-        {/* قوالب الملاحظات */}
+        {/* قوالب الملاحظات الجاهزة */}
         <div>
           <label className="block text-xs mb-1 text-slate-600">
             قوالب الملاحظات الجاهزة

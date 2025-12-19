@@ -1,6 +1,6 @@
 // src/pages/Reports.jsx
 import { useMemo, useState } from 'react'
-import { useOrdersData } from '../hooks/useOrdersData.js'
+import { loadOrders } from '../storage/orderStorage.js'
 
 const MONTH_NAMES = [
   'يناير',
@@ -30,7 +30,7 @@ function getMonthInfo(dateStr) {
   return { key, label, year, monthIndex }
 }
 
-// دالة مساعدة لتصدير CSV
+// دالة مساعدة لتصدير CSV (يفتح في إكسل)
 function downloadCSV(filename, rows) {
   if (!rows || !rows.length) return
 
@@ -58,7 +58,13 @@ function downloadCSV(filename, rows) {
 }
 
 export default function Reports() {
-  const { orders, loading, error, reload } = useOrdersData()
+  // القراءة من LocalStorage فقط (نسخة V1)
+  const [orders, setOrders] = useState(() => loadOrders())
+  const [selectedMonthKey, setSelectedMonthKey] = useState('all')
+
+  const handleReload = () => {
+    setOrders(loadOrders())
+  }
 
   const monthGroups = useMemo(() => {
     const map = new Map()
@@ -84,6 +90,7 @@ export default function Reports() {
 
     const arr = Array.from(map.values())
 
+    // ترتيب من الأحدث إلى الأقدم
     arr.sort((a, b) => {
       if (a.key === 'unknown') return 1
       if (b.key === 'unknown') return -1
@@ -93,8 +100,6 @@ export default function Reports() {
 
     return arr
   }, [orders])
-
-  const [selectedMonthKey, setSelectedMonthKey] = useState('all')
 
   const filteredOrders = useMemo(() => {
     if (selectedMonthKey === 'all') return orders
@@ -113,11 +118,11 @@ export default function Reports() {
     const newOrders = filteredOrders.filter((o) => o.status === 'جديد').length
 
     const totalAmount = filteredOrders.reduce(
-      (sum, o) => sum + (o.totalAmount || 0),
+      (sum, o) => sum + Number(o.totalAmount || 0),
       0,
     )
     const totalPaid = filteredOrders.reduce(
-      (sum, o) => sum + (o.paidAmount || 0),
+      (sum, o) => sum + Number(o.paidAmount || 0),
       0,
     )
     const totalUnpaid = totalAmount - totalPaid
@@ -136,11 +141,11 @@ export default function Reports() {
   const monthlySummary = useMemo(() => {
     return monthGroups.map((g) => {
       const totalAmount = g.orders.reduce(
-        (sum, o) => sum + (o.totalAmount || 0),
+        (sum, o) => sum + Number(o.totalAmount || 0),
         0,
       )
       const totalPaid = g.orders.reduce(
-        (sum, o) => sum + (o.paidAmount || 0),
+        (sum, o) => sum + Number(o.paidAmount || 0),
         0,
       )
       const totalUnpaid = totalAmount - totalPaid
@@ -183,7 +188,7 @@ export default function Reports() {
     downloadCSV('art-moment-monthly-summary.csv', rows)
   }
 
-  // تصدير الطلبات المعروضة حالياً
+  // تصدير الطلبات المعروضة حالياً (حسب الشهر المحدد أو الكل)
   const handleExportCurrentOrders = () => {
     if (!filteredOrders.length) {
       alert('لا توجد طلبات لتصديرها في هذا النطاق.')
@@ -221,31 +226,33 @@ export default function Reports() {
     downloadCSV(`art-moment-orders-${suffix}.csv`, rows)
   }
 
+  const hasAnyData = orders && orders.length > 0
+
   return (
     <div className="space-y-4">
-      {/* العنوان + حالة التحميل/الخطأ + زر تحديث */}
+      {/* العنوان + زر تحديث من LocalStorage */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <h1 className="text-lg md:text-2xl font-bold text-slate-800">
           التقارير الشهرية
         </h1>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          {loading && (
-            <span className="text-slate-500">جاري تحميل الطلبات من الخادم...</span>
-          )}
-          {error && !loading && (
-            <span className="text-red-500 max-w-xs text-right">{error}</span>
-          )}
           <button
             type="button"
-            onClick={reload}
+            onClick={handleReload}
             className="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50"
           >
-            تحديث
+            إعادة تحميل البيانات من المتصفح
           </button>
+          {!hasAnyData && (
+            <span className="text-slate-500">
+              لا توجد طلبات حالياً في النظام (LocalStorage).
+            </span>
+          )}
         </div>
       </div>
 
+      {/* اختيار الشهر + أزرار التصدير */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 md:p-4 space-y-4">
         <div className="grid gap-2 md:grid-cols-3">
           <div className="flex flex-col gap-1">
@@ -336,24 +343,13 @@ export default function Reports() {
                 </tr>
               ))}
 
-              {monthlySummary.length === 0 && !loading && (
+              {monthlySummary.length === 0 && (
                 <tr>
                   <td
                     colSpan={5}
                     className="py-4 text-center text-slate-400 text-xs"
                   >
                     لا توجد بيانات كافية لإنشاء تقرير شهري.
-                  </td>
-                </tr>
-              )}
-
-              {monthlySummary.length === 0 && loading && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="py-4 text-center text-slate-400 text-xs"
-                  >
-                    جاري تحميل البيانات...
                   </td>
                 </tr>
               )}
@@ -393,24 +389,13 @@ export default function Reports() {
                 </tr>
               ))}
 
-              {filteredOrders.length === 0 && !loading && (
+              {filteredOrders.length === 0 && (
                 <tr>
                   <td
                     colSpan={7}
                     className="py-4 text-center text-slate-400 text-xs"
                   >
                     لا توجد طلبات في هذا النطاق.
-                  </td>
-                </tr>
-              )}
-
-              {filteredOrders.length === 0 && loading && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="py-4 text-center text-slate-400 text-xs"
-                  >
-                    جاري تحميل الطلبات...
                   </td>
                 </tr>
               )}
@@ -423,10 +408,11 @@ export default function Reports() {
 }
 
 function StatCard({ label, value }) {
+  const v = Number(value || 0)
   return (
     <div className="rounded-2xl shadow-sm border bg-white border-slate-200 p-3 md:p-4">
       <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className="text-xl md:text-2xl font-bold">{value}</div>
+      <div className="text-xl md:text-2xl font-bold">{v}</div>
     </div>
   )
 }

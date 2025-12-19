@@ -1,68 +1,64 @@
 // src/hooks/useOrdersData.js
-import { useEffect, useState, useCallback } from 'react'
-import { loadOrders as loadLocalOrders } from '../storage/orderStorage.js'
+// Hook موحّد لقراءة الطلبات من LocalStorage (V1)
 
-/**
- * هوك مشترك لقراءة الطلبات:
- * - يبدأ بقراءة الطلبات من LocalStorage (حتى لا تكون الصفحة فاضية).
- * - ثم يحاول تحميل الطلبات من /api/orders (Supabase).
- * - في حال فشل الاتصال، يبقي على البيانات المحلية ويعرض رسالة خطأ بسيطة.
- */
-export function useOrdersData() {
-  const [orders, setOrders] = useState(() => {
-    // قراءة أولية من LocalStorage
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { loadOrders, onOrdersChanged } from '../storage/orderStorage';
+
+function sortNewestFirst(a, b) {
+  const aTime = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+  const bTime = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+  return bTime - aTime;
+}
+
+export default function useOrdersData() {
+  const [orders, setOrders] = useState(() => loadOrders());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const refresh = useCallback(() => {
     try {
-      return loadLocalOrders()
-    } catch {
-      return []
-    }
-  })
-
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const fetchFromApi = useCallback(async () => {
-    if (typeof window === 'undefined') return
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const res = await fetch('/api/orders')
-      if (!res.ok) {
-        throw new Error('فشل تحميل الطلبات من الخادم.')
-      }
-
-      const data = await res.json()
-
-      // نحاول التعامل مع أكثر من شكل محتمل للـ JSON
-      const remoteOrders =
-        Array.isArray(data.orders) ? data.orders
-        : Array.isArray(data.data) ? data.data
-        : []
-
-      if (!Array.isArray(remoteOrders)) {
-        throw new Error('صيغة بيانات غير متوقعة من واجهة البرمجة.')
-      }
-
-      setOrders(remoteOrders)
-    } catch (err) {
-      console.error('useOrdersData error:', err)
-      setError(err.message || 'حدث خطأ أثناء تحميل الطلبات.')
-      // نترك orders كما هي (من LocalStorage) ولا نمسها
+      setLoading(true);
+      setError('');
+      const next = loadOrders();
+      next.sort(sortNewestFirst);
+      setOrders(next);
+    } catch (e) {
+      setError(e?.message || 'حدث خطأ أثناء تحميل الطلبات.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    fetchFromApi()
-  }, [fetchFromApi])
+    refresh();
 
-  return {
-    orders,
-    loading,
-    error,
-    reload: fetchFromApi,
-  }
+    // تغيّر داخل نفس التبويب
+    const off = onOrdersChanged(refresh);
+
+    // تغيّر من تبويب آخر (storage event)
+    function onStorage(e) {
+      if (!e) return;
+      if (e.key === 'art-moment-orders') refresh();
+    }
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      off?.();
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [refresh]);
+
+  const stats = useMemo(() => {
+    const list = orders || [];
+    const total = list.length;
+
+    const newCount = list.filter((o) => (o.status || '').includes('جديد')).length;
+    const printingCount = list.filter((o) => (o.status || '').includes('الطباعة') || (o.status || '').includes('قيد')).length;
+    const readyCount = list.filter((o) => (o.status || '').includes('جاهز')).length;
+    const deliveredCount = list.filter((o) => (o.status || '').includes('تم التسليم') || (o.status || '').includes('مستلم')).length;
+
+    return { total, newCount, printingCount, readyCount, deliveredCount };
+  }, [orders]);
+
+  return { orders, setOrders, loading, error, refresh, stats };
 }

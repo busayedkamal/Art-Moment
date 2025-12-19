@@ -1,9 +1,10 @@
 // src/LandingPage.jsx
 import { Link } from 'react-router-dom'
-import logoImg from './assets/logo-art-moment.svg'
+import logoImg from './assets/logo.png'
 import heroImage from './assets/HERO_IMAGE_URL.jpg'
 
-const HERO_IMAGE_URL =
+// لو حصلت مشكلة في تحميل الصورة المحلية، نستخدم رابط احتياطي من الإنترنت
+const FALLBACK_HERO_IMAGE_URL =
   'https://images.pexels.com/photos/1398325/pexels-photo-1398325.jpeg?auto=compress&cs=tinysrgb&w=1200'
 
 export default function LandingPage() {
@@ -75,7 +76,9 @@ export default function LandingPage() {
               </p>
               <h1 className="text-2xl md:text-4xl font-bold leading-snug">
                 اطبع أجمل لحظاتك مع
-                <span className="block text-emerald-300 mt-1">لحظة فن | Art-Moment</span>
+                <span className="block text-emerald-300 mt-1">
+                  لحظة فن | Art-Moment
+                </span>
               </h1>
               <p className="text-sm md:text-base text-slate-100 leading-relaxed">
                 طباعة صور مقاس 4×6 و A4 بجودة عالية، ألوان زاهية، وتفاصيل واضحة.
@@ -113,14 +116,16 @@ export default function LandingPage() {
               <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-3xl bg-sky-400/20 blur-2xl" />
               <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-xl bg-slate-900">
                 <img
-                  src={HERO_IMAGE_URL}
+                  src={heroImage || FALLBACK_HERO_IMAGE_URL}
                   alt="طباعة صور فوتوغرافية"
                   className="w-full h-64 md:h-72 object-cover"
                 />
                 <div className="p-3 md:p-4 text-xs md:text-sm">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-semibold">صور فوتوغرافية مطبوعة</span>
-                    <span className="text-[11px] text-emerald-300">4×6 &amp; A4</span>
+                    <span className="text-[11px] text-emerald-300">
+                      4×6 &amp; A4
+                    </span>
                   </div>
                   <p className="text-[11px] md:text-xs text-slate-200 leading-relaxed">
                     نهتم بتوازن الألوان والحدة في كل صورة، لتخرج مطبوعاتك بأفضل شكل ممكن،
@@ -346,9 +351,13 @@ function StepCard({ number, title, body }) {
         <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-semibold">
           {number}
         </div>
-        <h3 className="text-xs md:text-sm font-semibold text-slate-900">{title}</h3>
+        <h3 className="text-xs md:text-sm font-semibold text-slate-900">
+          {title}
+        </h3>
       </div>
-      <p className="text-[11px] md:text-xs text-slate-600 leading-relaxed">{body}</p>
+      <p className="text-[11px] md:text-xs text-slate-600 leading-relaxed">
+        {body}
+      </p>
     </div>
   )
 }
@@ -359,7 +368,9 @@ function FAQItem({ question, answer }) {
       <h3 className="text-sm md:text-base font-semibold text-slate-900 mb-1">
         {question}
       </h3>
-      <p className="text-xs md:text-sm text-slate-600 leading-relaxed">{answer}</p>
+      <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
+        {answer}
+      </p>
     </div>
   )
 }

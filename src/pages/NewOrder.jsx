@@ -1,367 +1,261 @@
 // src/pages/NewOrder.jsx
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { loadSettings } from '../storage/settingsStorage.js'
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import useOrdersData from '../hooks/useOrdersData.js';
+import { loadSettings } from '../storage/settingsStorage.js';
 
-// نفس الخيارات المستخدمة في OrderDetails
-const SOURCE_OPTIONS = ['واتساب', 'تيليغرام', 'إنستقرام', 'ايميل', 'مباشر']
+function toDatetimeLocalValue(isoOrDate) {
+  const d = isoOrDate ? new Date(isoOrDate) : new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+function datetimeLocalToIso(v) {
+  // v: "YYYY-MM-DDTHH:mm"
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
 
 export default function NewOrder() {
-  const navigate = useNavigate()
+  const nav = useNavigate();
+  const { create } = useOrdersData();
 
-  // إعدادات التسعير من صفحة الإعدادات
-  const settings = loadSettings()
-  const price4x6 = Number(settings.price4x6 ?? 0)
-  const priceA4 = Number(settings.priceA4 ?? 0)
-  const hasPricing = price4x6 > 0 || priceA4 > 0
+  const settings = useMemo(() => loadSettings(), []);
+  const price4x6 = Number(settings?.price4x6 ?? 0);
+  const priceA4 = Number(settings?.priceA4 ?? 0);
 
-  const [form, setForm] = useState({
-    customerName: '',
-    phone: '',
-    photos4x6: '',
-    photosA4: '',
-    totalAmount: '',
-    paidAmount: '',
-    dueDate: '',
-    notes: '',
-  })
+  const [customerName, setCustomerName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [createdAtLocal, setCreatedAtLocal] = useState(toDatetimeLocalValue(new Date()));
+  const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const [selectedSources, setSelectedSources] = useState(['واتساب'])
-  const [otherSource, setOtherSource] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [srcInstagram, setSrcInstagram] = useState(false);
+  const [srcWhatsapp, setSrcWhatsapp] = useState(false);
+  const [srcSnap, setSrcSnap] = useState(false);
+  const [srcTiktok, setSrcTiktok] = useState(false);
+  const [srcOther, setSrcOther] = useState('');
+  const [srcDirect, setSrcDirect] = useState(false);
 
-  // حاسبة تلقائية للمبلغ الإجمالي عند تغيير أعداد الصور
-  useEffect(() => {
-    if (!hasPricing) return
+  const [qty4x6, setQty4x6] = useState(0);
+  const [qtyA4, setQtyA4] = useState(0);
 
-    setForm((prev) => {
-      const c4x6 = Number(prev.photos4x6 || 0)
-      const cA4 = Number(prev.photosA4 || 0)
-      const newTotal = Number((c4x6 * price4x6 + cA4 * priceA4).toFixed(2))
+  const [deposit, setDeposit] = useState(0);
+  const [notes, setNotes] = useState('');
 
-      if (Number(prev.totalAmount || 0) === newTotal) {
-        return prev
-      }
+  const total = useMemo(() => {
+    const t = (Number(qty4x6) * price4x6) + (Number(qtyA4) * priceA4);
+    return Number.isFinite(t) ? t : 0;
+  }, [qty4x6, qtyA4, price4x6, priceA4]);
 
-      return {
-        ...prev,
-        totalAmount: newTotal,
-      }
-    })
-  }, [hasPricing, price4x6, priceA4, form.photos4x6, form.photosA4])
+  const paymentStatus = useMemo(() => {
+    const d = Number(deposit) || 0;
+    if (total <= 0) return 'unpaid';
+    if (d <= 0) return 'unpaid';
+    if (d >= total) return 'paid';
+    return 'partial';
+  }, [deposit, total]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-  }
+  const sourceText = useMemo(() => {
+    const parts = [];
+    if (srcInstagram) parts.push('انستقرام');
+    if (srcWhatsapp) parts.push('واتساب');
+    if (srcSnap) parts.push('سناب');
+    if (srcTiktok) parts.push('تيك توك');
+    if (srcDirect) parts.push('مباشر');
+    if (srcOther?.trim()) parts.push(srcOther.trim());
+    return parts.join('، ') || 'غير محدد';
+  }, [srcInstagram, srcWhatsapp, srcSnap, srcTiktok, srcDirect, srcOther]);
 
-  const handleToggleSource = (option) => {
-    setSelectedSources((prev) => {
-      if (prev.includes(option)) {
-        return prev.filter((v) => v !== option)
-      }
-      return [...prev, option]
-    })
-  }
+  const remaining = Math.max(0, total - (Number(deposit) || 0));
 
-  const handleOtherSourceChange = (e) => {
-    setOtherSource(e.target.value)
-  }
+  const onSubmit = (e) => {
+    e.preventDefault();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (submitting) return
+    if (!customerName.trim()) return alert('رجاءً أدخل اسم العميل.');
+    if (!phone.trim()) return alert('رجاءً أدخل رقم الجوال.');
 
-    const totalAmount = Number(form.totalAmount || 0)
-    const paidAmount = Number(form.paidAmount || 0)
-    const paymentStatus = getPaymentStatus(totalAmount, paidAmount)
-    const createdAt = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+    const order = {
+      customerName: customerName.trim(),
+      phone: phone.trim(),
+      createdAt: datetimeLocalToIso(createdAtLocal), // ✅ قابل للتعديل
+      deliveryDate,
+      source: sourceText,
 
-    const source = buildSourceString(selectedSources, otherSource)
+      qty4x6: Number(qty4x6) || 0,
+      qtyA4: Number(qtyA4) || 0,
 
-    const newOrder = {
-      // نفترض أن الـ API يولّد id إذا لم نرسله
-      customerName: form.customerName.trim(),
-      phone: form.phone.trim(),
-      source,
-      photos4x6: Number(form.photos4x6 || 0),
-      photosA4: Number(form.photosA4 || 0),
-      totalAmount,
-      paidAmount,
+      price4x6,
+      priceA4,
+
+      total: Number(total) || 0,
+      deposit: Number(deposit) || 0,
+      remaining,
+
+      status: 'new',
       paymentStatus,
-      status: 'جديد',
-      createdAt,
-      dueDate: form.dueDate || '',
-      notes: form.notes || '',
-    }
 
-    try {
-      setSubmitting(true)
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrder),
-      })
+      notes: notes?.trim() || '',
+    };
 
-      if (!res.ok) {
-        let msg = 'فشل إنشاء الطلب في الخادم.'
-        try {
-          const data = await res.json()
-          if (data?.error) msg = data.error
-        } catch {
-          // تجاهل
-        }
-        throw new Error(msg)
-      }
-
-      const data = await res.json()
-      const saved = Array.isArray(data)
-        ? data[0]
-        : data.order || data
-
-      alert(`تم إنشاء الطلب الجديد برقم: ${saved?.id || '—'}`)
-      navigate('/app/orders')
-    } catch (err) {
-      console.error(err)
-      alert(err.message || 'حدث خطأ غير متوقع أثناء إنشاء الطلب.')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const currentSourceDisplay = buildSourceString(selectedSources, otherSource)
+    const created = create(order);
+    nav(`/app/orders/${created.id}`);
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
-          إضافة طلب جديد
-        </h1>
+    <div className="p-4 md:p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">إضافة طلب جديد</h1>
         <button
-          onClick={() => navigate('/app/orders')}
-          className="px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-300 hover:bg-slate-100"
+          type="button"
+          onClick={() => nav('/app/orders')}
+          className="rounded-xl border px-4 py-2 text-sm"
         >
-          ← الرجوع للطلبات
+          الرجوع للطلبات
         </button>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4 text-sm"
-      >
-        {/* بيانات العميل */}
-        <div className="grid md:grid-cols-2 gap-3">
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <div className="grid gap-3 rounded-2xl border bg-white p-4 md:grid-cols-2">
           <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              اسم العميل
-            </label>
+            <label className="mb-1 block text-sm text-slate-600">اسم العميل</label>
             <input
-              name="customerName"
-              value={form.customerName}
-              onChange={handleChange}
-              required
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-              placeholder="اسم العميل"
+              className="w-full rounded-xl border px-3 py-2"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="مثال: أنور"
             />
           </div>
 
           <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              رقم الجوال
-            </label>
+            <label className="mb-1 block text-sm text-slate-600">رقم الجوال</label>
             <input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              required
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-              placeholder="مثال: 05xxxxxxxx"
+              className="w-full rounded-xl border px-3 py-2"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="05xxxxxxxx"
             />
           </div>
-        </div>
 
-        {/* المصادر + تاريخ التسليم */}
-        <div className="grid md:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              مصدر الطلب (يمكن اختيار أكثر من واحد)
-            </label>
-            <div className="flex flex-wrap gap-2 text-[11px]">
-              {SOURCE_OPTIONS.map((opt) => (
-                <label
-                  key={opt}
-                  className="inline-flex items-center gap-1 border rounded-xl px-2 py-1 cursor-pointer text-slate-700"
-                >
-                  <input
-                    type="checkbox"
-                    className="w-3 h-3"
-                    checked={selectedSources.includes(opt)}
-                    onChange={() => handleToggleSource(opt)}
-                  />
-                  <span>{opt}</span>
-                </label>
-              ))}
-            </div>
-            <div className="mt-2">
-              <label className="block text-[11px] mb-1 text-slate-500">
-                مصادر أخرى (اختياري)
-              </label>
-              <input
-                type="text"
-                value={otherSource}
-                onChange={handleOtherSourceChange}
-                className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-                placeholder="مثال: عميل قديم، معرض، صديق..."
-              />
-            </div>
-            <div className="mt-1 text-[11px] text-slate-500">
-              سيتم حفظ المصادر كقيمة واحدة:{' '}
-              <span className="font-mono break-all">
-                {currentSourceDisplay || '(بدون مصدر محدد)'}
-              </span>
-            </div>
+            <label className="mb-1 block text-sm text-slate-600">تاريخ/وقت إنشاء الطلب</label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-xl border px-3 py-2"
+              value={createdAtLocal}
+              onChange={(e) => setCreatedAtLocal(e.target.value)}
+            />
           </div>
 
           <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              تاريخ التسليم المطلوب
-            </label>
+            <label className="mb-1 block text-sm text-slate-600">تاريخ التسليم المطلوب</label>
             <input
               type="date"
-              name="dueDate"
-              value={form.dueDate}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="w-full rounded-xl border px-3 py-2"
+              value={deliveryDate}
+              onChange={(e) => setDeliveryDate(e.target.value)}
             />
           </div>
         </div>
 
-        {/* أعداد الصور */}
-        <div className="grid md:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              عدد صور 4x6
-            </label>
-            <input
-              type="number"
-              min="0"
-              name="photos4x6"
-              value={form.photos4x6}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
-            />
+        <div className="grid gap-3 rounded-2xl border bg-white p-4">
+          <div className="text-sm text-slate-600">مصدر الطلب (يمكن اختيار أكثر من واحد)</div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ['انستقرام', srcInstagram, setSrcInstagram],
+              ['واتساب', srcWhatsapp, setSrcWhatsapp],
+              ['سناب', srcSnap, setSrcSnap],
+              ['تيك توك', srcTiktok, setSrcTiktok],
+              ['مباشر', srcDirect, setSrcDirect],
+            ].map(([label, val, setVal]) => (
+              <label key={label} className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm">
+                <input type="checkbox" checked={val} onChange={(e) => setVal(e.target.checked)} />
+                <span>{label}</span>
+              </label>
+            ))}
           </div>
 
           <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              عدد صور A4
-            </label>
+            <label className="mb-1 block text-sm text-slate-600">مصدر آخر (اختياري)</label>
             <input
-              type="number"
-              min="0"
-              name="photosA4"
-              value={form.photosA4}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="w-full rounded-xl border px-3 py-2"
+              value={srcOther}
+              onChange={(e) => setSrcOther(e.target.value)}
+              placeholder="مثال: عميل قديم / صديق ..."
             />
           </div>
         </div>
 
-        {/* المبالغ */}
-        <div className="grid md:grid-cols-2 gap-3">
+        <div className="grid gap-3 rounded-2xl border bg-white p-4 md:grid-cols-2">
           <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              المبلغ الإجمالي (ر.س)
-            </label>
+            <label className="mb-1 block text-sm text-slate-600">عدد صور 4x6</label>
             <input
               type="number"
               min="0"
-              name="totalAmount"
-              value={form.totalAmount}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="w-full rounded-xl border px-3 py-2"
+              value={qty4x6}
+              onChange={(e) => setQty4x6(e.target.value)}
             />
-            {hasPricing ? (
-              <p className="mt-1 text-[11px] text-slate-500">
-                حاسبة تلقائية حسب الأسعار المضبوطة في الإعدادات (4x6 = {price4x6} ر.س ،
-                A4 = {priceA4} ر.س).
-              </p>
-            ) : (
-              <p className="mt-1 text-[11px] text-amber-600">
-                لم يتم ضبط أسعار الصور بعد. يمكنك تعيينها من صفحة الإعدادات.
-              </p>
-            )}
+            <div className="mt-1 text-xs text-slate-500">سعر الوحدة حسب الإعدادات: {price4x6} ر.س</div>
           </div>
 
           <div>
-            <label className="block text-xs mb-1 text-slate-600">
-              المبلغ المدفوع / العربون (ر.س)
-            </label>
+            <label className="mb-1 block text-sm text-slate-600">عدد صور A4</label>
             <input
               type="number"
               min="0"
-              name="paidAmount"
-              value={form.paidAmount}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="w-full rounded-xl border px-3 py-2"
+              value={qtyA4}
+              onChange={(e) => setQtyA4(e.target.value)}
             />
+            <div className="mt-1 text-xs text-slate-500">سعر الوحدة حسب الإعدادات: {priceA4} ر.س</div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">المبلغ الإجمالي (ر.س)</label>
+            <input
+              className="w-full rounded-xl border bg-slate-50 px-3 py-2"
+              value={total.toFixed(2)}
+              readOnly
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">العربون / المبلغ المقدم (ر.س)</label>
+            <input
+              type="number"
+              min="0"
+              className="w-full rounded-xl border px-3 py-2"
+              value={deposit}
+              onChange={(e) => setDeposit(e.target.value)}
+            />
+            <div className="mt-1 text-xs text-slate-500">المتبقي: {remaining.toFixed(2)} ر.س</div>
           </div>
         </div>
 
-        {/* الملاحظات */}
-        <div>
-          <label className="block text-xs mb-1 text-slate-600">
-            ملاحظات إضافية
-          </label>
+        <div className="rounded-2xl border bg-white p-4">
+          <label className="mb-1 block text-sm text-slate-600">ملاحظات إضافية</label>
           <textarea
-            name="notes"
-            value={form.notes}
-            onChange={handleChange}
-            rows={3}
-            className="w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-slate-300"
+            className="min-h-[110px] w-full rounded-xl border px-3 py-2"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="أي تفاصيل تخص الطلب..."
           />
         </div>
 
-        {/* أزرار الحفظ/إلغاء */}
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={() => navigate('/app/orders')}
-            className="px-3 py-2 rounded-xl border text-xs hover:bg-slate-100"
-            disabled={submitting}
-          >
-            إلغاء
+        <div className="flex items-center gap-2">
+          <button className="rounded-xl bg-slate-900 px-5 py-2 text-sm text-white">
+            حفظ الطلب
           </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-4 py-2 rounded-xl text-xs bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
-          >
-            {submitting ? 'جاري الحفظ...' : 'حفظ الطلب'}
+          <button type="button" onClick={() => nav('/app/orders')} className="rounded-xl border px-5 py-2 text-sm">
+            إلغاء
           </button>
         </div>
       </form>
     </div>
-  )
-}
-
-/* ====== دوال مساعدة ====== */
-
-function buildSourceString(selected, other) {
-  const parts = [...selected]
-  if (other && other.trim()) {
-    parts.push(other.trim())
-  }
-  if (!parts.length) return ''
-  return parts.join(' + ')
-}
-
-function getPaymentStatus(total, paid) {
-  const t = Number(total || 0)
-  const p = Number(paid || 0)
-
-  if (t <= 0) return 'غير مدفوع'
-  if (p <= 0) return 'غير مدفوع'
-  if (p >= t) return 'مدفوع بالكامل'
-  return 'مدفوع جزئياً'
+  );
 }
