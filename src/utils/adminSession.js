@@ -1,58 +1,98 @@
 // src/utils/adminSession.js
-// جلسة لوحة التحكم (LocalStorage) — نسخة V1 بدون Backend
+// جلسة لوحة التحكم (LocalStorage) — V1 بدون أي API
 
-const KEY = 'artMoment_admin_session';
+export const ADMIN_SESSION_KEY = 'artMoment_admin_session';
 
-// افتراضي: 7 أيام
-const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+// مدة الخمول قبل انتهاء الجلسة (بالدقائق)
+export const MAX_INACTIVE_MINUTES = 60;
 
 function nowMs() {
   return Date.now();
 }
 
-function safeJsonParse(raw, fallback) {
+function safeParse(json, fallback = null) {
   try {
-    return JSON.parse(raw);
+    return JSON.parse(json);
   } catch {
     return fallback;
   }
 }
 
-function readSession() {
+export function getAdminSession() {
   if (typeof window === 'undefined') return null;
-  const raw = window.localStorage.getItem(KEY);
+  const raw = window.localStorage.getItem(ADMIN_SESSION_KEY);
   if (!raw) return null;
-  const s = safeJsonParse(raw, null);
-  if (!s || typeof s !== 'object') return null;
-  if (typeof s.expiresAt !== 'number') return null;
-  return s;
+  return safeParse(raw, null);
 }
 
-export function touchAdminSession(ttlMs = DEFAULT_TTL_MS) {
+export function startAdminSession() {
   if (typeof window === 'undefined') return;
-  const expiresAt = nowMs() + (Number(ttlMs) || DEFAULT_TTL_MS);
-  window.localStorage.setItem(KEY, JSON.stringify({ expiresAt }));
+  const t = nowMs();
+  const expiresAt = t + MAX_INACTIVE_MINUTES * 60 * 1000;
+
+  window.localStorage.setItem(
+    ADMIN_SESSION_KEY,
+    JSON.stringify({
+      lastActiveAt: t,
+      expiresAt,
+    })
+  );
+}
+
+export function touchAdminSession() {
+  // تمديد الجلسة مع كل تفاعل
+  if (typeof window === 'undefined') return;
+
+  const s = getAdminSession();
+  const t = nowMs();
+
+  // إذا ما في جلسة، لا نسوي شيء
+  if (!s) return;
+
+  const expiresAt = t + MAX_INACTIVE_MINUTES * 60 * 1000;
+
+  window.localStorage.setItem(
+    ADMIN_SESSION_KEY,
+    JSON.stringify({
+      ...s,
+      lastActiveAt: t,
+      expiresAt,
+    })
+  );
 }
 
 export function clearAdminSession() {
   if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(KEY);
+  window.localStorage.removeItem(ADMIN_SESSION_KEY);
 }
 
-export function getAdminSessionExpiresAt() {
-  const s = readSession();
-  return s?.expiresAt ?? null;
+// اسم قديم/بديل (لو عندك ملفات تستدعيه)
+export function endAdminSession() {
+  clearAdminSession();
 }
 
+// تحقق أساسي: الجلسة موجودة + غير منتهية
+export function isAdminSessionValid() {
+  if (typeof window === 'undefined') return false;
+  const s = getAdminSession();
+  if (!s || !s.expiresAt) return false;
+  return nowMs() < Number(s.expiresAt);
+}
+
+// Alias لتوافق أي استيرادات قديمة
 export function isAdminSessionActive() {
-  const s = readSession();
-  if (!s) return false;
-  if (nowMs() > s.expiresAt) {
-    clearAdminSession();
-    return false;
-  }
-  return true;
+  return isAdminSessionValid();
 }
 
-// توافق مع أسماء قديمة
-export const isAdminSessionValid = isAdminSessionActive;
+// (اختياري) Default export لو بعض الملفات تفضله
+export default {
+  ADMIN_SESSION_KEY,
+  MAX_INACTIVE_MINUTES,
+  getAdminSession,
+  startAdminSession,
+  touchAdminSession,
+  clearAdminSession,
+  endAdminSession,
+  isAdminSessionValid,
+  isAdminSessionActive,
+};
