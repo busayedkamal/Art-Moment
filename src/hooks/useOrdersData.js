@@ -1,64 +1,125 @@
 // src/hooks/useOrdersData.js
-// Hook موحّد لقراءة الطلبات من LocalStorage (V1)
+import { useCallback, useEffect, useState } from 'react';
+import {
+  loadOrders,
+  addOrder,
+  updateOrder,
+  deleteOrder,
+  getOrderById,
+  generateOrderId,
+} from '../storage/orderStorage.js';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { loadOrders, onOrdersChanged } from '../storage/orderStorage';
-
-function sortNewestFirst(a, b) {
-  const aTime = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
-  const bTime = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
-  return bTime - aTime;
+function safeArray(v) {
+  return Array.isArray(v) ? v : [];
 }
 
-export default function useOrdersData() {
-  const [orders, setOrders] = useState(() => loadOrders());
-  const [loading, setLoading] = useState(false);
+export default function useOrdersData(options = {}) {
+  const { includeArchived = true } = options;
+
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const refresh = useCallback(() => {
+  const reload = useCallback(() => {
     try {
-      setLoading(true);
       setError('');
-      const next = loadOrders();
-      next.sort(sortNewestFirst);
-      setOrders(next);
+      const all = safeArray(loadOrders());
+      // حالياً ما عندنا archived بشكل رسمي—نتركها للمرونة
+      const filtered = includeArchived ? all : all.filter((o) => !o?.archived);
+      setOrders(filtered);
     } catch (e) {
-      setError(e?.message || 'حدث خطأ أثناء تحميل الطلبات.');
+      setError(e?.message || 'حدث خطأ أثناء تحميل الطلبات');
+      setOrders([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [includeArchived]);
 
   useEffect(() => {
-    refresh();
+    reload();
+  }, [reload]);
 
-    // تغيّر داخل نفس التبويب
-    const off = onOrdersChanged(refresh);
+  const create = useCallback(async (payload) => {
+    try {
+      setError('');
+      const nowIso = new Date().toISOString();
+      const id = payload?.id || generateOrderId();
 
-    // تغيّر من تبويب آخر (storage event)
-    function onStorage(e) {
-      if (!e) return;
-      if (e.key === 'art-moment-orders') refresh();
+      const order = {
+        id,
+        createdAt: payload?.createdAt || nowIso,
+        updatedAt: nowIso,
+        ...payload,
+      };
+
+      addOrder(order);
+
+      // تحديث فوري للـ state من المصدر (LocalStorage)
+      const next = safeArray(loadOrders());
+      setOrders(includeArchived ? next : next.filter((o) => !o?.archived));
+
+      return order;
+    } catch (e) {
+      setError(e?.message || 'فشل إنشاء الطلب');
+      throw e;
     }
-    window.addEventListener('storage', onStorage);
+  }, [includeArchived]);
 
-    return () => {
-      off?.();
-      window.removeEventListener('storage', onStorage);
-    };
-  }, [refresh]);
+  const update = useCallback(async (payload) => {
+    try {
+      setError('');
+      if (!payload?.id) throw new Error('لا يمكن تحديث طلب بدون رقم (id).');
 
-  const stats = useMemo(() => {
-    const list = orders || [];
-    const total = list.length;
+      const nowIso = new Date().toISOString();
+      const existing = getOrderById(payload.id) || {};
 
-    const newCount = list.filter((o) => (o.status || '').includes('جديد')).length;
-    const printingCount = list.filter((o) => (o.status || '').includes('الطباعة') || (o.status || '').includes('قيد')).length;
-    const readyCount = list.filter((o) => (o.status || '').includes('جاهز')).length;
-    const deliveredCount = list.filter((o) => (o.status || '').includes('تم التسليم') || (o.status || '').includes('مستلم')).length;
+      const merged = {
+        ...existing,
+        ...payload,
+        updatedAt: nowIso,
+      };
 
-    return { total, newCount, printingCount, readyCount, deliveredCount };
-  }, [orders]);
+      updateOrder(merged);
 
-  return { orders, setOrders, loading, error, refresh, stats };
+      const next = safeArray(loadOrders());
+      setOrders(includeArchived ? next : next.filter((o) => !o?.archived));
+
+      return merged;
+    } catch (e) {
+      setError(e?.message || 'فشل حفظ التعديلات');
+      throw e;
+    }
+  }, [includeArchived]);
+
+  const remove = useCallback(async (id) => {
+    try {
+      setError('');
+      if (!id) throw new Error('لا يمكن حذف طلب بدون رقم (id).');
+
+      deleteOrder(id);
+
+      const next = safeArray(loadOrders());
+      setOrders(includeArchived ? next : next.filter((o) => !o?.archived));
+
+      return true;
+    } catch (e) {
+      setError(e?.message || 'فشل حذف الطلب');
+      throw e;
+    }
+  }, [includeArchived]);
+
+  const getById = useCallback((id) => {
+    return getOrderById(id);
+  }, []);
+
+  return {
+    orders,
+    loading,
+    error,
+    reload,
+    create,
+    update,
+    remove,
+    getById,
+  };
 }

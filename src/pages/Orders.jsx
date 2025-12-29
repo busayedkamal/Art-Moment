@@ -1,6 +1,6 @@
 // src/pages/Orders.jsx
-import React, { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useOrdersData from '../hooks/useOrdersData.js';
 
 function paymentLabel(v) {
@@ -11,7 +11,9 @@ function paymentLabel(v) {
 
 export default function Orders() {
   const nav = useNavigate();
-  const { orders, loading, error, reload } = useOrdersData();
+  const location = useLocation();
+
+  const { orders, loading, error, reload } = useOrdersData({ includeArchived: true });
 
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('all');
@@ -19,6 +21,15 @@ export default function Orders() {
   const [readyToday, setReadyToday] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
+
+  // ✅ قراءة فلتر العميل من Customers.jsx
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const customer = params.get('customer') || params.get('q') || '';
+    if (customer) {
+      setQ(customer);
+    }
+  }, [location.search]);
 
   const filtered = useMemo(() => {
     const query = String(q || '').trim().toLowerCase();
@@ -30,14 +41,15 @@ export default function Orders() {
         o?.phone,
         o?.status,
         o?.paymentStatus,
-      ].join(' ').toLowerCase();
+      ]
+        .join(' ')
+        .toLowerCase();
 
       if (query && !hay.includes(query)) return false;
       if (status !== 'all' && (o?.status || 'new') !== status) return false;
       if (paymentStatus !== 'all' && (o?.paymentStatus || 'unpaid') !== paymentStatus) return false;
 
       if (readyToday) {
-        // تعريف عملي لـ "جاهز للتسليم اليوم": تاريخ التسليم = اليوم
         if ((o?.deliveryDate || '') !== today) return false;
       }
 
@@ -55,12 +67,14 @@ export default function Orders() {
 
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => nav('/app/orders/new')}
             className="rounded-xl bg-emerald-600 px-4 py-2 text-sm text-white"
           >
             + إضافة طلب جديد
           </button>
           <button
+            type="button"
             onClick={reload}
             className="rounded-xl border px-4 py-2 text-sm"
           >
@@ -93,60 +107,58 @@ export default function Orders() {
           <option value="paid">مدفوع</option>
         </select>
 
-        <label className="flex items-center gap-2 text-sm text-slate-600 md:col-span-4">
+        <label className="flex items-center gap-2 text-sm md:col-span-4">
           <input type="checkbox" checked={readyToday} onChange={(e) => setReadyToday(e.target.checked)} />
           جاهز للتسليم اليوم
         </label>
       </div>
 
-      <div className="rounded-2xl border bg-white">
-        <div className="border-b p-4 text-sm text-slate-600">
-          إجمالي: <b>{filtered.length}</b> طلب
-        </div>
-
-        {loading ? (
-          <div className="p-6 text-sm text-slate-500">جاري التحميل...</div>
-        ) : error ? (
-          <div className="p-6 text-sm text-red-600">{error}</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-6 text-sm text-slate-500">لا توجد طلبات مطابقة للفلاتر الحالية.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-[900px] w-full text-sm">
-              <thead className="bg-slate-50 text-slate-600">
-                <tr>
-                  <th className="px-4 py-3 text-right">رقم الطلب</th>
-                  <th className="px-4 py-3 text-right">العميل</th>
-                  <th className="px-4 py-3 text-right">الجوال</th>
-                  <th className="px-4 py-3 text-right">الحالة</th>
-                  <th className="px-4 py-3 text-right">حالة الدفع</th>
-                  <th className="px-4 py-3 text-right">المبلغ</th>
-                  <th className="px-4 py-3 text-right">التسليم</th>
-                  <th className="px-4 py-3 text-right">إجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((o) => (
-                  <tr key={o.id} className="border-t">
-                    <td className="px-4 py-3">{o.id}</td>
-                    <td className="px-4 py-3">{o.customerName || '-'}</td>
-                    <td className="px-4 py-3">{o.phone || '-'}</td>
-                    <td className="px-4 py-3">{o.status || 'new'}</td>
-                    <td className="px-4 py-3">{paymentLabel(o.paymentStatus)}</td>
-                    <td className="px-4 py-3">{(Number(o.total) || 0).toFixed(2)} ر.س</td>
-                    <td className="px-4 py-3">{o.deliveryDate || '-'}</td>
-                    <td className="px-4 py-3">
-                      <Link className="text-sky-700 hover:underline" to={`/app/orders/${o.id}`}>
-                        تفاصيل
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {loading ? (
+        <div className="rounded-2xl border bg-white p-6 text-sm text-slate-500">جاري تحميل الطلبات...</div>
+      ) : error ? (
+        <div className="rounded-2xl border bg-white p-6 text-sm text-rose-600">{error}</div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border bg-white p-6 text-sm text-slate-500">لا توجد طلبات مطابقة للفلاتر الحالية.</div>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border bg-white">
+          <div className="border-b px-4 py-3 text-sm text-slate-600">
+            إجمالي: <b>{filtered.length}</b> طلب
           </div>
-        )}
-      </div>
+
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                <th className="px-4 py-3 text-right">رقم الطلب</th>
+                <th className="px-4 py-3 text-right">العميل</th>
+                <th className="px-4 py-3 text-right">الجوال</th>
+                <th className="px-4 py-3 text-right">الحالة</th>
+                <th className="px-4 py-3 text-right">حالة الدفع</th>
+                <th className="px-4 py-3 text-right">المبلغ</th>
+                <th className="px-4 py-3 text-right">تاريخ الاستحقاق</th>
+                <th className="px-4 py-3 text-right">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((o) => (
+                <tr key={o.id} className="border-t">
+                  <td className="px-4 py-3 font-medium">{o.id}</td>
+                  <td className="px-4 py-3">{o.customerName || '-'}</td>
+                  <td className="px-4 py-3">{o.phone || '-'}</td>
+                  <td className="px-4 py-3">{o.status || 'new'}</td>
+                  <td className="px-4 py-3">{paymentLabel(o.paymentStatus || 'unpaid')}</td>
+                  <td className="px-4 py-3">{Number(o.total || 0).toFixed(2)} ر.س</td>
+                  <td className="px-4 py-3">{o.deliveryDate || '-'}</td>
+                  <td className="px-4 py-3">
+                    <Link className="text-emerald-700 underline" to={`/app/orders/${o.id}`}>
+                      تفاصيل
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

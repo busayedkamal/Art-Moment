@@ -2,10 +2,9 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useOrdersData from '../hooks/useOrdersData.js';
-import { loadSettings } from '../storage/settingsStorage.js';
 
-function toDatetimeLocalValue(isoOrDate) {
-  const d = isoOrDate ? new Date(isoOrDate) : new Date();
+function nowLocalInput() {
+  const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   const yyyy = d.getFullYear();
   const mm = pad(d.getMonth() + 1);
@@ -15,118 +14,107 @@ function toDatetimeLocalValue(isoOrDate) {
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 
-function datetimeLocalToIso(v) {
-  // v: "YYYY-MM-DDTHH:mm"
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-}
-
 export default function NewOrder() {
   const nav = useNavigate();
-  const { create } = useOrdersData();
+  const { create } = useOrdersData({ includeArchived: true });
 
-  const settings = useMemo(() => loadSettings(), []);
-  const price4x6 = Number(settings?.price4x6 ?? 0);
-  const priceA4 = Number(settings?.priceA4 ?? 0);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
 
-  const [customerName, setCustomerName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [createdAtLocal, setCreatedAtLocal] = useState(toDatetimeLocalValue(new Date()));
-  const [deliveryDate, setDeliveryDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [form, setForm] = useState({
+    customerName: '',
+    phone: '',
+    deliveryDate: new Date().toISOString().slice(0, 10),
+    createdAtLocal: nowLocalInput(),
+    source: ['واتساب'],
+    sourceOther: '',
+    a4Qty: 0,
+    photo4x6Qty: 0,
+    subtotal: 0,
+    deliveryFee: 0,
+    total: 0,
+    deposit: 0,
+    notes: '',
+    status: 'new',
+    paymentStatus: 'unpaid',
+  });
 
-  const [srcInstagram, setSrcInstagram] = useState(false);
-  const [srcWhatsapp, setSrcWhatsapp] = useState(false);
-  const [srcSnap, setSrcSnap] = useState(false);
-  const [srcTiktok, setSrcTiktok] = useState(false);
-  const [srcOther, setSrcOther] = useState('');
-  const [srcDirect, setSrcDirect] = useState(false);
+  const calc = useMemo(() => {
+    const a4 = Number(form.a4Qty || 0);
+    const p46 = Number(form.photo4x6Qty || 0);
+    const subtotal = (a4 * 2) + (p46 * 1); // إذا عندك تسعيرة مختلفة عدّل هنا
+    const deliveryFee = Number(form.deliveryFee || 0);
+    const total = subtotal + deliveryFee;
+    return { subtotal, total };
+  }, [form.a4Qty, form.photo4x6Qty, form.deliveryFee]);
 
-  const [qty4x6, setQty4x6] = useState(0);
-  const [qtyA4, setQtyA4] = useState(0);
+  function setField(k, v) {
+    setForm((s) => ({ ...s, [k]: v }));
+  }
 
-  const [deposit, setDeposit] = useState(0);
-  const [notes, setNotes] = useState('');
+  function toggleSource(v) {
+    setForm((s) => {
+      const arr = Array.isArray(s.source) ? [...s.source] : [];
+      const exists = arr.includes(v);
+      const next = exists ? arr.filter((x) => x !== v) : [...arr, v];
+      return { ...s, source: next };
+    });
+  }
 
-  const total = useMemo(() => {
-    const t = (Number(qty4x6) * price4x6) + (Number(qtyA4) * priceA4);
-    return Number.isFinite(t) ? t : 0;
-  }, [qty4x6, qtyA4, price4x6, priceA4]);
-
-  const paymentStatus = useMemo(() => {
-    const d = Number(deposit) || 0;
-    if (total <= 0) return 'unpaid';
-    if (d <= 0) return 'unpaid';
-    if (d >= total) return 'paid';
-    return 'partial';
-  }, [deposit, total]);
-
-  const sourceText = useMemo(() => {
-    const parts = [];
-    if (srcInstagram) parts.push('انستقرام');
-    if (srcWhatsapp) parts.push('واتساب');
-    if (srcSnap) parts.push('سناب');
-    if (srcTiktok) parts.push('تيك توك');
-    if (srcDirect) parts.push('مباشر');
-    if (srcOther?.trim()) parts.push(srcOther.trim());
-    return parts.join('، ') || 'غير محدد';
-  }, [srcInstagram, srcWhatsapp, srcSnap, srcTiktok, srcDirect, srcOther]);
-
-  const remaining = Math.max(0, total - (Number(deposit) || 0));
-
-  const onSubmit = (e) => {
+  async function onSubmit(e) {
     e.preventDefault();
+    if (saving) return;
 
-    if (!customerName.trim()) return alert('رجاءً أدخل اسم العميل.');
-    if (!phone.trim()) return alert('رجاءً أدخل رقم الجوال.');
+    try {
+      setSaving(true);
+      setErr('');
 
-    const order = {
-      customerName: customerName.trim(),
-      phone: phone.trim(),
-      createdAt: datetimeLocalToIso(createdAtLocal), // ✅ قابل للتعديل
-      deliveryDate,
-      source: sourceText,
+      const createdAtIso = form.createdAtLocal ? new Date(form.createdAtLocal).toISOString() : new Date().toISOString();
 
-      qty4x6: Number(qty4x6) || 0,
-      qtyA4: Number(qtyA4) || 0,
+      const payload = {
+        ...form,
+        createdAt: createdAtIso,
+        subtotal: calc.subtotal,
+        total: calc.total,
+        deposit: Number(form.deposit || 0),
+        a4Qty: Number(form.a4Qty || 0),
+        photo4x6Qty: Number(form.photo4x6Qty || 0),
+        deliveryFee: Number(form.deliveryFee || 0),
+      };
 
-      price4x6,
-      priceA4,
+      delete payload.createdAtLocal;
 
-      total: Number(total) || 0,
-      deposit: Number(deposit) || 0,
-      remaining,
-
-      status: 'new',
-      paymentStatus,
-
-      notes: notes?.trim() || '',
-    };
-
-    const created = create(order);
-    nav(`/app/orders/${created.id}`);
-  };
+      const created = await create(payload);
+      nav(`/app/orders/${created.id}`);
+    } catch (ex) {
+      setErr(ex?.message || 'تعذر إنشاء الطلب');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="p-4 md:p-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">إضافة طلب جديد</h1>
-        <button
-          type="button"
-          onClick={() => nav('/app/orders')}
-          className="rounded-xl border px-4 py-2 text-sm"
-        >
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">إضافة طلب جديد</h1>
+          <p className="text-sm text-slate-500">سجّل الطلب وسيتم حفظه محلياً على نفس الجهاز (LocalStorage).</p>
+        </div>
+        <button type="button" onClick={() => nav('/app/orders')} className="rounded-xl border px-4 py-2 text-sm">
           الرجوع للطلبات
         </button>
       </div>
 
-      <form onSubmit={onSubmit} className="grid gap-4">
-        <div className="grid gap-3 rounded-2xl border bg-white p-4 md:grid-cols-2">
+      {err ? <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{err}</div> : null}
+
+      <form onSubmit={onSubmit} className="grid gap-4 rounded-2xl border bg-white p-4 md:p-6">
+        <div className="grid gap-3 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm text-slate-600">اسم العميل</label>
             <input
-              className="w-full rounded-xl border px-3 py-2"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
+              className="w-full rounded-xl border px-3 py-2 text-sm"
+              value={form.customerName}
+              onChange={(e) => setField('customerName', e.target.value)}
               placeholder="مثال: أنور"
             />
           </div>
@@ -134,20 +122,10 @@ export default function NewOrder() {
           <div>
             <label className="mb-1 block text-sm text-slate-600">رقم الجوال</label>
             <input
-              className="w-full rounded-xl border px-3 py-2"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              className="w-full rounded-xl border px-3 py-2 text-sm"
+              value={form.phone}
+              onChange={(e) => setField('phone', e.target.value)}
               placeholder="05xxxxxxxx"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">تاريخ/وقت إنشاء الطلب</label>
-            <input
-              type="datetime-local"
-              className="w-full rounded-xl border px-3 py-2"
-              value={createdAtLocal}
-              onChange={(e) => setCreatedAtLocal(e.target.value)}
             />
           </div>
 
@@ -155,104 +133,133 @@ export default function NewOrder() {
             <label className="mb-1 block text-sm text-slate-600">تاريخ التسليم المطلوب</label>
             <input
               type="date"
-              className="w-full rounded-xl border px-3 py-2"
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
+              className="w-full rounded-xl border px-3 py-2 text-sm"
+              value={form.deliveryDate}
+              onChange={(e) => setField('deliveryDate', e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">تاريخ إنشاء الطلب (قابل للتعديل)</label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-xl border px-3 py-2 text-sm"
+              value={form.createdAtLocal}
+              onChange={(e) => setField('createdAtLocal', e.target.value)}
             />
           </div>
         </div>
 
-        <div className="grid gap-3 rounded-2xl border bg-white p-4">
-          <div className="text-sm text-slate-600">مصدر الطلب (يمكن اختيار أكثر من واحد)</div>
-          <div className="flex flex-wrap gap-2">
-            {[
-              ['انستقرام', srcInstagram, setSrcInstagram],
-              ['واتساب', srcWhatsapp, setSrcWhatsapp],
-              ['سناب', srcSnap, setSrcSnap],
-              ['تيك توك', srcTiktok, setSrcTiktok],
-              ['مباشر', srcDirect, setSrcDirect],
-            ].map(([label, val, setVal]) => (
-              <label key={label} className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm">
-                <input type="checkbox" checked={val} onChange={(e) => setVal(e.target.checked)} />
-                <span>{label}</span>
-              </label>
-            ))}
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm text-slate-600">مصدر الطلب (يمكن اختيار أكثر من واحد)</label>
+            <div className="flex flex-wrap gap-2">
+              {['واتساب', 'إنستقرام', 'سناب', 'مباشر'].map((s) => (
+                <label key={s} className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={(form.source || []).includes(s)}
+                    onChange={() => toggleSource(s)}
+                  />
+                  {s}
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-3">
+              <label className="mb-1 block text-sm text-slate-600">مصدر آخر (اختياري)</label>
+              <input
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                value={form.sourceOther}
+                onChange={(e) => setField('sourceOther', e.target.value)}
+                placeholder="مثال: عميل قديم، معرض..."
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">مصدر آخر (اختياري)</label>
-            <input
-              className="w-full rounded-xl border px-3 py-2"
-              value={srcOther}
-              onChange={(e) => setSrcOther(e.target.value)}
-              placeholder="مثال: عميل قديم / صديق ..."
-            />
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm text-slate-600">عدد صور A4</label>
+              <input
+                type="number"
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                value={form.a4Qty}
+                onChange={(e) => setField('a4Qty', e.target.value)}
+                min={0}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-slate-600">عدد صور 4×6</label>
+              <input
+                type="number"
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                value={form.photo4x6Qty}
+                onChange={(e) => setField('photo4x6Qty', e.target.value)}
+                min={0}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm text-slate-600">رسوم التوصيل (ريال)</label>
+              <input
+                type="number"
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                value={form.deliveryFee}
+                onChange={(e) => setField('deliveryFee', e.target.value)}
+                min={0}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm text-slate-600">العربون (ريال)</label>
+              <input
+                type="number"
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                value={form.deposit}
+                onChange={(e) => setField('deposit', e.target.value)}
+                min={0}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="grid gap-3 rounded-2xl border bg-white p-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">عدد صور 4x6</label>
-            <input
-              type="number"
-              min="0"
-              className="w-full rounded-xl border px-3 py-2"
-              value={qty4x6}
-              onChange={(e) => setQty4x6(e.target.value)}
-            />
-            <div className="mt-1 text-xs text-slate-500">سعر الوحدة حسب الإعدادات: {price4x6} ر.س</div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border bg-slate-50 p-3 text-sm">
+            <div className="text-slate-500">المبلغ الفرعي</div>
+            <div className="mt-1 text-lg font-bold">{calc.subtotal.toFixed(2)} ر.س</div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">عدد صور A4</label>
-            <input
-              type="number"
-              min="0"
-              className="w-full rounded-xl border px-3 py-2"
-              value={qtyA4}
-              onChange={(e) => setQtyA4(e.target.value)}
-            />
-            <div className="mt-1 text-xs text-slate-500">سعر الوحدة حسب الإعدادات: {priceA4} ر.س</div>
+          <div className="rounded-xl border bg-slate-50 p-3 text-sm">
+            <div className="text-slate-500">المبلغ الإجمالي</div>
+            <div className="mt-1 text-lg font-bold">{calc.total.toFixed(2)} ر.س</div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">المبلغ الإجمالي (ر.س)</label>
-            <input
-              className="w-full rounded-xl border bg-slate-50 px-3 py-2"
-              value={total.toFixed(2)}
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">العربون / المبلغ المقدم (ر.س)</label>
-            <input
-              type="number"
-              min="0"
-              className="w-full rounded-xl border px-3 py-2"
-              value={deposit}
-              onChange={(e) => setDeposit(e.target.value)}
-            />
-            <div className="mt-1 text-xs text-slate-500">المتبقي: {remaining.toFixed(2)} ر.س</div>
+          <div className="rounded-xl border bg-slate-50 p-3 text-sm">
+            <div className="text-slate-500">المتبقي</div>
+            <div className="mt-1 text-lg font-bold">{Math.max(0, calc.total - Number(form.deposit || 0)).toFixed(2)} ر.س</div>
           </div>
         </div>
 
-        <div className="rounded-2xl border bg-white p-4">
+        <div>
           <label className="mb-1 block text-sm text-slate-600">ملاحظات إضافية</label>
           <textarea
-            className="min-h-[110px] w-full rounded-xl border px-3 py-2"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="أي تفاصيل تخص الطلب..."
+            className="min-h-[90px] w-full rounded-xl border px-3 py-2 text-sm"
+            value={form.notes}
+            onChange={(e) => setField('notes', e.target.value)}
+            placeholder="أي تفاصيل مهمة..."
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <button className="rounded-xl bg-slate-900 px-5 py-2 text-sm text-white">
-            حفظ الطلب
-          </button>
-          <button type="button" onClick={() => nav('/app/orders')} className="rounded-xl border px-5 py-2 text-sm">
+        <div className="flex items-center justify-end gap-2">
+          <button type="button" onClick={() => nav('/app/orders')} className="rounded-xl border px-4 py-2 text-sm">
             إلغاء
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60"
+          >
+            {saving ? 'جارٍ الحفظ...' : 'حفظ الطلب'}
           </button>
         </div>
       </form>
