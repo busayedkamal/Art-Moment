@@ -1,64 +1,122 @@
 // src/components/layout/Layout.jsx
-import React, { useEffect } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-
-import Sidebar from './Sidebar.jsx';
-import Topbar from './Topbar.jsx';
-
-import { clearAdminSession, isAdminSessionValid, touchAdminSession } from '../../utils/adminSession.js';
+import React, { useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  ShoppingCart, 
+  Users, 
+  FileBarChart, 
+  Settings, 
+  LogOut, 
+  Menu,
+  X
+} from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import logo from '../../assets/logo-art-moment.svg'; // تأكد أن المسار صحيح أو احذفه إذا لم توجد صورة
 
 export default function Layout() {
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // حماية لوحة التحكم + تمديد الجلسة أثناء التصفح
-  useEffect(() => {
-    const handleActivity = () => {
-      const ok = isAdminSessionValid();
-      if (!ok) {
-        clearAdminSession();
-        navigate('/admin/login', { replace: true });
-        return;
-      }
-      touchAdminSession();
-    };
+  // قائمة الروابط الجانبية
+  const navItems = [
+    { path: '/app/dashboard', label: 'الرئيسية', icon: <LayoutDashboard size={20} /> },
+    { path: '/app/orders', label: 'الطلبات', icon: <ShoppingCart size={20} /> },
+    { path: '/app/customers', label: 'العملاء', icon: <Users size={20} /> },
+    { path: '/app/reports', label: 'التقارير', icon: <FileBarChart size={20} /> },
+    { path: '/app/settings', label: 'الإعدادات', icon: <Settings size={20} /> },
+  ];
 
-    // تحقق عند كل تغيير صفحة داخل لوحة التحكم
-    handleActivity();
-
-    // تمديد الجلسة عند النشاط (خفيفة بدون تخريب التصميم)
-    window.addEventListener('click', handleActivity);
-    window.addEventListener('keydown', handleActivity);
-    window.addEventListener('touchstart', handleActivity);
-
-    return () => {
-      window.removeEventListener('click', handleActivity);
-      window.removeEventListener('keydown', handleActivity);
-      window.removeEventListener('touchstart', handleActivity);
-    };
-  }, [navigate, location.pathname]);
-
-  const handleLogout = () => {
-    clearAdminSession();
-    navigate('/admin/login', { replace: true });
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/admin/login');
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="mx-auto max-w-[1400px] px-4 md:px-6 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
-          <aside className="lg:sticky lg:top-4 h-fit">
-            <Sidebar />
-          </aside>
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      
+      {/* Sidebar - Desktop & Mobile */}
+      <aside className={`
+        fixed inset-y-0 right-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0
+        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
+      `}>
+        <div className="flex h-full flex-col">
+          {/* Logo Area */}
+          <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800">
+            <span className="text-lg font-bold tracking-wider">Art Moment</span>
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="md:hidden text-slate-400 hover:text-white"
+            >
+              <X size={24} />
+            </button>
+          </div>
 
-          <main className="min-w-0">
-            <Topbar onLogout={handleLogout} />
-            <div className="mt-4">
-              <Outlet />
-            </div>
-          </main>
+          {/* Navigation Links */}
+          <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+            {navItems.map((item) => {
+              const isActive = location.pathname.startsWith(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                    ${isActive 
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' 
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                  `}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Logout Button */}
+          <div className="p-4 border-t border-slate-800">
+            <button
+              onClick={handleSignOut}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors"
+            >
+              <LogOut size={20} />
+              تسجيل خروج
+            </button>
+          </div>
         </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col h-full w-full">
+        {/* Top Header (Mobile Only) */}
+        <header className="md:hidden flex items-center justify-between bg-white border-b border-slate-200 px-4 py-3">
+          <span className="font-bold text-slate-900">لوحة التحكم</span>
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+          >
+            <Menu size={24} />
+          </button>
+        </header>
+
+        {/* Page Content (Where Dashboard/Orders renders) */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <Outlet /> {/* 👈 هذا هو أهم سطر! بدونه الصفحة بيضاء */}
+        </main>
       </div>
+      
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 md:hidden backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
     </div>
   );
 }

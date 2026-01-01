@@ -1,268 +1,305 @@
 // src/pages/NewOrder.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useOrdersData from '../hooks/useOrdersData.js';
-
-function nowLocalInput() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-}
+import { useForm } from 'react-hook-form';
+import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
+import { Calculator, Loader2 } from 'lucide-react';
 
 export default function NewOrder() {
-  const nav = useNavigate();
-  const { create } = useOrdersData({ includeArchived: true });
-
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
-
-  const [form, setForm] = useState({
-    customerName: '',
-    phone: '',
-    deliveryDate: new Date().toISOString().slice(0, 10),
-    createdAtLocal: nowLocalInput(),
-    source: ['واتساب'],
-    sourceOther: '',
-    a4Qty: 0,
-    photo4x6Qty: 0,
-    subtotal: 0,
-    deliveryFee: 0,
-    total: 0,
-    deposit: 0,
-    notes: '',
-    status: 'new',
-    paymentStatus: 'unpaid',
+  const navigate = useNavigate();
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  
+  // حالة لتخزين الأسعار القادمة من الإعدادات
+  const [prices, setPrices] = useState({
+    a4: 2,         // قيمة احتياطية
+    photo4x6: 1,   // قيمة احتياطية
+    delivery: 0
   });
 
-  const calc = useMemo(() => {
-    const a4 = Number(form.a4Qty || 0);
-    const p46 = Number(form.photo4x6Qty || 0);
-    const subtotal = (a4 * 2) + (p46 * 1); // إذا عندك تسعيرة مختلفة عدّل هنا
-    const deliveryFee = Number(form.deliveryFee || 0);
-    const total = subtotal + deliveryFee;
-    return { subtotal, total };
-  }, [form.a4Qty, form.photo4x6Qty, form.deliveryFee]);
-
-  function setField(k, v) {
-    setForm((s) => ({ ...s, [k]: v }));
-  }
-
-  function toggleSource(v) {
-    setForm((s) => {
-      const arr = Array.isArray(s.source) ? [...s.source] : [];
-      const exists = arr.includes(v);
-      const next = exists ? arr.filter((x) => x !== v) : [...arr, v];
-      return { ...s, source: next };
-    });
-  }
-
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (saving) return;
-
-    try {
-      setSaving(true);
-      setErr('');
-
-      const createdAtIso = form.createdAtLocal ? new Date(form.createdAtLocal).toISOString() : new Date().toISOString();
-
-      const payload = {
-        ...form,
-        createdAt: createdAtIso,
-        subtotal: calc.subtotal,
-        total: calc.total,
-        deposit: Number(form.deposit || 0),
-        a4Qty: Number(form.a4Qty || 0),
-        photo4x6Qty: Number(form.photo4x6Qty || 0),
-        deliveryFee: Number(form.deliveryFee || 0),
-      };
-
-      delete payload.createdAtLocal;
-
-      const created = await create(payload);
-      nav(`/app/orders/${created.id}`);
-    } catch (ex) {
-      setErr(ex?.message || 'تعذر إنشاء الطلب');
-    } finally {
-      setSaving(false);
+  // إعداد النموذج
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
+    defaultValues: {
+      customerName: '',
+      phone: '',
+      deliveryDate: new Date().toISOString().slice(0, 10),
+      source: ['واتساب'],
+      sourceOther: '',
+      a4Qty: 0,
+      photo4x6Qty: 0,
+      deliveryFee: 0,
+      deposit: 0,
+      notes: '',
     }
-  }
+  });
+
+  // 1. جلب الأسعار من قاعدة البيانات عند فتح الصفحة
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('id', 1)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          // تحديث الأسعار بالقيم الحقيقية من قاعدة البيانات
+          setPrices({
+            a4: Number(data.a4_price),
+            photo4x6: Number(data.photo_4x6_price),
+            delivery: Number(data.delivery_fee_default)
+          });
+          
+          // وضع سعر التوصيل الافتراضي في النموذج
+          setValue('deliveryFee', data.delivery_fee_default);
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+        toast.error('فشل جلب الأسعار، سيتم استخدام الافتراضي');
+      } finally {
+        setLoadingSettings(false);
+      }
+    }
+    fetchSettings();
+  }, [setValue]);
+
+  // مراقبة القيم للحساب الفوري
+  const [a4Qty, photo4x6Qty, deliveryFee, deposit] = watch(['a4Qty', 'photo4x6Qty', 'deliveryFee', 'deposit']);
+
+  // 2. حساب الإجمالي باستخدام الأسعار الديناميكية (prices)
+  const subtotal = (Number(a4Qty || 0) * prices.a4) + (Number(photo4x6Qty || 0) * prices.photo4x6);
+  const total = subtotal + Number(deliveryFee || 0);
+  const remaining = Math.max(0, total - Number(deposit || 0));
+
+  // الحفظ
+  const onSubmit = async (data) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .insert({
+          customer_name: data.customerName,
+          phone: data.phone,
+          delivery_date: data.deliveryDate,
+          source: data.source,
+          source_other: data.sourceOther,
+          a4_qty: data.a4Qty,
+          photo_4x6_qty: data.photo4x6Qty,
+          delivery_fee: data.deliveryFee,
+          subtotal: subtotal,
+          total_amount: total,
+          deposit: data.deposit,
+          notes: data.notes,
+          status: 'new',
+          payment_status: remaining === 0 ? 'paid' : 'unpaid'
+        });
+
+      if (error) throw error;
+
+      toast.success('تم إنشاء الطلب بنجاح!');
+      navigate('/app/orders');
+
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast.error('حدث خطأ أثناء الحفظ');
+    }
+  };
+
+  const handleSourceToggle = (sourceValue) => {
+    const currentSources = watch('source');
+    if (currentSources.includes(sourceValue)) {
+      setValue('source', currentSources.filter(s => s !== sourceValue));
+    } else {
+      setValue('source', [...currentSources, sourceValue]);
+    }
+  };
+
+  if (loadingSettings) return <div className="p-10 text-center flex justify-center items-center gap-2"><Loader2 className="animate-spin" /> جاري جلب الأسعار...</div>;
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">إضافة طلب جديد</h1>
-          <p className="text-sm text-slate-500">سجّل الطلب وسيتم حفظه محلياً على نفس الجهاز (LocalStorage).</p>
+          <h1 className="text-2xl font-bold text-slate-900">طلب جديد</h1>
+          <p className="text-sm text-slate-500 flex items-center gap-2 mt-1">
+            <Calculator size={16} className="text-emerald-600" /> 
+            الأسعار الحالية: 
+            <span className="font-bold text-slate-900 mx-1">A4 = {prices.a4} ريال</span> | 
+            <span className="font-bold text-slate-900 mx-1">4×6 = {prices.photo4x6} ريال</span>
+          </p>
         </div>
-        <button type="button" onClick={() => nav('/app/orders')} className="rounded-xl border px-4 py-2 text-sm">
-          الرجوع للطلبات
+        <button 
+          type="button" 
+          onClick={() => navigate('/app/orders')} 
+          className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-sm font-medium"
+        >
+          إلغاء
         </button>
       </div>
 
-      {err ? <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{err}</div> : null}
+      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 md:grid-cols-12">
+        
+        {/* القسم الأيمن: المدخلات */}
+        <div className="md:col-span-8 space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="font-bold text-slate-800 mb-4">بيانات العميل</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">اسم العميل <span className="text-red-500">*</span></label>
+                <input
+                  {...register('customerName', { required: 'مطلوب' })}
+                  className="input-field"
+                  placeholder="الاسم"
+                />
+                {errors.customerName && <p className="text-xs text-red-500">{errors.customerName.message}</p>}
+              </div>
 
-      <form onSubmit={onSubmit} className="grid gap-4 rounded-2xl border bg-white p-4 md:p-6">
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">اسم العميل</label>
-            <input
-              className="w-full rounded-xl border px-3 py-2 text-sm"
-              value={form.customerName}
-              onChange={(e) => setField('customerName', e.target.value)}
-              placeholder="مثال: أنور"
-            />
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">الجوال</label>
+                <input
+                  {...register('phone')}
+                  className="input-field dir-ltr text-right"
+                  placeholder="05xxxxxxxx"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">تاريخ التسليم</label>
+                <input
+                  type="date"
+                  {...register('deliveryDate')}
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-slate-700 mb-2">المصدر</label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {['واتساب', 'إنستقرام', 'سناب', 'مباشر'].map((src) => (
+                  <button
+                    key={src}
+                    type="button"
+                    onClick={() => handleSourceToggle(src)}
+                    className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
+                      watch('source').includes(src) 
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-medium' 
+                        : 'bg-white border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {src}
+                  </button>
+                ))}
+              </div>
+              <input
+                  {...register('sourceOther')}
+                  className="input-field"
+                  placeholder="مصدر آخر (اختياري)..."
+                />
+            </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">رقم الجوال</label>
-            <input
-              className="w-full rounded-xl border px-3 py-2 text-sm"
-              value={form.phone}
-              onChange={(e) => setField('phone', e.target.value)}
-              placeholder="05xxxxxxxx"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">تاريخ التسليم المطلوب</label>
-            <input
-              type="date"
-              className="w-full rounded-xl border px-3 py-2 text-sm"
-              value={form.deliveryDate}
-              onChange={(e) => setField('deliveryDate', e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-slate-600">تاريخ إنشاء الطلب (قابل للتعديل)</label>
-            <input
-              type="datetime-local"
-              className="w-full rounded-xl border px-3 py-2 text-sm"
-              value={form.createdAtLocal}
-              onChange={(e) => setField('createdAtLocal', e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <label className="mb-2 block text-sm text-slate-600">مصدر الطلب (يمكن اختيار أكثر من واحد)</label>
-            <div className="flex flex-wrap gap-2">
-              {['واتساب', 'إنستقرام', 'سناب', 'مباشر'].map((s) => (
-                <label key={s} className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={(form.source || []).includes(s)}
-                    onChange={() => toggleSource(s)}
-                  />
-                  {s}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="font-bold text-slate-800 mb-4">تفاصيل الطلب</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">
+                  عدد A4 <span className="text-xs text-emerald-600 font-bold">({prices.a4} ر.س)</span>
                 </label>
-              ))}
-            </div>
-
-            <div className="mt-3">
-              <label className="mb-1 block text-sm text-slate-600">مصدر آخر (اختياري)</label>
-              <input
-                className="w-full rounded-xl border px-3 py-2 text-sm"
-                value={form.sourceOther}
-                onChange={(e) => setField('sourceOther', e.target.value)}
-                placeholder="مثال: عميل قديم، معرض..."
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm text-slate-600">عدد صور A4</label>
-              <input
-                type="number"
-                className="w-full rounded-xl border px-3 py-2 text-sm"
-                value={form.a4Qty}
-                onChange={(e) => setField('a4Qty', e.target.value)}
-                min={0}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm text-slate-600">عدد صور 4×6</label>
-              <input
-                type="number"
-                className="w-full rounded-xl border px-3 py-2 text-sm"
-                value={form.photo4x6Qty}
-                onChange={(e) => setField('photo4x6Qty', e.target.value)}
-                min={0}
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm text-slate-600">رسوم التوصيل (ريال)</label>
-              <input
-                type="number"
-                className="w-full rounded-xl border px-3 py-2 text-sm"
-                value={form.deliveryFee}
-                onChange={(e) => setField('deliveryFee', e.target.value)}
-                min={0}
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm text-slate-600">العربون (ريال)</label>
-              <input
-                type="number"
-                className="w-full rounded-xl border px-3 py-2 text-sm"
-                value={form.deposit}
-                onChange={(e) => setField('deposit', e.target.value)}
-                min={0}
-              />
+                <input
+                  type="number"
+                  min="0"
+                  {...register('a4Qty')}
+                  className="input-field font-bold text-slate-900 text-lg"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">
+                  عدد 4×6 <span className="text-xs text-emerald-600 font-bold">({prices.photo4x6} ر.س)</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  {...register('photo4x6Qty')}
+                  className="input-field font-bold text-slate-900 text-lg"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">ملاحظات</label>
+                <textarea
+                  {...register('notes')}
+                  rows="1"
+                  className="input-field resize-none"
+                  placeholder="..."
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-xl border bg-slate-50 p-3 text-sm">
-            <div className="text-slate-500">المبلغ الفرعي</div>
-            <div className="mt-1 text-lg font-bold">{calc.subtotal.toFixed(2)} ر.س</div>
+        {/* القسم الأيسر: الحسابات */}
+        <div className="md:col-span-4 space-y-4">
+          <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-lg sticky top-6">
+            <h3 className="text-lg font-bold mb-4">ملخص الدفع</h3>
+            
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between text-slate-300">
+                <span>المجموع الفرعي</span>
+                <span>{subtotal.toFixed(2)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center text-slate-300">
+                <span>التوصيل</span>
+                <input
+                  type="number"
+                  min="0"
+                  {...register('deliveryFee')}
+                  className="w-20 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-right text-white focus:border-emerald-500 outline-none"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-700 flex justify-between text-lg font-bold text-white">
+                <span>الإجمالي</span>
+                <span>{total.toFixed(2)} ر.س</span>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-700">
+               <label className="block text-xs text-slate-400 mb-1">العربون المدفوع</label>
+               <input
+                  type="number"
+                  min="0"
+                  {...register('deposit')}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:border-emerald-500 font-bold text-lg outline-none"
+                />
+            </div>
+
+            <div className="mt-4 flex justify-between items-center bg-slate-800 rounded-xl p-3">
+              <span className="text-sm text-slate-400">المتبقي</span>
+              <span className={`text-xl font-bold ${remaining > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                {remaining.toFixed(2)}
+              </span>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-6 w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all disabled:opacity-50"
+            >
+              {isSubmitting ? 'جاري الحفظ...' : 'حفظ وإنشاء الطلب'}
+            </button>
           </div>
-
-          <div className="rounded-xl border bg-slate-50 p-3 text-sm">
-            <div className="text-slate-500">المبلغ الإجمالي</div>
-            <div className="mt-1 text-lg font-bold">{calc.total.toFixed(2)} ر.س</div>
-          </div>
-
-          <div className="rounded-xl border bg-slate-50 p-3 text-sm">
-            <div className="text-slate-500">المتبقي</div>
-            <div className="mt-1 text-lg font-bold">{Math.max(0, calc.total - Number(form.deposit || 0)).toFixed(2)} ر.س</div>
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm text-slate-600">ملاحظات إضافية</label>
-          <textarea
-            className="min-h-[90px] w-full rounded-xl border px-3 py-2 text-sm"
-            value={form.notes}
-            onChange={(e) => setField('notes', e.target.value)}
-            placeholder="أي تفاصيل مهمة..."
-          />
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
-          <button type="button" onClick={() => nav('/app/orders')} className="rounded-xl border px-4 py-2 text-sm">
-            إلغاء
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60"
-          >
-            {saving ? 'جارٍ الحفظ...' : 'حفظ الطلب'}
-          </button>
         </div>
       </form>
+      
+      {/* تنسيق الحقول */}
+      <style>{`
+        .input-field {
+          @apply w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all;
+        }
+      `}</style>
     </div>
   );
 }

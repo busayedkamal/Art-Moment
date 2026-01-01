@@ -1,75 +1,71 @@
 // src/pages/AdminLoginPage.jsx
-import { useMemo, useState } from 'react';
-import { loadSettings } from '../storage/settingsStorage.js';
-import {
-  startAdminSession,
-  clearAdminSession,
-  MAX_INACTIVE_MINUTES,
-} from '../utils/adminSession.js';
-
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 import logoImg from '../assets/logo-art-moment.svg';
 
-// إزالة الفراغات + تحويل الأرقام العربية إلى إنجليزية
-function normalizeCode(value) {
-  let str = String(value ?? '');
-  str = str.replace(/\s+/g, '');
-
-  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
-  str = str.replace(/[٠-٩]/g, (d) => {
-    const idx = arabicDigits.indexOf(d);
-    return idx >= 0 ? String(idx) : d;
-  });
-
-  return str;
-}
-
 export default function AdminLoginPage() {
-  const [code, setCode] = useState('');
-  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const expectedCode = useMemo(() => {
-    const settings = loadSettings() || {};
-    // نعتمد مفتاح واحد واضح: adminLoginCode (افتراضي 1234)
-    const raw = typeof settings.adminLoginCode !== 'undefined' ? settings.adminLoginCode : '1234';
-    return normalizeCode(raw || '1234');
-  }, []);
-
-  const handleSubmit = (e) => {
+    const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
-
-    const entered = normalizeCode(code);
-
-    if (!entered) {
-      setError('من فضلك أدخل رمز الدخول.');
+    
+    // التحقق المبدئي
+    if (!email || !password) {
+      toast.error('الرجاء إدخال البريد الإلكتروني وكلمة المرور');
       return;
     }
 
-    if (entered !== expectedCode) {
-      setError('رمز الدخول غير صحيح.');
-      return;
+    try {
+      setLoading(true);
+      
+      // محاولة تسجيل الدخول عبر Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        // ترجمة الأخطاء الشائعة للعربية
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        }
+        throw error;
+      }
+
+      // نجاح الدخول
+      toast.success('تم تسجيل الدخول بنجاح! جاري التوجيه...');
+      
+      // التوجيه للوحة التحكم
+      // (ملاحظة: AuthContext سيحدث الحالة تلقائياً، لكننا نوجه المستخدم يدوياً للسرعة)
+      navigate('/app/dashboard', { replace: true });
+
+    } catch (err) {
+      console.error('Login error:', err);
+      toast.error(err.message || 'حدث خطأ أثناء تسجيل الدخول');
+    } finally {
+      setLoading(false);
     }
-
-    // نجاح
-    startAdminSession();
-
-    // تنقّل مع تحديث كامل لتجنب أي حالة قديمة
-    window.location.href = '/app';
   };
 
   const handleBackToHome = () => {
-    clearAdminSession();
-    window.location.href = '/';
+    navigate('/');
   };
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 space-y-5">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 space-y-6">
+        
+        {/* الترويسة والشعار */}
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] text-slate-500 mb-1">لوحة تحكم</p>
+            <p className="text-[11px] text-slate-500 mb-1">لوحة التحكم</p>
             <h1 className="text-lg md:text-xl font-semibold text-slate-900">
-              لحظة فن – دخول المسؤول
+              تسجيل دخول المسؤول
             </h1>
           </div>
           <img
@@ -79,39 +75,67 @@ export default function AdminLoginPage() {
           />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* نموذج تسجيل الدخول */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          
+          {/* حقل البريد الإلكتروني */}
           <div className="space-y-2">
-            <label className="block text-xs text-slate-600">
-              رمز الدخول للوحة التحكم
+            <label className="block text-xs font-medium text-slate-700">
+              البريد الإلكتروني
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-left dir-ltr focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+              placeholder="admin@example.com"
+              dir="ltr"
+              required
+            />
+          </div>
+
+          {/* حقل كلمة المرور */}
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-slate-700">
+              كلمة المرور
             </label>
             <input
               type="password"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm tracking-[0.3em] text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+              placeholder="••••••••"
+              required
             />
-            {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
           </div>
 
+          {/* زر الدخول */}
           <button
             type="submit"
-            className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium bg-slate-900 text-white hover:bg-slate-800"
+            disabled={loading}
+            className="w-full px-4 py-3 rounded-2xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2"
           >
-            دخول للوحة التحكم
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                جاري التحقق...
+              </>
+            ) : (
+              'تسجيل الدخول'
+            )}
           </button>
 
+          {/* زر الرجوع */}
           <button
             type="button"
             onClick={handleBackToHome}
-            className="w-full px-4 py-2.5 rounded-2xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-50"
+            className="w-full px-4 py-3 rounded-2xl text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
           >
-            ← الرجوع للصفحة الرئيسية
+            الرجوع للصفحة الرئيسية
           </button>
-
-          <p className="text-[11px] text-slate-500 text-center mt-2 leading-relaxed">
-            تنتهي جلسة المسؤول تلقائياً بعد {MAX_INACTIVE_MINUTES} دقيقة من الخمول.
-          </p>
         </form>
       </div>
     </div>

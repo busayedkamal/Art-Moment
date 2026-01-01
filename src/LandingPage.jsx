@@ -1,376 +1,308 @@
 // src/LandingPage.jsx
-import { Link } from 'react-router-dom'
-import logoImg from './assets/logo.png'
-import heroImage from './assets/HERO_IMAGE_URL.jpg'
-
-// لو حصلت مشكلة في تحميل الصورة المحلية، نستخدم رابط احتياطي من الإنترنت
-const FALLBACK_HERO_IMAGE_URL =
-  'https://images.pexels.com/photos/1398325/pexels-photo-1398325.jpeg?auto=compress&cs=tinysrgb&w=1200'
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  Search, 
+  MessageCircle, 
+  Image as ImageIcon, 
+  CheckCircle, 
+  Truck, 
+  Printer, 
+  HelpCircle,
+  Menu,
+  X,
+  ChevronDown,
+  Lock
+} from 'lucide-react';
+import logo from './assets/logo-art-moment.svg'; // تأكد من وجود الشعار
 
 export default function LandingPage() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const toggleFaq = (index) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
+
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      {/* الهيدر */}
-      <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          {/* الشعار */}
-          <div className="flex items-center gap-2">
-            <img
-              src={logoImg}
-              alt="Art Moment Logo"
-              className="w-9 h-9 rounded-xl bg-slate-900/90 p-1 object-contain"
-            />
-            <div className="leading-tight">
-              <div className="text-sm font-semibold text-slate-900">
-                Art Moment | لحظة فن
-              </div>
-              <div className="text-[11px] text-emerald-600">
-                Printing &amp; Painting
+    <div className="min-h-screen bg-white font-sans text-slate-900" dir="rtl">
+      
+      {/* --- 1. شريط التنقل (Navbar) --- */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            {/* الشعار */}
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="Art Moment" className="h-12 w-auto" />
+              <div>
+                <h1 className="text-lg font-bold text-slate-900 leading-tight">Art Moment</h1>
+                <p className="text-[10px] text-slate-500 tracking-wider">Printing & Painting</p>
               </div>
             </div>
-          </div>
 
-          {/* روابط الهيدر */}
-          <nav className="hidden md:flex items-center gap-5 text-sm">
-            <a href="#services" className="text-slate-700 hover:text-slate-900">
-              خدمات الطباعة
-            </a>
-            <a href="#sizes" className="text-slate-700 hover:text-slate-900">
-              المقاسات والأسعار التقريبية
-            </a>
-            <a href="#how-it-works" className="text-slate-700 hover:text-slate-900">
-              كيف تتم الخدمة؟
-            </a>
-            <a href="#faq" className="text-slate-700 hover:text-slate-900">
-              الأسئلة الشائعة
-            </a>
-          </nav>
+            {/* روابط الكمبيوتر */}
+            <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+              <a href="#services" className="hover:text-emerald-600 transition-colors">خدمات الطباعة</a>
+              <a href="#sizes" className="hover:text-emerald-600 transition-colors">المقاسات</a>
+              <a href="#how-it-works" className="hover:text-emerald-600 transition-colors">كيف تتم الخدمة؟</a>
+              <a href="#faq" className="hover:text-emerald-600 transition-colors">الأسئلة الشائعة</a>
+            </div>
 
-          {/* أزرار سريعة */}
-          <div className="flex items-center gap-2">
-            <Link
-              to="/track"
-              className="hidden sm:inline-flex items-center px-3 py-2 rounded-xl text-xs font-medium border border-slate-300 hover:bg-slate-50"
+            {/* أزرار الإجراءات */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link 
+                to="/track" 
+                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors flex items-center gap-2"
+              >
+                <Search size={18} />
+                تتبع طلبك
+              </Link>
+              <Link 
+                to="/admin/login" 
+                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors flex items-center gap-2"
+              >
+                <Lock size={16} />
+                دخول لوحة التحكم
+              </Link>
+            </div>
+
+            {/* زر القائمة للجوال */}
+            <button 
+              className="md:hidden p-2 text-slate-600"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              تتبّع طلبك
-            </Link>
-            <Link
-              to="/admin/login"
-              className="inline-flex items-center px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-medium bg-slate-900 text-white hover:bg-slate-800"
-            >
-              دخول لوحة التحكم
-            </Link>
+              {isMobileMenuOpen ? <X /> : <Menu />}
+            </button>
           </div>
         </div>
-      </header>
 
-      {/* المحتوى الأساسي */}
-      <main className="flex-1">
-        {/* هيرو */}
-        <section className="bg-slate-900 text-white">
-          <div className="max-w-5xl mx-auto px-4 py-10 md:py-14 grid md:grid-cols-2 gap-8 md:gap-10 items-center">
-            {/* نص الهيرو */}
-            <div className="space-y-4">
-              <p className="text-xs md:text-sm text-emerald-300 font-medium">
+        {/* قائمة الجوال المنسدلة */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-slate-100 p-4 space-y-4 shadow-lg">
+            <a href="#services" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
+            <a href="#sizes" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>المقاسات</a>
+            <Link to="/track" className="block w-full text-center py-3 bg-slate-100 rounded-xl font-bold text-slate-700" onClick={() => setIsMobileMenuOpen(false)}>
+              تتبع طلبك
+            </Link>
+            <Link to="/admin/login" className="block w-full text-center py-3 bg-slate-900 text-white rounded-xl font-bold" onClick={() => setIsMobileMenuOpen(false)}>
+              دخول المسؤول
+            </Link>
+          </div>
+        )}
+      </nav>
+
+      {/* --- 2. القسم الرئيسي (Hero) --- */}
+      <header className="relative bg-slate-900 overflow-hidden py-16 md:py-24">
+        {/* خلفية جمالية */}
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-emerald-500/5 blur-3xl rounded-full translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-1/3 h-full bg-blue-500/5 blur-3xl rounded-full -translate-x-1/2"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            
+            {/* النص والأزرار */}
+            <div className="text-center md:text-right space-y-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 طباعة صور فوتوغرافية في الأحساء
-              </p>
-              <h1 className="text-2xl md:text-4xl font-bold leading-snug">
-                اطبع أجمل لحظاتك مع
-                <span className="block text-emerald-300 mt-1">
-                  لحظة فن | Art-Moment
-                </span>
+              </div>
+              
+              <h1 className="text-4xl md:text-6xl font-black text-white leading-tight">
+                اطبع أجمل لحظاتك مع <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">لحظة فن | Art-Moment</span>
               </h1>
-              <p className="text-sm md:text-base text-slate-100 leading-relaxed">
-                طباعة صور مقاس 4×6 و A4 بجودة عالية، ألوان زاهية، وتفاصيل واضحة.
-                أرسل صورك عبر واتساب، تابع حالة الطلب أونلاين، واستلمها جاهزة
-                من المتجر أو بالتنسيق على وقت يناسبك.
+              
+              <p className="text-lg text-slate-400 leading-relaxed max-w-xl mx-auto md:mx-0">
+                طباعة صور مقاس 4×6 و A4 بجودة عالية، ألوان زاهية، وتفاصيل واضحة. 
+                أرسل صورك عبر واتساب، تابع حالة الطلب أونلاين، واستلمها جاهزة من المتجر أو بالتنسيق على وقت يناسبك.
               </p>
 
-              <div className="flex flex-wrap gap-2 pt-1">
-                <a
-                  href="https://wa.me/966569663697?text=مرحباً، أود حجز طلب طباعة صور من لحظة فن."
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
+                <a 
+                  href="https://wa.me/966569663697" // ضع رقم الواتساب هنا
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs md:text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-lg shadow-emerald-500/20"
                 >
+                  <MessageCircle size={20} />
                   إرسال الصور عبر واتساب
                 </a>
-                <Link
+                <Link 
                   to="/track"
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs md:text-sm font-medium border border-slate-400/70 text-slate-50 hover:bg-slate-800/70"
+                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 flex items-center justify-center gap-2 transition-colors"
                 >
-                  تتبّع طلب سابق
+                  <Search size={20} />
+                  تتبع طلب سابق
                 </Link>
               </div>
 
-              <div className="text-[11px] md:text-xs text-slate-300 space-y-1 pt-2">
-                <p>• تجهيز سريع للطلبات اليومية والمناسبات الخاصة.</p>
-                <p>• مراجعة سريعة لجودة الصور قبل الطباعة قدر الإمكان.</p>
-                <p>• إمكانية التواصل معك عند وجود ملاحظات على الصور أو المقاسات.</p>
+              {/* ميزات سريعة */}
+              <div className="pt-4 flex flex-wrap gap-4 justify-center md:justify-start text-xs text-slate-400">
+                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> تجهيز سريع للطلبات</span>
+                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> مراجعة دقة الصور</span>
+                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> دفع عند الاستلام</span>
               </div>
             </div>
 
-            {/* صورة الهيرو */}
+            {/* الصورة الجمالية */}
             <div className="relative">
-              <div className="absolute -top-4 -left-4 w-20 h-20 rounded-3xl bg-emerald-400/20 blur-2xl" />
-              <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-3xl bg-sky-400/20 blur-2xl" />
-              <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-xl bg-slate-900">
-                <img
-                  src={heroImage || FALLBACK_HERO_IMAGE_URL}
-                  alt="طباعة صور فوتوغرافية"
-                  className="w-full h-64 md:h-72 object-cover"
+              <div className="aspect-[4/3] rounded-3xl bg-slate-800 border border-slate-700 overflow-hidden shadow-2xl relative group">
+                {/* 🔴 هام: ضع هنا صورة حقيقية من مجلد assets بدلاً من هذا الرابط */}
+                <img 
+                  src="https://images.unsplash.com/photo-1552168324-d612d77725e3?q=80&w=1000&auto=format&fit=crop" 
+                  alt="صور مطبوعة" 
+                  className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="p-3 md:p-4 text-xs md:text-sm">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-semibold">صور فوتوغرافية مطبوعة</span>
-                    <span className="text-[11px] text-emerald-300">
-                      4×6 &amp; A4
-                    </span>
-                  </div>
-                  <p className="text-[11px] md:text-xs text-slate-200 leading-relaxed">
-                    نهتم بتوازن الألوان والحدة في كل صورة، لتخرج مطبوعاتك بأفضل شكل ممكن،
-                    وتكون جاهزة للألبوم، الإطار، أو الإهداء.
-                  </p>
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+                
+                <div className="absolute bottom-6 right-6 text-white">
+                  <p className="font-bold text-lg">صور فوتوغرافية مطبوعة</p>
+                  <p className="text-sm text-slate-300">نهتم بتوازن الألوان والحدة في كل صورة</p>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </header>
 
-        {/* المقاسات الرئيسية */}
-        <section id="sizes" className="py-10 md:py-14">
-          <div className="max-w-5xl mx-auto px-4 space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl md:text-2xl font-bold text-slate-900">
-                مقاسات الطباعة المتوفرة
-              </h2>
-              <p className="text-sm text-slate-600">
-                اختر المقاس المناسب لاستخدامك، وسنحرص على أن تكون النتيجة بجودة
-                تليق بذكرياتك.
+      {/* --- 3. قسم المقاسات (Sizes) --- */}
+      <section id="sizes" className="py-20 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">مقاسات الطباعة المتوفرة</h2>
+            <p className="text-slate-500 max-w-2xl mx-auto">
+              اختر المقاس المناسب لاستخدامك، وسنحرص على أن تكون النتيجة بجودة تليق بذكرياتك.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* بطاقة A4 */}
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6">
+                <ImageIcon size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">طباعة صور مقاس A4</h3>
+              <p className="text-slate-500 leading-relaxed mb-6">
+                مقاس أكبر يعرض التفاصيل بوضوح أعلى، مناسب للتعليق على الجدار، أو وضعه في براويز كبيرة، أو تقديمه كهدية مميزة.
+                <br /><br />
+                نهتم بقص الصورة وضبطها قبل الطباعة قدر الإمكان حتى تظهر متوازنة.
               </p>
+              <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg inline-block">
+                مثالي للبراويز الكبيرة
+              </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-              {/* 4×6 */}
-              <article className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 space-y-2">
-                <h3 className="text-base md:text-lg font-semibold text-slate-900">
-                  طباعة صور مقاس 4×6
-                </h3>
-                <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-                  صور فوتوغرافية كلاسيكية تناسب الألبومات والإطارات الصغيرة. نستخدم
-                  ورق طباعة مخصص للصور مع ألوان زاهية وتفاصيل واضحة، لتبقى كل صورة
-                  محتفظة بجمال اللحظة.
-                </p>
-                <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-                  مثالية لصور العائلة، الرحلات، والمناسبات اليومية. يمكنك إرسال مجموعة
-                  كبيرة من الصور دفعة واحدة، ونجهزها لك بترتيب منظم وجاهز للاستلام.
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  * السعر يحدد حسب عدد الصور، ويُوضَّح لك قبل تأكيد تنفيذ الطلب.
-                </p>
-              </article>
-
-              {/* A4 */}
-              <article className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 space-y-2">
-                <h3 className="text-base md:text-lg font-semibold text-slate-900">
-                  طباعة صور مقاس A4
-                </h3>
-                <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-                  مقاس أكبر يعرض التفاصيل بوضوح أعلى، مناسب للتعليق على الجدار، أو
-                  وضعه في براويز كبيرة، أو تقديمه كهدية مميزة.
-                </p>
-                <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-                  نهتم بقصّ الصورة وضبطها قبل الطباعة قدر الإمكان حتى تظهر متوازنة،
-                  مع ألوان غنية ودرجات تباين مريحة للعين.
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  * يمكن استخدام صور عالية الدقة فقط للحصول على أفضل نتيجة في هذا المقاس.
-                </p>
-              </article>
+            {/* بطاقة 4x6 */}
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-6">
+                <ImageIcon size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">طباعة صور مقاس 4×6</h3>
+              <p className="text-slate-500 leading-relaxed mb-6">
+                صور فوتوغرافية كلاسيكية تناسب الألبومات والإطارات الصغيرة. نستخدم ورق طباعة مخصص للصور مع ألوان زاهية لتبقى كل صورة محتفظة بجمال اللحظة.
+                <br /><br />
+                مثالية لصور العائلة، الرحلات، والمناسبات اليومية.
+              </p>
+              <div className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg inline-block">
+                مثالي للألبومات
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* الخدمات العامة + التتبع */}
-        <section id="services" className="py-8 md:py-12 bg-white">
-          <div className="max-w-5xl mx-auto px-4 grid md:grid-cols-[3fr,2fr] gap-6 items-start">
-            {/* خدمة إدارة الطلبات / للعميل */}
-            <div className="space-y-3">
-              <h2 className="text-xl md:text-2xl font-bold text-slate-900">
-                خدمة طباعة منظمة من أول رسالة حتى الاستلام
-              </h2>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                هدفنا أن تكون تجربتك مع الطباعة بسيطة وواضحة: ترسل الصور، نجهز لك
-                الطلب، وتستلم بدون تعقيد. نستخدم نظام داخلي لإدارة الطلبات يساعدنا
-                على متابعة كل خطوة، من استلام الصور إلى التسليم.
-              </p>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                كعميل، كل ما تحتاجه هو:
-              </p>
-              <ul className="text-sm text-slate-700 space-y-1 list-disc pr-5">
-                <li>إرسال الصور والمقاس المطلوب عبر واتساب.</li>
-                <li>استلام تأكيد الطلب والوقت التقريبي للتجهيز.</li>
-                <li>تتبّع حالة طلبك أونلاين، والاستلام في الوقت المتفق عليه.</li>
-              </ul>
-            </div>
-
-            {/* كرت تتبع الطلب */}
-            <div className="bg-slate-900 text-white rounded-2xl p-4 md:p-5 space-y-3">
-              <h3 className="text-base md:text-lg font-semibold">
-                تتبّع طلبك في أي وقت
-              </h3>
-              <p className="text-xs md:text-sm text-slate-100 leading-relaxed">
-                عند تسجيل طلبك نحفظ رقم الطلب ورقم جوالك. تقدر تدخل صفحة{' '}
-                <span className="font-semibold">تتبّع الطلب</span> وتعرف آخر حالة:
-                قيد المراجعة، قيد الطباعة، جاهز للاستلام، أو تم التسليم.
-              </p>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                تحديث الحالة يتم في الغالب عند:
-                <br />• استلام الصور وتأكيد الطلب
-                <br />• بدء طباعة الصور
-                <br />• جاهزية الطلب للاستلام
-                <br />• إتمام التسليم
-              </p>
-              <Link
-                to="/track"
-                className="inline-flex mt-1 items-center justify-center px-3 py-2 rounded-xl text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white"
-              >
-                الانتقال إلى صفحة تتبّع الطلب
-              </Link>
-            </div>
+      {/* --- 4. كيف تتم الخدمة (Steps) --- */}
+      <section id="how-it-works" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">كيف تتم عملية الطباعة؟</h2>
+            <p className="text-slate-500">خطوات بسيطة وواضحة من أول رسالة إلى استلام الصور جاهزة.</p>
           </div>
-        </section>
 
-        {/* كيف تتم الخدمة؟ */}
-        <section id="how-it-works" className="py-10 md:py-12">
-          <div className="max-w-5xl mx-auto px-4 space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl md:text-2xl font-bold text-slate-900">
-                كيف تتم عملية الطباعة؟
-              </h2>
-              <p className="text-sm text-slate-600">
-                خطوات بسيطة وواضحة من أول رسالة إلى استلام الصور جاهزة.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-4 gap-4 text-xs md:text-sm">
-              <StepCard
-                number="1"
-                title="إرسال الصور"
-                body="ترسل الصور عبر واتساب مع تحديد المقاس المطلوب وعدد النسخ لكل صورة إن أمكن."
-              />
-              <StepCard
-                number="2"
-                title="تأكيد الطلب"
-                body="نراجع الصور سريعاً، نوضح لك أي ملاحظات ونؤكد الوقت التقريبي للتجهيز مع إجمالي التكلفة."
-              />
-              <StepCard
-                number="3"
-                title="الطباعة والتجهيز"
-                body="نطبع الصور باستخدام ورق مخصص للصور مع ضبط الألوان والقص قدر الإمكان، ثم نرتبها بشكل منظم."
-              />
-              <StepCard
-                number="4"
-                title="الاستلام والتقييم"
-                body="تستلم الطلب في الموعد المتفق عليه، وتقدر تشاركنا رأيك لتحسين الخدمة باستمرار."
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {[
+              { id: 1, icon: MessageCircle, title: 'إرسال الصور', desc: 'ترسل الصور عبر واتساب مع تحديد المقاس المطلوب.' },
+              { id: 2, icon: CheckCircle, title: 'تأكيد الطلب', desc: 'نراجع الصور سريعاً، نوضح لك أي ملاحظات ونؤكد الوقت.' },
+              { id: 3, icon: Printer, title: 'الطباعة والتجهيز', desc: 'نطبع الصور باستخدام ورق مخصص ونقصها بشكل منظم.' },
+              { id: 4, icon: Truck, title: 'الاستلام والتقييم', desc: 'تستلم الطلب في الموعد المتفق عليه، وتقدر تشاركنا رأيك.' },
+            ].map((step) => (
+              <div key={step.id} className="text-center group">
+                <div className="w-16 h-16 mx-auto bg-slate-50 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors mb-6 relative">
+                  <step.icon size={28} />
+                  <span className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white rounded-full text-xs flex items-center justify-center font-bold border-2 border-white">
+                    {step.id}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">{step.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* الأسئلة الشائعة */}
-        <section id="faq" className="py-10 md:py-12 bg-slate-50">
-          <div className="max-w-5xl mx-auto px-4 space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl md:text-2xl font-bold text-slate-900">
-                أسئلة شائعة
-              </h2>
-              <p className="text-sm text-slate-600">
-                بعض النقاط التي تُسأل كثيراً من عملاء لحظة فن.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <FAQItem
-                question="كم يستغرق تجهيز طلب الطباعة؟"
-                answer="يعتمد الوقت على عدد الصور والضغط في اليوم نفسه، لكن في العادة يتم تجهيز الطلبات البسيطة في نفس اليوم أو اليوم التالي، وسيتم توضيح الموعد التقريبي لك عند تأكيد الطلب."
-              />
-              <FAQItem
-                question="كيف أعرف أين وصل طلبي؟"
-                answer="من خلال صفحة تتبّع الطلب في الموقع. تحتاج فقط إلى رقم الطلب ورقم الجوال الذي استخدمته في الطلب، وستظهر لك أحدث حالة مسجّلة لدينا."
-              />
-              <FAQItem
-                question="ما هي طرق الدفع المتاحة؟"
-                answer="الدفع يكون غالباً عند الاستلام نقداً أو عبر تحويل بنكي، وبعض الطلبات يمكن دفع عربون لها مسبقاً حسب الاتفاق."
-              />
-            </div>
+      {/* --- 5. الأسئلة الشائعة (FAQ) --- */}
+      <section id="faq" className="py-20 bg-slate-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">أسئلة شائعة</h2>
+            <p className="text-slate-500">بعض النقاط التي تُسأل كثيراً من عملاء لحظة فن.</p>
           </div>
-        </section>
-      </main>
 
-      {/* فوتر */}
-      <footer className="border-t bg-white">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2">
-          <p className="text-[11px] md:text-xs text-slate-500">
-            © {new Date().getFullYear()} لحظة فن | Art Moment. جميع الحقوق محفوظة.
+          <div className="space-y-4">
+            {[
+              { q: 'كم يستغرق تجهيز طلب الطباعة؟', a: 'يعتمد الوقت على عدد الصور والضغط، لكن عادة يتم التجهيز في نفس اليوم أو اليوم التالي.' },
+              { q: 'كيف أعرف أين وصل طلبي؟', a: 'من خلال صفحة "تتبع الطلب" في الموقع. تحتاج فقط لرقم الطلب الذي نرسله لك.' },
+              { q: 'ما هي طرق الدفع المتاحة؟', a: 'الدفع يكون غالباً عند الاستلام نقداً أو تحويل بنكي. بعض الطلبات الكبيرة قد تتطلب عربوناً.' },
+            ].map((item, idx) => (
+              <div key={idx} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <button 
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full flex items-center justify-between p-5 text-right font-bold text-slate-800 hover:bg-slate-50 transition-colors"
+                >
+                  {item.q}
+                  <ChevronDown className={`text-slate-400 transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
+                </button>
+                {openFaq === idx && (
+                  <div className="p-5 pt-0 text-slate-500 text-sm leading-relaxed border-t border-slate-50">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* --- 6. تذييل الصفحة (Footer) --- */}
+      <footer className="bg-slate-900 text-slate-400 py-12 text-center">
+        <div className="max-w-7xl mx-auto px-4">
+          <img src={logo} alt="Art Moment" className="h-12 w-auto" />
+          <p className="mb-8 max-w-md mx-auto">
+            خدمة طباعة منظمة من أول رسالة حتى الاستلام. هدفنا أن تكون تجربتك بسيطة وواضحة، ونجهز لك صورك بأفضل جودة.
           </p>
-          <div className="flex items-center gap-3 text-[11px] md:text-xs text-slate-500">
-            <span>للاستفسار السريع عبر واتساب:</span>
-            <a
-              href="https://wa.me/966569663697?text=مرحباً، أود الاستفسار عن خدمات طباعة الصور لديكم."
-              target="_blank"
-              rel="noreferrer"
-              className="text-emerald-600 hover:text-emerald-700 font-medium"
-            >
-              966569663697+
-            </a>
+          <div className="flex justify-center gap-6 text-sm font-medium mb-8">
+            <Link to="/track" className="hover:text-white transition-colors">تتبع الطلب</Link>
+            <Link to="/admin/login" className="hover:text-white transition-colors">دخول الموظفين</Link>
           </div>
+          <p className="text-xs text-slate-600">
+            © 2025 Art Moment. جميع الحقوق محفوظة.
+          </p>
         </div>
       </footer>
 
-      {/* زر واتساب ثابت */}
-      <a
-        href="https://wa.me/966569663697?text=مرحباً، أود حجز طلب طباعة صور من لحظة فن."
-        target="_blank"
+      {/* زر واتساب العائم */}
+      <a 
+        href="https://wa.me/966569663697" // ضع رقم الواتساب هنا
+        target="_blank" 
         rel="noreferrer"
-        className="fixed left-4 bottom-4 z-30 inline-flex items-center gap-2 px-3 py-2 rounded-full shadow-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs md:text-sm"
+        className="fixed bottom-6 left-6 z-40 bg-emerald-500 text-white p-4 rounded-full shadow-xl hover:bg-emerald-600 hover:scale-110 transition-all flex items-center gap-2 group"
       >
-        <span className="text-lg">💬</span>
-        <span>تواصل عبر واتساب</span>
+        <MessageCircle size={24} />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-bold text-sm">
+          تواصل عبر واتساب
+        </span>
       </a>
-    </div>
-  )
-}
 
-/* مكوّنات مساعدة صغيرة */
-
-function StepCard({ number, title, body }) {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-3 md:p-4 h-full">
-      <div className="flex items-center gap-2 mb-1.5">
-        <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-semibold">
-          {number}
-        </div>
-        <h3 className="text-xs md:text-sm font-semibold text-slate-900">
-          {title}
-        </h3>
-      </div>
-      <p className="text-[11px] md:text-xs text-slate-600 leading-relaxed">
-        {body}
-      </p>
     </div>
-  )
-}
-
-function FAQItem({ question, answer }) {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-3 md:p-4">
-      <h3 className="text-sm md:text-base font-semibold text-slate-900 mb-1">
-        {question}
-      </h3>
-      <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-        {answer}
-      </p>
-    </div>
-  )
+  );
 }

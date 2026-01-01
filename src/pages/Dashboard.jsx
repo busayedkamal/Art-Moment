@@ -1,171 +1,110 @@
 // src/pages/Dashboard.jsx
-import { loadOrders } from '../storage/orderStorage.js'
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { ShoppingBag, Banknote, Clock, Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
-  // قراءة الطلبات من LocalStorage
-  const orders = loadOrders() || []
+  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-  const totalOrders = orders.length
-  const newOrders = orders.filter((o) => o.status === 'جديد').length
-  const readyOrders = orders.filter((o) => o.status === 'جاهز').length
-  const inProgressOrders = orders.filter(
-    (o) => o.status === 'قيد الطباعة',
-  ).length
-  const deliveredOrders = orders.filter(
-    (o) => o.status === 'تم التسليم',
-  ).length
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        // 1. جلب كل الطلبات لحساب الإحصائيات
+        const { data, error } = await supabase
+          .from('orders')
+          .select('id, total_amount, status');
 
-  const lateOrders = orders.filter(isLateOrder).length
+        if (error) throw error;
 
-  const totalAmount = orders.reduce(
-    (sum, o) => sum + Number(o.totalAmount || 0),
-    0,
-  )
-  const totalPaid = orders.reduce(
-    (sum, o) => sum + Number(o.paidAmount || 0),
-    0,
-  )
-  const totalUnpaid = totalAmount - totalPaid
+        // حساب الأرقام في المتصفح (Client-side calculation)
+        const totalOrders = data.length;
+        
+        // جمع كل المبالغ
+        const totalRevenue = data.reduce((acc, order) => acc + (order.total_amount || 0), 0);
+        
+        // حساب الطلبات غير المكتملة (جديد أو قيد الطباعة)
+        const pendingOrders = data.filter(o => o.status === 'new' || o.status === 'printing').length;
 
-  const latestOrders = [...orders].slice(-5).reverse()
+        setStats({ totalOrders, totalRevenue, pendingOrders });
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
 
   return (
-    <div className="space-y-6">
-      {/* العنوان الرئيسي */}
-      <h1 className="text-lg md:text-2xl font-bold text-slate-800">
-        لوحة تحكم لحظة فن
-      </h1>
-
-      {/* كروت أعداد الطلبات */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="إجمالي الطلبات" value={totalOrders} />
-        <StatCard label="طلبات جديدة" value={newOrders} />
-        <StatCard label="قيد الطباعة" value={inProgressOrders} />
-        <StatCard label="طلبات جاهزة" value={readyOrders} />
+    <div className="space-y-8">
+      {/* بطاقة الترحيب */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-xl">
+        <div className="relative z-10">
+          <h1 className="text-3xl font-bold mb-2">أهلاً بك،بو سيد كمال 👋</h1>
+          <p className="text-slate-300">
+            لديك <strong className="text-emerald-400">{stats.pendingOrders}</strong> طلبات تحتاج إلى متابعة اليوم.
+          </p>
+        </div>
+        {/* زخرفة خلفية */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
       </div>
 
-      {/* كروت حالة التسليم والمبالغ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="طلبات متأخرة"
-          value={lateOrders}
-          variant={lateOrders > 0 ? 'danger' : 'normal'}
-        />
-        <StatCard label="تم التسليم" value={deliveredOrders} />
-        <MoneyCard label="إجمالي المبالغ" value={totalAmount} />
-        <MoneyCard
-          label="المبالغ المدفوعة"
-          value={totalPaid}
-          sub={totalUnpaid}
-        />
-      </div>
+      {/* الإحصائيات */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* بطاقة إجمالي الطلبات */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <ShoppingBag size={28} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">إجمالي الطلبات</p>
+            {loading ? (
+              <Loader2 className="animate-spin h-6 w-6 text-slate-300 mt-1" />
+            ) : (
+              <p className="text-2xl font-bold text-slate-900">{stats.totalOrders}</p>
+            )}
+          </div>
+        </div>
 
-      {/* ملخص نصي سريع */}
-      <div className="card p-4">
-        <h2 className="font-semibold text-slate-800 text-sm md:text-base mb-2">
-          ملخص سريع
-        </h2>
-        <p className="text-sm text-slate-600 leading-relaxed">
-          هذه الأرقام مبنية على البيانات المخزّنة محلياً في متصفحك
-          (LocalStorage). يمكنك إضافة وتعديل الطلبات من صفحة الطلبات،
-          وستنعكس التغييرات مباشرة هنا في لوحة التحكم عند إعادة فتح الصفحة.
-        </p>
-      </div>
+        {/* بطاقة الأرباح */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <Banknote size={28} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">إجمالي المبالغ</p>
+            {loading ? (
+              <Loader2 className="animate-spin h-6 w-6 text-slate-300 mt-1" />
+            ) : (
+              <p className="text-2xl font-bold text-slate-900">{stats.totalRevenue.toLocaleString()} ر.س</p>
+            )}
+          </div>
+        </div>
 
-      {/* جدول أحدث الطلبات */}
-      <div className="card p-4">
-        <h3 className="font-semibold text-slate-800 text-sm md:text-base mb-3">
-          أحدث الطلبات
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs md:text-sm">
-            <thead>
-              <tr className="border-b text-slate-500">
-                <th className="py-2 text-right">رقم الطلب</th>
-                <th className="text-right">العميل</th>
-                <th className="text-right">الحالة</th>
-                <th className="text-right">الدفع</th>
-                <th className="text-right">المبلغ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {latestOrders.map((o) => (
-                <tr key={o.id} className="border-b last:border-0">
-                  <td className="py-2 font-mono text-[11px]">{o.id}</td>
-                  <td>{o.customerName || 'بدون اسم'}</td>
-                  <td>{o.status || '-'}</td>
-                  <td className="text-xs text-slate-600">
-                    {o.paymentStatus || '-'}
-                  </td>
-                  <td className="text-xs">
-                    {Number(o.totalAmount || 0).toFixed(2)} ر.س
-                  </td>
-                </tr>
-              ))}
-
-              {latestOrders.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="py-4 text-center text-slate-400 text-xs"
-                  >
-                    لا يوجد طلبات حتى الآن. يمكنك البدء من صفحة &quot;الطلبات&quot;
-                    وإضافة أول طلب.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        {/* بطاقة قيد التنفيذ */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
+            <Clock size={28} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">قيد التنفيذ</p>
+            {loading ? (
+              <Loader2 className="animate-spin h-6 w-6 text-slate-300 mt-1" />
+            ) : (
+              <p className="text-2xl font-bold text-slate-900">{stats.pendingOrders}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  )
-}
-
-function StatCard({ label, value, variant = 'normal' }) {
-  const colorClasses =
-    variant === 'danger'
-      ? 'bg-red-50 border-red-100 text-red-700'
-      : 'bg-white border-slate-200 text-slate-800'
-
-  return (
-    <div className={`rounded-2xl shadow-sm border p-3 md:p-4 ${colorClasses}`}>
-      <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className="text-xl md:text-2xl font-bold">{value}</div>
-    </div>
-  )
-}
-
-function MoneyCard({ label, value, sub }) {
-  const main = Number(value || 0)
-  const subValue = typeof sub === 'number' ? Number(sub || 0) : null
-
-  return (
-    <div className="rounded-2xl shadow-sm border bg-white border-slate-200 p-3 md:p-4">
-      <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className="text-xl md:text-2xl font-bold mb-1">
-        {main.toFixed(2)} ر.س
-      </div>
-      {subValue !== null && (
-        <div className="text-[11px] text-slate-500">
-          المتبقي على العملاء: {subValue.toFixed(2)} ر.س
-        </div>
-      )}
-    </div>
-  )
-}
-
-function isLateOrder(order) {
-  if (!order || !order.dueDate) return false
-  try {
-    const due = new Date(order.dueDate)
-    const today = new Date()
-    return (
-      due < today &&
-      order.status !== 'تم التسليم' &&
-      order.status !== 'ملغي'
-    )
-  } catch {
-    return false
-  }
+  );
 }

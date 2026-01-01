@@ -9,11 +9,13 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.86.2",
+    "@supabase/supabase-js": "^2.89.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.555.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.69.0",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.9.6"
   },
   "devDependencies": {
