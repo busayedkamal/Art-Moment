@@ -8,13 +8,14 @@ import {
   CheckCircle, 
   Truck, 
   Printer, 
-  HelpCircle,
-  Menu,
-  X,
-  ChevronDown,
-  Lock
+  Menu, 
+  X, 
+  ChevronDown, 
+  Lock,
+  Star,    // أيقونة جديدة للتقييم
+  Quote    // أيقونة جديدة للاقتباس
 } from 'lucide-react';
-import logo from './assets/logo-art-moment.svg'; // تأكد من وجود الشعار
+import logo from './assets/logo-art-moment.svg'; 
 
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -24,16 +25,23 @@ export default function LandingPage() {
     setOpenFaq(openFaq === index ? null : index);
   };
 
+  // بيانات التقييمات (إضافة جديدة)
+  const reviews = [
+    { id: 1, name: "عبدالله السالم", comment: "الجودة خرافية والألوان تفتح النفس! التغليف كان ممتاز جداً.", rating: 5 },
+    { id: 2, name: "سارة محمد", comment: "تعامل راقي وسرعة في الإنجاز. طلبت الصباح واستلمت العصر.", rating: 5 },
+    { id: 3, name: "فهد القحطاني", comment: "أفضل محل طباعة تعاملت معه في الأحساء، دقة في المواعيد.", rating: 4 },
+  ];
+
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900" dir="rtl">
+    <div className="min-h-screen bg-white font-sans text-slate-900 scroll-smooth" dir="rtl">
       
       {/* --- 1. شريط التنقل (Navbar) --- */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* الشعار */}
+            {/* الشعار - تم التحديث لعرض الصورة بدلاً من الحرف */}
             <div className="flex items-center gap-3">
-              <img src={logo} alt="Art Moment" className="h-12 w-auto" />
+              <img src={logo} alt="Art Moment" className="h-10 w-auto" />
               <div>
                 <h1 className="text-lg font-bold text-slate-900 leading-tight">Art Moment</h1>
                 <p className="text-[10px] text-slate-500 tracking-wider">Printing & Painting</p>
@@ -44,6 +52,7 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
               <a href="#services" className="hover:text-emerald-600 transition-colors">خدمات الطباعة</a>
               <a href="#sizes" className="hover:text-emerald-600 transition-colors">المقاسات</a>
+              <a href="#reviews" className="hover:text-emerald-600 transition-colors">آراء العملاء</a> {/* رابط جديد */}
               <a href="#how-it-works" className="hover:text-emerald-600 transition-colors">كيف تتم الخدمة؟</a>
               <a href="#faq" className="hover:text-emerald-600 transition-colors">الأسئلة الشائعة</a>
             </div>
@@ -62,7 +71,7 @@ export default function LandingPage() {
                 className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors flex items-center gap-2"
               >
                 <Lock size={16} />
-                دخول لوحة التحكم
+                دخول
               </Link>
             </div>
 
@@ -81,11 +90,9 @@ export default function LandingPage() {
           <div className="md:hidden bg-white border-t border-slate-100 p-4 space-y-4 shadow-lg">
             <a href="#services" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
             <a href="#sizes" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>المقاسات</a>
+            <a href="#reviews" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>آراء العملاء</a>
             <Link to="/track" className="block w-full text-center py-3 bg-slate-100 rounded-xl font-bold text-slate-700" onClick={() => setIsMobileMenuOpen(false)}>
               تتبع طلبك
-            </Link>
-            <Link to="/admin/login" className="block w-full text-center py-3 bg-slate-900 text-white rounded-xl font-bold" onClick={() => setIsMobileMenuOpen(false)}>
-              دخول المسؤول
             </Link>
           </div>
         )}
@@ -102,9 +109,16 @@ export default function LandingPage() {
             
             {/* النص والأزرار */}
             <div className="text-center md:text-right space-y-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                طباعة صور فوتوغرافية في الأحساء
+              
+              {/* تحديث: إضافة إشعار العروض والكوبونات */}
+              <div className="flex flex-col items-center md:items-start gap-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  طباعة صور فوتوغرافية في الأحساء
+                </div>
+                <span className="inline-block py-1 px-3 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-bold border border-yellow-500/20">
+                   ✨ عرض خاص: استخدم كود <span className="text-white font-mono">WELCOME</span> لخصم إضافي
+                </span>
               </div>
               
               <h1 className="text-4xl md:text-6xl font-black text-white leading-tight">
@@ -118,7 +132,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                 <a 
-                  href="https://wa.me/966569663697" // ضع رقم الواتساب هنا
+                  href="https://wa.me/9665xxxxxxxx" // ضع رقم الواتساب هنا
                   target="_blank"
                   rel="noreferrer"
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-lg shadow-emerald-500/20"
@@ -146,7 +160,6 @@ export default function LandingPage() {
             {/* الصورة الجمالية */}
             <div className="relative">
               <div className="aspect-[4/3] rounded-3xl bg-slate-800 border border-slate-700 overflow-hidden shadow-2xl relative group">
-                {/* 🔴 هام: ضع هنا صورة حقيقية من مجلد assets بدلاً من هذا الرابط */}
                 <img 
                   src="https://images.unsplash.com/photo-1552168324-d612d77725e3?q=80&w=1000&auto=format&fit=crop" 
                   alt="صور مطبوعة" 
@@ -240,8 +253,39 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- إضافة جديدة: قسم التقييمات (Reviews) --- */}
+      <section id="reviews" className="py-20 bg-slate-50 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">ماذا يقول عملاؤنا؟</h2>
+          <p className="text-slate-500 mb-12">نفخر بخدمة عملاء الأحساء وتقديم أفضل جودة طباعة.</p>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {reviews.map((review) => (
+              <div key={review.id} className="bg-white p-8 rounded-3xl border border-slate-200 relative hover:-translate-y-2 transition-transform duration-300 shadow-sm">
+                <Quote className="absolute top-6 left-6 text-slate-100" size={40} />
+                <div className="flex gap-1 mb-4 text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={16} fill={i < review.rating ? "currentColor" : "none"} className={i >= review.rating ? "text-slate-300" : ""} />
+                  ))}
+                </div>
+                <p className="text-slate-700 font-medium leading-relaxed mb-6">"{review.comment}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 font-bold">
+                    {review.name.charAt(0)}
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-slate-900">{review.name}</div>
+                    <div className="text-xs text-slate-400">عميل موثوق ✅</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* --- 5. الأسئلة الشائعة (FAQ) --- */}
-      <section id="faq" className="py-20 bg-slate-50">
+      <section id="faq" className="py-20 bg-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">أسئلة شائعة</h2>
@@ -254,16 +298,16 @@ export default function LandingPage() {
               { q: 'كيف أعرف أين وصل طلبي؟', a: 'من خلال صفحة "تتبع الطلب" في الموقع. تحتاج فقط لرقم الطلب الذي نرسله لك.' },
               { q: 'ما هي طرق الدفع المتاحة؟', a: 'الدفع يكون غالباً عند الاستلام نقداً أو تحويل بنكي. بعض الطلبات الكبيرة قد تتطلب عربوناً.' },
             ].map((item, idx) => (
-              <div key={idx} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              <div key={idx} className="bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden">
                 <button 
                   onClick={() => toggleFaq(idx)}
-                  className="w-full flex items-center justify-between p-5 text-right font-bold text-slate-800 hover:bg-slate-50 transition-colors"
+                  className="w-full flex items-center justify-between p-5 text-right font-bold text-slate-800 hover:bg-slate-100 transition-colors"
                 >
                   {item.q}
                   <ChevronDown className={`text-slate-400 transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
                 </button>
                 {openFaq === idx && (
-                  <div className="p-5 pt-0 text-slate-500 text-sm leading-relaxed border-t border-slate-50">
+                  <div className="p-5 pt-0 text-slate-500 text-sm leading-relaxed border-t border-slate-200">
                     {item.a}
                   </div>
                 )}
@@ -276,7 +320,7 @@ export default function LandingPage() {
       {/* --- 6. تذييل الصفحة (Footer) --- */}
       <footer className="bg-slate-900 text-slate-400 py-12 text-center">
         <div className="max-w-7xl mx-auto px-4">
-          <img src={logo} alt="Art Moment" className="h-12 w-auto" />
+          <img src={logo} alt="Art Moment" className="h-16 w-auto mx-auto mb-6" /> {/* الشعار */}
           <p className="mb-8 max-w-md mx-auto">
             خدمة طباعة منظمة من أول رسالة حتى الاستلام. هدفنا أن تكون تجربتك بسيطة وواضحة، ونجهز لك صورك بأفضل جودة.
           </p>
@@ -292,7 +336,7 @@ export default function LandingPage() {
 
       {/* زر واتساب العائم */}
       <a 
-        href="https://wa.me/966569663697" // ضع رقم الواتساب هنا
+        href="https://wa.me/9665xxxxxxxx" // ضع رقم الواتساب هنا
         target="_blank" 
         rel="noreferrer"
         className="fixed bottom-6 left-6 z-40 bg-emerald-500 text-white p-4 rounded-full shadow-xl hover:bg-emerald-600 hover:scale-110 transition-all flex items-center gap-2 group"

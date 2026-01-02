@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { Calculator, Loader2 } from 'lucide-react';
+import { Calculator, Loader2, Tag } from 'lucide-react';
 
 export default function NewOrder() {
   const navigate = useNavigate();
@@ -16,6 +16,10 @@ export default function NewOrder() {
     photo4x6: 1,   // قيمة احتياطية
     delivery: 0
   });
+
+  // --- جديد: متغيرات الكوبون ---
+  const [couponCode, setCouponCode] = useState('');
+  const [discount, setDiscount] = useState(0);
 
   // إعداد النموذج
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
@@ -46,14 +50,11 @@ export default function NewOrder() {
         if (error) throw error;
 
         if (data) {
-          // تحديث الأسعار بالقيم الحقيقية من قاعدة البيانات
           setPrices({
             a4: Number(data.a4_price),
             photo4x6: Number(data.photo_4x6_price),
             delivery: Number(data.delivery_fee_default)
           });
-          
-          // وضع سعر التوصيل الافتراضي في النموذج
           setValue('deliveryFee', data.delivery_fee_default);
         }
       } catch (error) {
@@ -66,12 +67,46 @@ export default function NewOrder() {
     fetchSettings();
   }, [setValue]);
 
+  // --- جديد: دالة التحقق من الكوبون ---
+  const checkCoupon = async () => {
+    if (!couponCode.trim()) return;
+    
+    // إظهار رسالة تحميل صغيرة (اختياري)
+    const toastId = toast.loading('جاري التحقق...');
+
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.toUpperCase().trim())
+        .eq('is_active', true)
+        .single();
+
+      toast.dismiss(toastId);
+
+      if (data) {
+        setDiscount(Number(data.discount_amount));
+        toast.success(`تم تطبيق خصم ${data.discount_amount} ر.س بنجاح!`);
+      } else {
+        setDiscount(0);
+        toast.error('كود الخصم غير صالح أو منتهي');
+      }
+    } catch (err) {
+      toast.dismiss(toastId);
+      setDiscount(0);
+      toast.error('كود الخصم غير صالح');
+    }
+  };
+
   // مراقبة القيم للحساب الفوري
   const [a4Qty, photo4x6Qty, deliveryFee, deposit] = watch(['a4Qty', 'photo4x6Qty', 'deliveryFee', 'deposit']);
 
-  // 2. حساب الإجمالي باستخدام الأسعار الديناميكية (prices)
+  // 2. حساب الإجمالي باستخدام الأسعار والكوبون
   const subtotal = (Number(a4Qty || 0) * prices.a4) + (Number(photo4x6Qty || 0) * prices.photo4x6);
-  const total = subtotal + Number(deliveryFee || 0);
+  
+  // المعادلة المحدثة: المجموع + التوصيل - الخصم (مع التأكد ألا يقل عن صفر)
+  const total = Math.max(0, subtotal + Number(deliveryFee || 0) - discount);
+  
   const remaining = Math.max(0, total - Number(deposit || 0));
 
   // الحفظ
@@ -89,9 +124,9 @@ export default function NewOrder() {
           photo_4x6_qty: data.photo4x6Qty,
           delivery_fee: data.deliveryFee,
           subtotal: subtotal,
-          total_amount: total,
+          total_amount: total, // سيتم حفظ الإجمالي بعد الخصم
           deposit: data.deposit,
-          notes: data.notes,
+          notes: data.notes + (couponCode ? ` (تم استخدام كوبون: ${couponCode})` : ''), // إضافة ملاحظة بالكوبون
           status: 'new',
           payment_status: remaining === 0 ? 'paid' : 'unpaid'
         });
@@ -260,7 +295,39 @@ export default function NewOrder() {
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-700 flex justify-between text-lg font-bold text-white">
+              {/* --- جديد: قسم الكوبون --- */}
+              <div className="py-2 border-y border-slate-700 my-2">
+                <div className="flex gap-2 items-center mb-2">
+                  <Tag size={14} className="text-emerald-400" />
+                  <span className="text-xs text-slate-400">كود خصم</span>
+                </div>
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder="CODE"
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-white uppercase text-sm focus:border-emerald-500 outline-none placeholder:text-slate-600"
+                  />
+                  <button 
+                    type="button"
+                    onClick={checkCoupon}
+                    className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                  >
+                    تحقق
+                  </button>
+                </div>
+              </div>
+
+              {/* عرض الخصم إن وجد */}
+              {discount > 0 && (
+                 <div className="flex justify-between text-emerald-400 font-bold animate-pulse">
+                  <span>خصم كوبون</span>
+                  <span>- {discount.toFixed(2)}</span>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-slate-700 flex justify-between text-lg font-bold text-white">
                 <span>الإجمالي</span>
                 <span>{total.toFixed(2)} ر.س</span>
               </div>

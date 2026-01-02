@@ -10,8 +10,7 @@ html {
 /* تنسيق أساسي للصفحة */
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #f7f7f7;
   color: #0f172a;
 }
@@ -58,9 +57,9 @@ body {
   display: none;
 }
 
+/* إعدادات الطباعة */
 @media print {
-  html,
-  body {
+  html, body {
     margin: 0;
     padding: 0;
     background: #ffffff;
@@ -80,11 +79,11 @@ body {
 
   .invoice-print-root {
     display: block;
-    position: static; /* لا نحتاج absolute هنا */
+    position: static;
     padding: 0;
     background: #ffffff;
     direction: rtl;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: 'Cairo', system-ui, -apple-system, "Segoe UI", sans-serif;
   }
 
   /* الكرت الرئيسي للفاتورة */
@@ -92,9 +91,9 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 24px 32px;
-    border: none;          /* بدون إطار */
-    box-shadow: none;      /* بدون ظل */
-    border-radius: 0;      /* مناسب للطباعة */
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
     font-size: 11pt;
     line-height: 1.7;
     color: #111827;
@@ -106,7 +105,7 @@ body {
     width: auto;
   }
 
-  /* تكبير العناوين قليلاً */
+  /* تنسيقات النصوص */
   .invoice-print-card .font-semibold {
     font-weight: 700 !important;
   }
@@ -116,7 +115,7 @@ body {
     font-size: 9pt !important;
   }
 
-  /* ترويسة الفاتورة (أول flex داخل الكرت) */
+  /* ترويسة الفاتورة */
   .invoice-print-card > .flex {
     margin-bottom: 6px;
   }
@@ -127,7 +126,7 @@ body {
     border-top: 1px solid #e5e7eb;
   }
 
-  /* الجداول داخل الفاتورة (جدول الصور) */
+  /* الجداول داخل الفاتورة */
   .invoice-print-card table {
     width: 100%;
     border-collapse: collapse;
@@ -143,6 +142,9 @@ body {
 
   .invoice-print-card thead {
     background: #f3f4f6;
+    /* ضمان ظهور الخلفية الرمادية عند الطباعة */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* تذييل الفاتورة */
@@ -151,31 +153,4 @@ body {
     font-size: 9pt !important;
     color: #6b7280;
   }
-
-  /* ================================
-     أمثلة لإخفاء بعض الأسطر في الطباعة
-     (اختياري – فعّل اللي يناسبك بتشيل علامة التعليق)
-     ================================ */
-
-  /* 1) إخفاء "مصدر الطلب" من بيانات العميل في الطباعة فقط */
-  /*
-  .invoice-print-card > div:nth-of-type(2) > div:first-child > div:nth-of-type(4) {
-    display: none;
-  }
-  */
-
-  /* 2) إخفاء ملاحظات الطلب بالكامل في الطباعة */
-  /*
-  .invoice-print-card > div.text-xs.mb-3:last-of-type {
-    display: none;
-  }
-  */
-
-  /* 3) إخفاء سطر "الأولوية" و "نوع الطلب" داخل عمود "بيانات الطلب" */
-  /*
-  .invoice-print-card > div:nth-of-type(2) > div:nth-child(2) > div:nth-of-type(4),
-  .invoice-print-card > div:nth-of-type(2) > div:nth-child(2) > div:nth-of-type(5) {
-    display: none;
-  }
-  */
 }
