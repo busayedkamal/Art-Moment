@@ -4,22 +4,24 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { Calculator, Loader2, Tag, BookOpen } from 'lucide-react';
+import { Calculator, Loader2, Tag, BookOpen, Percent } from 'lucide-react';
 
 export default function NewOrder() {
   const navigate = useNavigate();
   const [loadingSettings, setLoadingSettings] = useState(true);
   
   const [prices, setPrices] = useState({ a4: 2, photo4x6: 1, delivery: 0 });
+  
+  // الكوبون والخصم
   const [couponCode, setCouponCode] = useState('');
-  const [discount, setDiscount] = useState(0);
+  const [couponData, setCouponData] = useState(null); // لتخزين بيانات الكوبون كاملة (النوع والقيمة)
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
       customerName: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
       source: ['واتساب'], sourceOther: '',
       a4Qty: 0, photo4x6Qty: 0, deliveryFee: 0, deposit: 0, notes: '',
-      albumQty: 0, albumPrice: 0 // قيم الألبوم الافتراضية
+      albumQty: 0, albumPrice: 0 
     }
   });
 
@@ -35,10 +37,32 @@ export default function NewOrder() {
           });
           setValue('deliveryFee', data.delivery_fee_default);
         }
-      } catch (error) { toast.error('فشل جلب الأسعار'); } finally { setLoadingSettings(false); }
+      } catch { toast.error('فشل جلب الأسعار'); } finally { setLoadingSettings(false); }
     }
     fetchSettings();
   }, [setValue]);
+
+  // مراقبة القيم للحساب
+  const [a4Qty, photo4x6Qty, albumQty, albumPrice, deliveryFee, deposit] = watch(['a4Qty', 'photo4x6Qty', 'albumQty', 'albumPrice', 'deliveryFee', 'deposit']);
+
+  // 1. حساب المجموع الفرعي (المنتجات فقط)
+  const subtotal = (Number(a4Qty || 0) * prices.a4) + (Number(photo4x6Qty || 0) * prices.photo4x6) + (Number(albumQty || 0) * Number(albumPrice || 0));
+
+  // 2. حساب قيمة الخصم بناءً على النوع
+  let discountValue = 0;
+  if (couponData) {
+    if (couponData.discount_type === 'percent') {
+      // خصم نسبة مئوية من المجموع الفرعي
+      discountValue = subtotal * (couponData.discount_amount / 100);
+    } else {
+      // خصم مبلغ ثابت
+      discountValue = Number(couponData.discount_amount);
+    }
+  }
+
+  // 3. الإجمالي النهائي
+  const total = Math.max(0, subtotal + Number(deliveryFee || 0) - discountValue);
+  const remaining = Math.max(0, total - Number(deposit || 0));
 
   const checkCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -46,25 +70,16 @@ export default function NewOrder() {
     try {
       const { data } = await supabase.from('coupons').select('*').eq('code', couponCode.toUpperCase().trim()).eq('is_active', true).single();
       toast.dismiss(toastId);
+      
       if (data) {
-        setDiscount(Number(data.discount_amount));
-        toast.success(`خصم ${data.discount_amount} ر.س!`);
+        setCouponData(data); // نحفظ الكوبون كاملاً
+        toast.success(`تم تطبيق كوبون: ${data.code}`);
       } else {
-        setDiscount(0);
+        setCouponData(null);
         toast.error('كود غير صالح');
       }
-    } catch { toast.dismiss(toastId); setDiscount(0); toast.error('خطأ في الكوبون'); }
+    } catch { toast.dismiss(toastId); setCouponData(null); toast.error('خطأ في الكوبون'); }
   };
-
-  // مراقبة القيم للحساب
-  const [a4Qty, photo4x6Qty, albumQty, albumPrice, deliveryFee, deposit] = watch(['a4Qty', 'photo4x6Qty', 'albumQty', 'albumPrice', 'deliveryFee', 'deposit']);
-
-  // معادلة الحساب: (صور) + (ألبومات)
-  const subtotal = (Number(a4Qty || 0) * prices.a4) + (Number(photo4x6Qty || 0) * prices.photo4x6) + (Number(albumQty || 0) * Number(albumPrice || 0));
-  
-  // الإجمالي النهائي مع التوصيل والخصم
-  const total = Math.max(0, subtotal + Number(deliveryFee || 0) - discount);
-  const remaining = Math.max(0, total - Number(deposit || 0));
 
   const onSubmit = async (data) => {
     try {
@@ -76,22 +91,24 @@ export default function NewOrder() {
         source_other: data.sourceOther,
         a4_qty: data.a4Qty,
         photo_4x6_qty: data.photo4x6Qty,
-        album_qty: data.albumQty,      // حفظ عدد الألبومات
-        album_price: data.albumPrice,  // حفظ سعر الألبوم
+        album_qty: data.albumQty,
+        album_price: data.albumPrice,
         delivery_fee: data.deliveryFee,
         subtotal: subtotal,
         total_amount: total,
         deposit: data.deposit,
-        notes: data.notes + (couponCode ? ` (كوبون: ${couponCode})` : ''),
+        // إضافة تفاصيل الكوبون للملاحظات
+        notes: data.notes + (couponData ? ` (كوبون: ${couponData.code} - خصم ${discountValue.toFixed(2)} ريال)` : ''),
         status: 'new',
         payment_status: remaining === 0 ? 'paid' : 'unpaid'
       });
       if (error) throw error;
       toast.success('تم إنشاء الطلب!');
       navigate('/app/orders');
-    } catch (error) { toast.error('خطأ في الحفظ'); }
+    } catch { toast.error('خطأ في الحفظ'); }
   };
 
+  // تبديل المصدر
   const handleSourceToggle = (src) => {
     const current = watch('source');
     setValue('source', current.includes(src) ? current.filter(s => s !== src) : [...current, src]);
@@ -104,9 +121,7 @@ export default function NewOrder() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">طلب جديد</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            الأسعار: A4 = {prices.a4} ريال | 4×6 = {prices.photo4x6} ريال
-          </p>
+          <p className="text-sm text-slate-500 mt-1">الأسعار: A4 = {prices.a4} ريال | 4×6 = {prices.photo4x6} ريال</p>
         </div>
         <button type="button" onClick={() => navigate('/app/orders')} className="px-4 py-2 bg-white border rounded-xl hover:bg-slate-50">إلغاء</button>
       </div>
@@ -115,6 +130,7 @@ export default function NewOrder() {
         
         {/* القسم الأيمن: المدخلات */}
         <div className="md:col-span-8 space-y-6">
+          {/* ... (بيانات العميل - لم تتغير) ... */}
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-4">بيانات العميل</h3>
             <div className="grid gap-4 md:grid-cols-2">
@@ -176,7 +192,7 @@ export default function NewOrder() {
                 <span>{((Number(a4Qty || 0) * prices.a4) + (Number(photo4x6Qty || 0) * prices.photo4x6)).toFixed(2)}</span>
               </div>
 
-              {/* === جديد: خانة الألبوم فوق التوصيل === */}
+              {/* خانة الألبوم */}
               <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
                 <div className="flex items-center gap-2 mb-2 text-orange-400 font-bold">
                   <BookOpen size={14} /> <span>إضافة ألبوم</span>
@@ -187,7 +203,7 @@ export default function NewOrder() {
                     <input type="number" min="0" {...register('albumQty')} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center outline-none focus:border-orange-500" placeholder="0" />
                   </div>
                   <div className="flex-1">
-                    <label className="text-[10px] text-slate-400 block mb-1">السعر للحبة</label>
+                    <label className="text-[10px] text-slate-400 block mb-1">السعر</label>
                     <input type="number" min="0" {...register('albumPrice')} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-center outline-none focus:border-orange-500" placeholder="0" />
                   </div>
                 </div>
@@ -197,7 +213,6 @@ export default function NewOrder() {
                    </div>
                 )}
               </div>
-              {/* ================================== */}
               
               <div className="flex justify-between items-center text-slate-300 pt-2">
                 <span>التوصيل</span>
@@ -215,8 +230,14 @@ export default function NewOrder() {
                 </div>
               </div>
 
-              {discount > 0 && (
-                 <div className="flex justify-between text-emerald-400 font-bold animate-pulse"><span>خصم كوبون</span><span>- {discount.toFixed(2)}</span></div>
+              {discountValue > 0 && (
+                 <div className="flex justify-between text-emerald-400 font-bold animate-pulse">
+                   <span className="flex items-center gap-1">
+                      {couponData?.discount_type === 'percent' && <Percent size={12}/>} 
+                      خصم {couponData?.code}
+                   </span>
+                   <span>- {discountValue.toFixed(2)}</span>
+                 </div>
               )}
 
               <div className="pt-2 border-t border-slate-700 flex justify-between text-lg font-bold text-white">
