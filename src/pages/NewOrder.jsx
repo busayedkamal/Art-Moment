@@ -4,24 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { Calculator, Loader2, Tag, BookOpen, Percent } from 'lucide-react';
+import { Loader2, Tag, BookOpen, Percent, MinusCircle } from 'lucide-react';
 
 export default function NewOrder() {
   const navigate = useNavigate();
   const [loadingSettings, setLoadingSettings] = useState(true);
-  
   const [prices, setPrices] = useState({ a4: 2, photo4x6: 1, delivery: 0 });
-  
-  // الكوبون والخصم
   const [couponCode, setCouponCode] = useState('');
-  const [couponData, setCouponData] = useState(null); // لتخزين بيانات الكوبون كاملة (النوع والقيمة)
+  const [couponData, setCouponData] = useState(null); 
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
       customerName: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
       source: ['واتساب'], sourceOther: '',
       a4Qty: 0, photo4x6Qty: 0, deliveryFee: 0, deposit: 0, notes: '',
-      albumQty: 0, albumPrice: 0 
+      albumQty: 0, albumPrice: 0, manualDiscount: 0
     }
   });
 
@@ -43,25 +40,23 @@ export default function NewOrder() {
   }, [setValue]);
 
   // مراقبة القيم للحساب
-  const [a4Qty, photo4x6Qty, albumQty, albumPrice, deliveryFee, deposit] = watch(['a4Qty', 'photo4x6Qty', 'albumQty', 'albumPrice', 'deliveryFee', 'deposit']);
+  const [a4Qty, photo4x6Qty, albumQty, albumPrice, deliveryFee, deposit, manualDiscount] = watch(['a4Qty', 'photo4x6Qty', 'albumQty', 'albumPrice', 'deliveryFee', 'deposit', 'manualDiscount']);
 
-  // 1. حساب المجموع الفرعي (المنتجات فقط)
+  // 1. حساب المجموع الفرعي
   const subtotal = (Number(a4Qty || 0) * prices.a4) + (Number(photo4x6Qty || 0) * prices.photo4x6) + (Number(albumQty || 0) * Number(albumPrice || 0));
 
-  // 2. حساب قيمة الخصم بناءً على النوع
-  let discountValue = 0;
+  // 2. حساب خصم الكوبون
+  let couponDiscountValue = 0;
   if (couponData) {
     if (couponData.discount_type === 'percent') {
-      // خصم نسبة مئوية من المجموع الفرعي
-      discountValue = subtotal * (couponData.discount_amount / 100);
+      couponDiscountValue = subtotal * (couponData.discount_amount / 100);
     } else {
-      // خصم مبلغ ثابت
-      discountValue = Number(couponData.discount_amount);
+      couponDiscountValue = Number(couponData.discount_amount);
     }
   }
 
-  // 3. الإجمالي النهائي
-  const total = Math.max(0, subtotal + Number(deliveryFee || 0) - discountValue);
+  // 3. الإجمالي
+  const total = Math.max(0, subtotal + Number(deliveryFee || 0) - couponDiscountValue - Number(manualDiscount || 0));
   const remaining = Math.max(0, total - Number(deposit || 0));
 
   const checkCoupon = async () => {
@@ -70,9 +65,8 @@ export default function NewOrder() {
     try {
       const { data } = await supabase.from('coupons').select('*').eq('code', couponCode.toUpperCase().trim()).eq('is_active', true).single();
       toast.dismiss(toastId);
-      
       if (data) {
-        setCouponData(data); // نحفظ الكوبون كاملاً
+        setCouponData(data);
         toast.success(`تم تطبيق كوبون: ${data.code}`);
       } else {
         setCouponData(null);
@@ -83,32 +77,34 @@ export default function NewOrder() {
 
   const onSubmit = async (data) => {
     try {
-      const { error } = await supabase.from('orders').insert({
+      const cleanData = {
         customer_name: data.customerName,
         phone: data.phone,
         delivery_date: data.deliveryDate,
         source: data.source,
         source_other: data.sourceOther,
-        a4_qty: data.a4Qty,
-        photo_4x6_qty: data.photo4x6Qty,
-        album_qty: data.albumQty,
-        album_price: data.albumPrice,
-        delivery_fee: data.deliveryFee,
+        a4_qty: Number(data.a4Qty) || 0,
+        photo_4x6_qty: Number(data.photo4x6Qty) || 0,
+        album_qty: Number(data.albumQty) || 0,
+        album_price: Number(data.albumPrice) || 0,
+        delivery_fee: Number(data.deliveryFee) || 0,
+        manual_discount: Number(data.manualDiscount) || 0,
         subtotal: subtotal,
         total_amount: total,
-        deposit: data.deposit,
-        // إضافة تفاصيل الكوبون للملاحظات
-        notes: data.notes + (couponData ? ` (كوبون: ${couponData.code} - خصم ${discountValue.toFixed(2)} ريال)` : ''),
+        deposit: Number(data.deposit) || 0,
+        notes: data.notes + (couponData ? ` (كوبون: ${couponData.code})` : ''),
         status: 'new',
-        payment_status: remaining === 0 ? 'paid' : 'unpaid'
-      });
+        payment_status: remaining <= 0.5 ? 'paid' : 'unpaid'
+      };
+
+      const { error } = await supabase.from('orders').insert(cleanData);
       if (error) throw error;
-      toast.success('تم إنشاء الطلب!');
+
+      toast.success('تم إنشاء الطلب بنجاح! 🎉');
       navigate('/app/orders');
-    } catch { toast.error('خطأ في الحفظ'); }
+    } catch (error) { toast.error(`خطأ في الحفظ: ${error.message}`); }
   };
 
-  // تبديل المصدر
   const handleSourceToggle = (src) => {
     const current = watch('source');
     setValue('source', current.includes(src) ? current.filter(s => s !== src) : [...current, src]);
@@ -128,9 +124,7 @@ export default function NewOrder() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 md:grid-cols-12">
         
-        {/* القسم الأيمن: المدخلات */}
         <div className="md:col-span-8 space-y-6">
-          {/* ... (بيانات العميل - لم تتغير) ... */}
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-4">بيانات العميل</h3>
             <div className="grid gap-4 md:grid-cols-2">
@@ -151,7 +145,7 @@ export default function NewOrder() {
             <div className="mt-6">
               <label className="block text-sm font-medium mb-2">المصدر</label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {['واتساب', 'إنستقرام', 'سناب', 'مباشر'].map((src) => (
+                {['تيليجرام', 'واتساب', 'إنستقرام', 'سناب', 'مباشر'].map((src) => (
                   <button key={src} type="button" onClick={() => handleSourceToggle(src)}
                     className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${watch('source').includes(src) ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-medium' : 'bg-white text-slate-600'}`}>
                     {src}
@@ -164,18 +158,36 @@ export default function NewOrder() {
 
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-4">تفاصيل الصور</h3>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">عدد A4</label>
-                <input type="number" min="0" {...register('a4Qty')} className="input-field font-bold text-lg" />
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* تعديل تصميم الخانات هنا لتكون مربعات واضحة */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600 block text-center">عدد 4×6</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  {...register('photo4x6Qty')} 
+                  className="w-full bg-slate-50 border-2 border-slate-300 rounded-2xl px-2 py-4 text-center font-black text-2xl text-slate-800 focus:border-emerald-500 focus:bg-white transition-all outline-none shadow-sm"
+                  placeholder="0"
+                />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">عدد 4×6</label>
-                <input type="number" min="0" {...register('photo4x6Qty')} className="input-field font-bold text-lg" />
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600 block text-center">عدد A4</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  {...register('a4Qty')} 
+                  className="w-full bg-slate-50 border-2 border-slate-300 rounded-2xl px-2 py-4 text-center font-black text-2xl text-slate-800 focus:border-emerald-500 focus:bg-white transition-all outline-none shadow-sm" 
+                  placeholder="0"
+                />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">ملاحظات</label>
-                <textarea {...register('notes')} rows="1" className="input-field resize-none" />
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">ملاحظات</label>
+                <textarea 
+                  {...register('notes')} 
+                  rows="3" 
+                  className="w-full bg-yellow-50 border-2 border-yellow-200 rounded-2xl px-4 py-3 text-sm focus:border-yellow-400 focus:bg-white transition-all outline-none resize-none shadow-sm"
+                  placeholder="اكتب ملاحظاتك هنا..."
+                />
               </div>
             </div>
           </div>
@@ -215,8 +227,14 @@ export default function NewOrder() {
               </div>
               
               <div className="flex justify-between items-center text-slate-300 pt-2">
-                <span>التوصيل</span>
+                <span>تكاليف إضافية</span>
                 <input type="number" min="0" {...register('deliveryFee')} className="w-20 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-right text-white focus:border-emerald-500 outline-none" />
+              </div>
+
+              {/* خانة الخصم اليدوي */}
+              <div className="flex justify-between items-center text-red-300 pt-2">
+                <span className="flex items-center gap-1"><MinusCircle size={14}/> خصم إضافي</span>
+                <input type="number" min="0" {...register('manualDiscount')} className="w-20 bg-slate-800 border border-red-900/50 rounded-lg px-2 py-1 text-right text-red-300 focus:border-red-500 outline-none placeholder-red-900" placeholder="0" />
               </div>
 
               {/* الكوبون */}
@@ -230,13 +248,13 @@ export default function NewOrder() {
                 </div>
               </div>
 
-              {discountValue > 0 && (
+              {(couponDiscountValue > 0) && (
                  <div className="flex justify-between text-emerald-400 font-bold animate-pulse">
                    <span className="flex items-center gap-1">
                       {couponData?.discount_type === 'percent' && <Percent size={12}/>} 
-                      خصم {couponData?.code}
+                      خصم الكوبون
                    </span>
-                   <span>- {discountValue.toFixed(2)}</span>
+                   <span>- {couponDiscountValue.toFixed(2)}</span>
                  </div>
               )}
 

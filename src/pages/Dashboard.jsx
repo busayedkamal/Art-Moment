@@ -48,7 +48,7 @@ export default function Dashboard() {
       {/* بطاقة الترحيب */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-xl">
         <div className="relative z-10">
-          <h1 className="text-3xl font-bold mb-2">أهلاً بك،بو سيد كمال 👋</h1>
+          <h1 className="text-3xl font-bold mb-2">أهلاً بك، أم سيد كمال 👋</h1>
           <p className="text-slate-300">
             لديك <strong className="text-emerald-400">{stats.pendingOrders}</strong> طلبات تحتاج إلى متابعة اليوم.
           </p>

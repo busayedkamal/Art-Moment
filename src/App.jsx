@@ -5,8 +5,8 @@ import { Toaster } from 'react-hot-toast'
 import AuthProvider, { useAuth } from './contexts/AuthContext'
 
 // الصفحات العامة
-import LandingPage from './LandingPage.jsx'      // 👈 تأكدنا من استدعائها
-import TrackOrderPage from './pages/TrackOrderPage.jsx' // 👈 صفحة التتبع
+import LandingPage from './LandingPage.jsx'
+import TrackOrderPage from './pages/TrackOrderPage.jsx'
 
 // صفحات لوحة التحكم
 import AdminLoginPage from './pages/AdminLoginPage.jsx'
@@ -17,6 +17,7 @@ import OrderDetails from './pages/OrderDetails.jsx'
 import Customers from './pages/Customers.jsx'
 import Reports from './pages/Reports.jsx'
 import Settings from './pages/Settings.jsx'
+import Expenses from './pages/Expenses.jsx' // 👈 1. هذا السطر كان ناقصاً (استدعاء الصفحة)
 
 // الإطار العام
 import Layout from './components/layout/Layout.jsx'
@@ -37,9 +38,9 @@ function ProtectedRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* 1. المسارات العامة (متاحة للجميع) */}
-      <Route path="/" element={<LandingPage />} /> {/* 👈 الآن الرابط الرئيسي يفتح صفحة الهبوط */}
-      <Route path="/track" element={<TrackOrderPage />} /> {/* مسار التتبع */}
+      {/* 1. المسارات العامة */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/track" element={<TrackOrderPage />} />
       
       {/* 2. صفحة دخول الأدمن */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -61,10 +62,10 @@ function AppRoutes() {
         <Route path="orders/:id" element={<OrderDetails />} />
         <Route path="customers" element={<Customers />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="expenses" element={<Expenses />} /> {/* 👈 2. هذا السطر كان ناقصاً (تفعيل الرابط) */}
         <Route path="settings" element={<Settings />} />
       </Route>
 
-      {/* صفحة الخطأ 404 */}
       <Route path="*" element={<div className="min-h-screen flex items-center justify-center text-xl font-bold text-slate-400">الصفحة غير موجودة 404</div>} />
     </Routes>
   )

@@ -27,9 +27,9 @@ export default function LandingPage() {
 
   // بيانات التقييمات (إضافة جديدة)
   const reviews = [
-    { id: 1, name: "عبدالله السالم", comment: "الجودة خرافية والألوان تفتح النفس! التغليف كان ممتاز جداً.", rating: 5 },
+    { id: 1, name: "أم حنين", comment: "الجودة خرافية والألوان تفتح النفس! التغليف كان ممتاز جداً.", rating: 5 },
     { id: 2, name: "سارة محمد", comment: "تعامل راقي وسرعة في الإنجاز. طلبت الصباح واستلمت العصر.", rating: 5 },
-    { id: 3, name: "فهد القحطاني", comment: "أفضل محل طباعة تعاملت معه في الأحساء، دقة في المواعيد.", rating: 4 },
+    { id: 3, name: "إيلاف", comment: "أفضل محل طباعة تعاملت معه في الأحساء، دقة في المواعيد.", rating: 4 },
   ];
 
   return (
@@ -117,7 +117,7 @@ export default function LandingPage() {
                   طباعة صور فوتوغرافية في الأحساء
                 </div>
                 <span className="inline-block py-1 px-3 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-bold border border-yellow-500/20">
-                   ✨ عرض خاص: استخدم كود <span className="text-white font-mono">WELCOME</span> لخصم إضافي
+                   ✨ عرض خاص: استخدم كود <span className="text-white font-mono"></span> لخصم إضافي
                 </span>
               </div>
               
@@ -127,12 +127,12 @@ export default function LandingPage() {
               
               <p className="text-lg text-slate-400 leading-relaxed max-w-xl mx-auto md:mx-0">
                 طباعة صور مقاس 4×6 و A4 بجودة عالية، ألوان زاهية، وتفاصيل واضحة. 
-                أرسل صورك عبر واتساب، تابع حالة الطلب أونلاين، واستلمها جاهزة من المتجر أو بالتنسيق على وقت يناسبك.
+                أرسل صورك عبر تيليجرام، تابع حالة الطلب أونلاين، واستلمها جاهزة مع تغليف فاخر و بالتنسيق على الوقت اللي يناسبك.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                 <a 
-                  href="https://wa.me/9665xxxxxxxx" // ضع رقم الواتساب هنا
+                  href="https://wa.me/966569663697" // ضع رقم الواتساب هنا
                   target="_blank"
                   rel="noreferrer"
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-lg shadow-emerald-500/20"
@@ -145,7 +145,7 @@ export default function LandingPage() {
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Search size={20} />
-                  تتبع طلب سابق
+                  تتبع الطلب
                 </Link>
               </div>
 
@@ -233,10 +233,10 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {[
-              { id: 1, icon: MessageCircle, title: 'إرسال الصور', desc: 'ترسل الصور عبر واتساب مع تحديد المقاس المطلوب.' },
+              { id: 1, icon: MessageCircle, title: 'إرسال الصور', desc: 'ترسل الصور عبر تيليجرام مع تحديد المقاس المطلوب.' },
               { id: 2, icon: CheckCircle, title: 'تأكيد الطلب', desc: 'نراجع الصور سريعاً، نوضح لك أي ملاحظات ونؤكد الوقت.' },
-              { id: 3, icon: Printer, title: 'الطباعة والتجهيز', desc: 'نطبع الصور باستخدام ورق مخصص ونقصها بشكل منظم.' },
-              { id: 4, icon: Truck, title: 'الاستلام والتقييم', desc: 'تستلم الطلب في الموعد المتفق عليه، وتقدر تشاركنا رأيك.' },
+              { id: 3, icon: Printer, title: 'الطباعة والتجهيز', desc: 'نطبع الصور باستخدام ورق مخصص للصور عالي الجودة.' },
+              { id: 4, icon: Truck, title: 'الاستلام والتقييم', desc: 'تستلم الطلب في الموعد المحدد، وتقدر تشاركنا رأيك.' },
             ].map((step) => (
               <div key={step.id} className="text-center group">
                 <div className="w-16 h-16 mx-auto bg-slate-50 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors mb-6 relative">
@@ -336,7 +336,7 @@ export default function LandingPage() {
 
       {/* زر واتساب العائم */}
       <a 
-        href="https://wa.me/9665xxxxxxxx" // ضع رقم الواتساب هنا
+        href="https://wa.me/966569663697" // ضع رقم الواتساب هنا
         target="_blank" 
         rel="noreferrer"
         className="fixed bottom-6 left-6 z-40 bg-emerald-500 text-white p-4 rounded-full shadow-xl hover:bg-emerald-600 hover:scale-110 transition-all flex items-center gap-2 group"

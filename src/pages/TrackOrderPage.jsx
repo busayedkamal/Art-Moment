@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Search, Package, Clock, CheckCircle, Truck, 
-  AlertCircle, Banknote, Wallet, Image, Home 
-} from 'lucide-react'; // تمت إضافة أيقونة Home
+  AlertCircle, Banknote, Wallet, Image, Home, FileText 
+} from 'lucide-react'; // تمت إضافة FileText للأيقونة
 import { Link } from 'react-router-dom';
-import logo from '../assets/logo-art-moment.svg'; // استدعاء الشعار
+import logo from '../assets/logo-art-moment.svg';
 
 export default function TrackOrderPage() {
   const [orderId, setOrderId] = useState('');
@@ -50,14 +50,13 @@ export default function TrackOrderPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4 relative" dir="rtl">
       
-      {/* زر العودة للرئيسية (جديد) */}
+      {/* زر العودة للرئيسية */}
       <Link to="/" className="absolute top-6 right-6 flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-slate-600 hover:text-slate-900 transition-colors font-bold text-sm">
         <Home size={16} /> الرئيسية
       </Link>
 
       {/* الشعار والعنوان */}
       <div className="text-center mb-10 mt-8">
-        {/* استبدال المربع بالشعار */}
         <img 
           src={logo} 
           alt="Art Moment" 
@@ -156,7 +155,7 @@ export default function TrackOrderPage() {
                   <span className="font-bold text-slate-900">{order.customer_name}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">التسليم المتوقع</span>
+                  <span className="text-slate-500">تاريخ التسليم</span>
                   <span className="font-bold text-slate-900">{order.delivery_date || 'غير محدد'}</span>
                 </div>
               </div>
@@ -177,6 +176,18 @@ export default function TrackOrderPage() {
                   </div>
                 </div>
               </div>
+
+              {/* --- قسم الملاحظات (الجديد) --- */}
+              {order.notes && (
+                <div className="bg-yellow-50 rounded-2xl p-5 border border-yellow-100 mb-4">
+                  <h3 className="text-xs font-bold text-yellow-600 mb-2 flex items-center gap-1">
+                    <FileText size={14}/> ملاحظات
+                  </h3>
+                  <p className="text-sm text-slate-700 bg-white p-3 rounded-xl border border-yellow-100 leading-relaxed shadow-sm">
+                    {order.notes}
+                  </p>
+                </div>
+              )}
 
               {/* القسم المالي */}
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
