@@ -1,23 +1,28 @@
 // src/pages/Expenses.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { 
   TrendingUp, TrendingDown, Wallet, Plus, Trash2, 
-  DollarSign, FileText, Calendar 
+  DollarSign, FileText, Calendar, Edit2, Check, X, Filter, ArrowUpDown 
 } from 'lucide-react';
 
 export default function Expenses() {
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState([]);
   const [stats, setStats] = useState({ totalSales: 0, totalExpenses: 0, netProfit: 0 });
+  const [sortBy, setSortBy] = useState('date'); // 'date' | 'amount' | 'title'
   
-  // حالة المصروف الجديد (تمت إضافة التاريخ)
+  // حالة المصروف الجديد
   const [newExpense, setNewExpense] = useState({ 
     title: '', 
     amount: '', 
-    date: new Date().toISOString().split('T')[0] // الافتراضي تاريخ اليوم
+    date: new Date().toISOString().split('T')[0] 
   });
+
+  // حالات التعديل
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({ title: '', amount: '', date: '' });
 
   useEffect(() => {
     fetchData();
@@ -30,8 +35,7 @@ export default function Expenses() {
       // 1. جلب المصروفات
       const { data: expensesData, error: expError } = await supabase
         .from('expenses')
-        .select('*')
-        .order('date', { ascending: false }); // الترتيب حسب تاريخ المصروف
+        .select('*');
         
       if (expError) throw expError;
 
@@ -45,7 +49,7 @@ export default function Expenses() {
       const totalExp = expensesData.reduce((sum, item) => sum + Number(item.amount), 0);
       const totalSale = ordersData.reduce((sum, item) => sum + Number(item.total_amount), 0);
 
-      setExpenses(expensesData);
+      setExpenses(expensesData || []);
       setStats({
         totalSales: totalSale,
         totalExpenses: totalExp,
@@ -59,35 +63,129 @@ export default function Expenses() {
     }
   }
 
+  // --- استخراج الأصناف المحفوظة مسبقاً للاقتراحات ---
+  // هذه القائمة تتحدث تلقائياً بناءً على ما قمت بإدخاله سابقاً
+  const savedTitles = useMemo(() => {
+    const titles = expenses.map(e => e.title);
+    return [...new Set(titles)]; // حذف التكرار
+  }, [expenses]);
+
+  // --- دوال الإضافة ---
   const handleAddExpense = async (e) => {
     e.preventDefault();
     if (!newExpense.title || !newExpense.amount || !newExpense.date) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('expenses')
         .insert([{ 
           title: newExpense.title, 
           amount: Number(newExpense.amount),
-          date: newExpense.date // حفظ التاريخ المختار
-        }]);
+          date: newExpense.date 
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
       toast.success('تم تسجيل المصروف');
+      setExpenses([data, ...expenses]); // تحديث محلي سريع
+      
+      // تحديث الإحصائيات محلياً
+      setStats(prev => ({
+        ...prev,
+        totalExpenses: prev.totalExpenses + Number(newExpense.amount),
+        netProfit: prev.netProfit - Number(newExpense.amount)
+      }));
+
       setNewExpense({ title: '', amount: '', date: new Date().toISOString().split('T')[0] });
-      fetchData(); 
     } catch (err) {
       toast.error('فشل الإضافة');
     }
   };
 
-  const handleDelete = async (id) => {
-    if(!window.confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
-    await supabase.from('expenses').delete().eq('id', id);
-    fetchData();
-    toast.success('تم الحذف');
+  // --- دوال التعديل ---
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditFormData({ 
+      title: item.title, 
+      amount: item.amount, 
+      // التأكد من تنسيق التاريخ الصحيح للinput
+      date: item.date || item.created_at.split('T')[0]
+    });
   };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditFormData({ title: '', amount: '', date: '' });
+  };
+
+  const saveEdit = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .update({
+          title: editFormData.title,
+          amount: Number(editFormData.amount),
+          date: editFormData.date
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // تحديث القائمة محلياً
+      const updatedExpenses = expenses.map(item => 
+        item.id === id ? { ...item, ...editFormData, amount: Number(editFormData.amount) } : item
+      );
+      setExpenses(updatedExpenses);
+      
+      // إعادة حساب الإجمالي محلياً
+      const newTotalExp = updatedExpenses.reduce((sum, item) => sum + Number(item.amount), 0);
+      setStats(prev => ({
+        ...prev,
+        totalExpenses: newTotalExp,
+        netProfit: prev.totalSales - newTotalExp
+      }));
+
+      setEditingId(null);
+      toast.success('تم التعديل بنجاح');
+    } catch (err) {
+      toast.error('فشل حفظ التعديل');
+    }
+  };
+
+  const handleDelete = async (id, amount) => {
+    if(!window.confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
+    try {
+      await supabase.from('expenses').delete().eq('id', id);
+      
+      const updatedExpenses = expenses.filter(e => e.id !== id);
+      setExpenses(updatedExpenses);
+      
+      setStats(prev => ({
+        ...prev,
+        totalExpenses: prev.totalExpenses - amount,
+        netProfit: prev.netProfit + amount
+      }));
+      
+      toast.success('تم الحذف');
+    } catch {
+      toast.error('فشل الحذف');
+    }
+  };
+
+  // --- ترتيب القائمة ---
+  const sortedExpenses = useMemo(() => {
+    let sorted = [...expenses];
+    if (sortBy === 'date') {
+      sorted.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+    } else if (sortBy === 'amount') {
+      sorted.sort((a, b) => b.amount - a.amount); // الأغلى أولاً
+    } else if (sortBy === 'title') {
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    return sorted;
+  }, [expenses, sortBy]);
 
   if (loading) return <div className="p-10 text-center">جاري حساب الأرباح...</div>;
 
@@ -154,11 +252,18 @@ export default function Expenses() {
                 <label className="text-xs font-bold text-slate-500 block mb-1">بيان المصروف</label>
                 <input 
                   type="text" 
+                  list="expense-titles" // ربط بالقائمة المقترحة
                   placeholder="مثلاً: حبر طابعة، إيجار..." 
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500"
                   value={newExpense.title}
                   onChange={(e) => setNewExpense({...newExpense, title: e.target.value})}
                 />
+                {/* قائمة الاقتراحات الذكية */}
+                <datalist id="expense-titles">
+                  {savedTitles.map((title, index) => (
+                    <option key={index} value={title} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 block mb-1">المبلغ (ر.س)</label>
@@ -177,41 +282,112 @@ export default function Expenses() {
           </div>
         </div>
 
-        {/* السجل */}
+        {/* السجل والقائمة */}
         <div className="md:col-span-8">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2"><FileText className="text-blue-500"/> سجل المصروفات</h3>
-              <span className="text-xs text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded">{expenses.length} عملية</span>
+            
+            {/* شريط الأدوات والفرز */}
+            <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2"><FileText className="text-blue-500" size={20}/> سجل المصروفات</h3>
+                <span className="text-xs text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded">{expenses.length} عملية</span>
+              </div>
+              
+              <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl">
+                <button 
+                  onClick={() => setSortBy('date')} 
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'date' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <Calendar size={12}/> التاريخ
+                </button>
+                <button 
+                  onClick={() => setSortBy('amount')} 
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'amount' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <ArrowUpDown size={12}/> المبلغ
+                </button>
+                <button 
+                  onClick={() => setSortBy('title')} 
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'title' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <Filter size={12}/> الاسم
+                </button>
+              </div>
             </div>
             
             <div className="divide-y divide-slate-50">
-              {expenses.length === 0 ? (
+              {sortedExpenses.length === 0 ? (
                 <div className="p-10 text-center text-slate-400">لا توجد مصروفات مسجلة</div>
               ) : (
-                expenses.map((item) => (
-                  <div key={item.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500">
-                        <TrendingDown size={18}/>
+                sortedExpenses.map((item) => (
+                  <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors group">
+                    
+                    {/* وضع التعديل */}
+                    {editingId === item.id ? (
+                      <div className="flex flex-col sm:flex-row gap-3 items-center w-full animate-in fade-in">
+                        <input 
+                          type="date" 
+                          value={editFormData.date} 
+                          onChange={(e) => setEditFormData({...editFormData, date: e.target.value})}
+                          className="w-full sm:w-32 bg-white border border-blue-300 rounded-lg px-2 py-1.5 text-sm outline-none"
+                        />
+                        <input 
+                          type="text" 
+                          value={editFormData.title} 
+                          list="expense-titles" // استخدام نفس قائمة الاقتراحات
+                          onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
+                          className="flex-1 w-full bg-white border border-blue-300 rounded-lg px-2 py-1.5 text-sm outline-none"
+                          placeholder="البيان"
+                        />
+                        <input 
+                          type="number" 
+                          value={editFormData.amount} 
+                          onChange={(e) => setEditFormData({...editFormData, amount: e.target.value})}
+                          className="w-full sm:w-24 bg-white border border-blue-300 rounded-lg px-2 py-1.5 text-sm font-bold text-left outline-none"
+                          placeholder="المبلغ"
+                        />
+                        <div className="flex gap-1">
+                          <button onClick={() => saveEdit(item.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Check size={16}/></button>
+                          <button onClick={cancelEdit} className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"><X size={16}/></button>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-800">{item.title}</p>
-                        <p className="text-xs text-slate-400 flex items-center gap-1 font-mono">
-                          {/* عرض التاريخ الفعلي للمصروف */}
-                          <Calendar size={10}/> {new Date(item.date || item.created_at).toLocaleDateString('en-GB')}
-                        </p>
+                    ) : (
+                      /* وضع العرض العادي */
+                      <div className="flex justify-between items-center w-full">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+                            <TrendingDown size={18}/>
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-800">{item.title}</p>
+                            <p className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                              <Calendar size={10}/> {new Date(item.date || item.created_at).toLocaleDateString('en-GB')}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <span className="font-bold text-lg text-slate-900">-{item.amount}</span>
+                          
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => startEdit(item)}
+                              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="تعديل"
+                            >
+                              <Edit2 size={16}/>
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(item.id, item.amount)}
+                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="حذف"
+                            >
+                              <Trash2 size={16}/>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-bold text-lg text-slate-900">-{item.amount}</span>
-                      <button 
-                        onClick={() => handleDelete(item.id)}
-                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 size={16}/>
-                      </button>
-                    </div>
+                    )}
                   </div>
                 ))
               )}
