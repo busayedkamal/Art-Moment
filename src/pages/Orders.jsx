@@ -34,7 +34,7 @@ export default function Orders() {
     }
   }
 
-  // تصفية البحث (بالاسم أو رقم الجوال أو رقم الطلب)
+  // تصفية البحث
   const filteredOrders = orders.filter((order) => {
     const term = searchTerm.toLowerCase();
     return (
@@ -55,7 +55,6 @@ export default function Orders() {
     }
   };
 
-  // ترجمة الحالة
   const getStatusText = (status) => {
     const map = {
       'new': 'جديد',
@@ -68,7 +67,7 @@ export default function Orders() {
 
   return (
     <div className="space-y-6">
-      {/* الرأس: العنوان وزر الإضافة */}
+      {/* الرأس */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">الطلبات</h1>
@@ -123,43 +122,59 @@ export default function Orders() {
                   <th className="px-6 py-4">التاريخ</th>
                   <th className="px-6 py-4">الحالة</th>
                   <th className="px-6 py-4">المبلغ</th>
+                  <th className="px-6 py-4">المتبقي</th> {/* 👈 العمود الجديد */}
                   <th className="px-6 py-4">الإجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">
-                      #{order.id.slice(0, 6)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{order.customer_name}</div>
-                      <div className="text-xs text-slate-500">{order.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      {order.created_at && format(new Date(order.created_at), 'dd MMM yyyy', { locale: arSA })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-                        {getStatusText(order.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{order.total_amount} ر.س</div>
-                      {order.payment_status === 'paid' && (
-                        <span className="text-[10px] text-emerald-600">تم الدفع</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Link 
-                        to={`/app/orders/${order.id}`}
-                        className="p-2 rounded-full hover:bg-slate-200 inline-block text-slate-400 hover:text-slate-700"
-                      >
-                        <ChevronRight size={18} className="rotate-180" /> {/* أيقونة السهم لليسار للعربية */}
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {filteredOrders.map((order) => {
+                  // حساب المتبقي لكل سطر
+                  const remaining = (order.total_amount || 0) - (order.deposit || 0);
+                  const isPaid = remaining <= 0.5; // هامش بسيط للكسور العشرية
+
+                  return (
+                    <tr key={order.id} className="hover:bg-slate-50 transition-colors group">
+                      <td className="px-6 py-4 font-mono text-xs text-slate-500">
+                        #{order.id.slice(0, 6)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-900">{order.customer_name}</div>
+                        <div className="text-xs text-slate-500">{order.phone}</div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {order.created_at && format(new Date(order.created_at), 'dd MMM yyyy', { locale: arSA })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
+                          {getStatusText(order.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-900">{order.total_amount} ر.س</div>
+                      </td>
+                      {/* عمود المتبقي الجديد */}
+                      <td className="px-6 py-4">
+                        {isPaid ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            تم الدفع
+                          </span>
+                        ) : (
+                          <span className="font-bold text-red-500 text-sm">
+                            {remaining.toFixed(2)} ر.س
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link 
+                          to={`/app/orders/${order.id}`}
+                          className="p-2 rounded-full hover:bg-slate-200 inline-block text-slate-400 hover:text-slate-700"
+                        >
+                          <ChevronRight size={18} className="rotate-180" />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

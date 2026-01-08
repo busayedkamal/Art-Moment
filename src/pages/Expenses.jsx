@@ -12,8 +12,12 @@ export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
   const [stats, setStats] = useState({ totalSales: 0, totalExpenses: 0, netProfit: 0 });
   
-  // حالة المصروف الجديد
-  const [newExpense, setNewExpense] = useState({ title: '', amount: '' });
+  // حالة المصروف الجديد (تمت إضافة التاريخ)
+  const [newExpense, setNewExpense] = useState({ 
+    title: '', 
+    amount: '', 
+    date: new Date().toISOString().split('T')[0] // الافتراضي تاريخ اليوم
+  });
 
   useEffect(() => {
     fetchData();
@@ -27,19 +31,17 @@ export default function Expenses() {
       const { data: expensesData, error: expError } = await supabase
         .from('expenses')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('date', { ascending: false }); // الترتيب حسب تاريخ المصروف
         
       if (expError) throw expError;
 
-      // 2. جلب إجمالي المبيعات (من الطلبات المكتملة أو المدفوعة)
-      // ملاحظة: هنا نجمع كل الطلبات، يمكنك فلترتها حسب الشهر لاحقاً
+      // 2. جلب إجمالي المبيعات
       const { data: ordersData, error: ordError } = await supabase
         .from('orders')
         .select('total_amount');
 
       if (ordError) throw ordError;
 
-      // الحسابات
       const totalExp = expensesData.reduce((sum, item) => sum + Number(item.amount), 0);
       const totalSale = ordersData.reduce((sum, item) => sum + Number(item.total_amount), 0);
 
@@ -59,20 +61,22 @@ export default function Expenses() {
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
-    if (!newExpense.title || !newExpense.amount) return;
+    if (!newExpense.title || !newExpense.amount || !newExpense.date) return;
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('expenses')
-        .insert([{ title: newExpense.title, amount: Number(newExpense.amount) }])
-        .select()
-        .single();
+        .insert([{ 
+          title: newExpense.title, 
+          amount: Number(newExpense.amount),
+          date: newExpense.date // حفظ التاريخ المختار
+        }]);
 
       if (error) throw error;
 
       toast.success('تم تسجيل المصروف');
-      setNewExpense({ title: '', amount: '' });
-      fetchData(); // تحديث الأرقام
+      setNewExpense({ title: '', amount: '', date: new Date().toISOString().split('T')[0] });
+      fetchData(); 
     } catch (err) {
       toast.error('فشل الإضافة');
     }
@@ -98,42 +102,39 @@ export default function Expenses() {
         </div>
       </div>
 
-      {/* 1. بطاقات الملخص المالي */}
+      {/* الملخص المالي */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* المبيعات */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><TrendingUp size={24}/></div>
             <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg">دخل</span>
           </div>
           <p className="text-slate-500 text-sm mb-1">إجمالي المبيعات</p>
-          <h3 className="text-3xl font-black text-slate-900">{stats.totalSales.toFixed(2)} <span className="text-sm font-medium text-slate-400">ر.س</span></h3>
+          <h3 className="text-3xl font-black text-slate-900">{stats.totalSales.toLocaleString()} <span className="text-sm font-medium text-slate-400">ر.س</span></h3>
         </div>
 
-        {/* المصروفات */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-red-50 rounded-xl text-red-600"><TrendingDown size={24}/></div>
             <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded-lg">خروج</span>
           </div>
           <p className="text-slate-500 text-sm mb-1">إجمالي المصروفات</p>
-          <h3 className="text-3xl font-black text-slate-900">{stats.totalExpenses.toFixed(2)} <span className="text-sm font-medium text-slate-400">ر.س</span></h3>
+          <h3 className="text-3xl font-black text-slate-900">{stats.totalExpenses.toLocaleString()} <span className="text-sm font-medium text-slate-400">ر.س</span></h3>
         </div>
 
-        {/* صافي الربح */}
         <div className={`p-6 rounded-2xl border shadow-sm text-white ${stats.netProfit >= 0 ? 'bg-slate-900 border-slate-800' : 'bg-red-600 border-red-700'}`}>
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-white/10 rounded-xl"><DollarSign size={24}/></div>
             <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">الصافي</span>
           </div>
           <p className="text-slate-300 text-sm mb-1">صافي الربح الفعلي</p>
-          <h3 className="text-3xl font-black">{stats.netProfit.toFixed(2)} <span className="text-sm font-medium opacity-60">ر.س</span></h3>
+          <h3 className="text-3xl font-black">{stats.netProfit.toLocaleString()} <span className="text-sm font-medium opacity-60">ر.س</span></h3>
         </div>
       </div>
 
       <div className="grid md:grid-cols-12 gap-6">
         
-        {/* 2. نموذج إضافة مصروف */}
+        {/* نموذج الإضافة */}
         <div className="md:col-span-4 h-fit">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-6">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -141,10 +142,19 @@ export default function Expenses() {
             </h3>
             <form onSubmit={handleAddExpense} className="space-y-4">
               <div>
+                <label className="text-xs font-bold text-slate-500 block mb-1">تاريخ المصروف</label>
+                <input 
+                  type="date" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500"
+                  value={newExpense.date}
+                  onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
+                />
+              </div>
+              <div>
                 <label className="text-xs font-bold text-slate-500 block mb-1">بيان المصروف</label>
                 <input 
                   type="text" 
-                  placeholder="مثلاً: حبر طابعة، ورق A4، صيانة..." 
+                  placeholder="مثلاً: حبر طابعة، إيجار..." 
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500"
                   value={newExpense.title}
                   onChange={(e) => setNewExpense({...newExpense, title: e.target.value})}
@@ -167,7 +177,7 @@ export default function Expenses() {
           </div>
         </div>
 
-        {/* 3. سجل المصروفات */}
+        {/* السجل */}
         <div className="md:col-span-8">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -187,8 +197,9 @@ export default function Expenses() {
                       </div>
                       <div>
                         <p className="font-bold text-slate-800">{item.title}</p>
-                        <p className="text-xs text-slate-400 flex items-center gap-1">
-                          <Calendar size={10}/> {new Date(item.created_at).toLocaleDateString('ar-EG')}
+                        <p className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                          {/* عرض التاريخ الفعلي للمصروف */}
+                          <Calendar size={10}/> {new Date(item.date || item.created_at).toLocaleDateString('en-GB')}
                         </p>
                       </div>
                     </div>

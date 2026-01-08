@@ -16,7 +16,7 @@ export default function NewOrder() {
   const [couponCode, setCouponCode] = useState('');
   const [couponData, setCouponData] = useState(null); 
   
-  // حالة المخزون (جديد)
+  // حالة المخزون
   const [inventory, setInventory] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
 
@@ -50,11 +50,10 @@ export default function NewOrder() {
           setValue('deliveryFee', settings.delivery_fee_default);
         }
 
-        // جلب المخزون (جديد)
+        // جلب المخزون
         const { data: invData } = await supabase.from('inventory').select('*');
         if (invData) {
           setInventory(invData);
-          // فلترة المواد التي وصلت للحد الأدنى
           const low = invData.filter(item => item.quantity <= item.threshold);
           setLowStockItems(low);
         }
@@ -64,7 +63,7 @@ export default function NewOrder() {
     fetchData();
   }, [setValue]);
 
-  // 2. فحص الولاء (Mini CRM)
+  // 2. فحص الولاء
   useEffect(() => {
     const checkCustomerHistory = async () => {
       if (!phoneWatcher || phoneWatcher.length < 9) {
@@ -113,7 +112,6 @@ export default function NewOrder() {
 
   const onSubmit = async (data) => {
     try {
-      // 1. إنشاء الطلب
       const cleanData = {
         customer_name: data.customerName,
         phone: data.phone,
@@ -137,30 +135,20 @@ export default function NewOrder() {
       const { error } = await supabase.from('orders').insert(cleanData);
       if (error) throw error;
 
-      // 2. تحديث المخزون (خصم الكميات)
-      // ملاحظة: نستخدم الأسماء المخزنة في قاعدة البيانات ('ورق A4', 'ورق 4x6', 'ألبومات')
-      
+      // خصم المخزون
       const updates = [];
-      
-      // خصم A4
       if (cleanData.a4_qty > 0) {
         const item = inventory.find(i => i.item_name === 'ورق A4');
         if (item) updates.push(supabase.from('inventory').update({ quantity: item.quantity - cleanData.a4_qty }).eq('id', item.id));
       }
-      
-      // خصم 4x6
       if (cleanData.photo_4x6_qty > 0) {
         const item = inventory.find(i => i.item_name === 'ورق 4x6');
         if (item) updates.push(supabase.from('inventory').update({ quantity: item.quantity - cleanData.photo_4x6_qty }).eq('id', item.id));
       }
-
-      // خصم الألبومات
       if (cleanData.album_qty > 0) {
         const item = inventory.find(i => i.item_name === 'ألبومات');
         if (item) updates.push(supabase.from('inventory').update({ quantity: item.quantity - cleanData.album_qty }).eq('id', item.id));
       }
-
-      // تنفيذ التحديثات في الخلفية
       if (updates.length > 0) await Promise.all(updates);
 
       toast.success('تم إنشاء الطلب وتحديث المخزون! 🎉');
@@ -178,7 +166,7 @@ export default function NewOrder() {
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       
-      {/* --- قسم تنبيهات المخزون (جديد) --- */}
+      {/* قسم تنبيهات المخزون */}
       {lowStockItems.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 animate-pulse">
           <AlertTriangle className="text-amber-600 shrink-0" />
@@ -187,7 +175,7 @@ export default function NewOrder() {
             <ul className="text-sm text-amber-700 mt-1 list-disc list-inside">
               {lowStockItems.map(item => (
                 <li key={item.id}>
-                  المادة <b>{item.item_name}</b> متبقي منها <b>{item.quantity}</b> فقط (الحد الأدنى: {item.threshold})
+                  مخزون <b>{item.item_name}</b> متبقي منها <b>{item.quantity}</b> فقط (الحد الأدنى: {item.threshold})
                 </li>
               ))}
             </ul>
@@ -253,28 +241,57 @@ export default function NewOrder() {
           </div>
 
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4">تفاصيل الصور</h3>
-            <div className="grid gap-6 md:grid-cols-3">
+            <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-emerald-500"/> تفاصيل الصور</h3>
+            
+            {/* التخطيط الجديد: الكميات في صف واحد */}
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              
+              {/* خانة صور 4x6 - إطار أخضر */}
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600 block text-center">عدد 4×6</label>
-                <input type="number" min="0" {...register('photo4x6Qty')} className="qty-input" placeholder="0"/>
-                {/* عرض المخزون المتبقي */}
-                <span className="text-[10px] text-center block text-slate-400">
+                <label className="text-sm font-bold text-emerald-800 block text-center">عدد 4×6</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    min="0" 
+                    {...register('photo4x6Qty')} 
+                    className="w-full bg-white border-2 border-emerald-500 rounded-2xl px-2 py-4 text-center font-black text-3xl text-emerald-700 shadow-sm outline-none focus:ring-4 focus:ring-emerald-100 placeholder-emerald-200" 
+                    placeholder="0"
+                  />
+                </div>
+                <span className="text-[10px] text-center block text-slate-400 font-medium">
                    مخزون: {inventory.find(i => i.item_name === 'ورق 4x6')?.quantity || '-'}
                 </span>
               </div>
+
+              {/* خانة صور A4 - إطار أزرق */}
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600 block text-center">عدد A4</label>
-                <input type="number" min="0" {...register('a4Qty')} className="qty-input" placeholder="0"/>
-                <span className="text-[10px] text-center block text-slate-400">
+                <label className="text-sm font-bold text-blue-800 block text-center">عدد A4</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    min="0" 
+                    {...register('a4Qty')} 
+                    className="w-full bg-white border-2 border-blue-500 rounded-2xl px-2 py-4 text-center font-black text-3xl text-blue-700 shadow-sm outline-none focus:ring-4 focus:ring-blue-100 placeholder-blue-200" 
+                    placeholder="0"
+                  />
+                </div>
+                <span className="text-[10px] text-center block text-slate-400 font-medium">
                    مخزون: {inventory.find(i => i.item_name === 'ورق A4')?.quantity || '-'}
                 </span>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">ملاحظات</label>
-                <textarea {...register('notes')} rows="3" className="w-full bg-yellow-50 border-2 border-yellow-200 rounded-2xl px-4 py-3 text-sm focus:border-yellow-400 focus:bg-white outline-none resize-none" placeholder="اكتب ملاحظاتك هنا..."/>
-              </div>
             </div>
+
+            {/* صف الملاحظات المستقل - إطار أصفر */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-amber-700">ملاحظات إضافية</label>
+              <textarea 
+                {...register('notes')} 
+                rows="4" 
+                className="w-full bg-amber-50 border-2 border-amber-300 rounded-2xl px-4 py-3 text-sm text-slate-700 placeholder-amber-300/70 focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none resize-none transition-all" 
+                placeholder="اكتبي ملاحظاتك هنا... (تغليف خاص، قص الحواف، إلخ)"
+              />
+            </div>
+
           </div>
         </div>
 
@@ -356,9 +373,9 @@ export default function NewOrder() {
           </div>
         </div>
       </form>
+      
       <style>{`
         .input-field { @apply w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none; }
-        .qty-input { @apply w-full bg-slate-50 border-2 border-slate-300 rounded-2xl px-2 py-4 text-center font-black text-2xl text-slate-800 focus:border-emerald-500 focus:bg-white transition-all outline-none shadow-sm; }
       `}</style>
     </div>
   );

@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Search, Package, Clock, CheckCircle, Truck, 
-  AlertCircle, Banknote, Wallet, Image, Home, FileText 
-} from 'lucide-react'; // تمت إضافة FileText للأيقونة
+  AlertCircle, Banknote, Wallet, Image, Home, FileText, 
+  BookOpen, Tag, MapPin 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo-art-moment.svg';
 
@@ -98,7 +99,7 @@ export default function TrackOrderPage() {
         {order && (
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             
-            {/* رأس البطاقة */}
+            {/* رأس البطاقة - الحالة */}
             <div className="bg-slate-900 text-white p-6 text-center relative overflow-hidden">
               <div className="relative z-10">
                 <p className="text-slate-400 text-xs mb-1 font-bold uppercase tracking-wider">حالة الطلب الحالي</p>
@@ -160,11 +161,13 @@ export default function TrackOrderPage() {
                 </div>
               </div>
 
-              {/* قسم تفاصيل الإنتاج */}
+              {/* --- قسم تفاصيل الإنتاج (صور + ألبومات) --- */}
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 mb-4">
                 <h3 className="text-xs font-bold text-slate-400 mb-3 flex items-center gap-1">
                   <Image size={14}/> تفاصيل الطلب
                 </h3>
+                
+                {/* شبكة الصور */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
                     <span className="text-[10px] text-slate-400 block mb-1">صور 4×6</span>
@@ -175,9 +178,25 @@ export default function TrackOrderPage() {
                     <span className="font-bold text-slate-900 text-lg">{order.a4_qty}</span>
                   </div>
                 </div>
+
+                {/* شبكة الألبومات (تظهر فقط إذا وجدت) */}
+                {order.album_qty > 0 && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-3">
+                    <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
+                      <div className="flex items-center justify-center gap-1 text-[10px] text-slate-400 mb-1">
+                        <BookOpen size={12}/> عدد الألبومات
+                      </div>
+                      <span className="font-bold text-slate-900 text-lg">{order.album_qty}</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
+                      <span className="text-[10px] text-slate-400 block mb-1">سعر الألبوم</span>
+                      <span className="font-bold text-slate-900 text-lg">{order.album_price}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* --- قسم الملاحظات (الجديد) --- */}
+              {/* قسم الملاحظات */}
               {order.notes && (
                 <div className="bg-yellow-50 rounded-2xl p-5 border border-yellow-100 mb-4">
                   <h3 className="text-xs font-bold text-yellow-600 mb-2 flex items-center gap-1">
@@ -189,14 +208,34 @@ export default function TrackOrderPage() {
                 </div>
               )}
 
-              {/* القسم المالي */}
+              {/* --- القسم المالي (الحسابات والتفاصيل) --- */}
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                 <h3 className="text-xs font-bold text-slate-400 mb-3 flex items-center gap-1">
                   <Banknote size={14}/> تفاصيل الدفع
                 </h3>
+
+                {/* تفاصيل التوصيل والخصم (إضافة جديدة) */}
+                {(order.delivery_fee > 0 || order.manual_discount > 0) && (
+                  <div className="bg-white rounded-xl border border-slate-100 p-3 mb-3 space-y-2">
+                    {order.delivery_fee > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-500 flex items-center gap-1"><MapPin size={12}/> رسوم التوصيل</span>
+                        <span className="font-bold text-slate-900">{order.delivery_fee} ر.س</span>
+                      </div>
+                    )}
+                    {order.manual_discount > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-red-500 flex items-center gap-1"><Tag size={12}/> خصم / كود</span>
+                        <span className="font-bold text-red-600">-{order.manual_discount} ر.س</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* الإجمالي والمدفوع */}
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
-                    <span className="text-[10px] text-slate-400 block mb-1">الإجمالي</span>
+                    <span className="text-[10px] text-slate-400 block mb-1">الإجمالي النهائي</span>
                     <span className="font-bold text-slate-900">{order.total_amount} ر.س</span>
                   </div>
                   <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
@@ -204,6 +243,8 @@ export default function TrackOrderPage() {
                     <span className="font-bold text-emerald-600">{order.deposit} ر.س</span>
                   </div>
                 </div>
+
+                {/* المتبقي */}
                 <div className={`p-4 rounded-xl flex justify-between items-center ${remaining > 0 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
                   <span className="text-xs font-bold flex items-center gap-2">
                     <Wallet size={16}/> {remaining > 0 ? 'المبلغ المتبقي عليك' : 'حالة الدفع'}

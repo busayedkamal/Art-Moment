@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { 
   ArrowRight, Printer, CheckCircle, Truck, Trash2, 
-  Banknote, Calendar, Phone, FileText, User, 
+  Banknote, Phone, FileText, User, 
   MessageCircle, Save, Edit3, X, MinusCircle, Tag, BookOpen, Share2, MapPin, Receipt, StickyNote 
 } from 'lucide-react';
 
@@ -64,7 +64,6 @@ export default function OrderDetails() {
       setCustomerData({
         phone: orderData.phone || '',
         delivery_date: orderData.delivery_date || '',
-        // تحويل التاريخ لصيغة تناسب حقل الإدخال (YYYY-MM-DD)
         created_at: orderData.created_at ? new Date(orderData.created_at).toISOString().slice(0, 10) : '',
         source: Array.isArray(orderData.source) ? orderData.source : [],
         source_other: orderData.source_other || ''
@@ -112,7 +111,6 @@ export default function OrderDetails() {
       const updatedData = {
         phone: customerData.phone,
         delivery_date: customerData.delivery_date,
-        // حفظ تاريخ الإنشاء الجديد (مع تحويله لصيغة وقت كاملة لضمان قبوله)
         created_at: new Date(customerData.created_at).toISOString(),
         source: customerData.source,
         source_other: customerData.source_other
@@ -230,23 +228,137 @@ export default function OrderDetails() {
     navigate('/app/orders');
   };
 
+  // --- طباعة الفاتورة (تصميم A5) ---
   const handlePrint = () => {
     const printWindow = window.open('', '_blank', 'width=600,height=800');
-    if (!printWindow) return toast.error('اسمح بالنوافذ');
+    if (!printWindow) return toast.error('اسمح بالنوافذ المنبثقة');
+
+    const remaining = (order.total_amount - deposit).toFixed(2);
+    const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString('ar-EG') : '-';
+
     printWindow.document.write(`
-      <html dir="rtl"><body style="font-family:sans-serif;text-align:right;padding:20px">
-      <h2 style="text-align:center">Art Moment - فاتورة #${order.id.slice(0,6)}</h2>
-      <p>العميل: ${order.customer_name} | ${order.phone}</p>
-      <table style="width:100%;border-collapse:collapse;margin:20px 0" border="1">
-        <tr><th>الوصف</th><th>الكمية</th><th>السعر</th></tr>
-        ${order.a4_qty > 0 ? `<tr><td>A4</td><td>${order.a4_qty}</td><td>-</td></tr>` : ''}
-        ${order.photo_4x6_qty > 0 ? `<tr><td>4x6</td><td>${order.photo_4x6_qty}</td><td>-</td></tr>` : ''}
-        ${order.album_qty > 0 ? `<tr><td>ألبوم</td><td>${order.album_qty}</td><td>${order.album_price}</td></tr>` : ''}
-        ${order.delivery_fee > 0 ? `<tr><td>توصيل</td><td>-</td><td>${order.delivery_fee}</td></tr>` : ''}
-        ${order.manual_discount > 0 ? `<tr><td>خصم</td><td>-</td><td>-${order.manual_discount}</td></tr>` : ''}
-      </table>
-      <h3>الإجمالي: ${order.total_amount} | المدفوع: ${deposit}</h3>
-      <script>window.print();window.close();</script></body></html>
+      <html dir="rtl">
+      <head>
+        <title>فاتورة #${order.id.slice(0,6)}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+          
+          /* إعدادات الطباعة لمقاس A5 */
+          @page { size: A5; margin: 0; }
+          
+          body { 
+            font-family: 'Cairo', sans-serif; 
+            padding: 20px; 
+            color: #333; 
+            margin: 0;
+            background: white;
+          }
+          
+          .container {
+            width: 100%;
+            max-width: 148mm; /* عرض A5 تقريباً */
+            margin: 0 auto;
+          }
+
+          .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+          .logo { font-size: 22px; font-weight: 900; color: #10b981; margin-bottom: 2px; }
+          .subtitle { font-size: 10px; color: #666; }
+          
+          .info-grid { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 20px; 
+            background: #f9fafb; 
+            padding: 15px; 
+            border-radius: 10px; 
+            font-size: 11px;
+          }
+          .label { color: #888; font-weight: bold; margin-bottom: 2px; display: block; }
+          .val { font-size: 13px; font-weight: 700; color: #000; }
+
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
+          th { text-align: right; padding: 8px; border-bottom: 2px solid #eee; color: #666; }
+          td { padding: 8px; border-bottom: 1px solid #eee; }
+          
+          .summary { float: left; width: 180px; text-align: left; font-size: 11px; }
+          .summary-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+          .summary-row.total { font-size: 14px; font-weight: 900; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px; }
+          
+          .notes-box { 
+            clear: both; 
+            margin-top: 30px; 
+            padding: 10px; 
+            border: 1px dashed #ccc; 
+            border-radius: 6px; 
+            background: #fffbeb; 
+            font-size: 10px;
+          }
+          .notes-title { font-weight: bold; margin-bottom: 3px; color: #d97706; }
+          
+          .footer { margin-top: 30px; text-align: center; font-size: 9px; color: #999; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">Art Moment | لحظة فن</div>
+            <div class="subtitle">خدمات طباعة فوتوغرافية احترافية</div>
+          </div>
+
+          <div class="info-grid">
+            <div>
+              <span class="label">العميل</span>
+              <div class="val">${order.customer_name}</div>
+              <div style="font-family:monospace;">${order.phone}</div>
+            </div>
+            <div style="text-align:left">
+              <span class="label">تفاصيل الطلب</span>
+              <div class="val">#${order.id.slice(0, 8)}</div>
+              <div>${orderDate}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>الوصف</th>
+                <th>الكمية</th>
+                <th>السعر</th>
+                <th>المجموع</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.a4_qty > 0 ? `<tr><td>طباعة A4</td><td>${order.a4_qty}</td><td>${prices.a4}</td><td>${(order.a4_qty * prices.a4).toFixed(2)}</td></tr>` : ''}
+              ${order.photo_4x6_qty > 0 ? `<tr><td>طباعة 4x6</td><td>${order.photo_4x6_qty}</td><td>${prices.photo4x6}</td><td>${(order.photo_4x6_qty * prices.photo4x6).toFixed(2)}</td></tr>` : ''}
+              ${order.album_qty > 0 ? `<tr><td>ألبوم</td><td>${order.album_qty}</td><td>${order.album_price}</td><td>${(order.album_qty * order.album_price).toFixed(2)}</td></tr>` : ''}
+            </tbody>
+          </table>
+
+          <div class="summary">
+            <div class="summary-row"><span>المجموع:</span> <span>${(order.subtotal || 0).toFixed(2)}</span></div>
+            ${order.delivery_fee > 0 ? `<div class="summary-row"><span>التوصيل:</span> <span>${order.delivery_fee}</span></div>` : ''}
+            ${order.manual_discount > 0 ? `<div class="summary-row" style="color:red"><span>الخصم:</span> <span>-${order.manual_discount}</span></div>` : ''}
+            <div class="summary-row total"><span>الإجمالي:</span> <span>${order.total_amount.toFixed(2)}</span></div>
+            <div class="summary-row"><span>المدفوع:</span> <span>${deposit.toFixed(2)}</span></div>
+            <div class="summary-row" style="font-weight:bold; color:${remaining > 0 ? 'red' : 'green'}">
+              <span>المتبقي:</span> <span>${remaining > 0 ? remaining : '0.00'}</span>
+            </div>
+          </div>
+
+          ${order.notes ? `
+            <div class="notes-box">
+              <div class="notes-title">ملاحظات:</div>
+              ${order.notes}
+            </div>
+          ` : ''}
+
+          <div class="footer">
+            تتبع طلبك عبر: art-moment.com/track
+          </div>
+        </div>
+        <script>window.print();</script>
+      </body>
+      </html>
     `);
     printWindow.document.close();
   };
