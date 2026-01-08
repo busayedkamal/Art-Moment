@@ -9,10 +9,10 @@ import {
   Settings, 
   LogOut, 
   Menu,
-  X
+  X,
+  Wallet // 👈 1. تمت إضافة أيقونة المحفظة
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import logo from '../../assets/logo-art-moment.svg'; // تأكد أن المسار صحيح أو احذفه إذا لم توجد صورة
 
 export default function Layout() {
   const { signOut } = useAuth();
@@ -26,6 +26,7 @@ export default function Layout() {
     { path: '/app/orders', label: 'الطلبات', icon: <ShoppingCart size={20} /> },
     { path: '/app/customers', label: 'العملاء', icon: <Users size={20} /> },
     { path: '/app/reports', label: 'التقارير', icon: <FileBarChart size={20} /> },
+    { path: '/app/expenses', label: 'المصروفات', icon: <Wallet size={20} /> }, // 👈 2. تمت إضافة رابط المصروفات هنا
     { path: '/app/settings', label: 'الإعدادات', icon: <Settings size={20} /> },
   ];
 
@@ -104,9 +105,9 @@ export default function Layout() {
           </button>
         </header>
 
-        {/* Page Content (Where Dashboard/Orders renders) */}
+        {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <Outlet /> {/* 👈 هذا هو أهم سطر! بدونه الصفحة بيضاء */}
+          <Outlet />
         </main>
       </div>
       

@@ -51,7 +51,7 @@ export default function Sidebar() {
         <NavItem to="/app/orders" label="الطلبات" />
         <NavItem to="/app/customers" label="العملاء" />
         <NavItem to="/app/reports" label="التقارير" />
-        <NavItem to="/app/expenses" label="المصروفات" /> {/* 👈 تم إضافة رابط المصروفات */}
+        <NavItem to="/app/expenses" label="المصروفات1" /> {/* 👈 تم إضافة رابط المصروفات */}
         <NavItem to="/app/settings" label="الإعدادات" />
       </div>
 
