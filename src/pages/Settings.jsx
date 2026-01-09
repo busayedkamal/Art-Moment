@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { 
   Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle, 
-  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, DollarSign 
+  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent 
 } from 'lucide-react';
 
 export default function Settings() {
@@ -20,7 +20,7 @@ export default function Settings() {
   // إعدادات المخزون
   const [inventory, setInventory] = useState([]);
 
-  // إعدادات الكوبونات (جديد)
+  // إعدادات الكوبونات
   const [coupons, setCoupons] = useState([]);
   const [newCoupon, setNewCoupon] = useState({ 
     code: '', 
@@ -40,7 +40,7 @@ export default function Settings() {
       const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
       if (settingsData) setPrices(settingsData);
 
-      // 2. جلب المخزون
+      // 2. جلب المخزون (الذي كان مختفياً)
       const { data: inventoryData } = await supabase.from('inventory').select('*').order('id');
       if (inventoryData) setInventory(inventoryData);
 
@@ -65,18 +65,21 @@ export default function Settings() {
     } catch { toast.error('فشل التحديث'); }
   };
 
-  // --- دوال المخزون ---
+  // --- دوال المخزون (تحديث فوري) ---
   const handleUpdateStock = async (id, field, value) => {
+    // تحديث الواجهة فوراً
     const updatedInventory = inventory.map(item => 
       item.id === id ? { ...item, [field]: Number(value) } : item
     );
     setInventory(updatedInventory);
+
+    // تحديث قاعدة البيانات في الخلفية
     try {
       await supabase.from('inventory').update({ [field]: Number(value) }).eq('id', id);
     } catch { toast.error('فشل الحفظ'); }
   };
 
-  // --- دوال الكوبونات (جديد) ---
+  // --- دوال الكوبونات ---
   const handleAddCoupon = async (e) => {
     e.preventDefault();
     if (!newCoupon.code || !newCoupon.discount_amount) return toast.error('أكمل البيانات');
@@ -151,50 +154,53 @@ export default function Settings() {
           </form>
         </div>
 
-        {/* 2. قسم المخزون */}
+        {/* 2. قسم المخزون (تمت استعادته بالكامل) */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Package className="text-orange-500"/> إدارة المخزون</h3>
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {inventory.map((item) => (
-              <div key={item.id} className="p-3 border border-slate-100 rounded-xl bg-slate-50/50">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-bold text-slate-700">{item.item_name}</span>
-                  {item.quantity <= item.threshold && (
-                    <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold animate-pulse">
-                      <AlertTriangle size={10}/> منخفض
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <label className="text-[10px] text-slate-400 block">الكمية الحالية</label>
-                    <input 
-                      type="number" 
-                      value={item.quantity} 
-                      onChange={(e) => handleUpdateStock(item.id, 'quantity', e.target.value)}
-                      className={`w-full border rounded-lg px-2 py-1 text-center font-bold outline-none focus:ring-2 ${item.quantity <= item.threshold ? 'border-red-300 text-red-600 bg-red-50' : 'border-slate-300'}`}
-                    />
+            {inventory.length === 0 ? (
+              <p className="text-center text-slate-400 py-4">لا توجد مواد في المخزون</p>
+            ) : (
+              inventory.map((item) => (
+                <div key={item.id} className="p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-slate-700">{item.item_name}</span>
+                    {item.quantity <= item.threshold && (
+                      <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold animate-pulse">
+                        <AlertTriangle size={10}/> منخفض
+                      </span>
+                    )}
                   </div>
-                  <div className="flex-1">
-                    <label className="text-[10px] text-slate-400 block">حد التنبيه</label>
-                    <input 
-                      type="number" 
-                      value={item.threshold} 
-                      onChange={(e) => handleUpdateStock(item.id, 'threshold', e.target.value)}
-                      className="w-full border border-slate-300 rounded-lg px-2 py-1 text-center bg-white outline-none focus:border-orange-500"
-                    />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-slate-400 block mb-1">الكمية الحالية</label>
+                      <input 
+                        type="number" 
+                        value={item.quantity} 
+                        onChange={(e) => handleUpdateStock(item.id, 'quantity', e.target.value)}
+                        className={`w-full border rounded-lg px-2 py-1.5 text-center font-bold outline-none focus:ring-2 ${item.quantity <= item.threshold ? 'border-red-300 text-red-600 bg-red-50' : 'border-slate-300'}`}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] text-slate-400 block mb-1">حد التنبيه</label>
+                      <input 
+                        type="number" 
+                        value={item.threshold} 
+                        onChange={(e) => handleUpdateStock(item.id, 'threshold', e.target.value)}
+                        className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-center bg-white outline-none focus:border-orange-500"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
-        {/* 3. قسم أكواد الخصم (تمت إعادته) */}
+        {/* 3. قسم أكواد الخصم */}
         <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-emerald-500"/> أكواد الخصم</h3>
           
-          {/* نموذج الإضافة */}
           <form onSubmit={handleAddCoupon} className="flex flex-col md:flex-row gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
             <div className="flex-1">
               <label className="text-xs font-bold text-slate-500 block mb-1">الكود</label>
@@ -234,7 +240,6 @@ export default function Settings() {
             </div>
           </form>
 
-          {/* قائمة الكوبونات */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {coupons.length === 0 ? (
               <p className="col-span-full text-center text-slate-400 py-4">لا توجد أكواد خصم حالياً</p>
