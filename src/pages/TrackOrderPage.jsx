@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Search, Package, Clock, CheckCircle, Truck, 
   AlertCircle, Banknote, Wallet, Image, Home, FileText, 
-  BookOpen, Tag, MapPin 
+  BookOpen, Tag, MapPin, Calendar 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo-art-moment.svg';
@@ -12,6 +12,7 @@ import logo from '../assets/logo-art-moment.svg';
 export default function TrackOrderPage() {
   const [orderId, setOrderId] = useState('');
   const [order, setOrder] = useState(null);
+  const [payments, setPayments] = useState([]); // حالة سجل المدفوعات
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -24,15 +25,26 @@ export default function TrackOrderPage() {
     setOrder(null);
 
     try {
-      const { data, error } = await supabase
+      // 1. جلب بيانات الطلب الأساسية
+      const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('*')
         .ilike('id', `${orderId}%`)
         .limit(1)
         .single();
 
-      if (error) throw error;
-      setOrder(data);
+      if (orderError) throw orderError;
+
+      // 2. جلب سجل المدفوعات المرتبط بالطلب
+      const { data: paymentsData } = await supabase
+        .from('order_payments')
+        .select('*')
+        .eq('order_id', orderData.id)
+        .order('payment_date', { ascending: true });
+
+      setOrder(orderData);
+      setPayments(paymentsData || []);
+
     } catch (err) {
       setError('لم يتم العثور على طلب بهذا الرقم، يرجى التأكد والمحاولة مجدداً.');
     } finally {
@@ -167,7 +179,6 @@ export default function TrackOrderPage() {
                   <Image size={14}/> تفاصيل الطلب
                 </h3>
                 
-                {/* شبكة الصور */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
                     <span className="text-[10px] text-slate-400 block mb-1">صور 4×6</span>
@@ -179,7 +190,6 @@ export default function TrackOrderPage() {
                   </div>
                 </div>
 
-                {/* شبكة الألبومات (تظهر فقط إذا وجدت) */}
                 {order.album_qty > 0 && (
                   <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-3">
                     <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
@@ -196,7 +206,7 @@ export default function TrackOrderPage() {
                 )}
               </div>
 
-              {/* قسم الملاحظات */}
+              {/* --- قسم الملاحظات (تمت إعادته) --- */}
               {order.notes && (
                 <div className="bg-yellow-50 rounded-2xl p-5 border border-yellow-100 mb-4">
                   <h3 className="text-xs font-bold text-yellow-600 mb-2 flex items-center gap-1">
@@ -214,7 +224,6 @@ export default function TrackOrderPage() {
                   <Banknote size={14}/> تفاصيل الدفع
                 </h3>
 
-                {/* تفاصيل التوصيل والخصم (إضافة جديدة) */}
                 {(order.delivery_fee > 0 || order.manual_discount > 0) && (
                   <div className="bg-white rounded-xl border border-slate-100 p-3 mb-3 space-y-2">
                     {order.delivery_fee > 0 && (
@@ -232,19 +241,32 @@ export default function TrackOrderPage() {
                   </div>
                 )}
 
-                {/* الإجمالي والمدفوع */}
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
                     <span className="text-[10px] text-slate-400 block mb-1">الإجمالي النهائي</span>
                     <span className="font-bold text-slate-900">{order.total_amount} ر.س</span>
                   </div>
                   <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
-                    <span className="text-[10px] text-slate-400 block mb-1">المدفوع</span>
+                    <span className="text-[10px] text-slate-400 block mb-1">إجمالي المدفوع</span>
                     <span className="font-bold text-emerald-600">{order.deposit} ر.س</span>
                   </div>
                 </div>
 
-                {/* المتبقي */}
+                {/* --- سجل المدفوعات للعميل (الميزة الجديدة) --- */}
+                {payments.length > 0 && (
+                  <div className="mb-3 bg-white p-3 rounded-xl border border-slate-100">
+                    <p className="text-[10px] text-slate-400 font-bold mb-2">سجل الدفعات:</p>
+                    <div className="space-y-1">
+                      {payments.map((p) => (
+                        <div key={p.id} className="flex justify-between items-center text-xs text-slate-600 border-b border-slate-50 last:border-0 pb-1 last:pb-0">
+                          <span className="flex items-center gap-1"><Calendar size={10}/> {new Date(p.payment_date).toLocaleDateString('ar-EG')}</span>
+                          <span className="font-bold">{p.amount} ر.س</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className={`p-4 rounded-xl flex justify-between items-center ${remaining > 0 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
                   <span className="text-xs font-bold flex items-center gap-2">
                     <Wallet size={16}/> {remaining > 0 ? 'المبلغ المتبقي عليك' : 'حالة الدفع'}

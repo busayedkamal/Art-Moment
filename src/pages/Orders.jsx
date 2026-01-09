@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Plus, Search, Filter, ChevronRight, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, ChevronRight, Loader2, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 
@@ -73,13 +73,23 @@ export default function Orders() {
           <h1 className="text-2xl font-bold text-slate-900">الطلبات</h1>
           <p className="text-sm text-slate-500">إدارة ومتابعة طلبات الطباعة</p>
         </div>
-        <Link
-          to="/app/orders/new"
-          className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
-        >
-          <Plus size={18} />
-          طلب جديد
-        </Link>
+        
+        {/* القسم الأيسر: زر الإضافة + عداد الطلبات */}
+        <div className="flex items-center gap-3">
+          {/* عداد الطلبات الجديد */}
+          <div className="bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2">
+            <FileText size={16} className="text-slate-400"/>
+            <span>{filteredOrders.length} طلب</span>
+          </div>
+
+          <Link
+            to="/app/orders/new"
+            className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
+          >
+            <Plus size={18} />
+            طلب جديد
+          </Link>
+        </div>
       </div>
 
       {/* شريط البحث */}
@@ -122,15 +132,14 @@ export default function Orders() {
                   <th className="px-6 py-4">التاريخ</th>
                   <th className="px-6 py-4">الحالة</th>
                   <th className="px-6 py-4">المبلغ</th>
-                  <th className="px-6 py-4">المتبقي</th> {/* 👈 العمود الجديد */}
+                  <th className="px-6 py-4">المتبقي</th>
                   <th className="px-6 py-4">الإجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredOrders.map((order) => {
-                  // حساب المتبقي لكل سطر
                   const remaining = (order.total_amount || 0) - (order.deposit || 0);
-                  const isPaid = remaining <= 0.5; // هامش بسيط للكسور العشرية
+                  const isPaid = remaining <= 0.5; 
 
                   return (
                     <tr key={order.id} className="hover:bg-slate-50 transition-colors group">
@@ -152,7 +161,6 @@ export default function Orders() {
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">{order.total_amount} ر.س</div>
                       </td>
-                      {/* عمود المتبقي الجديد */}
                       <td className="px-6 py-4">
                         {isPaid ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
