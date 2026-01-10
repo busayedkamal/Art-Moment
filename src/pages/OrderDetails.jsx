@@ -96,13 +96,16 @@ export default function OrderDetails() {
       const currentDelivery = overrides.delivery_fee ?? deliveryFee;
       const currentDiscount = overrides.manual_discount ?? manualDiscount;
 
+      // حساب المجموع الفرعي (قيمة المنتجات فقط)
       const productsTotal = (Number(currentA4) * prices.a4) + (Number(current4x6) * prices.photo4x6);
       const albumsTotal = (Number(currentAlbumQty) * Number(currentAlbumPrice));
       
       const newSubtotal = productsTotal + albumsTotal;
+      
+      // حساب الإجمالي النهائي
       const newTotal = Math.max(0, newSubtotal + Number(currentDelivery) - Number(currentDiscount));
 
-      // تحديث حالة الدفع بناءً على المجموع الجديد والمدفوعات الحالية
+      // تحديث حالة الدفع
       const isPaid = order.deposit >= newTotal;
 
       const updatedData = {
@@ -122,13 +125,12 @@ export default function OrderDetails() {
     } catch (e) { toast.error('فشل الحساب'); return false; }
   };
 
-  // --- تفعيل كود الخصم (محدث للجبر) ---
+  // --- تفعيل كود الخصم (جبر الكسور) ---
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
     const toastId = toast.loading('جاري التحقق من الكود...');
     
     try {
-      // 1. البحث عن الكود في قاعدة البيانات
       const { data: coupon, error } = await supabase
         .from('coupons')
         .select('*')
@@ -141,18 +143,17 @@ export default function OrderDetails() {
         return toast.error('كود الخصم غير صالح أو منتهي');
       }
 
-      // 2. حساب قيمة الخصم
+      // حساب قيمة الخصم بناء على المجموع الفرعي
       const currentSubtotal = (order.a4_qty * prices.a4) + (order.photo_4x6_qty * prices.photo4x6) + (order.album_qty * order.album_price);
       
       let discountValue = 0;
       if (coupon.discount_type === 'percent') {
-        // تم التعديل هنا: استخدام Math.ceil لجبر الرقم للأعلى (17.4 -> 18)
+        // جبر الكسر لأقرب عدد صحيح للأعلى
         discountValue = Math.ceil(currentSubtotal * (coupon.discount_amount / 100));
       } else {
         discountValue = Number(coupon.discount_amount);
       }
 
-      // 3. تطبيق الخصم وتحديث الطلب
       const success = await recalculateAndSaveTotal({ manual_discount: discountValue });
       
       toast.dismiss(toastId);
@@ -160,7 +161,6 @@ export default function OrderDetails() {
         setManualDiscount(discountValue); 
         setCouponCode(''); 
         
-        // إضافة ملاحظة تلقائية باستخدام الكوبون
         const noteMsg = `تم استخدام كوبون: ${coupon.code}`;
         if (!notes.includes(noteMsg)) {
             const newNotes = notes ? `${notes} | ${noteMsg}` : noteMsg;
@@ -168,7 +168,6 @@ export default function OrderDetails() {
             setNotes(newNotes);
         }
 
-        // عرض رسالة نجاح مع المبلغ المخصوم (رقم صحيح)
         toast.success(`تم خصم ${discountValue} ريال بنجاح!`); 
       }
     } catch (err) { 
@@ -298,7 +297,7 @@ export default function OrderDetails() {
   };
 
   const handlePrint = () => { window.print(); };
-  const handlePrintLabel = () => { /* كود طباعة الملصق */ };
+  const handlePrintLabel = () => { /* كود الملصق */ };
   const handleDelete = async () => {
     if (!window.confirm('حذف نهائي؟')) return;
     await supabase.from('orders').delete().eq('id', id);
@@ -385,16 +384,39 @@ export default function OrderDetails() {
           <button onClick={saveNotes} className="mt-2 text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg w-full">حفظ الملاحظة</button>
         </div>
 
+        {/* بطاقة الحسابات (معدلة) */}
         <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col h-full">
           <h3 className="font-bold mb-4 flex items-center gap-2"><Banknote className="text-emerald-400"/> الحسابات</h3>
           <div className="space-y-3 text-sm flex-1">
-            <div className="flex justify-between text-slate-300"><span>الإجمالي</span><span className="font-bold text-white text-lg">{order.total_amount}</span></div>
             
+            {/* 1. المجموع الفرعي */}
+            <div className="flex justify-between text-slate-400">
+              <span>المجموع (منتجات)</span>
+              <span>{order.subtotal?.toFixed(2)}</span>
+            </div>
+            
+            {/* 2. التوصيل */}
             <div className="flex justify-between items-center text-slate-300">
               <span>التوصيل</span>
               {isEditingDelivery ? <div className="flex gap-1"><input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-12 bg-slate-800 border rounded text-center"/><button onClick={handleSaveDelivery} className="text-emerald-400 text-xs">ok</button></div> : <button onClick={() => setIsEditingDelivery(true)}>{deliveryFee}</button>}
             </div>
 
+            {/* 3. الخصم */}
+            <div className="bg-red-500/20 p-3 rounded-xl flex justify-between items-center">
+              <span>الخصم</span>
+              {isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-emerald-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}
+            </div>
+
+            {/* فاصل */}
+            <div className="border-t border-white/10 my-2"></div>
+
+            {/* 4. الإجمالي النهائي (بعد الخصم) */}
+            <div className="flex justify-between text-white text-lg font-bold mb-4">
+              <span>الإجمالي بعد الخصم</span>
+              <span>{order.total_amount.toFixed(2)} ر.س</span>
+            </div>
+
+            {/* 5. سجل المدفوعات */}
             <div className="bg-white/10 rounded-xl p-3">
               <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
                 <span className="text-emerald-400 font-bold">سجل المدفوعات</span>
@@ -430,11 +452,6 @@ export default function OrderDetails() {
               </div>
             </div>
 
-            <div className="bg-red-500/20 p-3 rounded-xl flex justify-between items-center">
-              <span>الخصم</span>
-              {isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-emerald-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}
-            </div>
-
             {/* خانة الكوبون */}
             <div className="flex gap-2 items-center">
               <div className="relative flex-1">
@@ -444,6 +461,7 @@ export default function OrderDetails() {
               <button onClick={applyCoupon} className="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs text-white">تطبيق</button>
             </div>
 
+            {/* المتبقي */}
             <div className={`p-3 rounded-xl text-center border ${remaining <= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
               <span className="text-xs block">المتبقي</span>
               <span className="text-xl font-black">{remaining <= 0 ? 'خالص ✅' : remaining.toFixed(2)}</span>
