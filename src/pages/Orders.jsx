@@ -1,8 +1,8 @@
 // src/pages/Orders.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Plus, Search, Filter, ChevronRight, Loader2, FileText } from 'lucide-react';
+import { Plus, Search, Filter, ChevronRight, Loader2, FileText, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 
@@ -10,6 +10,9 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // حالة الفرز (الافتراضي: التاريخ تنازلي - الأحدث أولاً)
+  const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
   // جلب البيانات عند تحميل الصفحة
   useEffect(() => {
@@ -19,7 +22,6 @@ export default function Orders() {
   async function fetchOrders() {
     try {
       setLoading(true);
-      // جلب كل الطلبات مرتبة بالأحدث
       const { data, error } = await supabase
         .from('orders')
         .select('*')
@@ -35,14 +37,79 @@ export default function Orders() {
   }
 
   // تصفية البحث
-  const filteredOrders = orders.filter((order) => {
-    const term = searchTerm.toLowerCase();
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const term = searchTerm.toLowerCase();
+      return (
+        order.customer_name?.toLowerCase().includes(term) ||
+        order.phone?.includes(term) ||
+        order.id?.slice(0, 8).includes(term)
+      );
+    });
+  }, [orders, searchTerm]);
+
+  // منطق الفرز
+  const sortedOrders = useMemo(() => {
+    let sortableItems = [...filteredOrders];
+    if (sortConfig.key !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue, bValue;
+
+        // معالجة خاصة لعمود "المتبقي" لأنه حسابي
+        if (sortConfig.key === 'remaining') {
+          aValue = (a.total_amount || 0) - (a.deposit || 0);
+          bValue = (b.total_amount || 0) - (b.deposit || 0);
+        } else {
+          aValue = a[sortConfig.key];
+          bValue = b[sortConfig.key];
+        }
+
+        // معالجة النصوص والأرقام
+        if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+        if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredOrders, sortConfig]);
+
+  // دالة لتغيير ترتيب الفرز عند الضغط على الرأس
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // مكون مساعد لرأس الجدول القابل للفرز
+  const SortableHeader = ({ label, sortKey }) => {
+    const isActive = sortConfig.key === sortKey;
     return (
-      order.customer_name?.toLowerCase().includes(term) ||
-      order.phone?.includes(term) ||
-      order.id?.slice(0, 8).includes(term)
+      <th 
+        className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+        onClick={() => requestSort(sortKey)}
+      >
+        <div className="flex items-center gap-1">
+          {label}
+          <span className="text-slate-400 group-hover:text-slate-600">
+            {isActive ? (
+              sortConfig.direction === 'asc' ? <ArrowUp size={14}/> : <ArrowDown size={14}/>
+            ) : (
+              <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-50"/>
+            )}
+          </span>
+        </div>
+      </th>
     );
-  });
+  };
 
   // دالة مساعدة لألوان الحالة
   const getStatusColor = (status) => {
@@ -76,7 +143,6 @@ export default function Orders() {
         
         {/* القسم الأيسر: زر الإضافة + عداد الطلبات */}
         <div className="flex items-center gap-3">
-          {/* عداد الطلبات الجديد */}
           <div className="bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2">
             <FileText size={16} className="text-slate-400"/>
             <span>{filteredOrders.length} طلب</span>
@@ -127,17 +193,17 @@ export default function Orders() {
             <table className="w-full text-right">
               <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-medium">
                 <tr>
-                  <th className="px-6 py-4">رقم الطلب</th>
-                  <th className="px-6 py-4">العميل</th>
-                  <th className="px-6 py-4">التاريخ</th>
-                  <th className="px-6 py-4">الحالة</th>
-                  <th className="px-6 py-4">المبلغ</th>
-                  <th className="px-6 py-4">المتبقي</th>
+                  <SortableHeader label="رقم الطلب" sortKey="id" />
+                  <SortableHeader label="العميل" sortKey="customer_name" />
+                  <SortableHeader label="التاريخ" sortKey="created_at" />
+                  <SortableHeader label="الحالة" sortKey="status" />
+                  <SortableHeader label="المبلغ" sortKey="total_amount" />
+                  <SortableHeader label="المتبقي" sortKey="remaining" />
                   <th className="px-6 py-4">الإجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredOrders.map((order) => {
+                {sortedOrders.map((order) => {
                   const remaining = (order.total_amount || 0) - (order.deposit || 0);
                   const isPaid = remaining <= 0.5; 
 
