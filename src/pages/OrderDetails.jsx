@@ -17,7 +17,6 @@ export default function OrderDetails() {
   const [prices, setPrices] = useState({ a4: 0, photo4x6: 0 });
 
   // --- حالات التعديل ---
-  // تم استبدال deposit البسيط بقائمة المدفوعات
   const [payments, setPayments] = useState([]); 
   const [showPaymentInput, setShowPaymentInput] = useState(false);
   const [newPayment, setNewPayment] = useState({ amount: '', date: new Date().toISOString().split('T')[0] });
@@ -48,11 +47,9 @@ export default function OrderDetails() {
 
   async function fetchOrderAndSettings() {
     try {
-      // جلب الطلب
       const { data: orderData, error: orderError } = await supabase.from('orders').select('*').eq('id', id).single();
       if (orderError) throw orderError;
 
-      // جلب سجل المدفوعات
       const { data: paymentsData } = await supabase.from('order_payments').select('*').eq('order_id', id).order('payment_date', { ascending: true });
 
       const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
@@ -89,73 +86,7 @@ export default function OrderDetails() {
     } finally { setLoading(false); }
   }
 
-  // --- إدارة المدفوعات ---
-  const handleAddPayment = async () => {
-    if (!newPayment.amount || Number(newPayment.amount) <= 0) return toast.error('أدخل مبلغاً صحيحاً');
-    
-    try {
-      // 1. إضافة للدفعات
-      const { data: payData, error: payError } = await supabase.from('order_payments').insert([{
-        order_id: id,
-        amount: Number(newPayment.amount),
-        payment_date: newPayment.date
-      }]).select().single();
-      
-      if (payError) throw payError;
-
-      // 2. تحديث إجمالي المدفوع في جدول الطلبات (للسرعة)
-      const newTotalPaid = payments.reduce((sum, p) => sum + p.amount, 0) + Number(newPayment.amount);
-      const isPaid = newTotalPaid >= order.total_amount;
-      
-      await supabase.from('orders').update({ 
-        deposit: newTotalPaid, 
-        payment_status: isPaid ? 'paid' : 'unpaid' 
-      }).eq('id', id);
-
-      // تحديث الواجهة
-      setPayments([...payments, payData]);
-      setOrder({ ...order, deposit: newTotalPaid, payment_status: isPaid ? 'paid' : 'unpaid' });
-      setShowPaymentInput(false);
-      setNewPayment({ amount: '', date: new Date().toISOString().split('T')[0] });
-      toast.success('تم تسجيل الدفعة');
-
-    } catch (error) { toast.error('فشل إضافة الدفعة'); }
-  };
-
-  const handleDeletePayment = async (paymentId, amount) => {
-    if(!window.confirm('حذف هذه الدفعة؟')) return;
-    try {
-      await supabase.from('order_payments').delete().eq('id', paymentId);
-      
-      const newTotalPaid = order.deposit - amount;
-      await supabase.from('orders').update({ 
-        deposit: newTotalPaid, 
-        payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' 
-      }).eq('id', id);
-
-      setPayments(payments.filter(p => p.id !== paymentId));
-      setOrder({ ...order, deposit: newTotalPaid, payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' });
-      toast.success('تم حذف الدفعة');
-    } catch { toast.error('فشل الحذف'); }
-  };
-
-  // --- بقية الدوال (بدون تغيير في المنطق) ---
-  const handleSaveCustomerData = async () => { /* ... نفس الكود السابق ... */ 
-    try {
-      const updatedData = {
-        phone: customerData.phone,
-        delivery_date: customerData.delivery_date,
-        created_at: new Date(customerData.created_at).toISOString(),
-        source: customerData.source,
-        source_other: customerData.source_other
-      };
-      await supabase.from('orders').update(updatedData).eq('id', id);
-      setOrder({ ...order, ...updatedData });
-      setIsEditingCustomer(false);
-      toast.success('تم التحديث');
-    } catch { toast.error('فشل الحفظ'); }
-  };
-
+  // --- دوال الحساب والتحديث ---
   const recalculateAndSaveTotal = async (overrides = {}) => {
     try {
       const currentA4 = overrides.a4_qty ?? order.a4_qty;
@@ -171,11 +102,16 @@ export default function OrderDetails() {
       const newSubtotal = productsTotal + albumsTotal;
       const newTotal = Math.max(0, newSubtotal + Number(currentDelivery) - Number(currentDiscount));
 
+      // تحديث حالة الدفع بناءً على المجموع الجديد والمدفوعات الحالية
+      const isPaid = order.deposit >= newTotal;
+
       const updatedData = {
         a4_qty: currentA4, photo_4x6_qty: current4x6,
         album_qty: currentAlbumQty, album_price: currentAlbumPrice,
         delivery_fee: currentDelivery, manual_discount: currentDiscount,
-        subtotal: newSubtotal, total_amount: newTotal
+        subtotal: newSubtotal, 
+        total_amount: newTotal,
+        payment_status: isPaid ? 'paid' : 'unpaid'
       };
 
       await supabase.from('orders').update(updatedData).eq('id', id);
@@ -184,6 +120,78 @@ export default function OrderDetails() {
       setManualDiscount(currentDiscount);
       return true;
     } catch (e) { toast.error('فشل الحساب'); return false; }
+  };
+
+  // --- تفعيل كود الخصم (الدالة المحدثة) ---
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    const toastId = toast.loading('جاري التحقق من الكود...');
+    
+    try {
+      // 1. البحث عن الكود في قاعدة البيانات
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.toUpperCase().trim())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !coupon) {
+        toast.dismiss(toastId);
+        return toast.error('كود الخصم غير صالح أو منتهي');
+      }
+
+      // 2. حساب قيمة الخصم
+      // نحتاج حساب المجموع الفرعي الحالي أولاً لتطبيق النسبة المئوية
+      const currentSubtotal = (order.a4_qty * prices.a4) + (order.photo_4x6_qty * prices.photo4x6) + (order.album_qty * order.album_price);
+      
+      let discountValue = 0;
+      if (coupon.discount_type === 'percent') {
+        discountValue = currentSubtotal * (coupon.discount_amount / 100);
+      } else {
+        discountValue = Number(coupon.discount_amount);
+      }
+
+      // 3. تطبيق الخصم وتحديث الطلب
+      const success = await recalculateAndSaveTotal({ manual_discount: discountValue });
+      
+      toast.dismiss(toastId);
+      if (success) { 
+        setManualDiscount(discountValue); 
+        setCouponCode(''); 
+        
+        // إضافة ملاحظة تلقائية باستخدام الكوبون
+        const noteMsg = `تم استخدام كوبون: ${coupon.code}`;
+        if (!notes.includes(noteMsg)) {
+            const newNotes = notes ? `${notes} | ${noteMsg}` : noteMsg;
+            await supabase.from('orders').update({ notes: newNotes }).eq('id', id);
+            setNotes(newNotes);
+        }
+
+        toast.success(`تم خصم ${discountValue.toFixed(2)} ريال بنجاح!`); 
+      }
+    } catch (err) { 
+      console.error(err);
+      toast.dismiss(toastId); 
+      toast.error('حدث خطأ أثناء تطبيق الخصم'); 
+    }
+  };
+
+  // --- باقي الدوال (الإنتاج، التوصيل، المدفوعات...) ---
+  const handleSaveCustomerData = async () => {
+    try {
+      const updatedData = {
+        phone: customerData.phone,
+        delivery_date: customerData.delivery_date,
+        created_at: new Date(customerData.created_at).toISOString(),
+        source: customerData.source,
+        source_other: customerData.source_other
+      };
+      await supabase.from('orders').update(updatedData).eq('id', id);
+      setOrder({ ...order, ...updatedData });
+      setIsEditingCustomer(false);
+      toast.success('تم التحديث');
+    } catch { toast.error('فشل الحفظ'); }
   };
 
   const handleSaveProduction = async () => {
@@ -206,6 +214,42 @@ export default function OrderDetails() {
     if (success) { setIsEditingDelivery(false); toast.success('تم تحديث التوصيل'); }
   };
 
+  const handleAddPayment = async () => {
+    if (!newPayment.amount || Number(newPayment.amount) <= 0) return toast.error('أدخل مبلغاً صحيحاً');
+    try {
+      const { data: payData, error: payError } = await supabase.from('order_payments').insert([{
+        order_id: id,
+        amount: Number(newPayment.amount),
+        payment_date: newPayment.date
+      }]).select().single();
+      
+      if (payError) throw payError;
+
+      const newTotalPaid = payments.reduce((sum, p) => sum + p.amount, 0) + Number(newPayment.amount);
+      const isPaid = newTotalPaid >= order.total_amount;
+      
+      await supabase.from('orders').update({ deposit: newTotalPaid, payment_status: isPaid ? 'paid' : 'unpaid' }).eq('id', id);
+
+      setPayments([...payments, payData]);
+      setOrder({ ...order, deposit: newTotalPaid, payment_status: isPaid ? 'paid' : 'unpaid' });
+      setShowPaymentInput(false);
+      setNewPayment({ amount: '', date: new Date().toISOString().split('T')[0] });
+      toast.success('تم تسجيل الدفعة');
+    } catch (error) { toast.error('فشل إضافة الدفعة'); }
+  };
+
+  const handleDeletePayment = async (paymentId, amount) => {
+    if(!window.confirm('حذف هذه الدفعة؟')) return;
+    try {
+      await supabase.from('order_payments').delete().eq('id', paymentId);
+      const newTotalPaid = order.deposit - amount;
+      await supabase.from('orders').update({ deposit: newTotalPaid, payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' }).eq('id', id);
+      setPayments(payments.filter(p => p.id !== paymentId));
+      setOrder({ ...order, deposit: newTotalPaid, payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' });
+      toast.success('تم حذف الدفعة');
+    } catch { toast.error('فشل الحذف'); }
+  };
+
   const updateStatus = async (newStatus) => {
     await supabase.from('orders').update({ status: newStatus }).eq('id', id);
     setOrder({ ...order, status: newStatus });
@@ -220,24 +264,17 @@ export default function OrderDetails() {
     });
   };
 
-  // سداد كامل (إضافة دفعة بالمتبقي)
   const markAsFullyPaid = async () => {
     const remaining = order.total_amount - order.deposit;
     if (remaining <= 0) return;
-    
-    // إضافة دفعة تلقائية
     await supabase.from('order_payments').insert([{
       order_id: id,
       amount: remaining,
       payment_date: new Date().toISOString().split('T')[0],
       note: 'سداد كامل تلقائي'
     }]);
-
-    // تحديث الطلب
     await supabase.from('orders').update({ deposit: order.total_amount, payment_status: 'paid' }).eq('id', id);
-    
-    // تحديث الواجهة
-    fetchOrderAndSettings(); // إعادة تحميل لتحديث القائمة
+    fetchOrderAndSettings();
     toast.success('تم السداد بالكامل');
   };
 
@@ -247,28 +284,7 @@ export default function OrderDetails() {
     toast.success('تم الحفظ');
   };
 
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    const toastId = toast.loading('جاري التحقق...');
-    try {
-      const { data } = await supabase.from('coupons').select('*').eq('code', couponCode.toUpperCase().trim()).eq('is_active', true).single();
-      toast.dismiss(toastId);
-      if (data) {
-        let discountVal = data.discount_type === 'percent' ? order.subtotal * (data.discount_amount / 100) : Number(data.discount_amount);
-        const success = await recalculateAndSaveTotal({ manual_discount: discountVal });
-        if (success) { setManualDiscount(discountVal); setCouponCode(''); toast.success(`خصم ${discountVal.toFixed(2)} ريال`); }
-      } else { toast.error('كود غير صالح'); }
-    } catch { toast.dismiss(toastId); toast.error('خطأ'); }
-  };
-
-  const handleDelete = async () => {
-    if (!window.confirm('حذف نهائي؟')) return;
-    await supabase.from('orders').delete().eq('id', id);
-    navigate('/app/orders');
-  };
-
-  // دوال الطباعة والواتساب كما هي
-  const sendWhatsApp = (type) => { /* ... الكود السابق ... */
+  const sendWhatsApp = (type) => { 
     if (!order.phone) return toast.error('لا يوجد رقم جوال');
     const cleanPhone = order.phone.replace(/\D/g, ''); 
     const phone = cleanPhone.startsWith('0') ? '966' + cleanPhone.substring(1) : (cleanPhone.startsWith('966') ? cleanPhone : '966' + cleanPhone);
@@ -280,11 +296,13 @@ export default function OrderDetails() {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  const handlePrint = () => { /* ... الكود السابق ... */ 
-    window.print(); // (تبسيط هنا، استخدم الكود السابق الخاص بالطباعة A5)
+  const handlePrint = () => { window.print(); };
+  const handlePrintLabel = () => { /* كود طباعة الملصق السابق */ };
+  const handleDelete = async () => {
+    if (!window.confirm('حذف نهائي؟')) return;
+    await supabase.from('orders').delete().eq('id', id);
+    navigate('/app/orders');
   };
-  
-  const handlePrintLabel = () => { /* ... الكود السابق ... */ };
 
   const steps = [{ key: 'new', label: 'جديد', icon: FileText }, { key: 'printing', label: 'طباعة', icon: Printer }, { key: 'done', label: 'جاهز', icon: CheckCircle }, { key: 'delivered', label: 'تسليم', icon: Truck }];
   const currentStepIndex = steps.findIndex(s => s.key === order?.status);
@@ -296,7 +314,7 @@ export default function OrderDetails() {
 
   return (
     <div className="max-w-6xl mx-auto pb-20 space-y-6">
-      {/* ... (نفس قسم الرأس والمسار) ... */}
+      {/* الرأس */}
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-slate-100 rounded-xl"><ArrowRight /></button>
@@ -305,7 +323,11 @@ export default function OrderDetails() {
             <p className="text-slate-500 text-sm font-mono">#{order.id.slice(0, 8)}</p>
           </div>
         </div>
-        {/* أزرار الإجراءات */}
+        <div className="flex gap-2">
+           <button onClick={handlePrintLabel} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 flex items-center gap-2 transition-colors"><StickyNote size={18}/> ملصق</button>
+           <button onClick={handlePrint} className="btn-secondary flex items-center gap-2"><Printer size={16}/> فاتورة</button>
+           <button onClick={handleDelete} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100"><Trash2 size={18} /></button>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
@@ -323,7 +345,6 @@ export default function OrderDetails() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* ... (نفس قسم العميل والإنتاج) ... */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-full">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold flex items-center gap-2"><User size={18} className="text-blue-500"/> العميل</h3>
@@ -333,7 +354,16 @@ export default function OrderDetails() {
             <div><span className="text-slate-500 text-xs">الجوال</span>{isEditingCustomer ? <input value={customerData.phone} onChange={e => setCustomerData({...customerData, phone: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono dir-ltr text-right">{order.phone}</div>}</div>
             <div><span className="text-slate-500 text-xs">تاريخ الطلب</span>{isEditingCustomer ? <input type="date" value={customerData.created_at} onChange={e => setCustomerData({...customerData, created_at: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono text-slate-700">{order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB') : '-'}</div>}</div>
             <div><span className="text-slate-500 text-xs">تاريخ التسليم</span>{isEditingCustomer ? <input type="date" value={customerData.delivery_date} onChange={e => setCustomerData({...customerData, delivery_date: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="text-red-600 font-bold">{order.delivery_date}</div>}</div>
-            {/* ... أزرار الواتساب ... */}
+            {!isEditingCustomer && order.phone && (
+              <div className="pt-4 border-t border-slate-50 space-y-2">
+                <a href={`https://wa.me/966${order.phone.startsWith('0') ? order.phone.substring(1) : order.phone}`} target="_blank" rel="noreferrer" className="block w-full text-center bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"><MessageCircle size={18}/> محادثة واتساب</a>
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => sendWhatsApp('ready')} className="bg-emerald-50 text-emerald-700 text-xs py-2 rounded-lg font-bold hover:bg-emerald-100 border border-emerald-100 flex flex-col items-center gap-1"><CheckCircle size={14}/> جاهز للاستلام</button>
+                  <button onClick={() => sendWhatsApp('invoice')} className="bg-blue-50 text-blue-700 text-xs py-2 rounded-lg font-bold hover:bg-blue-100 border border-blue-100 flex flex-col items-center gap-1"><Receipt size={14}/> الفاتورة</button>
+                  <button onClick={() => sendWhatsApp('location')} className="bg-slate-50 text-slate-700 text-xs py-2 rounded-lg font-bold hover:bg-slate-100 border border-slate-200 flex flex-col items-center gap-1"><MapPin size={14}/> الموقع</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -354,7 +384,6 @@ export default function OrderDetails() {
           <button onClick={saveNotes} className="mt-2 text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg w-full">حفظ الملاحظة</button>
         </div>
 
-        {/* --- قسم الحسابات الجديد (مع سجل المدفوعات) --- */}
         <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col h-full">
           <h3 className="font-bold mb-4 flex items-center gap-2"><Banknote className="text-emerald-400"/> الحسابات</h3>
           <div className="space-y-3 text-sm flex-1">
@@ -365,7 +394,6 @@ export default function OrderDetails() {
               {isEditingDelivery ? <div className="flex gap-1"><input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-12 bg-slate-800 border rounded text-center"/><button onClick={handleSaveDelivery} className="text-emerald-400 text-xs">ok</button></div> : <button onClick={() => setIsEditingDelivery(true)}>{deliveryFee}</button>}
             </div>
 
-            {/* سجل المدفوعات */}
             <div className="bg-white/10 rounded-xl p-3">
               <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
                 <span className="text-emerald-400 font-bold">سجل المدفوعات</span>
@@ -404,6 +432,15 @@ export default function OrderDetails() {
             <div className="bg-red-500/20 p-3 rounded-xl flex justify-between items-center">
               <span>الخصم</span>
               {isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-emerald-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}
+            </div>
+
+            {/* خانة الكوبون */}
+            <div className="flex gap-2 items-center">
+              <div className="relative flex-1">
+                <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="كود خصم" className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs outline-none pl-6"/>
+                <Tag size={10} className="absolute left-2 top-2 text-slate-400"/>
+              </div>
+              <button onClick={applyCoupon} className="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs text-white">تطبيق</button>
             </div>
 
             <div className={`p-3 rounded-xl text-center border ${remaining <= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
