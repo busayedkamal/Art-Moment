@@ -122,7 +122,7 @@ export default function OrderDetails() {
     } catch (e) { toast.error('فشل الحساب'); return false; }
   };
 
-  // --- تفعيل كود الخصم (الدالة المحدثة) ---
+  // --- تفعيل كود الخصم (محدث للجبر) ---
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
     const toastId = toast.loading('جاري التحقق من الكود...');
@@ -142,12 +142,12 @@ export default function OrderDetails() {
       }
 
       // 2. حساب قيمة الخصم
-      // نحتاج حساب المجموع الفرعي الحالي أولاً لتطبيق النسبة المئوية
       const currentSubtotal = (order.a4_qty * prices.a4) + (order.photo_4x6_qty * prices.photo4x6) + (order.album_qty * order.album_price);
       
       let discountValue = 0;
       if (coupon.discount_type === 'percent') {
-        discountValue = currentSubtotal * (coupon.discount_amount / 100);
+        // تم التعديل هنا: استخدام Math.ceil لجبر الرقم للأعلى (17.4 -> 18)
+        discountValue = Math.ceil(currentSubtotal * (coupon.discount_amount / 100));
       } else {
         discountValue = Number(coupon.discount_amount);
       }
@@ -168,7 +168,8 @@ export default function OrderDetails() {
             setNotes(newNotes);
         }
 
-        toast.success(`تم خصم ${discountValue.toFixed(2)} ريال بنجاح!`); 
+        // عرض رسالة نجاح مع المبلغ المخصوم (رقم صحيح)
+        toast.success(`تم خصم ${discountValue} ريال بنجاح!`); 
       }
     } catch (err) { 
       console.error(err);
@@ -177,7 +178,7 @@ export default function OrderDetails() {
     }
   };
 
-  // --- باقي الدوال (الإنتاج، التوصيل، المدفوعات...) ---
+  // --- باقي الدوال كما هي ---
   const handleSaveCustomerData = async () => {
     try {
       const updatedData = {
@@ -297,7 +298,7 @@ export default function OrderDetails() {
   };
 
   const handlePrint = () => { window.print(); };
-  const handlePrintLabel = () => { /* كود طباعة الملصق السابق */ };
+  const handlePrintLabel = () => { /* كود طباعة الملصق */ };
   const handleDelete = async () => {
     if (!window.confirm('حذف نهائي؟')) return;
     await supabase.from('orders').delete().eq('id', id);
