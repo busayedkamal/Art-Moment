@@ -68,7 +68,7 @@ export default function Layout() {
                   className={`
                     flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
                     ${isActive 
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' 
+                      ? 'bg-gradient-to-b from-fuchsia-600 to-purple-600 text-white shadow-lg shadow-fuchsia-900/20' 
                       : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
                   `}
                 >
@@ -83,7 +83,7 @@ export default function Layout() {
           <div className="p-4 border-t border-slate-800">
             <button
               onClick={handleSignOut}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-400 hover:bg-fuchsia-500/10 transition-colors"
             >
               <LogOut size={20} />
               تسجيل خروج

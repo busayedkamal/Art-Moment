@@ -290,7 +290,7 @@ export default function OrderDetails() {
     const phone = cleanPhone.startsWith('0') ? '966' + cleanPhone.substring(1) : (cleanPhone.startsWith('966') ? cleanPhone : '966' + cleanPhone);
     const remaining = (order.total_amount - order.deposit).toFixed(2);
     let msg = "";
-    if (type === 'ready') msg = `يا هلا ${order.customer_name} ✨\n\nأبشرك طلبك رقم *${order.id.slice(0, 5)}* صار جاهز للاستلام! 🎨\n\n💰 المتبقي للدفع: ${remaining} ر.س\n\n📍 موقعنا: [ضع رابط قوقل ماب هنا]\n\nبانتظارك تشرفنا 🌷`;
+    if (type === 'ready') msg = `يا هلا ${order.customer_name} ✨\n\nأبشرك طلبك رقم *${order.id.slice(0, 5)}* صار جاهز للاستلام! 🎨\n\n💰 المتبقي للدفع: ${remaining} ر.س\n\n📍 موقعنا: ......\n\nبانتظارك تشرفنا 🌷`;
     else if (type === 'invoice') msg = `أهلاً بك ${order.customer_name} 🌸\n\nهذه تفاصيل طلبك لدى *لحظة فن*:\n📜 رقم الطلب: ${order.id.slice(0, 8)}\n💵 الإجمالي: ${order.total_amount} ر.س\n✅ المدفوع: ${order.deposit} ر.س\n❗ *المتبقي: ${remaining} ر.س*\n\n🔗 تتبع الحالة: https://art-moment.com/track`;
     else if (type === 'location') msg = `مرحباً، هذا موقعنا لاستلام الطلبات:\n📍 [ضع رابط قوقل ماب هنا]\n\nحياكم الله!`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -335,8 +335,8 @@ export default function OrderDetails() {
           {steps.map((step, index) => {
             const isActive = index <= currentStepIndex;
             return (
-              <button key={step.key} onClick={() => updateStatus(step.key)} className={`flex flex-col items-center gap-2 flex-1 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
-                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? 'bg-emerald-100' : 'bg-slate-100'}`}><step.icon size={20} /></div>
+              <button key={step.key} onClick={() => updateStatus(step.key)} className={`flex flex-col items-center gap-2 flex-1 ${isActive ? 'text-fuchsia-600' : 'text-slate-400'}`}>
+                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? 'bg-fuchsia-100' : 'bg-slate-100'}`}><step.icon size={20} /></div>
                  <span className="text-xs font-bold">{step.label}</span>
               </button>
             )
@@ -356,9 +356,9 @@ export default function OrderDetails() {
             <div><span className="text-slate-500 text-xs">تاريخ التسليم</span>{isEditingCustomer ? <input type="date" value={customerData.delivery_date} onChange={e => setCustomerData({...customerData, delivery_date: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="text-red-600 font-bold">{order.delivery_date}</div>}</div>
             {!isEditingCustomer && order.phone && (
               <div className="pt-4 border-t border-slate-50 space-y-2">
-                <a href={`https://wa.me/966${order.phone.startsWith('0') ? order.phone.substring(1) : order.phone}`} target="_blank" rel="noreferrer" className="block w-full text-center bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"><MessageCircle size={18}/> محادثة واتساب</a>
+                <a href={`https://wa.me/966${order.phone.startsWith('0') ? order.phone.substring(1) : order.phone}`} target="_blank" rel="noreferrer" className="block w-full text-center bg-fuchsia-500 text-white py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"><MessageCircle size={18}/> محادثة واتساب</a>
                 <div className="grid grid-cols-3 gap-2">
-                  <button onClick={() => sendWhatsApp('ready')} className="bg-emerald-50 text-emerald-700 text-xs py-2 rounded-lg font-bold hover:bg-emerald-100 border border-emerald-100 flex flex-col items-center gap-1"><CheckCircle size={14}/> جاهز للاستلام</button>
+                  <button onClick={() => sendWhatsApp('ready')} className="bg-fuchsia-50 text-fuchsia-700 text-xs py-2 rounded-lg font-bold hover:bg-fuchsia-100 border border-emerald-100 flex flex-col items-center gap-1"><CheckCircle size={14}/> جاهز للاستلام</button>
                   <button onClick={() => sendWhatsApp('invoice')} className="bg-blue-50 text-blue-700 text-xs py-2 rounded-lg font-bold hover:bg-blue-100 border border-blue-100 flex flex-col items-center gap-1"><Receipt size={14}/> الفاتورة</button>
                   <button onClick={() => sendWhatsApp('location')} className="bg-slate-50 text-slate-700 text-xs py-2 rounded-lg font-bold hover:bg-slate-100 border border-slate-200 flex flex-col items-center gap-1"><MapPin size={14}/> الموقع</button>
                 </div>
@@ -386,7 +386,7 @@ export default function OrderDetails() {
 
         {/* بطاقة الحسابات (معدلة) */}
         <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col h-full">
-          <h3 className="font-bold mb-4 flex items-center gap-2"><Banknote className="text-emerald-400"/> الحسابات</h3>
+          <h3 className="font-bold mb-4 flex items-center gap-2"><Banknote className="text-fuchsia-400"/> الحسابات</h3>
           <div className="space-y-3 text-sm flex-1">
             
             {/* 1. المجموع الفرعي */}
@@ -398,13 +398,13 @@ export default function OrderDetails() {
             {/* 2. التوصيل */}
             <div className="flex justify-between items-center text-slate-300">
               <span>التوصيل</span>
-              {isEditingDelivery ? <div className="flex gap-1"><input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-12 bg-slate-800 border rounded text-center"/><button onClick={handleSaveDelivery} className="text-emerald-400 text-xs">ok</button></div> : <button onClick={() => setIsEditingDelivery(true)}>{deliveryFee}</button>}
+              {isEditingDelivery ? <div className="flex gap-1"><input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-12 bg-slate-800 border rounded text-center"/><button onClick={handleSaveDelivery} className="text-fuchsia-400 text-xs">ok</button></div> : <button onClick={() => setIsEditingDelivery(true)}>{deliveryFee}</button>}
             </div>
 
             {/* 3. الخصم */}
             <div className="bg-red-500/20 p-3 rounded-xl flex justify-between items-center">
               <span>الخصم</span>
-              {isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-emerald-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}
+              {isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-fuchsia-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}
             </div>
 
             {/* فاصل */}
@@ -419,15 +419,15 @@ export default function OrderDetails() {
             {/* 5. سجل المدفوعات */}
             <div className="bg-white/10 rounded-xl p-3">
               <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
-                <span className="text-emerald-400 font-bold">سجل المدفوعات</span>
-                <button onClick={() => setShowPaymentInput(!showPaymentInput)} className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded hover:bg-emerald-500/40 flex items-center gap-1"><Plus size={12}/> إضافة</button>
+                <span className="text-fuchsia-400 font-bold">سجل المدفوعات</span>
+                <button onClick={() => setShowPaymentInput(!showPaymentInput)} className="text-xs bg-fuchsia-500/20 text-fuchsia-300 px-2 py-1 rounded hover:bg-fuchsia-500/40 flex items-center gap-1"><Plus size={12}/> إضافة</button>
               </div>
               
               {showPaymentInput && (
                 <div className="flex gap-2 mb-2 animate-in fade-in slide-in-from-top-2">
                   <input type="date" value={newPayment.date} onChange={e => setNewPayment({...newPayment, date: e.target.value})} className="w-24 bg-slate-800 border border-slate-600 rounded text-xs px-1 text-white"/>
                   <input type="number" placeholder="المبلغ" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} className="flex-1 bg-slate-800 border border-slate-600 rounded text-xs px-2 text-white"/>
-                  <button onClick={handleAddPayment} className="bg-emerald-600 text-white px-2 rounded text-xs">حفظ</button>
+                  <button onClick={handleAddPayment} className="bg-gradient-to-b from-fuchsia-600 to-purple-600 text-white px-2 rounded text-xs">حفظ</button>
                 </div>
               )}
 
@@ -448,7 +448,7 @@ export default function OrderDetails() {
               </div>
               <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
                 <span className="text-xs text-slate-400">إجمالي المدفوع</span>
-                <span className="font-bold text-emerald-400">{order.deposit}</span>
+                <span className="font-bold text-fuchsia-400">{order.deposit}</span>
               </div>
             </div>
 
@@ -462,7 +462,7 @@ export default function OrderDetails() {
             </div>
 
             {/* المتبقي */}
-            <div className={`p-3 rounded-xl text-center border ${remaining <= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+            <div className={`p-3 rounded-xl text-center border ${remaining <= 0 ? 'bg-fuchsia-500/20 text-fuchsia-300' : 'bg-red-500/20 text-red-300'}`}>
               <span className="text-xs block">المتبقي</span>
               <span className="text-xl font-black">{remaining <= 0 ? 'خالص ✅' : remaining.toFixed(2)}</span>
             </div>

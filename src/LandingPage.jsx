@@ -27,9 +27,9 @@ export default function LandingPage() {
 
   // بيانات التقييمات (إضافة جديدة)
   const reviews = [
-    { id: 1, name: "أم حنين", comment: "الجودة خرافية والألوان تفتح النفس! التغليف كان ممتاز جداً.", rating: 5 },
-    { id: 2, name: "سارة محمد", comment: "تعامل راقي وسرعة في الإنجاز. طلبت الصباح واستلمت العصر.", rating: 5 },
-    { id: 3, name: "إيلاف", comment: "أفضل محل طباعة تعاملت معه في الأحساء، دقة في المواعيد.", rating: 4 },
+    { id: 1, name: "زينب", comment: "الجودة خرافية والألوان تفتح النفس! التغليف كان ممتاز جداً.", rating: 5 },
+    { id: 2, name: "معصومة", comment: "تعامل راقي وسرعة في الإنجاز. طلبت الصباح واستلمت العصر.", rating: 5 },
+    { id: 3, name: "فاطمة", comment: "أفضل محل طباعة تعاملت معه في الأحساء، دقة في المواعيد.", rating: 4 },
   ];
 
   return (
@@ -50,11 +50,11 @@ export default function LandingPage() {
 
             {/* روابط الكمبيوتر */}
             <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-              <a href="#services" className="hover:text-emerald-600 transition-colors">خدمات الطباعة</a>
-              <a href="#sizes" className="hover:text-emerald-600 transition-colors">المقاسات</a>
-              <a href="#reviews" className="hover:text-emerald-600 transition-colors">آراء العملاء</a> {/* رابط جديد */}
-              <a href="#how-it-works" className="hover:text-emerald-600 transition-colors">كيف تتم الخدمة؟</a>
-              <a href="#faq" className="hover:text-emerald-600 transition-colors">الأسئلة الشائعة</a>
+              <a href="#services" className="hover:text-fuchsia-600 transition-colors">خدمات الطباعة</a>
+              <a href="#sizes" className="hover:text-fuchsia-600 transition-colors">المقاسات</a>
+              <a href="#reviews" className="hover:text-fuchsia-600 transition-colors">آراء العملاء</a> {/* رابط جديد */}
+              <a href="#how-it-works" className="hover:text-fuchsia-600 transition-colors">كيف تتم الخدمة؟</a>
+              <a href="#faq" className="hover:text-fuchsia-600 transition-colors">الأسئلة الشائعة</a>
             </div>
 
             {/* أزرار الإجراءات */}
@@ -101,7 +101,7 @@ export default function LandingPage() {
       {/* --- 2. القسم الرئيسي (Hero) --- */}
       <header className="relative bg-slate-900 overflow-hidden py-16 md:py-24">
         {/* خلفية جمالية */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-emerald-500/5 blur-3xl rounded-full translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-fuchsia-500/5 blur-3xl rounded-full translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-1/3 h-full bg-blue-500/5 blur-3xl rounded-full -translate-x-1/2"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -112,8 +112,8 @@ export default function LandingPage() {
               
               {/* تحديث: إضافة إشعار العروض والكوبونات */}
               <div className="flex flex-col items-center md:items-start gap-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/10 text-fuchsia-400 text-xs font-bold border border-fuchsia-500/20">
+                  <span className="w-2 h-2 rounded-full bg-fuchsia-500 animate-pulse"></span>
                   طباعة صور فوتوغرافية في الأحساء
                 </div>
                 <span className="inline-block py-1 px-3 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-bold border border-yellow-500/20">
@@ -121,8 +121,8 @@ export default function LandingPage() {
                 </span>
               </div>
               
-              <h1 className="text-4xl md:text-6xl font-black text-white leading-tight">
-                اطبع أجمل لحظاتك مع <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">لحظة فن | Art-Moment</span>
+              <h1 className="text-4xl md:text-5xl font-black text-white leading-tight">
+                اطبع أجمل لحظاتك مع <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-emerald-300">لحظة فن | Art-Moment</span>
               </h1>
               
               <p className="text-lg text-slate-400 leading-relaxed max-w-xl mx-auto md:mx-0">
@@ -135,10 +135,10 @@ export default function LandingPage() {
                   href="https://wa.me/966569663697" // ضع رقم الواتساب هنا
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-lg shadow-emerald-500/20"
+                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-slate-400 text-slate-900 font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-lg shadow-slate-500/20"
                 >
                   <MessageCircle size={20} />
-                  إرسال الصور عبر واتساب
+                  تواصلي معنا عبر وتساب
                 </a>
                 <Link 
                   to="/track"
@@ -151,9 +151,9 @@ export default function LandingPage() {
 
               {/* ميزات سريعة */}
               <div className="pt-4 flex flex-wrap gap-4 justify-center md:justify-start text-xs text-slate-400">
-                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> تجهيز سريع للطلبات</span>
-                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> مراجعة دقة الصور</span>
-                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> دفع عند الاستلام</span>
+                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-fuchsia-500" /> تجهيز سريع للطلبات</span>
+                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-fuchsia-500" /> مراجعة دقة الصور</span>
+                <span className="flex items-center gap-1"><CheckCircle size={14} className="text-fuchsia-500" /> دفع عند الاستلام</span>
               </div>
             </div>
 
@@ -239,7 +239,7 @@ export default function LandingPage() {
               { id: 4, icon: Truck, title: 'الاستلام والتقييم', desc: 'تستلم الطلب في الموعد المحدد، وتقدر تشاركنا رأيك.' },
             ].map((step) => (
               <div key={step.id} className="text-center group">
-                <div className="w-16 h-16 mx-auto bg-slate-50 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors mb-6 relative">
+                <div className="w-16 h-16 mx-auto bg-slate-50 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-fuchsia-500 group-hover:text-white transition-colors mb-6 relative">
                   <step.icon size={28} />
                   <span className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white rounded-full text-xs flex items-center justify-center font-bold border-2 border-white">
                     {step.id}
@@ -339,7 +339,7 @@ export default function LandingPage() {
         href="https://wa.me/966569663697" // ضع رقم الواتساب هنا
         target="_blank" 
         rel="noreferrer"
-        className="fixed bottom-6 left-6 z-40 bg-emerald-500 text-white p-4 rounded-full shadow-xl hover:bg-emerald-600 hover:scale-110 transition-all flex items-center gap-2 group"
+        className="fixed bottom-6 left-6 z-40 bg-fuchsia-500 text-white p-4 rounded-full shadow-xl hover:bg-gradient-to-b from-fuchsia-600 to-purple-600 hover:scale-110 transition-all flex items-center gap-2 group"
       >
         <MessageCircle size={24} />
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-bold text-sm">

@@ -204,8 +204,8 @@ export default function Expenses() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><TrendingUp size={24}/></div>
-            <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg">دخل</span>
+            <div className="p-3 bg-fuchsia-50 rounded-xl text-fuchsia-600"><TrendingUp size={24}/></div>
+            <span className="text-xs font-bold bg-fuchsia-100 text-fuchsia-700 px-2 py-1 rounded-lg">دخل</span>
           </div>
           <p className="text-slate-500 text-sm mb-1">إجمالي المبيعات</p>
           <h3 className="text-3xl font-black text-slate-900">{stats.totalSales.toLocaleString()} <span className="text-sm font-medium text-slate-400">ر.س</span></h3>
@@ -347,7 +347,7 @@ export default function Expenses() {
                           placeholder="المبلغ"
                         />
                         <div className="flex gap-1">
-                          <button onClick={() => saveEdit(item.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Check size={16}/></button>
+                          <button onClick={() => saveEdit(item.id)} className="p-2 bg-fuchsia-500 text-white rounded-lg hover:bg-gradient-to-b from-fuchsia-600 to-purple-600"><Check size={16}/></button>
                           <button onClick={cancelEdit} className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"><X size={16}/></button>
                         </div>
                       </div>

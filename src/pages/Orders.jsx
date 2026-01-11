@@ -114,10 +114,10 @@ export default function Orders() {
   // دالة مساعدة لألوان الحالة
   const getStatusColor = (status) => {
     switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'new': return 'bg-rose-100 text-rose-700 border-rose-200';
       case 'printing': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'done': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'delivered': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'done': return 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200';
+      case 'delivered': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -167,7 +167,7 @@ export default function Orders() {
             placeholder="بحث باسم العميل، الجوال..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-4 pr-10 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            className="w-full pl-4 pr-10 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 text-sm"
           />
         </div>
         <button className="p-2 text-slate-600 hover:bg-slate-50 rounded-xl border border-slate-200">
@@ -178,12 +178,12 @@ export default function Orders() {
       {/* المحتوى */}
       {loading ? (
         <div className="flex justify-center py-20">
-          <Loader2 className="animate-spin text-emerald-500" size={32} />
+          <Loader2 className="animate-spin text-fuchsia-500" size={32} />
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-300">
           <p className="text-slate-500 mb-2">لا توجد طلبات حتى الآن</p>
-          <Link to="/app/orders/new" className="text-emerald-600 font-medium hover:underline">
+          <Link to="/app/orders/new" className="text-fuchsia-600 font-medium hover:underline">
             أضف أول طلب
           </Link>
         </div>
@@ -229,7 +229,7 @@ export default function Orders() {
                       </td>
                       <td className="px-6 py-4">
                         {isPaid ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
                             تم الدفع
                           </span>
                         ) : (

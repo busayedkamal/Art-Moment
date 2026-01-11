@@ -100,7 +100,7 @@ export default function Dashboard() {
   }, []);
 
   // ألوان الرسم البياني الدائري
-  const COLORS = ['#10b981', '#3b82f6']; // Emerald & Blue
+  const COLORS = ['#10b981', '#3b82f6']; // fuchsia & Blue
 
   if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline-block ml-2"/> جاري تحميل البيانات...</div>;
 
@@ -115,7 +115,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold mb-2">لوحة القيادة 🚀</h1>
             <p className="text-slate-300">
-              لديك <strong className="text-emerald-400">{stats.newOrders}</strong> طلبات جديدة اليوم، و <strong className="text-red-400">{stats.lateOrders}</strong> طلبات متأخرة.
+              لديك <strong className="text-fuchsia-400">{stats.newOrders}</strong> طلبات جديدة اليوم، و <strong className="text-red-400">{stats.lateOrders}</strong> طلبات متأخرة.
             </p>
           </div>
           <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 text-center">
@@ -126,7 +126,7 @@ export default function Dashboard() {
           </div>
         </div>
         {/* زخرفة */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
       </div>
 
       {/* الصف الأول: الإحصائيات السريعة */}
@@ -136,7 +136,7 @@ export default function Dashboard() {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-300 transition-colors">
           <div>
             <p className="text-xs text-slate-500 font-bold mb-1">طلبات جديدة</p>
-            <p className="text-2xl font-black text-slate-900">{stats.newOrders}</p>
+            <p className="text-2xl font-black text-yellow-900">{stats.newOrders}</p>
           </div>
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
             <ShoppingBag size={20} />
@@ -169,9 +169,9 @@ export default function Dashboard() {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-slate-400 transition-colors">
           <div>
             <p className="text-xs text-slate-500 font-bold mb-1">المصروفات</p>
-            <p className="text-2xl font-black text-slate-700">{stats.totalExpenses.toLocaleString()}</p>
+            <p className="text-2xl font-black text-red-700">{stats.totalExpenses.toLocaleString()}</p>
           </div>
-          <div className="p-3 bg-slate-100 text-slate-600 rounded-xl group-hover:bg-slate-700 group-hover:text-white transition-colors">
+          <div className="p-3 bg-slate-100 text-red-600 rounded-xl group-hover:bg-slate-700 group-hover:text-white transition-colors">
             <TrendingDown size={20} />
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">
-              <TrendingUp size={18} className="text-emerald-500"/> حركة المبيعات (7 أيام)
+              <TrendingUp size={18} className="text-fuchsia-500"/> حركة المبيعات (7 أيام)
             </h3>
           </div>
           <div className="h-64 w-full dir-ltr">

@@ -137,7 +137,7 @@ export default function Reports() {
   // ألوان المخططات
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-  if (loading) return <div className="p-20 text-center flex flex-col items-center gap-4"><div className="w-8 h-8 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div><p>جاري تحليل البيانات...</p></div>;
+  if (loading) return <div className="p-20 text-center flex flex-col items-center gap-4"><div className="w-8 h-8 border-4 border-slate-200 border-t-fuchsia-500 rounded-full animate-spin"></div><p>جاري تحليل البيانات...</p></div>;
 
   // حماية إضافية: إذا لم تكن هناك بيانات
   if (analytics.monthlyData.length === 0 && payments.length === 0 && expenses.length === 0) {
@@ -169,10 +169,10 @@ export default function Reports() {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-slate-500 font-medium mb-1">إجمالي الدخل المستلم</p>
-              <h3 className="text-2xl font-black text-emerald-600">{analytics.totals.totalRevenue.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3>
+              <p className="text-sm text-slate-500 font-medium mb-1">إجمالي الدخل </p>
+              <h3 className="text-2xl font-black text-slate-600">{analytics.totals.totalRevenue.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3>
             </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><TrendingUp size={20}/></div>
+            <div className="p-3 bg-fuchsia-50 text-fuchsia-600 rounded-xl"><TrendingUp size={20}/></div>
           </div>
         </div>
 
@@ -190,7 +190,7 @@ export default function Reports() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm text-slate-500 font-medium mb-1">صافي الربح</p>
-              <h3 className={`text-2xl font-black ${analytics.totals.netProfit >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
+              <h3 className={`text-2xl font-black ${analytics.totals.netProfit >= 0 ? 'text-emerald-900' : 'text-red-600'}`}>
                 {analytics.totals.netProfit.toLocaleString()} <span className="text-sm font-normal">ر.س</span>
               </h3>
             </div>
@@ -302,13 +302,13 @@ export default function Reports() {
         {/* 4. الخلاصة والتوصيات (الذكية) */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-lg">
           <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
-            <CheckCircle2 className="text-emerald-400"/> الخلاصة والوضع المالي
+            <CheckCircle2 className="text-fuchsia-400"/> الخلاصة والوضع المالي
           </h3>
           
           <div className="space-y-4 text-sm leading-relaxed text-slate-300">
             <p>
               بناءً على البيانات الحالية، الوضع المالي للمشروع 
-              {analytics.totals.netProfit > 0 ? <span className="text-emerald-400 font-bold"> مستقر ورابح ✅</span> : <span className="text-red-400 font-bold"> يحتاج لانتباه ⚠️</span>}.
+              {analytics.totals.netProfit > 0 ? <span className="text-fuchsia-400 font-bold"> مستقر ورابح ✅</span> : <span className="text-red-400 font-bold"> يحتاج لانتباه ⚠️</span>}.
             </p>
 
             <ul className="space-y-3 mt-4">
@@ -366,9 +366,9 @@ export default function Reports() {
                     {/* حماية إضافية عند عرض التاريخ */}
                     {isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name}
                   </td>
-                  <td className="px-6 py-4 text-emerald-600">{row.revenue.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-black-600">{row.revenue.toLocaleString()}</td>
                   <td className="px-6 py-4 text-red-500">{row.expenses.toLocaleString()}</td>
-                  <td className="px-6 py-4 font-bold">{(row.revenue - row.expenses).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-emerald-500">{(row.revenue - row.expenses).toLocaleString()}</td>
                   <td className="px-6 py-4">{row.orders}</td>
                 </tr>
               ))}

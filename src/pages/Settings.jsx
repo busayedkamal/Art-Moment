@@ -199,7 +199,7 @@ export default function Settings() {
 
         {/* 3. قسم أكواد الخصم */}
         <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-emerald-500"/> أكواد الخصم</h3>
+          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-fuchsia-500"/> أكواد الخصم</h3>
           
           <form onSubmit={handleAddCoupon} className="flex flex-col md:flex-row gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
             <div className="flex-1">
@@ -234,7 +234,7 @@ export default function Settings() {
               />
             </div>
             <div className="flex items-end">
-              <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold h-[42px] flex items-center gap-2 w-full md:w-auto justify-center">
+              <button type="submit" className="bg-fuchsia-500 hover:bg-gradient-to-b from-fuchsia-600 to-purple-600 text-white px-6 py-2 rounded-xl font-bold h-[42px] flex items-center gap-2 w-full md:w-auto justify-center">
                 <Plus size={18}/> إضافة
               </button>
             </div>
@@ -249,7 +249,7 @@ export default function Settings() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-black text-slate-800 text-lg">{coupon.code}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${coupon.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${coupon.is_active ? 'bg-fuchsia-100 text-fuchsia-700' : 'bg-slate-200 text-slate-500'}`}>
                         {coupon.is_active ? 'نشط' : 'معطل'}
                       </span>
                     </div>
@@ -260,7 +260,7 @@ export default function Settings() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => toggleCouponStatus(coupon.id, coupon.is_active)} className="text-slate-400 hover:text-slate-600">
-                      {coupon.is_active ? <ToggleRight size={28} className="text-emerald-500"/> : <ToggleLeft size={28}/>}
+                      {coupon.is_active ? <ToggleRight size={28} className="text-fuchsia-500"/> : <ToggleLeft size={28}/>}
                     </button>
                     <button onClick={() => deleteCoupon(coupon.id)} className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg">
                       <Trash2 size={18}/>

@@ -231,7 +231,7 @@ export default function NewOrder() {
               <div className="flex flex-wrap gap-2 mb-3">
                 {['تيليجرام', 'واتساب', 'إنستقرام', 'سناب', 'مباشر'].map((src) => (
                   <button key={src} type="button" onClick={() => handleSourceToggle(src)}
-                    className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${watch('source').includes(src) ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-medium' : 'bg-white text-slate-600'}`}>
+                    className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${watch('source').includes(src) ? 'bg-fuchsia-50 border-fuchsia-500 text-fuchsia-700 font-medium' : 'bg-white text-slate-600'}`}>
                     {src}
                   </button>
                 ))}
@@ -241,20 +241,20 @@ export default function NewOrder() {
           </div>
 
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-emerald-500"/> تفاصيل الصور</h3>
+            <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-fuchsia-500"/> تفاصيل الصور</h3>
             
             {/* التخطيط الجديد: الكميات في صف واحد */}
             <div className="grid grid-cols-2 gap-6 mb-6">
               
               {/* خانة صور 4x6 - إطار أخضر */}
               <div className="space-y-2">
-                <label className="text-sm font-bold text-emerald-800 block text-center">عدد 4×6</label>
+                <label className="text-sm font-bold text-fuchsia-800 block text-center">عدد 4×6</label>
                 <div className="relative">
                   <input 
                     type="number" 
                     min="0" 
                     {...register('photo4x6Qty')} 
-                    className="w-full bg-white border-2 border-emerald-500 rounded-2xl px-2 py-4 text-center font-black text-3xl text-emerald-700 shadow-sm outline-none focus:ring-4 focus:ring-emerald-100 placeholder-emerald-200" 
+                    className="w-full bg-white border-2 border-fuchsia-500 rounded-2xl px-2 py-4 text-center font-black text-3xl text-fuchsia-700 shadow-sm outline-none focus:ring-4 focus:ring-fuchsia-100 placeholder-fuchsia-200" 
                     placeholder="0"
                   />
                 </div>
@@ -326,7 +326,7 @@ export default function NewOrder() {
               
               <div className="flex justify-between items-center text-slate-300 pt-2">
                 <span>تكاليف إضافية</span>
-                <input type="number" min="0" {...register('deliveryFee')} className="w-20 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-right text-white focus:border-emerald-500 outline-none" />
+                <input type="number" min="0" {...register('deliveryFee')} className="w-20 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-right text-white focus:border-fuchsia-500 outline-none" />
               </div>
 
               <div className="flex justify-between items-center text-red-300 pt-2">
@@ -337,7 +337,7 @@ export default function NewOrder() {
               {/* الكوبون */}
               <div className="py-2 border-y border-slate-700 my-2">
                 <div className="flex gap-2 items-center mb-2">
-                  <Tag size={14} className="text-emerald-400" /> <span className="text-xs text-slate-400">كود خصم</span>
+                  <Tag size={14} className="text-fuchsia-400" /> <span className="text-xs text-slate-400">كود خصم</span>
                 </div>
                 <div className="flex gap-2">
                   <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="CODE" className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-white uppercase text-sm outline-none" />
@@ -346,7 +346,7 @@ export default function NewOrder() {
               </div>
 
               {(couponDiscountValue > 0) && (
-                 <div className="flex justify-between text-emerald-400 font-bold animate-pulse">
+                 <div className="flex justify-between text-fuchsia-400 font-bold animate-pulse">
                    <span className="flex items-center gap-1">{couponData?.discount_type === 'percent' && <Percent size={12}/>} خصم الكوبون</span>
                    <span>- {couponDiscountValue.toFixed(2)}</span>
                  </div>
@@ -359,15 +359,15 @@ export default function NewOrder() {
 
             <div className="mt-6 pt-4 border-t border-slate-700">
                <label className="block text-xs text-slate-400 mb-1">العربون المدفوع</label>
-               <input type="number" min="0" {...register('deposit')} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:border-emerald-500 font-bold text-lg outline-none" />
+               <input type="number" min="0" {...register('deposit')} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:border-fuchsia-500 font-bold text-lg outline-none" />
             </div>
 
             <div className="mt-4 flex justify-between items-center bg-slate-800 rounded-xl p-3">
               <span className="text-sm text-slate-400">المتبقي</span>
-              <span className={`text-xl font-bold ${remaining > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{remaining.toFixed(2)}</span>
+              <span className={`text-xl font-bold ${remaining > 0 ? 'text-red-400' : 'text-fuchsia-400'}`}>{remaining.toFixed(2)}</span>
             </div>
 
-            <button type="submit" disabled={isSubmitting} className="mt-6 w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all disabled:opacity-50">
+            <button type="submit" disabled={isSubmitting} className="mt-6 w-full py-3 rounded-xl bg-fuchsia-500 hover:bg-gradient-to-b from-fuchsia-600 to-purple-600 text-white font-bold transition-all disabled:opacity-50">
               {isSubmitting ? 'جاري الحفظ...' : 'حفظ وإنشاء الطلب'}
             </button>
           </div>
@@ -375,7 +375,7 @@ export default function NewOrder() {
       </form>
       
       <style>{`
-        .input-field { @apply w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none; }
+        .input-field { @apply w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-fuchsia-500 outline-none; }
       `}</style>
     </div>
   );

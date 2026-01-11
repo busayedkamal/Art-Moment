@@ -132,7 +132,7 @@ export default function Customers() {
         <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
           <button 
             onClick={() => setSortBy('spent')} 
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${sortBy === 'spent' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${sortBy === 'spent' ? 'bg-fuchsia-100 text-fuchsia-700' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
           >
             <Banknote size={16}/> الأكثر دفعاً
           </button>
@@ -164,7 +164,7 @@ export default function Customers() {
                 <tr>
                   <th className="px-6 py-4">العميل</th>
                   <th className="px-6 py-4">مجموع الطلبات</th>
-                  <th className="px-6 py-4">إجمالي الصرف</th>
+                  <th className="px-6 py-4">إجمالي الدفع</th>
                   <th className="px-6 py-4">آخر زيارة</th>
                   <th className="px-6 py-4">تواصل</th>
                 </tr>

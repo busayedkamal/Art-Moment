@@ -82,7 +82,7 @@ export default function TrackOrderPage() {
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
             placeholder="مثال: bf0177..."
-            className="w-full h-14 pl-14 pr-6 rounded-2xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none text-lg text-center font-mono placeholder:font-sans"
+            className="w-full h-14 pl-14 pr-6 rounded-2xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-fuchsia-500 outline-none text-lg text-center font-mono placeholder:font-sans"
             dir="ltr"
           />
           <button 
@@ -121,7 +121,7 @@ export default function TrackOrderPage() {
               <div className="relative flex justify-between mb-8 px-2">
                 <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-100 -translate-y-1/2 z-0"></div>
                 <div 
-                  className="absolute top-1/2 right-0 h-1 bg-emerald-500 -translate-y-1/2 z-0 transition-all duration-1000"
+                  className="absolute top-1/2 right-0 h-1 bg-fuchsia-500 -translate-y-1/2 z-0 transition-all duration-1000"
                   style={{ left: `${100 - ((currentStep - 1) / 3 * 100)}%` }}
                 ></div>
 
@@ -135,12 +135,12 @@ export default function TrackOrderPage() {
                     <div className={`
                       w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500
                       ${currentStep >= step.id 
-                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' 
+                        ? 'bg-fuchsia-500 border-fuchsia-500 text-white shadow-md' 
                         : 'bg-white border-slate-200 text-slate-300'}
                     `}>
                       <step.icon size={14} />
                     </div>
-                    <span className={`text-[10px] font-bold ${currentStep >= step.id ? 'text-emerald-600' : 'text-slate-300'}`}>
+                    <span className={`text-[10px] font-bold ${currentStep >= step.id ? 'text-fuchsia-600' : 'text-slate-300'}`}>
                       {step.label}
                     </span>
                   </div>
@@ -246,7 +246,7 @@ export default function TrackOrderPage() {
                   <div className="mb-4 bg-white p-3 rounded-xl border border-slate-100">
                     <p className="text-[10px] text-slate-400 font-bold mb-2 flex justify-between">
                       <span>سجل الدفعات</span>
-                      <span className="text-emerald-600">مجموع المدفوع: {order.deposit}</span>
+                      <span className="text-fuchsia-600">مجموع المدفوع: {order.deposit}</span>
                     </p>
                     <div className="space-y-1">
                       {payments.map((p) => (
@@ -259,7 +259,7 @@ export default function TrackOrderPage() {
                   </div>
                 )}
 
-                <div className={`p-4 rounded-xl flex justify-between items-center ${remaining > 0 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
+                <div className={`p-4 rounded-xl flex justify-between items-center ${remaining > 0 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-100'}`}>
                   <span className="text-xs font-bold flex items-center gap-2">
                     <Wallet size={16}/> {remaining > 0 ? 'المبلغ المتبقي عليك' : 'حالة الدفع'}
                   </span>
@@ -270,7 +270,7 @@ export default function TrackOrderPage() {
               </div>
 
               {order.status === 'done' && (
-                <div className="mt-6 p-4 bg-emerald-50 text-emerald-800 text-center rounded-xl text-sm font-medium border border-emerald-100 animate-pulse">
+                <div className="mt-6 p-4 bg-fuchsia-50 text-fuchsia-800 text-center rounded-xl text-sm font-medium border border-fuchsia-100 animate-pulse">
                   🎉 طلبك جاهز! تفضل بزيارتنا للاستلام.
                 </div>
               )}
