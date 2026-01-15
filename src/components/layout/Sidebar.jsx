@@ -41,7 +41,7 @@ export default function Sidebar() {
           />
           <div>
             <div className="text-sm font-bold text-slate-900">لحظة فن</div>
-            <div className="text-[11px] text-emerald-500">لوحة التحكم</div>
+            <div className="text-[11px] text-slate-500">لوحة التحكم</div>
           </div>
         </div>
       </div>

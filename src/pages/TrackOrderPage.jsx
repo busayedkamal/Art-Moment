@@ -121,7 +121,7 @@ export default function TrackOrderPage() {
               <div className="relative flex justify-between mb-8 px-2">
                 <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-100 -translate-y-1/2 z-0"></div>
                 <div 
-                  className="absolute top-1/2 right-0 h-1 bg-fuchsia-500 -translate-y-1/2 z-0 transition-all duration-1000"
+                  className="absolute top-1/2 right-0 h-1 bg-emerald-500 -translate-y-1/2 z-0 transition-all duration-1000"
                   style={{ left: `${100 - ((currentStep - 1) / 3 * 100)}%` }}
                 ></div>
 
@@ -135,7 +135,7 @@ export default function TrackOrderPage() {
                     <div className={`
                       w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500
                       ${currentStep >= step.id 
-                        ? 'bg-fuchsia-500 border-fuchsia-500 text-white shadow-md' 
+                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' 
                         : 'bg-white border-slate-200 text-slate-300'}
                     `}>
                       <step.icon size={14} />

@@ -94,12 +94,12 @@ export default function Orders() {
     const isActive = sortConfig.key === sortKey;
     return (
       <th 
-        className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+        className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group text-xs font-bold text-slate-500 uppercase tracking-wider"
         onClick={() => requestSort(sortKey)}
       >
         <div className="flex items-center gap-1">
           {label}
-          <span className="text-slate-400 group-hover:text-slate-600">
+          <span className="text-slate-400 group-hover:text-fuchsia-600 transition-colors">
             {isActive ? (
               sortConfig.direction === 'asc' ? <ArrowUp size={14}/> : <ArrowDown size={14}/>
             ) : (
@@ -111,14 +111,14 @@ export default function Orders() {
     );
   };
 
-  // دالة مساعدة لألوان الحالة
+  // دالة مساعدة لألوان الحالة (بتصميم "الحبة" الحديث)
   const getStatusColor = (status) => {
     switch (status) {
-      case 'new': return 'bg-rose-100 text-rose-700 border-rose-200';
-      case 'printing': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'done': return 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200';
-      case 'delivered': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'new': return 'bg-rose-50 text-rose-700 border-rose-100';
+      case 'printing': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'done': return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100';
+      case 'delivered': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      default: return 'bg-slate-50 text-slate-700 border-slate-100';
     }
   };
 
@@ -150,7 +150,7 @@ export default function Orders() {
 
           <Link
             to="/app/orders/new"
-            className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
+            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-fuchsia-500/20 transition-all"
           >
             <Plus size={18} />
             طلب جديد
@@ -164,13 +164,13 @@ export default function Orders() {
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="بحث باسم العميل، الجوال..."
+            placeholder="بحث باسم العميل، الجوال، أو رقم الطلب..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-4 pr-10 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 text-sm"
+            className="w-full pl-4 pr-10 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 text-sm placeholder:text-slate-400"
           />
         </div>
-        <button className="p-2 text-slate-600 hover:bg-slate-50 rounded-xl border border-slate-200">
+        <button className="p-2 text-slate-600 hover:bg-slate-50 rounded-xl border border-slate-200 transition-colors">
           <Filter size={18} />
         </button>
       </div>
@@ -188,60 +188,83 @@ export default function Orders() {
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-right">
-              <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-medium">
+              <thead className="bg-slate-50/80 border-b border-slate-100">
                 <tr>
                   <SortableHeader label="رقم الطلب" sortKey="id" />
                   <SortableHeader label="العميل" sortKey="customer_name" />
                   <SortableHeader label="التاريخ" sortKey="created_at" />
                   <SortableHeader label="الحالة" sortKey="status" />
                   <SortableHeader label="المبلغ" sortKey="total_amount" />
-                  <SortableHeader label="المتبقي" sortKey="remaining" />
-                  <th className="px-6 py-4">الإجراء</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">الإجراء</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-50">
                 {sortedOrders.map((order) => {
                   const remaining = (order.total_amount || 0) - (order.deposit || 0);
                   const isPaid = remaining <= 0.5; 
 
                   return (
-                    <tr key={order.id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="px-6 py-4 font-mono text-xs text-slate-500">
-                        #{order.id.slice(0, 6)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-slate-900">{order.customer_name}</div>
-                        <div className="text-xs text-slate-500">{order.phone}</div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">
-                        {order.created_at && format(new Date(order.created_at), 'dd MMM yyyy', { locale: arSA })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-                          {getStatusText(order.status)}
+                    <tr key={order.id} className="hover:bg-fuchsia-50/30 transition-colors duration-200 group">
+                      
+                      {/* رقم الطلب */}
+                      <td className="px-6 py-5">
+                        <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">
+                          #{order.id.slice(0, 6)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-slate-900">{order.total_amount} ر.س</div>
+
+                      {/* العميل (مع أفاتار) */}
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-fuchsia-100 to-purple-100 flex items-center justify-center text-fuchsia-700 font-bold shadow-sm border border-white shrink-0">
+                            {order.customer_name.charAt(0)}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-900">{order.customer_name}</span>
+                            <span className="text-[11px] text-slate-400 dir-ltr text-right font-mono">{order.phone}</span>
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-6 py-4">
-                        {isPaid ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                            تم الدفع
-                          </span>
-                        ) : (
-                          <span className="font-bold text-red-500 text-sm">
-                            {remaining.toFixed(2)} ر.س
-                          </span>
-                        )}
+
+                      {/* التاريخ */}
+                      <td className="px-6 py-5 text-sm text-slate-500 font-medium">
+                        {order.created_at && format(new Date(order.created_at), 'dd MMM yyyy', { locale: arSA })}
                       </td>
-                      <td className="px-6 py-4">
+
+                      {/* الحالة (Pill Design) */}
+                      <td className="px-6 py-5">
+                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)} shadow-sm`}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60 ml-1.5"></span>
+                          {getStatusText(order.status)}
+                        </div>
+                      </td>
+
+                      {/* المبلغ والمالية */}
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-slate-800">
+                            {order.total_amount} <span className="text-[10px] font-normal text-slate-400">ر.س</span>
+                          </span>
+                          {!isPaid ? (
+                            <span className="text-[10px] text-red-500 font-bold mt-0.5">
+                              متبقي: {remaining.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-emerald-500 font-bold mt-0.5 flex items-center gap-1">
+                              مدفوع بالكامل
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* الإجراء */}
+                      <td className="px-6 py-5">
                         <Link 
                           to={`/app/orders/${order.id}`}
-                          className="p-2 rounded-full hover:bg-slate-200 inline-block text-slate-400 hover:text-slate-700"
+                          className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-fuchsia-600 hover:border-fuchsia-200 hover:bg-fuchsia-50 transition-all shadow-sm group-hover:translate-x-[-4px]"
                         >
                           <ChevronRight size={18} className="rotate-180" />
                         </Link>
