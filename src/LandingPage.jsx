@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { 
   Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck, 
   Printer, Menu, X, ChevronDown, Lock, Star, Quote, BookOpen,
-  Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download // إضافة أيقونة التحميل
+  Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
+  Share, PlusSquare // أيقونات جديدة لتعليمات الايفون
 } from 'lucide-react';
 import logo from './assets/logo-art-moment.svg'; 
 import printedPhotos from './assets/printed-photos.png';
@@ -18,38 +19,47 @@ export default function LandingPage() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const fileInputRef = useRef(null);
 
-  // --- حالات المحاكاة الواقعية (Live Mockups) ---
+  // --- حالات المحاكاة الواقعية ---
   const [mockupImage, setMockupImage] = useState(null);
   const mockupInputRef = useRef(null);
   const [activeFrame, setActiveFrame] = useState(0); 
 
-  // --- (جديد) حالات تثبيت التطبيق PWA ---
+  // --- حالات تثبيت التطبيق PWA ---
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
   useEffect(() => {
+    // 1. الكشف عن إمكانية التثبيت (أندرويد/كمبيوتر)
     const handler = (e) => {
-      // منع المتصفح من إظهار النافذة الافتراضية فوراً
       e.preventDefault();
-      // حفظ الحدث لاستخدامه لاحقاً عند ضغط الزر
       setDeferredPrompt(e);
       setIsInstallable(true);
     };
-
     window.addEventListener('beforeinstallprompt', handler);
+
+    // 2. الكشف عن أجهزة iOS (لأنها لا تدعم الحدث السابق)
+    const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    // التحقق مما إذا كان التطبيق ليس مثبتاً بالفعل (وضعية المتصفح)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    if (isIosDevice && !isStandalone) {
+      setIsIOS(true);
+    }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    // إظهار نافذة التثبيت
-    deferredPrompt.prompt();
-    // انتظار رد المستخدم
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-      setIsInstallable(false);
+    if (isIOS) {
+      setShowIOSInstructions(true); // فتح تعليمات الايفون
+    } else if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+      }
     }
   };
   // ---------------------------------------
@@ -143,46 +153,76 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 scroll-smooth" dir="rtl">
       
-      {/* --- 1. شريط التنقل (Navbar) --- */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Art Moment" className="h-10 w-auto" />
-              <div>
-                <h1 className="text-lg font-bold text-slate-900 leading-tight">Art Moment</h1>
-                <p className="text-[10px] text-slate-500 tracking-wider">Printing & Painting</p>
+      {/* --- نافذة تعليمات iOS --- */}
+      {showIOSInstructions && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative animate-in slide-in-from-bottom duration-300">
+            <button onClick={() => setShowIOSInstructions(false)} className="absolute top-4 left-4 text-slate-400 hover:text-slate-600">
+              <X size={24} />
+            </button>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-inner">
+                <img src={logo} alt="App Icon" className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900">تثبيت تطبيق لحظة فن</h3>
+              <p className="text-slate-500 text-sm mt-1">للوصول السريع وتجربة أفضل</p>
+            </div>
+            <div className="space-y-4 text-sm font-medium text-slate-700">
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <span className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-blue-500"><Share size={20} /></span>
+                <span>1. اضغط على زر "مشاركة" في الأسفل</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <span className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-slate-700"><PlusSquare size={20} /></span>
+                <span>2. اختر "إضافة إلى الشاشة الرئيسية"</span>
               </div>
             </div>
+            <button onClick={() => setShowIOSInstructions(false)} className="w-full mt-6 bg-slate-900 text-white py-3 rounded-xl font-bold">
+              فهمت ذلك
+            </button>
+            {/* سهم يشير للأسفل (لزر المشاركة في سفاري) */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[10px] border-t-white"></div>
+          </div>
+        </div>
+      )}
 
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-              <a href="#ai-check" className="text-fuchsia-600 font-bold hover:text-fuchsia-800 transition-colors flex items-center gap-1"><ScanFace size={16}/> فحص الصورة</a>
-              <a href="#mockups" className="hover:text-fuchsia-600 transition-colors">المحاكاة</a>
-              <a href="#services" className="hover:text-fuchsia-600 transition-colors">الخدمات</a>
-              <a href="#sizes" className="hover:text-fuchsia-600 transition-colors">المقاسات</a>
-              <a href="#reviews" className="hover:text-fuchsia-600 transition-colors">الآراء</a>
+      {/* --- شريط التنقل (Navbar) --- */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+             <img src={logo} alt="Art Moment Logo" className="w-10 h-10" />
+            <div className="flex flex-col">
+              <h1 className="text-lg font-black text-slate-900 leading-none">لحظة فن</h1>
+              <span className="text-[10px] text-slate-500 font-bold tracking-wider">Art Moment</span>
             </div>
+          </div>
 
-            <div className="hidden md:flex items-center gap-3">
-              {/* (جديد) زر تثبيت التطبيق - يظهر فقط إذا كان متاحاً */}
-              {isInstallable && (
-                <button 
-                  onClick={handleInstallClick}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold hover:shadow-lg hover:shadow-fuchsia-500/30 transition-all flex items-center gap-2 animate-pulse"
-                >
-                  <Download size={18} /> تطبيق لحظة فن
-                </button>
-              )}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href="#ai-check" className="text-fuchsia-600 font-bold hover:text-fuchsia-800 transition-colors flex items-center gap-1"><ScanFace size={16}/> فحص الصورة</a>
+            <a href="#mockups" className="hover:text-slate-900 transition-colors">المحاكاة</a>
+            <a href="#services" className="hover:text-slate-900 transition-colors">الخدمات</a>
+            <Link to="/track" className="hover:text-slate-900 transition-colors">تتبع الطلب</Link>
+          </nav>
 
-              <Link to="/track" className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors flex items-center gap-2">
-                <Search size={18} /> تتبع الطلب
-              </Link>
-              <Link to="/admin/login" className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors flex items-center gap-2">
-                <Lock size={16} />
-              </Link>
-            </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+             {/* زر التثبيت (يظهر للجوال والكمبيوتر إذا كان متاحاً) */}
+             {(isInstallable || isIOS) && (
+               <button 
+                 onClick={handleInstallClick}
+                 className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg hover:shadow-fuchsia-500/30 transition-all animate-pulse"
+               >
+                 <Download size={16} />
+                 <span className="hidden sm:inline">تحميل التطبيق</span>
+                 <span className="sm:hidden">تثبيت</span>
+               </button>
+             )}
 
-            <button className="md:hidden p-2 text-slate-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+             <Link to="/track" className="hidden sm:inline-flex text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors">تتبع الطلب</Link>
+             <Link to="/admin/login" className="hidden sm:inline-flex bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all">
+               <Lock size={16} />
+             </Link>
+
+             <button className="md:hidden p-2 text-slate-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? <X /> : <Menu />}
             </button>
           </div>
@@ -190,24 +230,16 @@ export default function LandingPage() {
 
         {/* قائمة الجوال */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-slate-100 p-4 space-y-4 shadow-lg">
-            {/* زر التثبيت في الجوال */}
-            {isInstallable && (
-              <button 
-                onClick={handleInstallClick}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold flex items-center justify-center gap-2 mb-4 shadow-md"
-              >
-                <Download size={20} /> تثبيت التطبيق
-              </button>
-            )}
-            
-            <a href="#ai-check" className="block py-2 text-fuchsia-600 font-bold" onClick={() => setIsMobileMenuOpen(false)}>✨ فحص الصورة</a>
+          <div className="md:hidden bg-white border-t border-slate-100 p-4 space-y-4 shadow-lg animate-in slide-in-from-top-5">
+            <a href="#ai-check" className="block py-2 text-fuchsia-600 font-bold" onClick={() => setIsMobileMenuOpen(false)}>✨ فحص جودة الصورة</a>
             <a href="#mockups" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>جربيها في برواز</a>
-            <a href="#services" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>الخدمات</a>
+            <a href="#services" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
+            <a href="#sizes" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>المقاسات</a>
             <Link to="/track" className="block w-full text-center py-3 bg-slate-100 rounded-xl font-bold text-slate-700" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
+            <Link to="/admin/login" className="block w-full text-center py-3 border border-slate-200 rounded-xl font-bold text-slate-500 text-xs" onClick={() => setIsMobileMenuOpen(false)}>دخول الموظفين</Link>
           </div>
         )}
-      </nav>
+      </header>
 
       {/* --- 2. القسم الرئيسي (Hero) --- */}
       <header className="relative bg-slate-900 overflow-hidden py-16 md:py-24">
@@ -216,6 +248,7 @@ export default function LandingPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
+            
             <div className="text-center md:text-right space-y-8">
               <div className="flex flex-col items-center md:items-start gap-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/10 text-fuchsia-400 text-xs font-bold border border-fuchsia-500/20">
@@ -226,13 +259,16 @@ export default function LandingPage() {
                    ✨ عرض خاص: استخدم كود <span className="text-white font-mono"></span> لخصم إضافي
                 </span>
               </div>
+              
               <h1 className="text-4xl md:text-5xl font-black text-white leading-[1.8] md:leading-loose">
                 اطبعي أجمل لحظاتك مع <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-emerald-300">لحظة فن | Art-Moment</span>
               </h1>
+              
               <p className="text-lg text-slate-400 leading-relaxed max-w-xl mx-auto md:mx-0">
                 طباعة صور مقاس 4×6 و A4 بجودة عالية، ألوان زاهية، وتفاصيل واضحة. 
                 أرسلي صورك عبر تيليجرام، تابعي حالة الطلب أونلاين، واستلميها جاهزة مع تغليف فاخر و بالتنسيق على الوقت اللي يناسبك.
               </p>
+
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                 <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-lg shadow-slate-500/20">
                   <MessageCircle size={20} /> تواصلي معنا عبر وتساب
@@ -241,12 +277,14 @@ export default function LandingPage() {
                   <Search size={20} /> تتبعي طلبك
                 </Link>
               </div>
+
               <div className="pt-4 flex flex-wrap gap-4 justify-center md:justify-start text-xs text-slate-400">
                 <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> تجهيز سريع للطلبات</span>
                 <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> مراجعة دقة الصور</span>
                 <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> دفع عند الاستلام</span>
               </div>
             </div>
+
             <div className="relative">
               <div className="aspect-[4/3] rounded-3xl bg-slate-800 border border-slate-700 overflow-hidden shadow-2xl relative group">
                 <img src={printedPhotos} alt="صور مطبوعة" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
@@ -346,6 +384,8 @@ export default function LandingPage() {
       <section id="mockups" className="py-20 bg-slate-900 text-white">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center">
+            
+            {/* الجهة اليمنى: الشرح والأزرار */}
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-emerald-400 font-bold text-xs mb-2">
                 <Frame size={16} /> تجربة تفاعلية
@@ -359,6 +399,7 @@ export default function LandingPage() {
                 ارفعي صورتك وشوفيها كأنها مطبوعة قدامك الآن.
               </p>
 
+              {/* أزرار اختيار القوالب */}
               <div className="flex gap-3">
                 {[
                   { id: 0, label: 'على الجدار', icon: Frame },
@@ -379,6 +420,7 @@ export default function LandingPage() {
                 ))}
               </div>
 
+              {/* زر رفع الصورة للمحاكاة */}
               <div className="pt-4">
                 <button 
                   onClick={() => mockupInputRef.current?.click()}
@@ -396,27 +438,32 @@ export default function LandingPage() {
               </div>
             </div>
 
+            {/* الجهة اليسرى: منطقة العرض (Canvas) */}
             <div className="relative">
               <div className="aspect-square bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border border-slate-700 relative">
+                
+                {/* الخلفيات */}
                 <img 
                   src={
-                    activeFrame === 0 ? "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80" : 
-                    activeFrame === 1 ? "https://images.unsplash.com/photo-1593060235732-22fdba40604b?auto=format&fit=crop&w=800&q=80" : 
-                    "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=800&q=80" 
+                    activeFrame === 0 ? "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80" : // Wall
+                    activeFrame === 1 ? "https://images.unsplash.com/photo-1593060235732-22fdba40604b?auto=format&fit=crop&w=800&q=80" : // Desk
+                    "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=800&q=80" // Album
                   }
                   alt="Frame Background"
                   className="w-full h-full object-cover opacity-60"
                 />
 
+                {/* الصورة المرفوعة (يتم دمجها) */}
                 {mockupImage ? (
                   <div 
                     className={`absolute shadow-2xl transition-all duration-500 overflow-hidden ${
-                      activeFrame === 0 ? "top-[20%] left-[25%] w-[50%] h-[40%] border-8 border-white bg-white rotate-1" : 
-                      activeFrame === 1 ? "top-[35%] left-[60%] w-[25%] h-[35%] border-4 border-black bg-white -rotate-6" : 
-                      "top-[15%] left-[15%] w-[35%] h-[70%] rotate-2 shadow-inner" 
+                      activeFrame === 0 ? "top-[20%] left-[25%] w-[50%] h-[40%] border-8 border-white bg-white rotate-1" : // Wall positioning
+                      activeFrame === 1 ? "top-[35%] left-[60%] w-[25%] h-[35%] border-4 border-black bg-white -rotate-6" : // Desk positioning
+                      "top-[15%] left-[15%] w-[35%] h-[70%] rotate-2 shadow-inner" // Album positioning
                     }`}
                   >
                     <img src={mockupImage} className="w-full h-full object-cover" alt="User Upload" />
+                    {/* لمعة زجاجية */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-50 pointer-events-none"></div>
                   </div>
                 ) : (
@@ -429,10 +476,12 @@ export default function LandingPage() {
                 )}
               </div>
               
+              {/* تلميح صغير */}
               <div className="absolute -bottom-6 right-6 bg-emerald-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-full rotate-3 shadow-lg">
                 تجربة حية! ✨
               </div>
             </div>
+
           </div>
         </div>
       </section>
