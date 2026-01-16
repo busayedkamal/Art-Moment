@@ -1,20 +1,10 @@
 // src/LandingPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Search, 
-  MessageCircle, 
-  Image as ImageIcon, 
-  CheckCircle, 
-  Truck, 
-  Printer, 
-  Menu, 
-  X, 
-  ChevronDown, 
-  Lock,
-  Star,    
-  Quote,
-  BookOpen // تم إضافة أيقونة الألبوم هنا
+  Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck, 
+  Printer, Menu, X, ChevronDown, Lock, Star, Quote, BookOpen,
+  Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download // إضافة أيقونة التحميل
 } from 'lucide-react';
 import logo from './assets/logo-art-moment.svg'; 
 import printedPhotos from './assets/printed-photos.png';
@@ -23,8 +13,125 @@ export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
 
+  // --- حالات فحص الصور بالذكاء الاصطناعي ---
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // --- حالات المحاكاة الواقعية (Live Mockups) ---
+  const [mockupImage, setMockupImage] = useState(null);
+  const mockupInputRef = useRef(null);
+  const [activeFrame, setActiveFrame] = useState(0); 
+
+  // --- (جديد) حالات تثبيت التطبيق PWA ---
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      // منع المتصفح من إظهار النافذة الافتراضية فوراً
+      e.preventDefault();
+      // حفظ الحدث لاستخدامه لاحقاً عند ضغط الزر
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    // إظهار نافذة التثبيت
+    deferredPrompt.prompt();
+    // انتظار رد المستخدم
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    }
+  };
+  // ---------------------------------------
+
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
+  };
+
+  // --- دالة تحليل الصورة ---
+  const handleImageCheck = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setAnalyzing(true);
+    setAnalysisResult(null);
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+
+    img.onload = () => {
+      const width = img.naturalWidth;
+      const height = img.naturalHeight;
+      const megaPixels = (width * height) / 1000000;
+      
+      let qualityScore = 'low';
+      let qualityText = 'من الأفضل تحسين الصورة';
+      if (width >= 2400 && height >= 3500) { 
+        qualityScore = 'excellent';
+        qualityText = 'ممتازة (مناسبة لـ A4 و 4x6)';
+      } else if (width >= 1200 && height >= 1800) { 
+        qualityScore = 'good';
+        qualityText = 'جيدة (مناسبة لـ 4x6 فقط)';
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      
+      const sampleSize = 100;
+      const imageData = ctx.getImageData(width/2 - sampleSize/2, height/2 - sampleSize/2, sampleSize, sampleSize);
+      const data = imageData.data;
+      let r, g, b, avg;
+      let colorSum = 0;
+
+      for (let x = 0, len = data.length; x < len; x += 4) {
+        r = data[x];
+        g = data[x + 1];
+        b = data[x + 2];
+        avg = Math.floor((r + g + b) / 3);
+        colorSum += avg;
+      }
+
+      const brightness = Math.floor(colorSum / (sampleSize * sampleSize));
+      let lightingStatus = 'good';
+      if (brightness < 60) lightingStatus = 'dark';
+      if (brightness > 200) lightingStatus = 'bright';
+
+      setTimeout(() => {
+        setAnalysisResult({
+          width,
+          height,
+          megaPixels: megaPixels.toFixed(1),
+          qualityScore,
+          qualityText,
+          lightingStatus,
+          brightness
+        });
+        setAnalyzing(false);
+        URL.revokeObjectURL(objectUrl);
+      }, 1500);
+    };
+  };
+
+  const handleMockupUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setMockupImage(url);
+    }
   };
 
   const reviews = [
@@ -48,20 +155,30 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-              <a href="#services" className="hover:text-fuchsia-600 transition-colors">خدمات الطباعة</a>
+            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+              <a href="#ai-check" className="text-fuchsia-600 font-bold hover:text-fuchsia-800 transition-colors flex items-center gap-1"><ScanFace size={16}/> فحص الصورة</a>
+              <a href="#mockups" className="hover:text-fuchsia-600 transition-colors">المحاكاة</a>
+              <a href="#services" className="hover:text-fuchsia-600 transition-colors">الخدمات</a>
               <a href="#sizes" className="hover:text-fuchsia-600 transition-colors">المقاسات</a>
-              <a href="#reviews" className="hover:text-fuchsia-600 transition-colors">آراء العملاء</a>
-              <a href="#how-it-works" className="hover:text-fuchsia-600 transition-colors">كيف تتم الخدمة؟</a>
-              <a href="#faq" className="hover:text-fuchsia-600 transition-colors">الأسئلة الشائعة</a>
+              <a href="#reviews" className="hover:text-fuchsia-600 transition-colors">الآراء</a>
             </div>
 
             <div className="hidden md:flex items-center gap-3">
+              {/* (جديد) زر تثبيت التطبيق - يظهر فقط إذا كان متاحاً */}
+              {isInstallable && (
+                <button 
+                  onClick={handleInstallClick}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold hover:shadow-lg hover:shadow-fuchsia-500/30 transition-all flex items-center gap-2 animate-pulse"
+                >
+                  <Download size={18} /> تطبيق لحظة فن
+                </button>
+              )}
+
               <Link to="/track" className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors flex items-center gap-2">
                 <Search size={18} /> تتبع الطلب
               </Link>
               <Link to="/admin/login" className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition-colors flex items-center gap-2">
-                <Lock size={16} />  خاص بالمسؤولين
+                <Lock size={16} />
               </Link>
             </div>
 
@@ -71,11 +188,22 @@ export default function LandingPage() {
           </div>
         </div>
 
+        {/* قائمة الجوال */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 p-4 space-y-4 shadow-lg">
-            <a href="#services" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
-            <a href="#sizes" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>المقاسات</a>
-            <a href="#reviews" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>آراء العملاء</a>
+            {/* زر التثبيت في الجوال */}
+            {isInstallable && (
+              <button 
+                onClick={handleInstallClick}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-bold flex items-center justify-center gap-2 mb-4 shadow-md"
+              >
+                <Download size={20} /> تثبيت التطبيق
+              </button>
+            )}
+            
+            <a href="#ai-check" className="block py-2 text-fuchsia-600 font-bold" onClick={() => setIsMobileMenuOpen(false)}>✨ فحص الصورة</a>
+            <a href="#mockups" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>جربيها في برواز</a>
+            <a href="#services" className="block py-2 text-slate-600 font-medium" onClick={() => setIsMobileMenuOpen(false)}>الخدمات</a>
             <Link to="/track" className="block w-full text-center py-3 bg-slate-100 rounded-xl font-bold text-slate-700" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
           </div>
         )}
@@ -88,7 +216,6 @@ export default function LandingPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            
             <div className="text-center md:text-right space-y-8">
               <div className="flex flex-col items-center md:items-start gap-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/10 text-fuchsia-400 text-xs font-bold border border-fuchsia-500/20">
@@ -99,16 +226,13 @@ export default function LandingPage() {
                    ✨ عرض خاص: استخدم كود <span className="text-white font-mono"></span> لخصم إضافي
                 </span>
               </div>
-              
               <h1 className="text-4xl md:text-5xl font-black text-white leading-[1.8] md:leading-loose">
-  اطبعي أجمل لحظاتك مع <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-emerald-300">لحظة فن | Art-Moment</span>
-</h1>
-              
+                اطبعي أجمل لحظاتك مع <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-emerald-300">لحظة فن | Art-Moment</span>
+              </h1>
               <p className="text-lg text-slate-400 leading-relaxed max-w-xl mx-auto md:mx-0">
                 طباعة صور مقاس 4×6 و A4 بجودة عالية، ألوان زاهية، وتفاصيل واضحة. 
                 أرسلي صورك عبر تيليجرام، تابعي حالة الطلب أونلاين، واستلميها جاهزة مع تغليف فاخر و بالتنسيق على الوقت اللي يناسبك.
               </p>
-
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                 <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-lg shadow-slate-500/20">
                   <MessageCircle size={20} /> تواصلي معنا عبر وتساب
@@ -117,14 +241,12 @@ export default function LandingPage() {
                   <Search size={20} /> تتبعي طلبك
                 </Link>
               </div>
-
               <div className="pt-4 flex flex-wrap gap-4 justify-center md:justify-start text-xs text-slate-400">
                 <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> تجهيز سريع للطلبات</span>
                 <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> مراجعة دقة الصور</span>
                 <span className="flex items-center gap-1"><CheckCircle size={14} className="text-emerald-500" /> دفع عند الاستلام</span>
               </div>
             </div>
-
             <div className="relative">
               <div className="aspect-[4/3] rounded-3xl bg-slate-800 border border-slate-700 overflow-hidden shadow-2xl relative group">
                 <img src={printedPhotos} alt="صور مطبوعة" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
@@ -139,7 +261,183 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* --- 3. قسم الخدمات والمقاسات (محدث) --- */}
+      {/* --- قسم فحص الجودة بالذكاء الاصطناعي --- */}
+      <section id="ai-check" className="py-20 bg-gradient-to-br from-fuchsia-50 to-purple-50 border-b border-fuchsia-100">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-fuchsia-200 text-fuchsia-600 font-bold text-xs mb-6 shadow-sm">
+            <ScanFace size={16} className="animate-pulse"/> جديد! الذكاء الاصطناعي لفحص الصور
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 mb-4">هل صورتك مناسبة للطباعة؟ 🧐</h2>
+          <p className="text-slate-600 mb-10 max-w-lg mx-auto">
+            ارفعي صورتك هنا، وسيقوم النظام فوراً بتحليل دقتها وإضاءتها ليخبرك بأفضل مقاس للطباعة قبل الطلب.
+          </p>
+
+          <div className="bg-white rounded-3xl p-8 shadow-xl border border-white/50 max-w-2xl mx-auto relative overflow-hidden">
+            {!analysisResult && !analyzing && (
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="border-3 border-dashed border-slate-200 hover:border-fuchsia-400 hover:bg-fuchsia-50/50 rounded-2xl p-10 cursor-pointer transition-all group"
+              >
+                <div className="w-20 h-20 bg-fuchsia-100 text-fuchsia-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Upload size={32}/>
+                </div>
+                <h3 className="font-bold text-slate-800 text-lg mb-2">اضغطي هنا لرفع الصورة</h3>
+                <p className="text-sm text-slate-400">نقبل صور JPG, PNG بجودة عالية</p>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImageCheck} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+              </div>
+            )}
+
+            {analyzing && (
+              <div className="py-16">
+                <Loader2 size={48} className="text-fuchsia-600 animate-spin mx-auto mb-4"/>
+                <p className="text-lg font-bold text-slate-700 animate-pulse">جاري تحليل البكسلات والإضاءة...</p>
+              </div>
+            )}
+
+            {analysisResult && (
+              <div className="animate-in zoom-in duration-300">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className={`p-4 rounded-2xl border-2 ${analysisResult.qualityScore === 'low' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
+                    <div className="text-xs font-bold uppercase opacity-70 mb-1">دقة الصورة</div>
+                    <div className="font-black text-xl mb-1">{analysisResult.megaPixels} MP</div>
+                    <div className="text-xs font-medium flex items-center justify-center gap-1">
+                      {analysisResult.qualityScore === 'low' ? <AlertTriangle size={14}/> : <CheckCircle size={14}/>}
+                      {analysisResult.qualityText}
+                    </div>
+                  </div>
+                  <div className={`p-4 rounded-2xl border-2 ${analysisResult.lightingStatus === 'good' ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
+                    <div className="text-xs font-bold uppercase opacity-70 mb-1">الإضاءة</div>
+                    <div className="font-black text-xl mb-1">{analysisResult.brightness}/255</div>
+                    <div className="text-xs font-medium">
+                      {analysisResult.lightingStatus === 'good' ? 'إضاءة متوازنة ممتازة' : (analysisResult.lightingStatus === 'dark' ? 'الصورة مظلمة قليلاً' : 'الصورة ساطعة جداً')}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <button 
+                    onClick={() => {setAnalysisResult(null); fileInputRef.current.value = '';}}
+                    className="px-6 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-colors"
+                  >
+                    فحص صورة أخرى
+                  </button>
+                  <a 
+                    href="https://wa.me/966569663697" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="px-6 py-3 rounded-xl bg-fuchsia-600 text-white font-bold hover:bg-fuchsia-700 transition-colors shadow-lg shadow-fuchsia-200"
+                  >
+                    أكملي الطلب الآن
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-slate-400 mt-6">* ملاحظة: يتم التحليل على جهازك فوراً لضمان الخصوصية، لا يتم رفع الصور لسيرفراتنا في هذه المرحلة.</p>
+        </div>
+      </section>
+
+      {/* --- قسم المحاكاة الواقعية (Live Mockups) --- */}
+      <section id="mockups" className="py-20 bg-slate-900 text-white">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-emerald-400 font-bold text-xs mb-2">
+                <Frame size={16} /> تجربة تفاعلية
+              </div>
+              <h2 className="text-3xl md:text-4xl font-black leading-tight">
+                جربي صورك في براويزنا 🖼️<br/>
+                <span className="text-slate-400">قبل ما تطلبي!</span>
+              </h2>
+              <p className="text-slate-400 text-lg leading-relaxed">
+                محتارة كيف بتطلع الصورة على الجدار أو المكتب؟<br/>
+                ارفعي صورتك وشوفيها كأنها مطبوعة قدامك الآن.
+              </p>
+
+              <div className="flex gap-3">
+                {[
+                  { id: 0, label: 'على الجدار', icon: Frame },
+                  { id: 1, label: 'على المكتب', icon: ImageIcon }, 
+                  { id: 2, label: 'في الألبوم', icon: BookOpen },
+                ].map((frame) => (
+                  <button
+                    key={frame.id}
+                    onClick={() => setActiveFrame(frame.id)}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold transition-all ${
+                      activeFrame === frame.id 
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                    }`}
+                  >
+                    <frame.icon size={18} /> {frame.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  onClick={() => mockupInputRef.current?.click()}
+                  className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-slate-900 font-bold hover:bg-slate-100 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Upload size={20} /> ارفعي صورة للتجربة
+                </button>
+                <input 
+                  type="file" 
+                  ref={mockupInputRef} 
+                  onChange={handleMockupUpload} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="aspect-square bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border border-slate-700 relative">
+                <img 
+                  src={
+                    activeFrame === 0 ? "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80" : 
+                    activeFrame === 1 ? "https://images.unsplash.com/photo-1593060235732-22fdba40604b?auto=format&fit=crop&w=800&q=80" : 
+                    "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=800&q=80" 
+                  }
+                  alt="Frame Background"
+                  className="w-full h-full object-cover opacity-60"
+                />
+
+                {mockupImage ? (
+                  <div 
+                    className={`absolute shadow-2xl transition-all duration-500 overflow-hidden ${
+                      activeFrame === 0 ? "top-[20%] left-[25%] w-[50%] h-[40%] border-8 border-white bg-white rotate-1" : 
+                      activeFrame === 1 ? "top-[35%] left-[60%] w-[25%] h-[35%] border-4 border-black bg-white -rotate-6" : 
+                      "top-[15%] left-[15%] w-[35%] h-[70%] rotate-2 shadow-inner" 
+                    }`}
+                  >
+                    <img src={mockupImage} className="w-full h-full object-cover" alt="User Upload" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-50 pointer-events-none"></div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-black/50 backdrop-blur-md p-6 rounded-2xl text-center border border-white/10">
+                      <Eye size={40} className="mx-auto mb-2 text-emerald-400 opacity-80"/>
+                      <p className="text-slate-300 font-medium">ارفعي صورة لتظهر هنا</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="absolute -bottom-6 right-6 bg-emerald-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-full rotate-3 shadow-lg">
+                تجربة حية! ✨
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- 3. قسم الخدمات والمقاسات --- */}
       <section id="sizes" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -149,10 +447,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* تم تحديث الشبكة لتصبح 3 أعمدة */}
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            
-            {/* 1. بطاقة 4x6 (يمين) */}
             <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-6">
                 <ImageIcon size={32} />
@@ -168,7 +463,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* 2. بطاقة A4 (وسط) */}
             <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6">
                 <ImageIcon size={32} />
@@ -184,7 +478,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* 3. بطاقة الألبومات (يسار - جديد) */}
             <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6">
                 <BookOpen size={32} />
@@ -199,7 +492,6 @@ export default function LandingPage() {
                 حفظ آمن للذكريات
               </div>
             </div>
-
           </div>
         </div>
       </section>
