@@ -4,17 +4,24 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { 
   Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle, 
-  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent 
+  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator 
 } from 'lucide-react';
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
   
-  // إعدادات الأسعار
+  // إعدادات الأسعار (تم التوسع لتشمل التسعير الديناميكي)
   const [prices, setPrices] = useState({
     a4_price: 0,
     photo_4x6_price: 0,
-    delivery_fee_default: 0
+    delivery_fee_default: 0,
+    // حقول التسعير الديناميكي الجديدة
+    is_dynamic_pricing_enabled: false,
+    tier_1_limit: 20,
+    tier_1_price: 2,
+    tier_2_limit: 50,
+    tier_2_price: 1.5,
+    tier_3_price: 1
   });
 
   // إعدادات المخزون
@@ -40,7 +47,7 @@ export default function Settings() {
       const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
       if (settingsData) setPrices(settingsData);
 
-      // 2. جلب المخزون (الذي كان مختفياً)
+      // 2. جلب المخزون
       const { data: inventoryData } = await supabase.from('inventory').select('*').order('id');
       if (inventoryData) setInventory(inventoryData);
 
@@ -61,19 +68,20 @@ export default function Settings() {
     try {
       const { error } = await supabase.from('settings').update(prices).eq('id', 1);
       if (error) throw error;
-      toast.success('تم تحديث الأسعار');
+      toast.success('تم تحديث إعدادات التسعير');
     } catch { toast.error('فشل التحديث'); }
   };
 
-  // --- دوال المخزون (تحديث فوري) ---
+  const toggleDynamicPricing = () => {
+    setPrices(prev => ({ ...prev, is_dynamic_pricing_enabled: !prev.is_dynamic_pricing_enabled }));
+  };
+
+  // --- دوال المخزون ---
   const handleUpdateStock = async (id, field, value) => {
-    // تحديث الواجهة فوراً
     const updatedInventory = inventory.map(item => 
       item.id === id ? { ...item, [field]: Number(value) } : item
     );
     setInventory(updatedInventory);
-
-    // تحديث قاعدة البيانات في الخلفية
     try {
       await supabase.from('inventory').update({ [field]: Number(value) }).eq('id', id);
     } catch { toast.error('فشل الحفظ'); }
@@ -83,7 +91,6 @@ export default function Settings() {
   const handleAddCoupon = async (e) => {
     e.preventDefault();
     if (!newCoupon.code || !newCoupon.discount_amount) return toast.error('أكمل البيانات');
-    
     try {
       const { data, error } = await supabase.from('coupons').insert([{
         code: newCoupon.code.toUpperCase(),
@@ -91,9 +98,7 @@ export default function Settings() {
         discount_amount: Number(newCoupon.discount_amount),
         is_active: true
       }]).select().single();
-
       if (error) throw error;
-      
       setCoupons([data, ...coupons]);
       setNewCoupon({ code: '', discount_type: 'fixed', discount_amount: '' });
       toast.success('تم إضافة الكوبون');
@@ -132,29 +137,85 @@ export default function Settings() {
 
       <div className="grid md:grid-cols-2 gap-6 items-start">
         
-        {/* 1. قسم الأسعار */}
+        {/* 1. قسم الأسعار (المحدث) */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">💰 تسعير الخدمات</h3>
-          <form onSubmit={handleSavePrices} className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-slate-500 block mb-1">سعر طباعة A4</label>
-              <input type="number" step="0.5" value={prices.a4_price} onChange={e => setPrices({...prices, a4_price: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
+          <form onSubmit={handleSavePrices} className="space-y-6">
+            
+            {/* الأسعار الأساسية */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 block mb-1">سعر طباعة A4</label>
+                <input type="number" step="0.5" value={prices.a4_price} onChange={e => setPrices({...prices, a4_price: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 block mb-1">سعر طباعة 4x6 (الأساسي)</label>
+                <input type="number" step="0.5" value={prices.photo_4x6_price} onChange={e => setPrices({...prices, photo_4x6_price: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 block mb-1">سعر التوصيل الافتراضي</label>
+                <input type="number" value={prices.delivery_fee_default} onChange={e => setPrices({...prices, delivery_fee_default: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
+              </div>
             </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500 block mb-1">سعر طباعة 4x6</label>
-              <input type="number" step="0.5" value={prices.photo_4x6_price} onChange={e => setPrices({...prices, photo_4x6_price: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
+
+            <hr className="border-slate-100" />
+
+            {/* قسم التسعير الديناميكي */}
+            <div className="bg-fuchsia-50 p-4 rounded-xl border border-fuchsia-100">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Calculator size={18} className="text-fuchsia-600"/>
+                  <span className="font-bold text-slate-800 text-sm">التسعير الذكي (الكميات)</span>
+                </div>
+                <button type="button" onClick={toggleDynamicPricing} className="text-fuchsia-600 hover:text-fuchsia-700">
+                  {prices.is_dynamic_pricing_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-slate-400"/>}
+                </button>
+              </div>
+
+              {prices.is_dynamic_pricing_enabled && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-500">من 1 إلى</label>
+                      <input type="number" value={prices.tier_1_limit} onChange={e => setPrices({...prices, tier_1_limit: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center"/>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-500">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_1_price} onChange={e => setPrices({...prices, tier_1_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-fuchsia-600"/>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-500">من {Number(prices.tier_1_limit) + 1} إلى</label>
+                      <input type="number" value={prices.tier_2_limit} onChange={e => setPrices({...prices, tier_2_limit: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center"/>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-500">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_2_price} onChange={e => setPrices({...prices, tier_2_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-fuchsia-600"/>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="space-y-1 flex items-center h-full pt-4">
+                      <span className="font-bold text-slate-700">أكثر من {prices.tier_2_limit} صورة</span>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-slate-500">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_3_price} onChange={e => setPrices({...prices, tier_3_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-fuchsia-600"/>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500 block mb-1">سعر التوصيل الافتراضي</label>
-              <input type="number" value={prices.delivery_fee_default} onChange={e => setPrices({...prices, delivery_fee_default: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
-            </div>
+
             <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 flex justify-center gap-2">
               <Save size={18}/> حفظ التغييرات
             </button>
           </form>
         </div>
 
-        {/* 2. قسم المخزون (تمت استعادته بالكامل) */}
+        {/* 2. قسم المخزون */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Package className="text-orange-500"/> إدارة المخزون</h3>
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">

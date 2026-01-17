@@ -1,11 +1,12 @@
 // src/LandingPage.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from './lib/supabase'; // استيراد supabase
 import { 
   Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck, 
   Printer, Menu, X, ChevronDown, Lock, Star, Quote, BookOpen,
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
-  Share, PlusSquare // أيقونات جديدة لتعليمات الايفون
+  Share, PlusSquare, Calculator, Sparkles // أيقونات جديدة
 } from 'lucide-react';
 import logo from './assets/logo-art-moment.svg'; 
 import printedPhotos from './assets/printed-photos.png';
@@ -30,6 +31,21 @@ export default function LandingPage() {
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
+  // --- (جديد) حالات التسعير الديناميكي ---
+  const [pricingSettings, setPricingSettings] = useState(null);
+  const [calcQty, setCalcQty] = useState(50); // القيمة الافتراضية للمحاكي
+
+  // جلب الإعدادات عند التحميل
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const { data } = await supabase.from('settings').select('*').eq('id', 1).single();
+        if (data) setPricingSettings(data);
+      } catch (err) { console.error('Error fetching settings:', err); }
+    }
+    fetchSettings();
+  }, []);
+
   useEffect(() => {
     // 1. الكشف عن إمكانية التثبيت (أندرويد/كمبيوتر)
     const handler = (e) => {
@@ -39,9 +55,8 @@ export default function LandingPage() {
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // 2. الكشف عن أجهزة iOS (لأنها لا تدعم الحدث السابق)
+    // 2. الكشف عن أجهزة iOS
     const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    // التحقق مما إذا كان التطبيق ليس مثبتاً بالفعل (وضعية المتصفح)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (isIosDevice && !isStandalone) {
       setIsIOS(true);
@@ -52,7 +67,7 @@ export default function LandingPage() {
 
   const handleInstallClick = async () => {
     if (isIOS) {
-      setShowIOSInstructions(true); // فتح تعليمات الايفون
+      setShowIOSInstructions(true);
     } else if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
@@ -62,11 +77,32 @@ export default function LandingPage() {
       }
     }
   };
-  // ---------------------------------------
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
   };
+
+  // --- منطق حساب السعر الديناميكي ---
+  const calculateDynamicPrice = (qty) => {
+    if (!pricingSettings) return { unit: 0, total: 0, savings: 0 };
+    
+    let unitPrice = pricingSettings.tier_1_price;
+    const basePrice = pricingSettings.tier_1_price; // السعر الأساسي للمقارنة
+
+    if (qty > pricingSettings.tier_2_limit) {
+      unitPrice = pricingSettings.tier_3_price;
+    } else if (qty > pricingSettings.tier_1_limit) {
+      unitPrice = pricingSettings.tier_2_price;
+    }
+
+    const total = qty * unitPrice;
+    const originalTotal = qty * basePrice;
+    const savings = originalTotal - total;
+
+    return { unit: unitPrice, total, savings };
+  };
+
+  const calcResult = calculateDynamicPrice(calcQty);
 
   // --- دالة تحليل الصورة ---
   const handleImageCheck = (event) => {
@@ -180,7 +216,6 @@ export default function LandingPage() {
             <button onClick={() => setShowIOSInstructions(false)} className="w-full mt-6 bg-slate-900 text-white py-3 rounded-xl font-bold">
               فهمت ذلك
             </button>
-            {/* سهم يشير للأسفل (لزر المشاركة في سفاري) */}
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[10px] border-t-white"></div>
           </div>
         </div>
@@ -205,7 +240,6 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-4">
-             {/* زر التثبيت (يظهر للجوال والكمبيوتر إذا كان متاحاً) */}
              {(isInstallable || isIOS) && (
                <button 
                  onClick={handleInstallClick}
@@ -380,12 +414,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- قسم المحاكاة الواقعية (Live Mockups) --- */}
+      {/* --- قسم المحاكاة الواقعية --- */}
       <section id="mockups" className="py-20 bg-slate-900 text-white">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             
-            {/* الجهة اليمنى: الشرح والأزرار */}
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-emerald-400 font-bold text-xs mb-2">
                 <Frame size={16} /> تجربة تفاعلية
@@ -399,7 +432,6 @@ export default function LandingPage() {
                 ارفعي صورتك وشوفيها كأنها مطبوعة قدامك الآن.
               </p>
 
-              {/* أزرار اختيار القوالب */}
               <div className="flex gap-3">
                 {[
                   { id: 0, label: 'على الجدار', icon: Frame },
@@ -420,7 +452,6 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              {/* زر رفع الصورة للمحاكاة */}
               <div className="pt-4">
                 <button 
                   onClick={() => mockupInputRef.current?.click()}
@@ -438,32 +469,27 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* الجهة اليسرى: منطقة العرض (Canvas) */}
             <div className="relative">
               <div className="aspect-square bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border border-slate-700 relative">
-                
-                {/* الخلفيات */}
                 <img 
                   src={
-                    activeFrame === 0 ? "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80" : // Wall
-                    activeFrame === 1 ? "https://images.unsplash.com/photo-1593060235732-22fdba40604b?auto=format&fit=crop&w=800&q=80" : // Desk
-                    "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=800&q=80" // Album
+                    activeFrame === 0 ? "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80" : 
+                    activeFrame === 1 ? "https://images.unsplash.com/photo-1593060235732-22fdba40604b?auto=format&fit=crop&w=800&q=80" : 
+                    "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=800&q=80" 
                   }
                   alt="Frame Background"
                   className="w-full h-full object-cover opacity-60"
                 />
 
-                {/* الصورة المرفوعة (يتم دمجها) */}
                 {mockupImage ? (
                   <div 
                     className={`absolute shadow-2xl transition-all duration-500 overflow-hidden ${
-                      activeFrame === 0 ? "top-[20%] left-[25%] w-[50%] h-[40%] border-8 border-white bg-white rotate-1" : // Wall positioning
-                      activeFrame === 1 ? "top-[35%] left-[60%] w-[25%] h-[35%] border-4 border-black bg-white -rotate-6" : // Desk positioning
-                      "top-[15%] left-[15%] w-[35%] h-[70%] rotate-2 shadow-inner" // Album positioning
+                      activeFrame === 0 ? "top-[20%] left-[25%] w-[50%] h-[40%] border-8 border-white bg-white rotate-1" : 
+                      activeFrame === 1 ? "top-[35%] left-[60%] w-[25%] h-[35%] border-4 border-black bg-white -rotate-6" : 
+                      "top-[15%] left-[15%] w-[35%] h-[70%] rotate-2 shadow-inner" 
                     }`}
                   >
                     <img src={mockupImage} className="w-full h-full object-cover" alt="User Upload" />
-                    {/* لمعة زجاجية */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-50 pointer-events-none"></div>
                   </div>
                 ) : (
@@ -475,18 +501,15 @@ export default function LandingPage() {
                   </div>
                 )}
               </div>
-              
-              {/* تلميح صغير */}
               <div className="absolute -bottom-6 right-6 bg-emerald-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-full rotate-3 shadow-lg">
                 تجربة حية! ✨
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* --- 3. قسم الخدمات والمقاسات --- */}
+      {/* --- 3. قسم الخدمات والمقاسات (محدث مع الحاسبة) --- */}
       <section id="sizes" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -497,6 +520,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* بطاقات الخدمات العادية */}
             <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-6">
                 <ImageIcon size={32} />
@@ -542,10 +566,86 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+
+          {/* --- (NEW) حاسبة التسعير الذكي (تظهر فقط عند التفعيل) --- */}
+          {pricingSettings?.is_dynamic_pricing_enabled && (
+            <div className="max-w-3xl mx-auto mt-16 animate-in slide-in-from-bottom duration-700">
+              <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                  <div className="flex-1 text-center md:text-right">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/20 text-fuchsia-300 font-bold text-xs mb-3 border border-fuchsia-500/30">
+                      <Sparkles size={14} className="animate-pulse"/> عرض الكميات
+                    </div>
+                    <h3 className="text-2xl font-black mb-2">كل ما طبعتي أكثر، وفرتي أكثر! 💰</h3>
+                    <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                      نظام تسعير ذكي يمنحك خصومات تلقائية عند زيادة عدد الصور. جربي تحريك المؤشر وشوفي الفرق!
+                    </p>
+                    
+                    {/* المؤشر التفاعلي */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between text-xs font-bold text-slate-400 px-1">
+                        <span>1 صورة</span>
+                        <span>100+ صورة</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="1" 
+                        max="100" 
+                        value={calcQty} 
+                        onChange={(e) => setCalcQty(Number(e.target.value))}
+                        className="w-full h-3 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                      />
+                      <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                        <span className="text-sm font-bold">العدد المختار:</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setCalcQty(Math.max(1, calcQty - 1))} className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center font-bold">-</button>
+                          <span className="text-xl font-black w-12 text-center">{calcQty}</span>
+                          <button onClick={() => setCalcQty(calcQty + 1)} className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center font-bold">+</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* بطاقة السعر */}
+                  <div className="w-full md:w-72 bg-white text-slate-900 rounded-2xl p-6 shadow-xl transform hover:scale-105 transition-transform duration-300">
+                    <div className="text-center pb-4 border-b border-slate-100 mb-4">
+                      <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">سعر الصورة الواحدة</span>
+                      <span className="text-4xl font-black text-fuchsia-600">{calcResult.unit} <span className="text-sm text-slate-400 font-medium">ر.س</span></span>
+                    </div>
+                    
+                    <div className="space-y-3 mb-6">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span className="text-slate-500">الإجمالي المتوقع</span>
+                        <span className="font-bold">{calcResult.total.toFixed(2)} ر.س</span>
+                      </div>
+                      {calcResult.savings > 0 && (
+                        <div className="flex justify-between text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl animate-pulse">
+                          <span className="flex items-center gap-1"><Sparkles size={14}/> أنتِ توفرين</span>
+                          <span>{calcResult.savings.toFixed(2)} ر.س</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <a 
+                      href={`https://wa.me/966569663697?text=مرحباً، أرغب بطباعة ${calcQty} صورة`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="block w-full bg-slate-900 text-white text-center py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors"
+                    >
+                      اطلبي بهذا السعر
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </section>
 
-      {/* --- 4. كيف تتم الخدمة (Steps) --- */}
+      {/* --- 4. كيف تتم الخدمة --- */}
       <section id="how-it-works" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
