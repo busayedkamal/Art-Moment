@@ -16,7 +16,7 @@ export default function OrderDetails() {
   const [loading, setLoading] = useState(true);
   const [prices, setPrices] = useState({ a4: 0, photo4x6: 0 });
 
-  // معدل التحويل (ثابت)
+  // معدل التحويل: 10 نقاط = 1 ريال
   const POINTS_EXCHANGE_RATE = 10; 
 
   // --- حالات التعديل ---
@@ -35,7 +35,7 @@ export default function OrderDetails() {
 
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [customerData, setCustomerData] = useState({ 
-    phone: '', delivery_date: '', created_at: '', source: [], source_other: '' 
+    phone: '', delivery_date: '', created_at: '', source: '', source_other: '' 
   });
 
   const [isEditingProduction, setIsEditingProduction] = useState(false);
@@ -69,7 +69,7 @@ export default function OrderDetails() {
         phone: orderData.phone || '',
         delivery_date: orderData.delivery_date || '',
         created_at: orderData.created_at ? new Date(orderData.created_at).toISOString().slice(0, 10) : '',
-        source: Array.isArray(orderData.source) ? orderData.source : [],
+        source: orderData.source || '', // هنا المدينة
         source_other: orderData.source_other || ''
       });
 
@@ -150,31 +150,25 @@ export default function OrderDetails() {
     } catch (err) { toast.dismiss(toastId); toast.error('حدث خطأ'); }
   };
 
-  // --- (مصحح) دالة تحويل الفائض للمحفظة ---
   const convertExcessToWallet = async () => {
     const excessAmount = order.deposit - order.total_amount;
     if (excessAmount <= 0) return;
 
     const toastId = toast.loading('جاري تحويل الرصيد...');
     try {
-      // 1. البحث عن محفظة العميل
       let { data: wallet } = await supabase.from('wallets').select('*').eq('phone', order.phone).single();
       
-      // إذا لم توجد محفظة، ننشئ واحدة
       if (!wallet) {
         const { data: newWallet } = await supabase.from('wallets').insert([{ phone: order.phone, points_balance: 0 }]).select().single();
         wallet = newWallet;
       }
 
-      // 2. تحويل المبلغ لنقاط (التصحيح هنا: نضرب في 10 ليتم التخزين كنقاط قابلة للعرض كريالات لاحقاً)
-      const pointsToAdd = Math.floor(excessAmount * POINTS_EXCHANGE_RATE); 
+      const pointsToAdd = Math.round(excessAmount * POINTS_EXCHANGE_RATE); 
 
-      // 3. تحديث المحفظة
       await supabase.from('wallets').update({
         points_balance: wallet.points_balance + pointsToAdd
       }).eq('id', wallet.id);
 
-      // 4. تسجيل الحركة
       await supabase.from('wallet_transactions').insert({
         wallet_id: wallet.id,
         order_id: id,
@@ -197,7 +191,7 @@ export default function OrderDetails() {
         phone: customerData.phone,
         delivery_date: customerData.delivery_date,
         created_at: new Date(customerData.created_at).toISOString(),
-        source: customerData.source,
+        source: customerData.source, // تحديث المدينة
         source_other: customerData.source_other
       };
       await supabase.from('orders').update(updatedData).eq('id', id);
@@ -252,55 +246,92 @@ export default function OrderDetails() {
     
   };
 
-  // --- (مصحح) دالة حذف الدفعة: تقوم الآن بإلغاء رصيد المحفظة المرتبط ---
+  // --- (مصحح) دالة حذف الدفعة: تقوم الآن بخصم الرصيد إذا كان موجوداً ---
   const handleDeletePayment = async (paymentId, amount) => {
     if(!window.confirm('حذف هذه الدفعة؟ \n⚠️ تنبيه: سيتم إلغاء أي رصيد تم تحويله للمحفظة من هذا الطلب.')) return;
     
     const toastId = toast.loading('جاري الحذف...');
     try {
-      // 1. قبل حذف الدفعة، نتحقق إذا كان هناك فائض تم تحويله للمحفظة ونلغيه
-      const { data: transactions } = await supabase.from('wallet_transactions').select('*').eq('order_id', id);
+      // 1. البحث عن أي عمليات محفظة مرتبطة بهذا الطلب
+      const { data: transactions } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('order_id', id);
       
       if (transactions && transactions.length > 0) {
         const walletId = transactions[0].wallet_id;
+        
+        // جلب الرصيد الحالي للمحفظة
         const { data: wallet } = await supabase.from('wallets').select('points_balance').eq('id', walletId).single();
         
         if (wallet) {
           let correction = 0;
           transactions.forEach(t => {
-            // إذا كانت العملية (كسب/تحويل فائض)، نقوم بخصمها
-            if (t.type === 'earn') correction -= t.points;
+            // إذا كانت العملية "كسب" (earn)، يعني العميل أخذ نقاط -> لازم نخصمها منه
+            if (t.type === 'earn') {
+               correction -= Number(t.points);
+            }
           });
           
-          // تحديث المحفظة
-          await supabase.from('wallets').update({ 
-            points_balance: Math.max(0, wallet.points_balance + correction) 
-          }).eq('id', walletId);
+          // تحديث الرصيد الجديد (مع التأكد أنه رقم)
+          if (correction !== 0) {
+             const newBalance = Math.max(0, Number(wallet.points_balance) + correction);
+             await supabase.from('wallets').update({ 
+               points_balance: newBalance 
+             }).eq('id', walletId);
+          }
         }
-        // حذف سجلات المحفظة لهذا الطلب
+        
+        // حذف سجلات الحركة من الجدول
         await supabase.from('wallet_transactions').delete().eq('order_id', id);
       }
 
-      // 2. حذف الدفعة
+      // 2. حذف الدفعة المالية
       await supabase.from('order_payments').delete().eq('id', paymentId);
       
+      // 3. تحديث الواجهة
       const newTotalPaid = order.deposit - amount;
-      await supabase.from('orders').update({ deposit: newTotalPaid, payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' }).eq('id', id);
+      await supabase.from('orders').update({ 
+        deposit: newTotalPaid, 
+        payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' 
+      }).eq('id', id);
       
       setPayments(payments.filter(p => p.id !== paymentId));
       setOrder({ ...order, deposit: newTotalPaid, payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' });
       
       toast.dismiss(toastId);
-      toast.success('تم حذف الدفعة وتصحيح المحفظة');
-    } catch { 
+      toast.success('تم حذف الدفعة وتصحيح رصيد المحفظة');
+    } catch (err) { 
+      console.error(err);
       toast.dismiss(toastId);
       toast.error('فشل الحذف'); 
     }
   };
 
+  const sendAutoWhatsAppMessage = async (orderData) => {
+    try {
+      const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
+      if (!settings || !settings.whatsapp_enabled || !settings.whatsapp_instance_id || !settings.whatsapp_token) return;
+      if (!orderData.phone) return;
+
+      let phone = orderData.phone.replace(/\D/g, '');
+      if (phone.startsWith('0')) phone = '966' + phone.substring(1);
+
+      const msg = `مرحباً ${orderData.customer_name} 🌸\n\nسعدنا بخدمتك في *لحظة فن*.\n\nيسرنا إخبارك بأن طلبك رقم *#${orderData.id.slice(0, 6)}* قد تم تسليمه/شحنه بنجاح! 📦✨\n\nنتمنى أن تنال الصور إعجابك، وننتظر رؤيتك قريباً.`;
+
+      await fetch(`https://api.ultramsg.com/${settings.whatsapp_instance_id}/messages/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: settings.whatsapp_token, to: phone, body: msg })
+      });
+      toast.success('تم إرسال رسالة واتساب تلقائية 🚀');
+    } catch (error) { console.error('WhatsApp Error:', error); }
+  };
+
   const updateStatus = async (newStatus) => {
     await supabase.from('orders').update({ status: newStatus }).eq('id', id);
     setOrder({ ...order, status: newStatus });
+    if (newStatus === 'delivered') sendAutoWhatsAppMessage(order);
     toast.success(`تم تحديث الحالة`);
   };
 
@@ -308,22 +339,17 @@ export default function OrderDetails() {
     const remaining = order.total_amount - order.deposit;
     if (remaining <= 0) return;
     await supabase.from('order_payments').insert([{
-      order_id: id,
-      amount: remaining,
-      payment_date: new Date().toISOString().split('T')[0],
-      note: 'سداد كامل تلقائي'
+      order_id: id, amount: remaining, payment_date: new Date().toISOString().split('T')[0], note: 'سداد كامل تلقائي'
     }]);
     await supabase.from('orders').update({ deposit: order.total_amount, payment_status: 'paid' }).eq('id', id);
     fetchOrderAndSettings();
     toast.success('تم السداد بالكامل');
   };
 
-  // --- دالة حذف الطلب بالكامل ---
   const handleDelete = async () => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الطلب نهائياً؟ \nسيتم إلغاء النقاط المكتسبة والرصيد المحول.')) return;
     const toastId = toast.loading('جاري الحذف وتصحيح الرصيد...');
     try {
-      // نفس منطق تصحيح الرصيد
       const { data: transactions } = await supabase.from('wallet_transactions').select('*').eq('order_id', id);
       if (transactions && transactions.length > 0) {
         const walletId = transactions[0].wallet_id;
@@ -331,8 +357,8 @@ export default function OrderDetails() {
         if (wallet) {
           let correction = 0;
           transactions.forEach(t => {
-            if (t.type === 'earn') correction -= t.points;
-            if (t.type === 'redeem') correction += t.points;
+            if (t.type === 'earn') correction -= Number(t.points);
+            if (t.type === 'redeem') correction += Number(t.points);
           });
           await supabase.from('wallets').update({ points_balance: Math.max(0, wallet.points_balance + correction) }).eq('id', walletId);
         }
@@ -419,6 +445,21 @@ export default function OrderDetails() {
             <div><span className="text-slate-500 text-xs">الجوال</span>{isEditingCustomer ? <input value={customerData.phone} onChange={e => setCustomerData({...customerData, phone: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono dir-ltr text-right">{order.phone}</div>}</div>
             <div><span className="text-slate-500 text-xs">تاريخ الطلب</span>{isEditingCustomer ? <input type="date" value={customerData.created_at} onChange={e => setCustomerData({...customerData, created_at: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono text-slate-700">{order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB') : '-'}</div>}</div>
             <div><span className="text-slate-500 text-xs">تاريخ التسليم</span>{isEditingCustomer ? <input type="date" value={customerData.delivery_date} onChange={e => setCustomerData({...customerData, delivery_date: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="text-red-600 font-bold">{order.delivery_date}</div>}</div>
+            
+            {/* عرض وتعديل المدينة */}
+            <div className="border-t border-slate-100 pt-3">
+              <span className="text-slate-500 text-xs block mb-1">المنطقة / المدينة</span>
+              {isEditingCustomer ? (
+                <div className="flex flex-wrap gap-2">
+                  {CITIES.map(city => (
+                    <button key={city} onClick={() => setCustomerData({...customerData, source: city})} className={`px-2 py-1 text-xs border rounded ${customerData.source === city ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white'}`}>{city}</button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-slate-700 font-bold"><MapPin size={14} className="text-red-500"/> {order.source || 'غير محدد'}</div>
+              )}
+            </div>
+
             {!isEditingCustomer && order.phone && (
               <div className="pt-4 border-t border-slate-50 space-y-2">
                 <a href={`https://wa.me/966${order.phone.startsWith('0') ? order.phone.substring(1) : order.phone}`} target="_blank" rel="noreferrer" className="block w-full text-center bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"><MessageCircle size={18}/> محادثة واتساب</a>
@@ -449,32 +490,14 @@ export default function OrderDetails() {
           <button onClick={saveNotes} className="mt-2 text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg w-full">حفظ الملاحظة</button>
         </div>
 
-        {/* بطاقة الحسابات */}
         <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col h-full">
           <h3 className="font-bold mb-4 flex items-center gap-2"><Banknote className="text-fuchsia-400"/> الحسابات</h3>
           <div className="space-y-3 text-sm flex-1">
-            
-            <div className="flex justify-between text-slate-400">
-              <span>المجموع (منتجات)</span>
-              <span>{order.subtotal?.toFixed(2)}</span>
-            </div>
-            
-            <div className="flex justify-between items-center text-slate-300">
-              <span>التوصيل</span>
-              {isEditingDelivery ? <div className="flex gap-1"><input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-12 bg-slate-800 border rounded text-center"/><button onClick={handleSaveDelivery} className="text-fuchsia-400 text-xs">ok</button></div> : <button onClick={() => setIsEditingDelivery(true)}>{deliveryFee}</button>}
-            </div>
-
-            <div className="bg-red-500/20 p-3 rounded-xl flex justify-between items-center">
-              <span>الخصم</span>
-              {isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-fuchsia-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}
-            </div>
-
+            <div className="flex justify-between text-slate-400"><span>المجموع (منتجات)</span><span>{order.subtotal?.toFixed(2)}</span></div>
+            <div className="flex justify-between items-center text-slate-300"><span>التوصيل</span>{isEditingDelivery ? <div className="flex gap-1"><input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-12 bg-slate-800 border rounded text-center"/><button onClick={handleSaveDelivery} className="text-fuchsia-400 text-xs">ok</button></div> : <button onClick={() => setIsEditingDelivery(true)}>{deliveryFee}</button>}</div>
+            <div className="bg-red-500/20 p-3 rounded-xl flex justify-between items-center"><span>الخصم</span>{isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-fuchsia-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}</div>
             <div className="border-t border-white/10 my-2"></div>
-
-            <div className="flex justify-between text-white text-lg font-bold mb-4">
-              <span>الإجمالي بعد الخصم</span>
-              <span>{order.total_amount.toFixed(2)} ر.س</span>
-            </div>
+            <div className="flex justify-between text-white text-lg font-bold mb-4"><span>الإجمالي بعد الخصم</span><span>{order.total_amount.toFixed(2)} ر.س</span></div>
 
             <div className="bg-white/10 rounded-xl p-3">
               <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
@@ -491,10 +514,7 @@ export default function OrderDetails() {
               )}
 
               <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
-                {payments.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-2">لا توجد دفعات مسجلة</p>
-                ) : (
-                  payments.map((p) => (
+                {payments.length === 0 ? <p className="text-xs text-slate-500 text-center py-2">لا توجد دفعات مسجلة</p> : payments.map((p) => (
                     <div key={p.id} className="flex justify-between items-center text-xs bg-slate-800/50 px-2 py-1.5 rounded group">
                       <span className="font-mono text-slate-400">{new Date(p.payment_date).toLocaleDateString('en-GB')}</span>
                       <div className="flex items-center gap-2">
@@ -502,13 +522,9 @@ export default function OrderDetails() {
                         <button onClick={() => handleDeletePayment(p.id, p.amount)} className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-300"><X size={12}/></button>
                       </div>
                     </div>
-                  ))
-                )}
+                  ))}
               </div>
-              <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
-                <span className="text-xs text-slate-400">إجمالي المدفوع</span>
-                <span className="font-bold text-fuchsia-400">{order.deposit}</span>
-              </div>
+              <div className="flex justify-between border-t border-white/10 pt-2 mt-2"><span className="text-xs text-slate-400">إجمالي المدفوع</span><span className="font-bold text-fuchsia-400">{order.deposit}</span></div>
             </div>
 
             <div className="flex gap-2 items-center">
@@ -523,14 +539,9 @@ export default function OrderDetails() {
               <span className="text-xs block">المتبقي</span>
               <span className="text-xl font-black">{remaining <= 0 ? 'خالص ✅' : remaining.toFixed(2)}</span>
             </div>
-            
             {remaining > 0 && <button onClick={markAsFullyPaid} className="w-full py-2 bg-white text-slate-900 rounded-lg font-bold text-xs">سداد كامل</button>}
-            
             {remaining < 0 && (
-              <button 
-                onClick={convertExcessToWallet} 
-                className="w-full py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold text-xs mt-2 flex items-center justify-center gap-2 hover:bg-indigo-200 transition-colors"
-              >
+              <button onClick={convertExcessToWallet} className="w-full py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold text-xs mt-2 flex items-center justify-center gap-2 hover:bg-indigo-200 transition-colors">
                 <Wallet size={14}/> تحويل الفائض ({Math.abs(remaining).toFixed(2)}) للمحفظة
               </button>
             )}

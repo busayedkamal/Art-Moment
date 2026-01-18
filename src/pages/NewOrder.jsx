@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { 
   Loader2, Tag, BookOpen, Percent, MinusCircle, 
-  Crown, AlertTriangle, Sparkles, Wallet, Coins 
+  Crown, AlertTriangle, Sparkles, Wallet, Coins, MapPin 
 } from 'lucide-react';
 
 export default function NewOrder() {
@@ -22,6 +22,8 @@ export default function NewOrder() {
   });
 
   const POINTS_EXCHANGE_RATE = 10; 
+  // قائمة المدن للاختيار السريع
+  const CITIES = ['الهفوف', 'المبرز', 'القرى', 'الدمام', 'الخبر', 'الرياض', 'أخرى'];
 
   const [couponCode, setCouponCode] = useState('');
   const [couponData, setCouponData] = useState(null); 
@@ -35,13 +37,15 @@ export default function NewOrder() {
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
       customerName: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
-      source: ['واتساب'], sourceOther: '',
+      source: 'الهفوف', // الافتراضي أصبح مدينة
+      sourceOther: '',
       a4Qty: 0, photo4x6Qty: 0, deliveryFee: 0, deposit: 0, notes: '',
       albumQty: 0, albumPrice: 0, manualDiscount: 0
     }
   });
 
   const phoneWatcher = watch('phone');
+  const currentCity = watch('source'); // مراقبة المدينة المختارة
   const [a4Qty, photo4x6Qty, albumQty, albumPrice, deliveryFee, deposit, manualDiscount] = watch(['a4Qty', 'photo4x6Qty', 'albumQty', 'albumPrice', 'deliveryFee', 'deposit', 'manualDiscount']);
 
   useEffect(() => {
@@ -132,7 +136,7 @@ export default function NewOrder() {
         customer_name: data.customerName,
         phone: data.phone,
         delivery_date: data.deliveryDate,
-        source: data.source,
+        source: data.source, 
         source_other: data.sourceOther,
         a4_qty: Number(data.a4Qty) || 0,
         photo_4x6_qty: Number(data.photo4x6Qty) || 0,
@@ -193,11 +197,6 @@ export default function NewOrder() {
     } catch (error) { toast.error(`خطأ: ${error.message}`); }
   };
 
-  const handleSourceToggle = (src) => {
-    const current = watch('source');
-    setValue('source', current.includes(src) ? current.filter(s => s !== src) : [...current, src]);
-  };
-
   if (loadingSettings) return <div className="p-10 text-center flex justify-center gap-2"><Loader2 className="animate-spin" /> جاري التحميل...</div>;
 
   return (
@@ -234,11 +233,10 @@ export default function NewOrder() {
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 md:grid-cols-12">
         <div className="md:col-span-8 space-y-6">
           
-          {/* قسم بيانات العميل (تم إصلاح التصميم هنا) */}
+          {/* قسم بيانات العميل */}
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
             <div className="flex justify-between items-start mb-6">
               <h3 className="font-bold text-slate-800">بيانات العميل</h3>
-              {/* بطاقة المحفظة في مكان صحيح */}
               {wallet && !wallet.isNew && (
                 <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-3 py-1.5 rounded-xl shadow-md flex items-center gap-2 animate-in zoom-in">
                   <Wallet size={16} className="text-violet-200"/>
@@ -267,17 +265,26 @@ export default function NewOrder() {
               </div>
             </div>
             
+            {/* قسم المدينة / المنطقة */}
             <div className="mt-6">
-              <label className="block text-sm font-medium mb-2">المصدر</label>
+              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <MapPin size={16} className="text-red-500"/> المنطقة / المدينة
+              </label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {['تيليجرام', 'واتساب', 'إنستقرام', 'سناب', 'مباشر'].map((src) => (
-                  <button key={src} type="button" onClick={() => handleSourceToggle(src)}
-                    className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${watch('source').includes(src) ? 'bg-fuchsia-50 border-fuchsia-500 text-fuchsia-700 font-medium' : 'bg-white text-slate-600'}`}>
-                    {src}
+                {CITIES.map((city) => (
+                  <button 
+                    key={city} 
+                    type="button" 
+                    onClick={() => setValue('source', city)}
+                    className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${currentCity === city ? 'bg-red-50 border-red-500 text-red-700 font-bold' : 'bg-white text-slate-600'}`}
+                  >
+                    {city}
                   </button>
                 ))}
               </div>
-              <input {...register('sourceOther')} className="input-field" placeholder="مصدر آخر..." />
+              {currentCity === 'أخرى' && (
+                <input {...register('sourceOther')} className="input-field mt-2" placeholder="اكتب اسم المنطقة..." />
+              )}
             </div>
           </div>
 
@@ -308,6 +315,7 @@ export default function NewOrder() {
           </div>
         </div>
 
+        {/* القسم الأيسر: الحسابات */}
         <div className="md:col-span-4 space-y-4">
           <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-lg sticky top-6">
             <h3 className="text-lg font-bold mb-4">ملخص الدفع</h3>

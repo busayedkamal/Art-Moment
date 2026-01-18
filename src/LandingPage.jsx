@@ -122,10 +122,10 @@ export default function LandingPage() {
       const megaPixels = (width * height) / 1000000;
       
       let qualityScore = 'low';
-      let qualityText = 'من الأفضل تحسين الصورة';
+      let qualityText = 'ممتازة (مناسبة لـ  4x6)';
       if (width >= 2400 && height >= 3500) { 
         qualityScore = 'excellent';
-        qualityText = 'ممتازة (مناسبة لـ A4 و 4x6)';
+        qualityText = 'ممتازة (مناسبة لـ A4)';
       } else if (width >= 1200 && height >= 1800) { 
         qualityScore = 'good';
         qualityText = 'جيدة (مناسبة لـ 4x6 فقط)';
@@ -337,7 +337,7 @@ export default function LandingPage() {
       <section id="ai-check" className="py-20 bg-gradient-to-br from-fuchsia-50 to-purple-50 border-b border-fuchsia-100">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-fuchsia-200 text-fuchsia-600 font-bold text-xs mb-6 shadow-sm">
-            <ScanFace size={16} className="animate-pulse"/> جديد! الذكاء الاصطناعي لفحص الصور
+            <ScanFace size={16} className="animate-pulse"/> الذكاء الاصطناعي لفحص الصور
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-4">هل صورتك مناسبة للطباعة؟ 🧐</h2>
           <p className="text-slate-600 mb-10 max-w-lg mx-auto">

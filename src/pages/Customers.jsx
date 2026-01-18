@@ -3,39 +3,111 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Search, User, ShoppingBag, Banknote, Calendar, MessageCircle, 
-  Crown, Filter, Wallet, Coins 
+  Crown, Wallet, ArrowUp, ArrowDown, ArrowUpDown 
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 
 export default function Customers() {
-  const [orders, setOrders] = useState([]);
-  const [wallets, setWallets] = useState([]); // حالة جديدة للمحافظ
+  const [customersData, setCustomersData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('spent'); 
+  
+  const [sortConfig, setSortConfig] = useState({ key: 'lastOrderDate', direction: 'desc' });
 
-  // جلب البيانات
+  const handleSort = (key) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const SortableHeader = ({ label, sortKey }) => {
+    const isActive = sortConfig.key === sortKey;
+    return (
+      <th 
+        onClick={() => handleSort(sortKey)}
+        className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-100 transition-colors group"
+      >
+        <div className="flex items-center gap-1">
+          {label}
+          <span className="text-slate-400 group-hover:text-fuchsia-600 transition-colors">
+            {isActive ? (
+              sortConfig.direction === 'asc' ? <ArrowUp size={14}/> : <ArrowDown size={14}/>
+            ) : (
+              <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-50"/> 
+            )}
+          </span>
+        </div>
+      </th>
+    );
+  };
+
   useEffect(() => {
     async function fetchData() {
       try {
-        // 1. جلب الطلبات
-        const { data: ordersData, error: ordersError } = await supabase
+        setLoading(true);
+        // 1. جلب الطلبات (بما فيها العربون deposit)
+        const { data: orders } = await supabase
           .from('orders')
-          .select('*')
+          .select('id, customer_name, phone, total_amount, deposit, created_at')
           .order('created_at', { ascending: false });
 
-        if (ordersError) throw ordersError;
+        // ملاحظة: لم نعد بحاجة لجدول wallets للعرض، سنحسب الرصيد الفعلي من العمليات
+        
+        const map = {};
+        const normalizePhone = (p) => {
+          if (!p) return 'unknown';
+          let clean = p.replace(/\D/g, ''); 
+          if (clean.startsWith('966')) clean = clean.substring(3);
+          if (clean.startsWith('0')) clean = clean.substring(1);
+          return clean || 'unknown';
+        };
 
-        // 2. جلب المحافظ (Wallets)
-        const { data: walletsData, error: walletsError } = await supabase
-          .from('wallets')
-          .select('*');
+        orders?.forEach((order) => {
+          const cleanPhone = normalizePhone(order.phone);
+          const key = cleanPhone !== 'unknown' ? cleanPhone : `name-${order.customer_name}`;
+
+          if (!map[key]) {
+            map[key] = {
+              id: key,
+              name: order.customer_name,
+              phone: order.phone,
+              cleanPhone: cleanPhone,
+              orderIds: new Set(),
+              totalSpent: 0, // إجمالي المطلوب
+              totalPaid: 0,  // إجمالي المدفوع
+              lastOrderDate: order.created_at,
+              isVip: false
+            };
+          }
+
+          if (!map[key].orderIds.has(order.id)) {
+            map[key].orderIds.add(order.id);
+            map[key].totalSpent += Number(order.total_amount || 0);
+            map[key].totalPaid += Number(order.deposit || 0); // جمع المدفوعات
+            
+            if (new Date(order.created_at) > new Date(map[key].lastOrderDate)) {
+              map[key].lastOrderDate = order.created_at;
+            }
+          }
+        });
+
+        const result = Object.values(map).map(c => {
+          // الحساب الديناميكي للرصيد: (المدفوع - المطلوب)
+          const rawBalance = c.totalPaid - c.totalSpent;
           
-        if (walletsError) console.error('Error fetching wallets:', walletsError);
+          return {
+            ...c,
+            // إذا كان الناتج موجباً فهو رصيد له، وإذا سالب فهو مديونية عليه
+            walletBalance: rawBalance, 
+            totalOrders: c.orderIds.size,
+            isVip: c.orderIds.size >= 3 || c.totalSpent >= 500 
+          };
+        });
 
-        setOrders(ordersData || []);
-        setWallets(walletsData || []);
+        setCustomersData(result);
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -45,99 +117,57 @@ export default function Customers() {
     fetchData();
   }, []);
 
-  // معالجة البيانات وتجميعها
-  const customers = useMemo(() => {
-    const map = {};
-
-    orders.forEach((order) => {
-      // تنظيف رقم الجوال لاستخدامه كمفتاح ومطابقته مع المحفظة
-      const rawPhone = order.phone || '';
-      // المفتاح هنا هو الرقم كما هو مدخل لضمان التوافق، أو يمكن توحيد التنسيق
-      const key = rawPhone; 
-      
-      if (!map[key]) {
-        // البحث عن المحفظة المطابقة لهذا الرقم
-        const customerWallet = wallets.find(w => w.phone === rawPhone);
-
-        map[key] = {
-          id: key, // استخدام الرقم كمعرف مؤقت
-          name: order.customer_name,
-          phone: rawPhone,
-          totalOrders: 0,
-          totalSpent: 0,
-          lastOrderDate: order.created_at,
-          isVip: false,
-          points: customerWallet ? customerWallet.points_balance : 0 // الرصيد من المحفظة
-        };
-      }
-
-      const customer = map[key];
-      customer.totalOrders += 1;
-      customer.totalSpent += Number(order.total_amount || 0);
-      
-      if (new Date(order.created_at) > new Date(customer.lastOrderDate)) {
-        customer.lastOrderDate = order.created_at;
-      }
-    });
-
-    return Object.values(map).map(c => ({
-      ...c,
-      isVip: c.totalOrders >= 3 || c.totalSpent >= 500
-    }));
-  }, [orders, wallets]); // أعد الحساب عند تغير الطلبات أو المحافظ
-
-  // الفلترة والترتيب
-  const filteredAndSortedCustomers = useMemo(() => {
-    let result = customers.filter(c => 
+  const filteredCustomers = useMemo(() => {
+    let result = customersData.filter(c => 
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (c.phone && c.phone.includes(searchTerm))
     );
 
-    result.sort((a, b) => {
-      if (sortBy === 'spent') return b.totalSpent - a.totalSpent;
-      if (sortBy === 'orders') return b.totalOrders - a.totalOrders;
-      if (sortBy === 'points') return b.points - a.points; // ترتيب بالنقاط
-      if (sortBy === 'recent') return new Date(b.lastOrderDate) - new Date(a.lastOrderDate);
-      return 0;
-    });
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        if (sortConfig.key === 'lastOrderDate') {
+          aValue = new Date(aValue).getTime();
+          bValue = new Date(bValue).getTime();
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
 
     return result;
-  }, [customers, searchTerm, sortBy]);
+  }, [customersData, searchTerm, sortConfig]);
 
-  const vipCount = customers.filter(c => c.isVip).length;
+  const vipCount = customersData.filter(c => c.isVip).length;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-20">
       
-      {/* رأس الصفحة والإحصائيات */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <User className="text-fuchsia-600"/> سجل ولاء العملاء
           </h1>
-          <p className="text-sm text-slate-500 mt-1">قائمة بجميع عملائك مع تحليل مشترياتهم ونقاطهم</p>
+          <p className="text-sm text-slate-500 mt-1">قائمة بجميع العملاء مع تحليل مالي دقيق</p>
         </div>
         
         <div className="flex gap-3">
-          <div className="bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-center shadow-sm flex items-center gap-3">
-            <div className="bg-slate-50 p-2 rounded-lg text-slate-500"><User size={16}/></div>
-            <div className="text-right">
-              <span className="text-[10px] text-slate-400 block font-bold uppercase">العملاء</span>
-              <span className="font-bold text-lg text-slate-800">{customers.length}</span>
-            </div>
+          <div className="bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-center shadow-sm">
+            <span className="text-[10px] text-slate-400 block font-bold uppercase">العملاء</span>
+            <span className="font-bold text-lg text-slate-800">{customersData.length}</span>
           </div>
-          <div className="bg-white border border-amber-100 px-4 py-2.5 rounded-xl text-center shadow-sm flex items-center gap-3">
-            <div className="bg-amber-50 p-2 rounded-lg text-amber-500"><Crown size={16}/></div>
-            <div className="text-right">
-              <span className="text-[10px] text-amber-400 block font-bold uppercase">VIP</span>
-              <span className="font-bold text-lg text-amber-600">{vipCount}</span>
-            </div>
+          <div className="bg-white border border-amber-100 px-4 py-2.5 rounded-xl text-center shadow-sm">
+            <span className="text-[10px] text-amber-400 block font-bold uppercase">VIP</span>
+            <span className="font-bold text-lg text-amber-600">{vipCount}</span>
           </div>
         </div>
       </div>
 
-      {/* شريط الأدوات */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
           <input
@@ -145,67 +175,74 @@ export default function Customers() {
             placeholder="بحث بالاسم أو الجوال..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pr-12 pl-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 text-slate-700 text-sm placeholder:text-slate-400"
+            className="w-full pr-12 pl-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
           />
         </div>
         
-        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
-          <button onClick={() => setSortBy('spent')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${sortBy === 'spent' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-100' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-            <Banknote size={14}/> الأكثر دفعاً
+        <div className="flex gap-2">
+          <button onClick={() => setSortConfig({ key: 'totalSpent', direction: 'desc' })} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortConfig.key === 'totalSpent' ? 'bg-fuchsia-50 text-fuchsia-700' : 'bg-slate-50'}`}>
+            <Banknote size={14} className="inline ml-1"/> الأكثر دفعاً
           </button>
-          <button onClick={() => setSortBy('orders')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${sortBy === 'orders' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-            <ShoppingBag size={14}/> الأكثر طلباً
+          <button onClick={() => setSortConfig({ key: 'totalOrders', direction: 'desc' })} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortConfig.key === 'totalOrders' ? 'bg-blue-50 text-blue-700' : 'bg-slate-50'}`}>
+            <ShoppingBag size={14} className="inline ml-1"/> الأكثر طلباً
           </button>
-          <button onClick={() => setSortBy('points')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${sortBy === 'points' ? 'bg-violet-50 text-violet-700 border border-violet-100' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-            <Coins size={14}/> أعلى نقاط
+          <button onClick={() => setSortConfig({ key: 'walletBalance', direction: 'desc' })} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortConfig.key === 'walletBalance' ? 'bg-violet-50 text-violet-700' : 'bg-slate-50'}`}>
+            <Wallet size={14} className="inline ml-1"/> أعلى رصيد
           </button>
         </div>
       </div>
 
-      {/* الجدول المحسن */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-slate-400">جاري تحميل قاعدة العملاء...</div>
-        ) : filteredAndSortedCustomers.length === 0 ? (
+          <div className="p-10 text-center text-slate-400">جاري التحليل...</div>
+        ) : filteredCustomers.length === 0 ? (
           <div className="p-10 text-center text-slate-400">لا يوجد نتائج</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-right">
               <thead className="bg-slate-50/80 border-b border-slate-100">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">العميل</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">نقاط الولاء</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">الطلبات</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">إجمالي الدفع</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">آخر زيارة</th>
+                  <SortableHeader label="العميل" sortKey="name" />
+                  <SortableHeader label="رصيد المحفظة" sortKey="walletBalance" />
+                  <SortableHeader label="الطلبات" sortKey="totalOrders" />
+                  <SortableHeader label="الإجمالي" sortKey="totalSpent" />
+                  <SortableHeader label="آخر زيارة" sortKey="lastOrderDate" />
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">تواصل</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredAndSortedCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-fuchsia-50/30 transition-colors duration-200 group">
+                {filteredCustomers.map((customer) => (
+                  <tr key={customer.id} className="hover:bg-slate-50 transition-colors">
                     
                     {/* العميل */}
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-sm border border-white shrink-0 ${customer.isVip ? 'bg-gradient-to-br from-amber-100 to-orange-200 text-amber-700' : 'bg-gradient-to-br from-fuchsia-100 to-purple-100 text-fuchsia-700'}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${customer.isVip ? 'bg-amber-400' : 'bg-slate-400'}`}>
                           {customer.isVip ? <Crown size={16} /> : customer.name.charAt(0)}
                         </div>
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-bold text-slate-900">{customer.name}</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900">{customer.name}</span>
                             {customer.isVip && <span className="bg-amber-100 text-amber-700 text-[9px] px-1.5 py-0.5 rounded-full border border-amber-200 font-bold">VIP</span>}
                           </div>
-                          <span className="text-[11px] text-slate-400 dir-ltr text-right font-mono">{customer.phone || '-'}</span>
+                          <div className="text-xs text-slate-400 dir-ltr text-right">{customer.phone}</div>
                         </div>
                       </div>
                     </td>
 
-                    {/* نقاط الولاء (عمود جديد) */}
+                    {/* رصيد المحفظة (محسوب ديناميكياً) */}
                     <td className="px-6 py-5">
-                      <div className="inline-flex items-center px-3 py-1 rounded-lg bg-violet-50 border border-violet-100 text-violet-700 font-bold text-xs gap-1">
-                        <Wallet size={14}/> {customer.points}
-                      </div>
+                      {customer.walletBalance > 0 ? (
+                        <span className="bg-violet-50 text-violet-700 px-3 py-1 rounded-lg text-xs font-bold flex items-center w-fit gap-1">
+                          <Wallet size={12}/> {customer.walletBalance.toFixed(1)} ريال
+                        </span>
+                      ) : customer.walletBalance < 0 ? (
+                        <span className="bg-red-50 text-red-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center w-fit gap-1 dir-ltr">
+                           {Math.abs(customer.walletBalance).toFixed(1)}- ريال
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-xs font-bold px-2">-</span>
+                      )}
                     </td>
 
                     {/* عدد الطلبات */}
@@ -226,21 +263,15 @@ export default function Customers() {
                     </td>
 
                     {/* آخر زيارة */}
-                    <td className="px-6 py-5 text-sm text-slate-500 font-medium">
+                    <td className="px-6 py-5 text-sm text-slate-500">
                       {format(new Date(customer.lastOrderDate), 'dd MMM yyyy', { locale: arSA })}
                     </td>
 
                     {/* زر التواصل */}
                     <td className="px-6 py-5">
-                      {customer.phone && (
-                        <a 
-                          href={`https://wa.me/${customer.phone.replace(/^0/, '966').replace(/\D/g, '')}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm group-hover:translate-x-[-4px]"
-                          title="تواصل عبر واتساب"
-                        >
-                          <MessageCircle size={18}/>
+                      {customer.cleanPhone !== 'unknown' && (
+                        <a href={`https://wa.me/966${customer.cleanPhone}`} target="_blank" className="text-emerald-500 hover:text-emerald-600">
+                          <MessageCircle size={20}/>
                         </a>
                       )}
                     </td>

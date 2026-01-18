@@ -4,24 +4,26 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { 
   Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle, 
-  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator 
+  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle 
 } from 'lucide-react';
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
   
-  // إعدادات الأسعار (تم التوسع لتشمل التسعير الديناميكي)
+  // إعدادات الأسعار + إعدادات واتساب الجديدة
   const [prices, setPrices] = useState({
     a4_price: 0,
     photo_4x6_price: 0,
     delivery_fee_default: 0,
-    // حقول التسعير الديناميكي الجديدة
+    // حقول التسعير الديناميكي
     is_dynamic_pricing_enabled: false,
-    tier_1_limit: 20,
-    tier_1_price: 2,
-    tier_2_limit: 50,
-    tier_2_price: 1.5,
-    tier_3_price: 1
+    tier_1_limit: 20, tier_1_price: 2,
+    tier_2_limit: 50, tier_2_price: 1.5,
+    tier_3_price: 1,
+    // حقول واتساب (جديد)
+    whatsapp_instance_id: '',
+    whatsapp_token: '',
+    whatsapp_enabled: false
   });
 
   // إعدادات المخزون
@@ -43,7 +45,7 @@ export default function Settings() {
     try {
       setLoading(true);
       
-      // 1. جلب الأسعار
+      // 1. جلب الأسعار والإعدادات
       const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
       if (settingsData) setPrices(settingsData);
 
@@ -62,13 +64,13 @@ export default function Settings() {
     }
   }
 
-  // --- دوال الأسعار ---
+  // --- دوال الحفظ ---
   const handleSavePrices = async (e) => {
     e.preventDefault();
     try {
       const { error } = await supabase.from('settings').update(prices).eq('id', 1);
       if (error) throw error;
-      toast.success('تم تحديث إعدادات التسعير');
+      toast.success('تم تحديث الإعدادات بنجاح');
     } catch { toast.error('فشل التحديث'); }
   };
 
@@ -131,15 +133,16 @@ export default function Settings() {
         <div className="p-3 bg-slate-900 text-white rounded-xl"><SettingsIcon size={24}/></div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">الإعدادات العامة</h1>
-          <p className="text-sm text-slate-500">التحكم في الأسعار، المخزون، وأكواد الخصم.</p>
+          <p className="text-sm text-slate-500">التحكم في الأسعار، المخزون، واتساب، وأكواد الخصم.</p>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 items-start">
         
-        {/* 1. قسم الأسعار (المحدث) */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">💰 تسعير الخدمات</h3>
+        {/* 1. قسم الأسعار وواتساب */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">💰 تسعير وخدمات</h3>
+          
           <form onSubmit={handleSavePrices} className="space-y-6">
             
             {/* الأسعار الأساسية */}
@@ -159,6 +162,36 @@ export default function Settings() {
             </div>
 
             <hr className="border-slate-100" />
+
+            {/* قسم واتساب الجديد */}
+            <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <MessageCircle size={18} className="text-emerald-600"/>
+                  <span className="font-bold text-slate-800 text-sm">ربط واتساب (API)</span>
+                </div>
+                <button type="button" onClick={() => setPrices({...prices, whatsapp_enabled: !prices.whatsapp_enabled})} className="text-emerald-600 hover:text-emerald-700">
+                  {prices.whatsapp_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-slate-400"/>}
+                </button>
+              </div>
+              
+              {prices.whatsapp_enabled && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-emerald-800 block mb-1">Instance ID</label>
+                    <input type="text" placeholder="instance..." value={prices.whatsapp_instance_id || ''} onChange={e => setPrices({...prices, whatsapp_instance_id: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:ring-1 focus:ring-emerald-500"/>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-emerald-800 block mb-1">Token</label>
+                    <input type="text" placeholder="token..." value={prices.whatsapp_token || ''} onChange={e => setPrices({...prices, whatsapp_token: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:ring-1 focus:ring-emerald-500"/>
+                  </div>
+                  <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    سيتم إرسال رسائل تلقائية عند تغيير الحالة إلى "تم التسليم".
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* قسم التسعير الديناميكي */}
             <div className="bg-fuchsia-50 p-4 rounded-xl border border-fuchsia-100">

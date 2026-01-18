@@ -158,7 +158,7 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* شريط البحث */}
+      {/* شريط البحث وزر فرز المديونية */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -170,8 +170,19 @@ export default function Orders() {
             className="w-full pl-4 pr-10 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 text-sm placeholder:text-slate-400"
           />
         </div>
-        <button className="p-2 text-slate-600 hover:bg-slate-50 rounded-xl border border-slate-200 transition-colors">
+        
+        {/* زر فرز المديونية الجديد */}
+        <button 
+          onClick={() => setSortConfig({ key: 'remaining', direction: 'desc' })}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-sm font-bold ${
+            sortConfig.key === 'remaining' 
+              ? 'bg-red-50 text-red-600 border-red-200 ring-2 ring-red-100' 
+              : 'text-slate-600 hover:bg-slate-50 border-slate-200'
+          }`}
+          title="عرض العملاء الذين عليهم مبالغ أولاً"
+        >
           <Filter size={18} />
+          <span className="hidden sm:inline">المديونيات</span>
         </button>
       </div>
 
