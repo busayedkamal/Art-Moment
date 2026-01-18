@@ -16,8 +16,9 @@ export default function OrderDetails() {
   const [loading, setLoading] = useState(true);
   const [prices, setPrices] = useState({ a4: 0, photo4x6: 0 });
 
-  // معدل التحويل: 10 نقاط = 1 ريال
+  // ثوابت النظام
   const POINTS_EXCHANGE_RATE = 10; 
+  const CITIES = ['الهفوف', 'المبرز', 'القرى', 'الدمام', 'الخبر', 'الرياض', 'أخرى'];
 
   // --- حالات التعديل ---
   const [payments, setPayments] = useState([]); 
@@ -34,8 +35,9 @@ export default function OrderDetails() {
   const [couponCode, setCouponCode] = useState('');
 
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  // تمت إضافة customer_name لحالة التعديل
   const [customerData, setCustomerData] = useState({ 
-    phone: '', delivery_date: '', created_at: '', source: '', source_other: '' 
+    customer_name: '', phone: '', delivery_date: '', created_at: '', source: '', source_other: '' 
   });
 
   const [isEditingProduction, setIsEditingProduction] = useState(false);
@@ -66,10 +68,11 @@ export default function OrderDetails() {
       }
 
       setCustomerData({
+        customer_name: orderData.customer_name || '', // جلب الاسم
         phone: orderData.phone || '',
         delivery_date: orderData.delivery_date || '',
         created_at: orderData.created_at ? new Date(orderData.created_at).toISOString().slice(0, 10) : '',
-        source: orderData.source || '', // هنا المدينة
+        source: orderData.source || '', 
         source_other: orderData.source_other || ''
       });
 
@@ -188,10 +191,11 @@ export default function OrderDetails() {
   const handleSaveCustomerData = async () => {
     try {
       const updatedData = {
+        customer_name: customerData.customer_name, // حفظ الاسم المعدل
         phone: customerData.phone,
         delivery_date: customerData.delivery_date,
         created_at: new Date(customerData.created_at).toISOString(),
-        source: customerData.source, // تحديث المدينة
+        source: customerData.source,
         source_other: customerData.source_other
       };
       await supabase.from('orders').update(updatedData).eq('id', id);
@@ -246,55 +250,35 @@ export default function OrderDetails() {
     
   };
 
-  // --- (مصحح) دالة حذف الدفعة: تقوم الآن بخصم الرصيد إذا كان موجوداً ---
   const handleDeletePayment = async (paymentId, amount) => {
     if(!window.confirm('حذف هذه الدفعة؟ \n⚠️ تنبيه: سيتم إلغاء أي رصيد تم تحويله للمحفظة من هذا الطلب.')) return;
     
     const toastId = toast.loading('جاري الحذف...');
     try {
-      // 1. البحث عن أي عمليات محفظة مرتبطة بهذا الطلب
-      const { data: transactions } = await supabase
-        .from('wallet_transactions')
-        .select('*')
-        .eq('order_id', id);
+      const { data: transactions } = await supabase.from('wallet_transactions').select('*').eq('order_id', id);
       
       if (transactions && transactions.length > 0) {
         const walletId = transactions[0].wallet_id;
-        
-        // جلب الرصيد الحالي للمحفظة
         const { data: wallet } = await supabase.from('wallets').select('points_balance').eq('id', walletId).single();
         
         if (wallet) {
           let correction = 0;
           transactions.forEach(t => {
-            // إذا كانت العملية "كسب" (earn)، يعني العميل أخذ نقاط -> لازم نخصمها منه
-            if (t.type === 'earn') {
-               correction -= Number(t.points);
-            }
+            if (t.type === 'earn') correction -= Number(t.points);
           });
           
-          // تحديث الرصيد الجديد (مع التأكد أنه رقم)
           if (correction !== 0) {
              const newBalance = Math.max(0, Number(wallet.points_balance) + correction);
-             await supabase.from('wallets').update({ 
-               points_balance: newBalance 
-             }).eq('id', walletId);
+             await supabase.from('wallets').update({ points_balance: newBalance }).eq('id', walletId);
           }
         }
-        
-        // حذف سجلات الحركة من الجدول
         await supabase.from('wallet_transactions').delete().eq('order_id', id);
       }
 
-      // 2. حذف الدفعة المالية
       await supabase.from('order_payments').delete().eq('id', paymentId);
       
-      // 3. تحديث الواجهة
       const newTotalPaid = order.deposit - amount;
-      await supabase.from('orders').update({ 
-        deposit: newTotalPaid, 
-        payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' 
-      }).eq('id', id);
+      await supabase.from('orders').update({ deposit: newTotalPaid, payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' }).eq('id', id);
       
       setPayments(payments.filter(p => p.id !== paymentId));
       setOrder({ ...order, deposit: newTotalPaid, payment_status: newTotalPaid >= order.total_amount ? 'paid' : 'unpaid' });
@@ -410,8 +394,9 @@ export default function OrderDetails() {
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-slate-100 rounded-xl"><ArrowRight /></button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">طلب: {order.customer_name}</h1>
-            <p className="text-slate-500 text-sm font-mono">#{order.id.slice(0, 8)}</p>
+            {/* تم تحديث العنوان هنا لعرض رقم الطلب فقط */}
+            <h1 className="text-2xl font-bold text-slate-900 font-mono">الطلب #{order.id.slice(0, 8)}</h1>
+            <p className="text-slate-500 text-xs">تفاصيل المعالجة</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -442,11 +427,25 @@ export default function OrderDetails() {
             <button onClick={() => isEditingCustomer ? handleSaveCustomerData() : setIsEditingCustomer(true)} className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{isEditingCustomer ? 'حفظ' : 'تعديل'}</button>
           </div>
           <div className="space-y-4 text-sm">
+            
+            {/* خانة اسم العميل الجديدة (قابلة للتعديل) */}
+            <div>
+              <span className="text-slate-500 text-xs block mb-1">الاسم</span>
+              {isEditingCustomer ? (
+                <input 
+                  value={customerData.customer_name} 
+                  onChange={e => setCustomerData({...customerData, customer_name: e.target.value})} 
+                  className="w-full border rounded px-2 py-1 font-bold text-slate-900"
+                />
+              ) : (
+                <div className="font-bold text-slate-900 text-lg">{order.customer_name}</div>
+              )}
+            </div>
+
             <div><span className="text-slate-500 text-xs">الجوال</span>{isEditingCustomer ? <input value={customerData.phone} onChange={e => setCustomerData({...customerData, phone: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono dir-ltr text-right">{order.phone}</div>}</div>
             <div><span className="text-slate-500 text-xs">تاريخ الطلب</span>{isEditingCustomer ? <input type="date" value={customerData.created_at} onChange={e => setCustomerData({...customerData, created_at: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono text-slate-700">{order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB') : '-'}</div>}</div>
             <div><span className="text-slate-500 text-xs">تاريخ التسليم</span>{isEditingCustomer ? <input type="date" value={customerData.delivery_date} onChange={e => setCustomerData({...customerData, delivery_date: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="text-red-600 font-bold">{order.delivery_date}</div>}</div>
             
-            {/* عرض وتعديل المدينة */}
             <div className="border-t border-slate-100 pt-3">
               <span className="text-slate-500 text-xs block mb-1">المنطقة / المدينة</span>
               {isEditingCustomer ? (
@@ -540,8 +539,12 @@ export default function OrderDetails() {
               <span className="text-xl font-black">{remaining <= 0 ? 'خالص ✅' : remaining.toFixed(2)}</span>
             </div>
             {remaining > 0 && <button onClick={markAsFullyPaid} className="w-full py-2 bg-white text-slate-900 rounded-lg font-bold text-xs">سداد كامل</button>}
+            
             {remaining < 0 && (
-              <button onClick={convertExcessToWallet} className="w-full py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold text-xs mt-2 flex items-center justify-center gap-2 hover:bg-indigo-200 transition-colors">
+              <button 
+                onClick={convertExcessToWallet} 
+                className="w-full py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold text-xs mt-2 flex items-center justify-center gap-2 hover:bg-indigo-200 transition-colors"
+              >
                 <Wallet size={14}/> تحويل الفائض ({Math.abs(remaining).toFixed(2)}) للمحفظة
               </button>
             )}
