@@ -58,6 +58,35 @@ export default function TrackOrderPage() {
   const currentStep = order ? getStepStatus(order.status) : 0;
   const remaining = order ? (order.total_amount - order.deposit) : 0;
 
+  // دالة مساعدة لتنسيق التاريخ بشكل موحد (عربي - سعودي)
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-SA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  // --- منطق حساب المدة (محدث وآمن) ---
+  let deliveryDuration = null;
+  if (order?.status === 'delivered' && order.date_new && order.date_delivered) {
+    const start = new Date(order.date_new);
+    const end = new Date(order.date_delivered);
+
+    // التحقق المنطقي: يجب أن يكون التسليم بعد أو في نفس وقت الإنشاء
+    if (end >= start) {
+      const diffTime = end - start;
+      // نحسب الأيام (أي جزء من اليوم يعتبر يوماً إضافياً)
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      // الحد الأدنى هو يوم واحد (حتى لو تم التسليم في نفس اللحظة)
+      deliveryDuration = diffDays > 0 ? diffDays : 1;
+    }
+    // ملاحظة: إذا كان end < start (خطأ بيانات)، سيبقى deliveryDuration = null ولن يظهر شيء.
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4 relative" dir="rtl">
       
@@ -104,6 +133,7 @@ export default function TrackOrderPage() {
         {order && (
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             
+            {/* الشريط الأسود العلوي */}
             <div className="bg-slate-900 text-white p-6 text-center relative overflow-hidden">
               <div className="relative z-10">
                 <p className="text-slate-400 text-xs mb-1 font-bold uppercase tracking-wider">حالة الطلب الحالي</p>
@@ -111,7 +141,17 @@ export default function TrackOrderPage() {
                   {order.status === 'new' && 'جديد / قيد المراجعة'}
                   {order.status === 'printing' && 'جاري الطباعة والتجهيز'}
                   {order.status === 'done' && 'جاهز للاستلام'}
-                  {order.status === 'delivered' && 'تم التسليم'}
+                  {order.status === 'delivered' && (
+                    <span className="flex flex-col items-center gap-1">
+                      <span>تم التسليم</span>
+                      {/* عرض المدة فقط إذا كانت البيانات سليمة */}
+                      {deliveryDuration && (
+                        <span className="text-sm font-medium text-emerald-400 bg-emerald-400/10 px-3 py-0.5 rounded-full mt-1">
+                          (خلال {deliveryDuration} أيام)
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </h2>
               </div>
             </div>
@@ -126,27 +166,37 @@ export default function TrackOrderPage() {
                 ></div>
 
                 {[
-                  { id: 1, icon: Package, label: 'جديد' },
-                  { id: 2, icon: Clock, label: 'طباعة' },
-                  { id: 3, icon: CheckCircle, label: 'جاهز' },
-                  { id: 4, icon: Truck, label: 'تسليم' },
-                ].map((step) => (
-                  <div key={step.id} className="relative z-10 flex flex-col items-center gap-2">
-                    <div className={`
-                      w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500
-                      ${currentStep >= step.id 
-                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' 
-                        : 'bg-white border-slate-200 text-slate-300'}
-                    `}>
-                      <step.icon size={14} />
+                  { id: 1, key: 'new', icon: Package, label: 'جديد' },
+                  { id: 2, key: 'printing', icon: Clock, label: 'طباعة' },
+                  { id: 3, key: 'done', icon: CheckCircle, label: 'جاهز' },
+                  { id: 4, key: 'delivered', icon: Truck, label: 'تسليم' },
+                ].map((step) => {
+                  const stepDate = formatDate(order[`date_${step.key}`]);
+
+                  return (
+                    <div key={step.id} className="relative z-10 flex flex-col items-center gap-1">
+                      <div className={`
+                        w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500
+                        ${currentStep >= step.id 
+                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' 
+                          : 'bg-white border-slate-200 text-slate-300'}
+                      `}>
+                        <step.icon size={14} />
+                      </div>
+                      <span className={`text-[10px] font-bold ${currentStep >= step.id ? 'text-fuchsia-600' : 'text-slate-300'}`}>
+                        {step.label}
+                      </span>
+                      {stepDate && (
+                        <span className="text-[9px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 mt-1 min-w-[60px] text-center">
+                          {stepDate}
+                        </span>
+                      )}
                     </div>
-                    <span className={`text-[10px] font-bold ${currentStep >= step.id ? 'text-fuchsia-600' : 'text-slate-300'}`}>
-                      {step.label}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
+              {/* تفاصيل الطلب */}
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-3 mb-4">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-500">رقم الطلب</span>
@@ -157,7 +207,7 @@ export default function TrackOrderPage() {
                   <span className="font-bold text-slate-900">{order.customer_name}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">تاريخ التسليم</span>
+                  <span className="text-slate-500">تاريخ التسليم المتوقع</span>
                   <span className="font-bold text-slate-900">{order.delivery_date || 'غير محدد'}</span>
                 </div>
               </div>
@@ -205,19 +255,16 @@ export default function TrackOrderPage() {
                 </div>
               )}
 
-              {/* --- القسم المالي المحدث --- */}
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                 <h3 className="text-xs font-bold text-slate-400 mb-4 flex items-center gap-1">
                   <Banknote size={14}/> تفاصيل الدفع
                 </h3>
 
-                {/* 1. قيمة المنتجات */}
                 <div className="flex justify-between items-center text-sm text-slate-600 mb-2 px-1">
                   <span>قيمة المنتجات</span>
                   <span className="font-bold">{order.subtotal?.toFixed(2) || '0.00'}</span>
                 </div>
 
-                {/* 2. التوصيل */}
                 {order.delivery_fee > 0 && (
                   <div className="flex justify-between items-center text-sm text-slate-600 mb-2 px-1">
                     <span className="flex items-center gap-1"><MapPin size={12}/> رسوم التوصيل</span>
@@ -225,7 +272,6 @@ export default function TrackOrderPage() {
                   </div>
                 )}
 
-                {/* 3. الخصم */}
                 {order.manual_discount > 0 && (
                   <div className="flex justify-between items-center text-sm text-red-500 mb-2 px-1">
                     <span className="flex items-center gap-1"><Tag size={12}/> خصم / كود</span>
@@ -235,13 +281,11 @@ export default function TrackOrderPage() {
 
                 <div className="border-t border-slate-200 my-3"></div>
 
-                {/* 4. الإجمالي النهائي */}
                 <div className="flex justify-between items-center mb-4 px-1">
                   <span className="font-bold text-slate-900">الإجمالي النهائي</span>
                   <span className="font-black text-xl text-slate-900">{order.total_amount} ر.س</span>
                 </div>
 
-                {/* 5. سجل المدفوعات */}
                 {payments.length > 0 && (
                   <div className="mb-4 bg-white p-3 rounded-xl border border-slate-100">
                     <p className="text-[10px] text-slate-400 font-bold mb-2 flex justify-between">
@@ -251,7 +295,9 @@ export default function TrackOrderPage() {
                     <div className="space-y-1">
                       {payments.map((p) => (
                         <div key={p.id} className="flex justify-between items-center text-xs text-slate-600 border-b border-slate-50 last:border-0 pb-1 last:pb-0">
-                          <span className="flex items-center gap-1"><Calendar size={10}/> {new Date(p.payment_date).toLocaleDateString('ar-EG')}</span>
+                          <span className="flex items-center gap-1">
+                            <Calendar size={10}/> {formatDate(p.payment_date)}
+                          </span>
                           <span className="font-bold">{p.amount} ر.س</span>
                         </div>
                       ))}

@@ -153,4 +153,47 @@ body {
     font-size: 9pt !important;
     color: #6b7280;
   }
+  @media print {
+  /* 1. إعدادات الصفحة */
+  @page {
+    size: A4;
+    margin: 0; /* إلغاء هوامش الطابعة الافتراضية */
+  }
+
+  /* 2. ضبط الهيكل العام */
+  body, html {
+    height: auto !important;
+    overflow: visible !important;
+    background-color: white !important;
+  }
+
+  /* 3. إخفاء كل شي في الموقع */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 4. إظهار منطقة الفاتورة فقط */
+  #printable-invoice,
+  #printable-invoice * {
+    visibility: visible;
+  }
+
+  /* 5. تموضع الفاتورة لتغطي الصفحة بالكامل */
+  #printable-invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: white;
+    z-index: 9999; /* ضمان الظهور فوق أي شيء */
+  }
+
+  /* 6. ضمان طباعة الألوان والخلفيات */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
 }

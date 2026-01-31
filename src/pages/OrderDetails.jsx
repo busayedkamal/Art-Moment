@@ -8,6 +8,7 @@ import {
   Banknote, Phone, FileText, User, 
   MessageCircle, Save, Edit3, X, MinusCircle, Tag, BookOpen, Share2, MapPin, Receipt, StickyNote, Plus, Calendar, Wallet 
 } from 'lucide-react';
+import logo from '../assets/logo-art-moment.svg';
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -16,11 +17,9 @@ export default function OrderDetails() {
   const [loading, setLoading] = useState(true);
   const [prices, setPrices] = useState({ a4: 0, photo4x6: 0 });
 
-  // ثوابت النظام
   const POINTS_EXCHANGE_RATE = 10; 
   const CITIES = ['الهفوف', 'المبرز', 'القرى', 'الدمام', 'الخبر', 'الرياض', 'أخرى'];
 
-  // --- حالات التعديل ---
   const [payments, setPayments] = useState([]); 
   const [showPaymentInput, setShowPaymentInput] = useState(false);
   const [newPayment, setNewPayment] = useState({ amount: '', date: new Date().toISOString().split('T')[0] });
@@ -35,7 +34,6 @@ export default function OrderDetails() {
   const [couponCode, setCouponCode] = useState('');
 
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
-  // تمت إضافة customer_name لحالة التعديل
   const [customerData, setCustomerData] = useState({ 
     customer_name: '', phone: '', delivery_date: '', created_at: '', source: '', source_other: '' 
   });
@@ -68,7 +66,7 @@ export default function OrderDetails() {
       }
 
       setCustomerData({
-        customer_name: orderData.customer_name || '', // جلب الاسم
+        customer_name: orderData.customer_name || '',
         phone: orderData.phone || '',
         delivery_date: orderData.delivery_date || '',
         created_at: orderData.created_at ? new Date(orderData.created_at).toISOString().slice(0, 10) : '',
@@ -90,6 +88,7 @@ export default function OrderDetails() {
     } finally { setLoading(false); }
   }
 
+  // --- العمليات الحسابية والمنطقية ---
   const recalculateAndSaveTotal = async (overrides = {}) => {
     try {
       const currentA4 = overrides.a4_qty ?? order.a4_qty;
@@ -191,7 +190,7 @@ export default function OrderDetails() {
   const handleSaveCustomerData = async () => {
     try {
       const updatedData = {
-        customer_name: customerData.customer_name, // حفظ الاسم المعدل
+        customer_name: customerData.customer_name,
         phone: customerData.phone,
         delivery_date: customerData.delivery_date,
         created_at: new Date(customerData.created_at).toISOString(),
@@ -247,7 +246,6 @@ export default function OrderDetails() {
       setNewPayment({ amount: '', date: new Date().toISOString().split('T')[0] });
       toast.success('تم تسجيل الدفعة');
     } catch (error) { toast.error('فشل إضافة الدفعة'); }
-    
   };
 
   const handleDeletePayment = async (paymentId, amount) => {
@@ -266,7 +264,6 @@ export default function OrderDetails() {
           transactions.forEach(t => {
             if (t.type === 'earn') correction -= Number(t.points);
           });
-          
           if (correction !== 0) {
              const newBalance = Math.max(0, Number(wallet.points_balance) + correction);
              await supabase.from('wallets').update({ points_balance: newBalance }).eq('id', walletId);
@@ -312,11 +309,51 @@ export default function OrderDetails() {
     } catch (error) { console.error('WhatsApp Error:', error); }
   };
 
+  const sendWhatsApp = (type) => { 
+    if (!order.phone) return toast.error('لا يوجد رقم جوال');
+    const cleanPhone = order.phone.replace(/\D/g, ''); 
+    const phone = cleanPhone.startsWith('0') ? '966' + cleanPhone.substring(1) : (cleanPhone.startsWith('966') ? cleanPhone : '966' + cleanPhone);
+    const remaining = (order.total_amount - order.deposit).toFixed(2);
+    let msg = "";
+    if (type === 'ready') msg = `يا هلا ${order.customer_name} ✨\n\nأبشرك طلبك رقم *${order.id.slice(0, 5)}* صار جاهز للاستلام! 🎨\n\n💰 المتبقي للدفع: ${remaining} ر.س\n\n📍 موقعنا: ......\n\nبانتظارك تشرفنا 🌷`;
+    else if (type === 'invoice') msg = `أهلاً بك ${order.customer_name} 🌸\n\nهذه تفاصيل طلبك لدى *لحظة فن*:\n📜 رقم الطلب: ${order.id.slice(0, 8)}\n💵 الإجمالي: ${order.total_amount} ر.س\n✅ المدفوع: ${order.deposit} ر.س\n❗ *المتبقي: ${remaining} ر.س*\n\n🔗 تتبع الحالة: https://art-moment.com/track`;
+    else if (type === 'location') msg = `مرحباً، هذا موقعنا لاستلام الطلبات:\n📍 [ضع رابط قوقل ماب هنا]\n\nحياكم الله!`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const updateStatus = async (newStatus) => {
-    await supabase.from('orders').update({ status: newStatus }).eq('id', id);
-    setOrder({ ...order, status: newStatus });
-    if (newStatus === 'delivered') sendAutoWhatsAppMessage(order);
-    toast.success(`تم تحديث الحالة`);
+    const dateField = `date_${newStatus}`;
+    const now = new Date().toISOString(); 
+
+    try {
+      await supabase.from('orders').update({ 
+        status: newStatus,
+        [dateField]: now 
+      }).eq('id', id);
+
+      setOrder({ ...order, status: newStatus, [dateField]: now });
+      
+      if (newStatus === 'delivered') {
+        sendAutoWhatsAppMessage(order);
+      }
+      toast.success(`تم التحديث`);
+    } catch (error) {
+      toast.error('فشل تحديث الحالة');
+    }
+  };
+
+  const handleDateChange = async (statusKey, newDateVal) => {
+    if (!newDateVal) return;
+    const dateField = `date_${statusKey}`;
+    const fullDate = new Date(newDateVal).toISOString(); 
+
+    try {
+      await supabase.from('orders').update({ [dateField]: fullDate }).eq('id', id);
+      setOrder(prev => ({ ...prev, [dateField]: fullDate }));
+      toast.success('تم تعديل التاريخ');
+    } catch {
+      toast.error('فشل التعديل');
+    }
   };
 
   const markAsFullyPaid = async () => {
@@ -365,22 +402,16 @@ export default function OrderDetails() {
     toast.success('تم الحفظ');
   };
 
-  const sendWhatsApp = (type) => { 
-    if (!order.phone) return toast.error('لا يوجد رقم جوال');
-    const cleanPhone = order.phone.replace(/\D/g, ''); 
-    const phone = cleanPhone.startsWith('0') ? '966' + cleanPhone.substring(1) : (cleanPhone.startsWith('966') ? cleanPhone : '966' + cleanPhone);
-    const remaining = (order.total_amount - order.deposit).toFixed(2);
-    let msg = "";
-    if (type === 'ready') msg = `يا هلا ${order.customer_name} ✨\n\nأبشرك طلبك رقم *${order.id.slice(0, 5)}* صار جاهز للاستلام! 🎨\n\n💰 المتبقي للدفع: ${remaining} ر.س\n\n📍 موقعنا: ......\n\nبانتظارك تشرفنا 🌷`;
-    else if (type === 'invoice') msg = `أهلاً بك ${order.customer_name} 🌸\n\nهذه تفاصيل طلبك لدى *لحظة فن*:\n📜 رقم الطلب: ${order.id.slice(0, 8)}\n💵 الإجمالي: ${order.total_amount} ر.س\n✅ المدفوع: ${order.deposit} ر.س\n❗ *المتبقي: ${remaining} ر.س*\n\n🔗 تتبع الحالة: https://art-moment.com/track`;
-    else if (type === 'location') msg = `مرحباً، هذا موقعنا لاستلام الطلبات:\n📍 [ضع رابط قوقل ماب هنا]\n\nحياكم الله!`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-  };
-
-  const handlePrint = () => { window.print(); };
+  // وظيفة الطباعة مع تأخير بسيط لضمان تجهيز العناصر
+  const handlePrint = () => { setTimeout(() => window.print(), 100); };
   const handlePrintLabel = () => { };
 
-  const steps = [{ key: 'new', label: 'جديد', icon: FileText }, { key: 'printing', label: 'طباعة', icon: Printer }, { key: 'done', label: 'جاهز', icon: CheckCircle }, { key: 'delivered', label: 'تسليم', icon: Truck }];
+  const steps = [
+    { key: 'new', label: 'جديد', icon: FileText }, 
+    { key: 'printing', label: 'طباعة', icon: Printer }, 
+    { key: 'done', label: 'جاهز', icon: CheckCircle }, 
+    { key: 'delivered', label: 'تسليم', icon: Truck }
+  ];
   const currentStepIndex = steps.findIndex(s => s.key === order?.status);
 
   if (loading) return <div className="p-10 text-center">جاري التحميل...</div>;
@@ -389,169 +420,264 @@ export default function OrderDetails() {
   const remaining = order.total_amount - order.deposit;
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 space-y-6">
-      <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-slate-100 rounded-xl"><ArrowRight /></button>
-          <div>
-            {/* تم تحديث العنوان هنا لعرض رقم الطلب فقط */}
-            <h1 className="text-2xl font-bold text-slate-900 font-mono">الطلب #{order.id.slice(0, 8)}</h1>
-            <p className="text-slate-500 text-xs">تفاصيل المعالجة</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-           <button onClick={handlePrintLabel} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 flex items-center gap-2 transition-colors"><StickyNote size={18}/> ملصق</button>
-           <button onClick={handlePrint} className="btn-secondary flex items-center gap-2"><Printer size={16}/> فاتورة</button>
-           <button onClick={handleDelete} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100"><Trash2 size={18} /></button>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-        <div className="flex justify-between min-w-[500px]">
-          {steps.map((step, index) => {
-            const isActive = index <= currentStepIndex;
-            return (
-              <button key={step.key} onClick={() => updateStatus(step.key)} className={`flex flex-col items-center gap-2 flex-1 ${isActive ? 'text-fuchsia-600' : 'text-slate-400'}`}>
-                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? 'bg-fuchsia-100' : 'bg-slate-100'}`}><step.icon size={20} /></div>
-                 <span className="text-xs font-bold">{step.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-full">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold flex items-center gap-2"><User size={18} className="text-blue-500"/> العميل</h3>
-            <button onClick={() => isEditingCustomer ? handleSaveCustomerData() : setIsEditingCustomer(true)} className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{isEditingCustomer ? 'حفظ' : 'تعديل'}</button>
-          </div>
-          <div className="space-y-4 text-sm">
-            
-            {/* خانة اسم العميل الجديدة (قابلة للتعديل) */}
+    <>
+      {/* 1. واجهة التطبيق العادية (تختفي عند الطباعة بسبب CSS) */}
+      <div className="max-w-6xl mx-auto pb-20 space-y-6 print:hidden">
+        
+        {/* Header */}
+        <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-slate-100 rounded-xl"><ArrowRight /></button>
             <div>
-              <span className="text-slate-500 text-xs block mb-1">الاسم</span>
-              {isEditingCustomer ? (
-                <input 
-                  value={customerData.customer_name} 
-                  onChange={e => setCustomerData({...customerData, customer_name: e.target.value})} 
-                  className="w-full border rounded px-2 py-1 font-bold text-slate-900"
-                />
-              ) : (
-                <div className="font-bold text-slate-900 text-lg">{order.customer_name}</div>
-              )}
+              <h1 className="text-2xl font-bold text-slate-900 font-mono">الطلب #{order.id.slice(0, 8)}</h1>
+              <p className="text-slate-500 text-xs">تفاصيل المعالجة</p>
             </div>
-
-            <div><span className="text-slate-500 text-xs">الجوال</span>{isEditingCustomer ? <input value={customerData.phone} onChange={e => setCustomerData({...customerData, phone: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono dir-ltr text-right">{order.phone}</div>}</div>
-            <div><span className="text-slate-500 text-xs">تاريخ الطلب</span>{isEditingCustomer ? <input type="date" value={customerData.created_at} onChange={e => setCustomerData({...customerData, created_at: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono text-slate-700">{order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB') : '-'}</div>}</div>
-            <div><span className="text-slate-500 text-xs">تاريخ التسليم</span>{isEditingCustomer ? <input type="date" value={customerData.delivery_date} onChange={e => setCustomerData({...customerData, delivery_date: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="text-red-600 font-bold">{order.delivery_date}</div>}</div>
-            
-            <div className="border-t border-slate-100 pt-3">
-              <span className="text-slate-500 text-xs block mb-1">المنطقة / المدينة</span>
-              {isEditingCustomer ? (
-                <div className="flex flex-wrap gap-2">
-                  {CITIES.map(city => (
-                    <button key={city} onClick={() => setCustomerData({...customerData, source: city})} className={`px-2 py-1 text-xs border rounded ${customerData.source === city ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white'}`}>{city}</button>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 text-slate-700 font-bold"><MapPin size={14} className="text-red-500"/> {order.source || 'غير محدد'}</div>
-              )}
-            </div>
-
-            {!isEditingCustomer && order.phone && (
-              <div className="pt-4 border-t border-slate-50 space-y-2">
-                <a href={`https://wa.me/966${order.phone.startsWith('0') ? order.phone.substring(1) : order.phone}`} target="_blank" rel="noreferrer" className="block w-full text-center bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"><MessageCircle size={18}/> محادثة واتساب</a>
-                <div className="grid grid-cols-3 gap-2">
-                  <button onClick={() => sendWhatsApp('ready')} className="bg-fuchsia-50 text-fuchsia-700 text-xs py-2 rounded-lg font-bold hover:bg-fuchsia-100 border border-emerald-100 flex flex-col items-center gap-1"><CheckCircle size={14}/> جاهز للاستلام</button>
-                  <button onClick={() => sendWhatsApp('invoice')} className="bg-blue-50 text-blue-700 text-xs py-2 rounded-lg font-bold hover:bg-blue-100 border border-blue-100 flex flex-col items-center gap-1"><Receipt size={14}/> الفاتورة</button>
-                  <button onClick={() => sendWhatsApp('location')} className="bg-slate-50 text-slate-700 text-xs py-2 rounded-lg font-bold hover:bg-slate-100 border border-slate-200 flex flex-col items-center gap-1"><MapPin size={14}/> الموقع</button>
-                </div>
-              </div>
-            )}
+          </div>
+          <div className="flex gap-2">
+             <button onClick={handlePrintLabel} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 flex items-center gap-2 transition-colors"><StickyNote size={18}/> ملصق</button>
+             <button onClick={handlePrint} className="btn-secondary flex items-center gap-2"><Printer size={16}/> فاتورة</button>
+             <button onClick={handleDelete} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100"><Trash2 size={18} /></button>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex justify-between mb-4">
-            <h3 className="font-bold flex items-center gap-2"><FileText size={18} className="text-orange-500"/> الإنتاج</h3>
-            <button onClick={() => isEditingProduction ? handleSaveProduction() : setIsEditingProduction(true)} className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">{isEditingProduction ? 'حفظ' : 'تعديل'}</button>
+        {/* شريط الحالات */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+          <div className="flex justify-between min-w-[500px]">
+            {steps.map((step, index) => {
+              const isActive = index <= currentStepIndex;
+              const dateValue = order[`date_${step.key}`] ? new Date(order[`date_${step.key}`]).toISOString().split('T')[0] : '';
+              return (
+                <div key={step.key} className="flex flex-col items-center gap-3 flex-1 relative group">
+                   <button onClick={() => updateStatus(step.key)} className={`flex flex-col items-center gap-2 ${isActive ? 'text-fuchsia-600' : 'text-slate-400'}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isActive ? 'bg-fuchsia-100 shadow-md scale-110' : 'bg-slate-100'}`}><step.icon size={20} /></div>
+                      <span className="text-xs font-bold">{step.label}</span>
+                   </button>
+                   <div className="relative"><input type="date" value={dateValue} onChange={(e) => handleDateChange(step.key, e.target.value)} className={`text-[10px] bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center w-24 focus:border-fuchsia-500 outline-none transition-opacity ${!dateValue && !isActive ? 'opacity-0 group-hover:opacity-50' : 'opacity-100'}`}/></div>
+                   {index < steps.length - 1 && (<div className={`absolute top-5 right-[50%] left-[-50%] h-0.5 -z-10 ${index < currentStepIndex ? 'bg-fuchsia-200' : 'bg-slate-100'}`}></div>)}
+                </div>
+              )
+            })}
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-slate-50 p-2 rounded text-center"><span className="text-xs block text-slate-400">4x6</span>{isEditingProduction ? <input type="number" value={productionData.photo_4x6_qty} onChange={e => setProductionData({...productionData, photo_4x6_qty: e.target.value})} className="w-full text-center"/> : <span className="font-bold text-xl">{order.photo_4x6_qty}</span>}</div>
-            <div className="bg-slate-50 p-2 rounded text-center"><span className="text-xs block text-slate-400">A4</span>{isEditingProduction ? <input type="number" value={productionData.a4_qty} onChange={e => setProductionData({...productionData, a4_qty: e.target.value})} className="w-full text-center"/> : <span className="font-bold text-xl">{order.a4_qty}</span>}</div>
-          </div>
-          <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100 mb-4 flex gap-2 text-center text-sm">
-             <div className="flex-1"><span className="block text-[10px] text-slate-400">عدد الألبومات</span>{isEditingProduction ? <input type="number" value={productionData.album_qty} onChange={e => setProductionData({...productionData, album_qty: e.target.value})} className="w-full text-center border rounded"/> : <b>{order.album_qty}</b>}</div>
-             <div className="flex-1"><span className="block text-[10px] text-slate-400">سعر الألبوم</span>{isEditingProduction ? <input type="number" value={productionData.album_price} onChange={e => setProductionData({...productionData, album_price: e.target.value})} className="w-full text-center border rounded"/> : <b>{order.album_price}</b>}</div>
-          </div>
-          <textarea className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-2 text-sm focus:outline-none h-20" value={notes} onChange={e => setNotes(e.target.value)} placeholder="ملاحظات..."/>
-          <button onClick={saveNotes} className="mt-2 text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg w-full">حفظ الملاحظة</button>
         </div>
 
-        <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col h-full">
-          <h3 className="font-bold mb-4 flex items-center gap-2"><Banknote className="text-fuchsia-400"/> الحسابات</h3>
-          <div className="space-y-3 text-sm flex-1">
-            <div className="flex justify-between text-slate-400"><span>المجموع (منتجات)</span><span>{order.subtotal?.toFixed(2)}</span></div>
-            <div className="flex justify-between items-center text-slate-300"><span>التوصيل</span>{isEditingDelivery ? <div className="flex gap-1"><input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-12 bg-slate-800 border rounded text-center"/><button onClick={handleSaveDelivery} className="text-fuchsia-400 text-xs">ok</button></div> : <button onClick={() => setIsEditingDelivery(true)}>{deliveryFee}</button>}</div>
-            <div className="bg-red-500/20 p-3 rounded-xl flex justify-between items-center"><span>الخصم</span>{isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-fuchsia-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}</div>
-            <div className="border-t border-white/10 my-2"></div>
-            <div className="flex justify-between text-white text-lg font-bold mb-4"><span>الإجمالي بعد الخصم</span><span>{order.total_amount.toFixed(2)} ر.س</span></div>
-
-            <div className="bg-white/10 rounded-xl p-3">
-              <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
-                <span className="text-fuchsia-400 font-bold">سجل المدفوعات</span>
-                <button onClick={() => setShowPaymentInput(!showPaymentInput)} className="text-xs bg-fuchsia-500/20 text-fuchsia-300 px-2 py-1 rounded hover:bg-fuchsia-500/40 flex items-center gap-1"><Plus size={12}/> إضافة</button>
-              </div>
-              
-              {showPaymentInput && (
-                <div className="flex gap-2 mb-2 animate-in fade-in slide-in-from-top-2">
-                  <input type="date" value={newPayment.date} onChange={e => setNewPayment({...newPayment, date: e.target.value})} className="w-24 bg-slate-800 border border-slate-600 rounded text-xs px-1 text-white"/>
-                  <input type="number" placeholder="المبلغ" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} className="flex-1 bg-slate-800 border border-slate-600 rounded text-xs px-2 text-white"/>
-                  <button onClick={handleAddPayment} className="bg-gradient-to-b from-fuchsia-600 to-purple-600 text-white px-2 rounded text-xs">حفظ</button>
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* بطاقة العميل */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold flex items-center gap-2"><User size={18} className="text-blue-500"/> العميل</h3>
+              <button onClick={() => isEditingCustomer ? handleSaveCustomerData() : setIsEditingCustomer(true)} className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{isEditingCustomer ? 'حفظ' : 'تعديل'}</button>
+            </div>
+            <div className="space-y-4 text-sm">
+              <div><span className="text-slate-500 text-xs block mb-1">الاسم</span>{isEditingCustomer ? (<input value={customerData.customer_name} onChange={e => setCustomerData({...customerData, customer_name: e.target.value})} className="w-full border rounded px-2 py-1 font-bold text-slate-900"/>) : <div className="font-bold text-slate-900 text-lg">{order.customer_name}</div>}</div>
+              <div><span className="text-slate-500 text-xs">الجوال</span>{isEditingCustomer ? <input value={customerData.phone} onChange={e => setCustomerData({...customerData, phone: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono dir-ltr text-right">{order.phone}</div>}</div>
+              <div><span className="text-slate-500 text-xs">تاريخ الطلب</span>{isEditingCustomer ? <input type="date" value={customerData.created_at} onChange={e => setCustomerData({...customerData, created_at: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="font-mono text-slate-700">{order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB') : '-'}</div>}</div>
+              <div><span className="text-slate-500 text-xs">تاريخ التسليم</span>{isEditingCustomer ? <input type="date" value={customerData.delivery_date} onChange={e => setCustomerData({...customerData, delivery_date: e.target.value})} className="w-full border rounded px-2 py-1"/> : <div className="text-red-600 font-bold">{order.delivery_date}</div>}</div>
+              <div className="border-t border-slate-100 pt-3"><span className="text-slate-500 text-xs block mb-1">المنطقة / المدينة</span>{isEditingCustomer ? (<div className="flex flex-wrap gap-2">{CITIES.map(city => (<button key={city} onClick={() => setCustomerData({...customerData, source: city})} className={`px-2 py-1 text-xs border rounded ${customerData.source === city ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white'}`}>{city}</button>))}</div>) : <div className="flex items-center gap-1 text-slate-700 font-bold"><MapPin size={14} className="text-red-500"/> {order.source || 'غير محدد'}</div>}</div>
+              {!isEditingCustomer && order.phone && (
+                <div className="pt-4 border-t border-slate-50 space-y-2">
+                  <a href={`https://wa.me/966${order.phone.startsWith('0') ? order.phone.substring(1) : order.phone}`} target="_blank" rel="noreferrer" className="block w-full text-center bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"><MessageCircle size={18}/> محادثة واتساب</a>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button onClick={() => sendWhatsApp('ready')} className="bg-fuchsia-50 text-fuchsia-700 text-xs py-2 rounded-lg font-bold hover:bg-fuchsia-100 border border-emerald-100 flex flex-col items-center gap-1"><CheckCircle size={14}/> جاهز للاستلام</button>
+                    <button onClick={() => sendWhatsApp('invoice')} className="bg-blue-50 text-blue-700 text-xs py-2 rounded-lg font-bold hover:bg-blue-100 border border-blue-100 flex flex-col items-center gap-1"><Receipt size={14}/> الفاتورة</button>
+                    <button onClick={() => sendWhatsApp('location')} className="bg-slate-50 text-slate-700 text-xs py-2 rounded-lg font-bold hover:bg-slate-100 border border-slate-200 flex flex-col items-center gap-1"><MapPin size={14}/> الموقع</button>
+                  </div>
                 </div>
               )}
+            </div>
+          </div>
 
-              <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
-                {payments.length === 0 ? <p className="text-xs text-slate-500 text-center py-2">لا توجد دفعات مسجلة</p> : payments.map((p) => (
-                    <div key={p.id} className="flex justify-between items-center text-xs bg-slate-800/50 px-2 py-1.5 rounded group">
-                      <span className="font-mono text-slate-400">{new Date(p.payment_date).toLocaleDateString('en-GB')}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">{p.amount}</span>
-                        <button onClick={() => handleDeletePayment(p.id, p.amount)} className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-300"><X size={12}/></button>
+          {/* بطاقة الإنتاج */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex justify-between mb-4">
+              <h3 className="font-bold flex items-center gap-2"><FileText size={18} className="text-orange-500"/> الإنتاج</h3>
+              <button onClick={() => isEditingProduction ? handleSaveProduction() : setIsEditingProduction(true)} className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">{isEditingProduction ? 'حفظ' : 'تعديل'}</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-slate-50 p-2 rounded text-center"><span className="text-xs block text-slate-400">4x6</span>{isEditingProduction ? <input type="number" value={productionData.photo_4x6_qty} onChange={e => setProductionData({...productionData, photo_4x6_qty: e.target.value})} className="w-full text-center"/> : <span className="font-bold text-xl">{order.photo_4x6_qty}</span>}</div>
+              <div className="bg-slate-50 p-2 rounded text-center"><span className="text-xs block text-slate-400">A4</span>{isEditingProduction ? <input type="number" value={productionData.a4_qty} onChange={e => setProductionData({...productionData, a4_qty: e.target.value})} className="w-full text-center"/> : <span className="font-bold text-xl">{order.a4_qty}</span>}</div>
+            </div>
+            <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100 mb-4 flex gap-2 text-center text-sm">
+               <div className="flex-1"><span className="block text-[10px] text-slate-400">عدد الألبومات</span>{isEditingProduction ? <input type="number" value={productionData.album_qty} onChange={e => setProductionData({...productionData, album_qty: e.target.value})} className="w-full text-center border rounded"/> : <b>{order.album_qty}</b>}</div>
+               <div className="flex-1"><span className="block text-[10px] text-slate-400">سعر الألبوم</span>{isEditingProduction ? <input type="number" value={productionData.album_price} onChange={e => setProductionData({...productionData, album_price: e.target.value})} className="w-full text-center border rounded"/> : <b>{order.album_price}</b>}</div>
+            </div>
+            <textarea className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-2 text-sm focus:outline-none h-20" value={notes} onChange={e => setNotes(e.target.value)} placeholder="ملاحظات..."/>
+            <button onClick={saveNotes} className="mt-2 text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg w-full">حفظ الملاحظة</button>
+          </div>
+
+          {/* بطاقة الحسابات */}
+          <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col h-full">
+            <h3 className="font-bold mb-4 flex items-center gap-2"><Banknote className="text-fuchsia-400"/> الحسابات</h3>
+            <div className="space-y-3 text-sm flex-1">
+              <div className="flex justify-between text-slate-400"><span>المجموع (منتجات)</span><span>{order.subtotal?.toFixed(2)}</span></div>
+              <div className="flex justify-between items-center text-slate-300"><span>التوصيل</span>{isEditingDelivery ? <div className="flex gap-1"><input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-12 bg-slate-800 border rounded text-center"/><button onClick={handleSaveDelivery} className="text-fuchsia-400 text-xs">ok</button></div> : <button onClick={() => setIsEditingDelivery(true)}>{deliveryFee}</button>}</div>
+              <div className="bg-red-500/20 p-3 rounded-xl flex justify-between items-center"><span>الخصم</span>{isEditingDiscount ? <div className="flex gap-1"><input type="number" value={manualDiscount} onChange={e => setManualDiscount(e.target.value)} className="w-16 bg-slate-800 border rounded text-center font-bold"/><button onClick={handleSaveDiscount} className="text-fuchsia-400 text-xs">ok</button></div> : <div className="flex gap-2 items-center"><span className="text-lg font-bold text-red-300">-{manualDiscount}</span><button onClick={() => setIsEditingDiscount(true)}><Edit3 size={12}/></button></div>}</div>
+              <div className="border-t border-white/10 my-2"></div>
+              <div className="flex justify-between text-white text-lg font-bold mb-4"><span>الإجمالي بعد الخصم</span><span>{order.total_amount.toFixed(2)} ر.س</span></div>
+
+              <div className="bg-white/10 rounded-xl p-3">
+                <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
+                  <span className="text-fuchsia-400 font-bold">سجل المدفوعات</span>
+                  <button onClick={() => setShowPaymentInput(!showPaymentInput)} className="text-xs bg-fuchsia-500/20 text-fuchsia-300 px-2 py-1 rounded hover:bg-fuchsia-500/40 flex items-center gap-1"><Plus size={12}/> إضافة</button>
+                </div>
+                {showPaymentInput && (
+                  <div className="flex gap-2 mb-2 animate-in fade-in slide-in-from-top-2">
+                    <input type="date" value={newPayment.date} onChange={e => setNewPayment({...newPayment, date: e.target.value})} className="w-24 bg-slate-800 border border-slate-600 rounded text-xs px-1 text-white"/>
+                    <input type="number" placeholder="المبلغ" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} className="flex-1 bg-slate-800 border border-slate-600 rounded text-xs px-2 text-white"/>
+                    <button onClick={handleAddPayment} className="bg-gradient-to-b from-fuchsia-600 to-purple-600 text-white px-2 rounded text-xs">حفظ</button>
+                  </div>
+                )}
+                <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
+                  {payments.length === 0 ? <p className="text-xs text-slate-500 text-center py-2">لا توجد دفعات مسجلة</p> : payments.map((p) => (
+                      <div key={p.id} className="flex justify-between items-center text-xs bg-slate-800/50 px-2 py-1.5 rounded group">
+                        <span className="font-mono text-slate-400">{new Date(p.payment_date).toLocaleDateString('en-GB')}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white">{p.amount}</span>
+                          <button onClick={() => handleDeletePayment(p.id, p.amount)} className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-300"><X size={12}/></button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
+                <div className="flex justify-between border-t border-white/10 pt-2 mt-2"><span className="text-xs text-slate-400">إجمالي المدفوع</span><span className="font-bold text-fuchsia-400">{order.deposit}</span></div>
               </div>
-              <div className="flex justify-between border-t border-white/10 pt-2 mt-2"><span className="text-xs text-slate-400">إجمالي المدفوع</span><span className="font-bold text-fuchsia-400">{order.deposit}</span></div>
-            </div>
 
-            <div className="flex gap-2 items-center">
-              <div className="relative flex-1">
-                <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="كود خصم" className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs outline-none pl-6"/>
-                <Tag size={10} className="absolute left-2 top-2 text-slate-400"/>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="كود خصم" className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs outline-none pl-6"/>
+                  <Tag size={10} className="absolute left-2 top-2 text-slate-400"/>
+                </div>
+                <button onClick={applyCoupon} className="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs text-white">تطبيق</button>
               </div>
-              <button onClick={applyCoupon} className="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs text-white">تطبيق</button>
-            </div>
 
-            <div className={`p-3 rounded-xl text-center border ${remaining <= 0 ? 'bg-fuchsia-500/20 text-fuchsia-300' : 'bg-red-500/20 text-red-300'}`}>
-              <span className="text-xs block">المتبقي</span>
-              <span className="text-xl font-black">{remaining <= 0 ? 'خالص ✅' : remaining.toFixed(2)}</span>
+              <div className={`p-3 rounded-xl text-center border ${remaining <= 0 ? 'bg-fuchsia-500/20 text-fuchsia-300' : 'bg-red-500/20 text-red-300'}`}>
+                <span className="text-xs block">المتبقي</span>
+                <span className="text-xl font-black">{remaining <= 0 ? 'خالص ✅' : remaining.toFixed(2)}</span>
+              </div>
+              {remaining > 0 && <button onClick={markAsFullyPaid} className="w-full py-2 bg-white text-slate-900 rounded-lg font-bold text-xs">سداد كامل</button>}
+              
+              {remaining < 0 && (
+                <button onClick={convertExcessToWallet} className="w-full py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold text-xs mt-2 flex items-center justify-center gap-2 hover:bg-indigo-200 transition-colors">
+                  <Wallet size={14}/> تحويل الفائض ({Math.abs(remaining).toFixed(2)}) للمحفظة
+                </button>
+              )}
             </div>
-            {remaining > 0 && <button onClick={markAsFullyPaid} className="w-full py-2 bg-white text-slate-900 rounded-lg font-bold text-xs">سداد كامل</button>}
-            
-            {remaining < 0 && (
-              <button 
-                onClick={convertExcessToWallet} 
-                className="w-full py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold text-xs mt-2 flex items-center justify-center gap-2 hover:bg-indigo-200 transition-colors"
-              >
-                <Wallet size={14}/> تحويل الفائض ({Math.abs(remaining).toFixed(2)}) للمحفظة
-              </button>
-            )}
           </div>
         </div>
       </div>
-      <style>{`.btn-secondary { @apply px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors; } .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }`}</style>
-    </div>
+
+      {/* 2. الفاتورة القابلة للطباعة (تظهر فقط عند الطباعة) */}
+      <div id="printable-invoice" className="hidden print:block bg-white text-black print-no-extra-space">
+        <div className="mx-auto">
+          {/* رأس الفاتورة */}
+          <div className="no-break flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <img src={logo} alt="Art Moment" className="w-12 h-12 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <h1 className="text-2xl font-black text-slate-900">Art Moment</h1>
+              </div>
+              <p className="text-xs text-slate-500">لحظة فن للطباعة</p>
+            </div>
+            <div className="text-left">
+              <h2 className="text-base font-bold font-mono text-slate-700">فاتورة #{order.id.slice(0, 8)}</h2>
+              <p className="text-xs text-slate-500 mt-1">التاريخ: {new Date(order.created_at).toLocaleDateString('en-GB')}</p>
+            </div>
+          </div>
+
+          {/* بيانات العميل */}
+          <div className="no-break grid grid-cols-2 gap-6 mb-4">
+            <div>
+              <h3 className="font-bold text-[10px] text-slate-400 mb-1 uppercase tracking-wider">العميل</h3>
+              <p className="text-lg font-bold text-slate-900 leading-tight">{order.customer_name}</p>
+              <p className="text-xs text-slate-700 dir-ltr text-right font-mono">{order.phone}</p>
+              {order.source && <p className="text-xs text-slate-500 mt-1">{order.source}</p>}
+            </div>
+            <div className="text-left">
+              <h3 className="font-bold text-[10px] text-slate-400 mb-1 uppercase tracking-wider">التسليم</h3>
+              <p className="font-bold text-sm text-slate-800">{order.delivery_date || 'غير محدد'}</p>
+              {order.status === 'delivered' && (
+                <span className="inline-block bg-slate-100 px-2 py-1 rounded text-[10px] mt-2 font-bold">تم التسليم</span>
+              )}
+            </div>
+          </div>
+
+          {/* جدول المنتجات */}
+          <table className="w-full mb-4">
+            <thead className="bg-slate-50 border-y border-slate-200">
+              <tr>
+                <th className="py-2 px-2 text-right text-xs font-bold text-slate-600">الوصف</th>
+                <th className="py-2 px-2 text-center text-xs font-bold text-slate-600">الكمية</th>
+                <th className="py-2 px-2 text-left text-xs font-bold text-slate-600">السعر</th>
+                <th className="py-2 px-2 text-left text-xs font-bold text-slate-600">الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {order.photo_4x6_qty > 0 && (
+                <tr>
+                  <td className="py-2 px-2 text-xs font-medium">طباعة صور 4×6</td>
+                  <td className="py-2 px-2 text-center text-xs font-bold">{order.photo_4x6_qty}</td>
+                  <td className="py-2 px-2 text-left text-xs text-slate-500">{prices.photo4x6}</td>
+                  <td className="py-2 px-2 text-left text-xs font-bold">{(order.photo_4x6_qty * prices.photo4x6).toFixed(2)}</td>
+                </tr>
+              )}
+              {order.a4_qty > 0 && (
+                <tr>
+                  <td className="py-2 px-2 text-xs font-medium">طباعة صور A4</td>
+                  <td className="py-2 px-2 text-center text-xs font-bold">{order.a4_qty}</td>
+                  <td className="py-2 px-2 text-left text-xs text-slate-500">{prices.a4}</td>
+                  <td className="py-2 px-2 text-left text-xs font-bold">{(order.a4_qty * prices.a4).toFixed(2)}</td>
+                </tr>
+              )}
+              {order.album_qty > 0 && (
+                <tr>
+                  <td className="py-2 px-2 text-xs font-medium">ألبومات صور</td>
+                  <td className="py-2 px-2 text-center text-xs font-bold">{order.album_qty}</td>
+                  <td className="py-2 px-2 text-left text-xs text-slate-500">{order.album_price}</td>
+                  <td className="py-2 px-2 text-left text-xs font-bold">{(order.album_qty * order.album_price).toFixed(2)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          {/* الملخص المالي */}
+          <div className="no-break flex justify-end mb-4">
+            <div className="w-64 space-y-2">
+              <div className="flex justify-between text-xs text-slate-600 border-b border-slate-100 pb-1">
+                <span>المجموع الفرعي</span>
+                <span className="font-bold">{order.subtotal?.toFixed(2)}</span>
+              </div>
+              {order.delivery_fee > 0 && (
+                <div className="flex justify-between text-xs text-slate-600 border-b border-slate-100 pb-1">
+                  <span>التوصيل</span>
+                  <span className="font-bold">{order.delivery_fee}</span>
+                </div>
+              )}
+              {order.manual_discount > 0 && (
+                <div className="flex justify-between text-xs text-red-600 border-b border-slate-100 pb-1">
+                  <span>خصم</span>
+                  <span>-{order.manual_discount}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-black text-lg pt-1">
+                <span>الإجمالي</span>
+                <span>{order.total_amount} ر.س</span>
+              </div>
+              <div className="flex justify-between text-xs pt-1 text-slate-500">
+                <span>المدفوع</span>
+                <span className="font-bold">{order.deposit}</span>
+              </div>
+              <div className="flex justify-between text-xs pt-1 border-t-2 border-slate-800 mt-2">
+                <span className="font-bold text-slate-900 mt-1">المتبقي</span>
+                <span className={`font-black text-base mt-1 ${remaining > 0 ? 'text-red-600' : 'text-slate-900'}`}>{remaining.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* التذييل */}
+          <div className="no-break text-center border-t border-slate-100 pt-4">
+            <p className="text-xs font-bold text-slate-800 mb-1">شكراً لاختياركم لحظة فن ✨</p>
+            <p className="text-[10px] text-slate-400">نسعد بخدمتكم دائماً | تواصل معنا للاستفسار</p>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

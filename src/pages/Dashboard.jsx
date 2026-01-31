@@ -5,14 +5,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { 
   ShoppingBag, Banknote, Clock, Loader2, TrendingDown, 
-  AlertCircle, TrendingUp, ChevronRight, User, Calendar, FileText 
+  AlertCircle, TrendingUp, ChevronRight, User, Calendar, FileText, MessageCircle, Wallet 
 } from 'lucide-react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend 
 } from 'recharts';
-import { format } from 'date-fns';
-import { arSA } from 'date-fns/locale';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -26,9 +23,12 @@ export default function Dashboard() {
     newOrders: 0,
     lateOrders: 0,
   });
-  const [chartData, setChartData] = useState([]); // تم توحيد البيانات هنا
-  const [productsData, setProductsData] = useState([]);
+  const [chartData, setChartData] = useState([]);
   const [recentNewOrders, setRecentNewOrders] = useState([]);
+  
+  // حالة جديدة للمديونيات المستحقة (تم التسليم)
+  const [unpaidDelivered, setUnpaidDelivered] = useState([]); 
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,10 +44,10 @@ export default function Dashboard() {
         
         if (ordersError) throw ordersError;
 
-        // 2. جلب المصروفات (تم تعديل الطلب لجلب التاريخ أيضاً)
+        // 2. جلب المصروفات
         const { data: expenses, error: expensesError } = await supabase
           .from('expenses')
-          .select('*'); // نحتاج التاريخ هنا
+          .select('*');
         
         if (expensesError) throw expensesError;
 
@@ -68,13 +68,20 @@ export default function Dashboard() {
 
         const recentNew = orders.filter(o => o.status === 'new').slice(0, 5);
 
+        // --- فلترة المديونيات المستحقة (تم التسليم + باقي مبلغ) ---
+        const debts = orders.filter(o => 
+          o.status === 'delivered' && 
+          (o.total_amount - (o.deposit || 0)) > 0.5 // هامش بسيط للكسور
+        );
+
         setStats({ 
           totalOrders, totalRevenue, totalCashReceived, totalDebt, totalExpenses, 
           pendingOrders, newOrders: newOrdersCount, lateOrders 
         });
         setRecentNewOrders(recentNew);
+        setUnpaidDelivered(debts); // حفظ القائمة
 
-        // --- تجهيز بيانات الرسم البياني (مبيعات + مصروفات) ---
+        // --- تجهيز بيانات الرسم البياني ---
         const last7Days = [...Array(7)].map((_, i) => {
           const d = new Date();
           d.setDate(d.getDate() - i);
@@ -82,36 +89,24 @@ export default function Dashboard() {
         }).reverse();
 
         const combinedChartData = last7Days.map(date => {
-          // حساب مبيعات اليوم
           const dayRevenue = orders
             .filter(o => o.created_at.startsWith(date))
             .reduce((acc, o) => acc + o.total_amount, 0);
 
-          // حساب مصروفات اليوم (الجديد)
           const dayExpenses = expenses
             .filter(e => {
-              // التحقق من تاريخ المصروف سواء كان date أو created_at
               const expDate = e.date || e.created_at;
               return expDate && expDate.startsWith(date);
             })
             .reduce((acc, e) => acc + e.amount, 0);
 
           return { 
-            name: date.slice(5), // الشهر-اليوم
+            name: date.slice(5), 
             sales: dayRevenue, 
             expenses: dayExpenses 
           }; 
         });
         setChartData(combinedChartData);
-
-        // --- المنتجات ---
-        const totalA4 = orders.reduce((acc, o) => acc + (o.a4_qty || 0), 0);
-        const total4x6 = orders.reduce((acc, o) => acc + (o.photo_4x6_qty || 0), 0);
-        
-        setProductsData([
-          { name: 'صور 4×6', value: total4x6 },
-          { name: 'صور A4', value: totalA4 },
-        ]);
 
       } catch (error) {
         console.error('Error loading stats:', error);
@@ -122,8 +117,6 @@ export default function Dashboard() {
 
     fetchStats();
   }, []);
-
-  const COLORS = ['#10b981', '#3b82f6'];
 
   if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline-block ml-2"/> جاري تحميل البيانات...</div>;
 
@@ -201,7 +194,7 @@ export default function Dashboard() {
       {/* الصف الثاني: الرسوم البيانية */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* رسم المبيعات والمصروفات (المحدث) */}
+        {/* رسم المبيعات */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -216,47 +209,68 @@ export default function Dashboard() {
                 <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
                 <RechartsTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
                 <Legend verticalAlign="top" height={36} iconType="circle"/>
-                
-                {/* عمود المبيعات */}
                 <Bar dataKey="sales" name="المبيعات" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
-                
-                {/* عمود المصروفات (الجديد) */}
                 <Bar dataKey="expenses" name="المصروفات" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* رسم المنتجات */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-          <h3 className="font-bold text-slate-800 w-full mb-4 text-center">المنتجات الأكثر طلباً</h3>
-          <div className="h-48 w-full dir-ltr relative">
-             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={productsData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {productsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <span className="block text-2xl font-bold text-slate-800">{productsData.reduce((a, b) => a + b.value, 0)}</span>
-                <span className="text-[10px] text-slate-400">صورة</span>
+        {/* --- البطاقة الجديدة: مديونيات (تم التسليم) --- */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col max-h-[350px]">
+          <h3 className="font-bold text-slate-800 w-full mb-4 text-center flex items-center justify-center gap-2">
+            <Wallet className="text-red-500" size={20}/> مستحقات (تم التسليم)
+          </h3>
+          
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
+            {unpaidDelivered.length > 0 ? (
+              unpaidDelivered.map((order) => {
+                const remaining = order.total_amount - (order.deposit || 0);
+                const phone = order.phone?.replace(/^0/, '966') || '';
+                const msg = `مرحباً ${order.customer_name} 🌸\n\nنود تذكيرك بأن طلبك رقم *#${order.id.slice(0, 6)}* قد تم تسليمه.\n\nالمبلغ المتبقي: *${remaining} ريال*.\n\nنرجو التحويل وشكراً لتعاملك معنا ✨`;
+
+                return (
+                  <div key={order.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100 group hover:border-red-200 transition-colors">
+                    <div>
+                      <div className="font-bold text-slate-800 text-sm">{order.customer_name}</div>
+                      <div className="text-[10px] text-slate-500">#{order.id.slice(0, 6)}</div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <span className="text-red-600 font-black text-sm">{remaining} ر.س</span>
+                      {order.phone && (
+                        <a 
+                          href={`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="bg-white p-1.5 rounded-lg border border-red-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
+                          title="مطالبة عبر واتساب"
+                        >
+                          <MessageCircle size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-300">
+                <span className="text-4xl mb-2">🎉</span>
+                <span className="text-sm">لا توجد مديونيات مستحقة</span>
               </div>
+            )}
+          </div>
+          
+          {unpaidDelivered.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-slate-100 text-center">
+              <span className="text-xs text-slate-400">إجمالي المستحقات: </span>
+              <span className="font-bold text-red-600">
+                {unpaidDelivered.reduce((sum, o) => sum + (o.total_amount - (o.deposit || 0)), 0).toLocaleString()} ر.س
+              </span>
             </div>
-          </div>
-          <div className="flex gap-4 mt-4">
-            {productsData.map((entry, index) => (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <div className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[index]}}></div>
-                <span className="text-slate-600">{entry.name}</span>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
+
       </div>
 
       {/* الصف الثالث: الطلبات الجديدة */}
