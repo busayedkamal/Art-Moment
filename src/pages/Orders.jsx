@@ -38,88 +38,100 @@ export default function Orders() {
     }
   }
 
-  // --- دالة تطبيق النقاط بأثر رجعي (معدلة) ---
+  // --- دالة تطبيق النقاط بأثر رجعي (المنطق الجديد) ---
   const processRetroactiveLoyalty = async () => {
-    if(!window.confirm('⚠️ تنبيه:\nسيتم احتساب نقاط الولاء للطلبات القديمة.\n\nتأكد من أنك قمت بحل مشكلة "transaction_type" في قاعدة البيانات أولاً لتجنب الأخطاء.')) return;
+    if(!window.confirm('⚠️ تنبيه هام:\n\nسيقوم النظام بفحص جميع الطلبات السابقة.\n- سيتم تخطي أي طلب تمت معالجته سابقاً.\n- سيتم حساب النقاط للصور والألبومات للطلبات غير المعالجة فقط.\n\nهل تود الاستمرار؟')) return;
     
     setIsProcessingLoyalty(true);
     let processedCount = 0;
-    let skippedCount = 0;
+    let skippedCount = 0; // تم تخطيه لأنه معالج سابقاً
+    let zeroRewardCount = 0; // تم تخطيه لأن قيمته 0
     let errorCount = 0;
 
     try {
-      // 1. جلب الطلبات المؤهلة (بدون خصم، وبها كميات)
+      // 1. جلب كل الطلبات
       const { data: allOrders } = await supabase
         .from('orders')
-        .select('*')
-        .eq('manual_discount', 0)
-        .or('a4_qty.gt.0,photo_4x6_qty.gt.0,album_qty.gt.0'); // أضفنا شرط الألبوم
+        .select('*');
 
-      // 2. التحقق من المعاملات السابقة
-      const { data: existingTrans } = await supabase
-        .from('wallet_transactions')
-        .select('order_id')
-        .eq('type', 'loyalty_earn');
-      
-      const processedOrderIds = new Set(existingTrans?.map(t => t.order_id));
-
-      // --- إعدادات النقاط ---
-      const RATE_4x6 = 0.05; // الصورة بـ 5 هللات
-      const RATE_A4 = 1.00;  // الصورة بـ ريال
-      const RATE_ALBUM = 1.00; // الألبوم بـ ريال واحد (حسب طلبك)
+      // 2. إعداد قيم النقاط
+      const RATE_4x6 = 0.05;  // 100 صورة = 5 ريال (يعني الصورة بـ 0.05)
+      const RATE_A4 = 1.00;   // الصورة بـ 1 ريال
+      const RATE_ALBUM = 1.00; // الألبوم بـ 1 ريال
 
       for (const order of allOrders) {
-        if (processedOrderIds.has(order.id)) continue;
+        // [خطوة مهمة جداً] التحقق الفردي لمنع التكرار نهائياً
+        const { data: existingTrans } = await supabase
+          .from('wallet_transactions')
+          .select('id')
+          .eq('order_id', order.id)
+          .eq('type', 'loyalty_earn')
+          .maybeSingle();
 
-        const cleanPhone = order.phone ? order.phone.replace(/\D/g, '') : '';
-        // تجاوز الطلبات التي ليس لها رقم جوال
-        if (!cleanPhone) {
-            errorCount++; 
-            continue;
+        // إذا وجدنا عملية سابقة لهذا الطلب، نتجاوزه فوراً
+        if (existingTrans) {
+          skippedCount++;
+          continue;
         }
 
-        // المعادلة الجديدة
-        const reward = 
-          ((order.photo_4x6_qty || 0) * RATE_4x6) + 
-          ((order.a4_qty || 0) * RATE_A4) + 
-          ((order.album_qty || 0) * RATE_ALBUM);
+        const cleanPhone = order.phone ? order.phone.replace(/\D/g, '') : '';
+        if (!cleanPhone) {
+            continue; // تجاوز بدون رقم جوال
+        }
+
+        // المعادلة الحسابية الصحيحة
+        // نستخدم Number() لضمان أن القيم أرقام وليست نصوص
+        const qty4x6 = Number(order.photo_4x6_qty) || 0;
+        const qtyA4 = Number(order.a4_qty) || 0;
+        const qtyAlbum = Number(order.album_qty) || 0;
+
+        const reward = (qty4x6 * RATE_4x6) + (qtyA4 * RATE_A4) + (qtyAlbum * RATE_ALBUM);
         
+        // التحقق أن العميل لم يحصل على خصم يدوي (اختياري حسب سياستك، هنا سأمنح النقاط للجميع ما عدا من أخذ خصماً كبيراً يصفر الفاتورة مثلاً)
+        // إذا كنت تريد منع النقاط لمن أخذ خصم، ألغِ التعليق عن السطر التالي:
+        // if (order.manual_discount > 0) { zeroRewardCount++; continue; }
+
         if (reward > 0) {
           try {
-            let { data: wallet } = await supabase.from('wallets').select('id, points_balance').ilike('phone', `%${cleanPhone}%`).maybeSingle();
+            // البحث عن المحفظة
+            let { data: wallet } = await supabase.from('wallets').select('id, points_balance').eq('phone', cleanPhone).maybeSingle();
             let walletId = wallet?.id;
 
+            // إنشاء محفظة إن لم توجد
             if (!wallet) {
                 const { data: newWallet } = await supabase.from('wallets').insert([{ phone: cleanPhone, points_balance: 0 }]).select().single();
                 walletId = newWallet.id;
                 wallet = newWallet;
             }
 
+            // تحديث الرصيد
             await supabase.from('wallets').update({ 
-                points_balance: (wallet.points_balance || 0) + reward 
+                points_balance: (Number(wallet.points_balance) || 0) + reward 
             }).eq('id', walletId);
 
+            // تسجيل العملية لضمان عدم التكرار مستقبلاً
             await supabase.from('wallet_transactions').insert({
                 wallet_id: walletId,
                 order_id: order.id,
-                type: 'loyalty_earn',
+                type: 'loyalty_earn', // هذا النوع هو المفتاح لمنع التكرار
                 amount_value: reward,
+                points: reward, // نخزن نفس القيمة في النقاط للتوافق
                 created_at: new Date().toISOString()
             });
             processedCount++;
           } catch (e) {
-            console.error(e);
-            errorCount++; // خطأ تقني
+            console.error(`Error processing order ${order.id}:`, e);
+            errorCount++;
           }
         } else {
-            skippedCount++; // لا يوجد رصيد مستحق
+            zeroRewardCount++;
         }
       }
 
-      alert(`تقرير العملية:\n\n✅ تمت الإضافة لـ: ${processedCount} طلب\n⏭️ تم التخطي (بدون رصيد): ${skippedCount}\n❌ فشل (بدون رقم جوال أو خطأ): ${errorCount}`);
+      alert(`✅ اكتملت العملية!\n\n- تمت إضافة رصيد لـ: ${processedCount} طلب جديد\n- تم التخطي (معالج سابقاً): ${skippedCount} طلب\n- لا يستحقون نقاط (0): ${zeroRewardCount}\n- أخطاء: ${errorCount}`);
 
     } catch (err) {
-      alert('حدث خطأ: ' + err.message);
+      alert('حدث خطأ غير متوقع: ' + err.message);
     } finally {
       setIsProcessingLoyalty(false);
     }

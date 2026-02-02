@@ -278,7 +278,7 @@ export default function TrackOrderPage() {
                     if (impliedDiscount > 0.01) return (
                         <div className="flex justify-between items-center text-sm text-fuchsia-600 mb-2 px-1 bg-fuchsia-50 p-2 rounded-lg">
                             <span className="flex items-center gap-1 font-bold">
-                                <Wallet size={14}/> تم الدفع من المحفظة / خصم
+                                <Wallet size={14}/> تم الدفع من المحفظة / خصم نقاط الولاء
                             </span>
                             <span className="font-bold">-{impliedDiscount.toFixed(2)}</span>
                         </div>
