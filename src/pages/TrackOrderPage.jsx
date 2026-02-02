@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Search, Package, Clock, CheckCircle, Truck, 
   AlertCircle, Banknote, Wallet, Image, Home, FileText, 
-  BookOpen, Tag, MapPin, Calendar 
+  BookOpen, MapPin, Calendar 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo-art-moment.svg';
@@ -84,7 +84,6 @@ export default function TrackOrderPage() {
       // الحد الأدنى هو يوم واحد (حتى لو تم التسليم في نفس اللحظة)
       deliveryDuration = diffDays > 0 ? diffDays : 1;
     }
-    // ملاحظة: إذا كان end < start (خطأ بيانات)، سيبقى deliveryDuration = null ولن يظهر شيء.
   }
 
   return (
@@ -144,7 +143,6 @@ export default function TrackOrderPage() {
                   {order.status === 'delivered' && (
                     <span className="flex flex-col items-center gap-1">
                       <span>تم التسليم</span>
-                      {/* عرض المدة فقط إذا كانت البيانات سليمة */}
                       {deliveryDuration && (
                         <span className="text-sm font-medium text-emerald-400 bg-emerald-400/10 px-3 py-0.5 rounded-full mt-1">
                           (خلال {deliveryDuration} أيام)
@@ -272,12 +270,20 @@ export default function TrackOrderPage() {
                   </div>
                 )}
 
-                {order.manual_discount > 0 && (
-                  <div className="flex justify-between items-center text-sm text-red-500 mb-2 px-1">
-                    <span className="flex items-center gap-1"><Tag size={12}/> خصم / كود</span>
-                    <span className="font-bold">-{order.manual_discount}</span>
-                  </div>
-                )}
+                {/* الكود الجديد: حساب وعرض الخصم/رصيد المحفظة */}
+                {(() => {
+                    const theoreticalTotal = (order.subtotal || 0) + (order.delivery_fee || 0);
+                    const impliedDiscount = theoreticalTotal - order.total_amount;
+                    
+                    if (impliedDiscount > 0.01) return (
+                        <div className="flex justify-between items-center text-sm text-fuchsia-600 mb-2 px-1 bg-fuchsia-50 p-2 rounded-lg">
+                            <span className="flex items-center gap-1 font-bold">
+                                <Wallet size={14}/> تم الدفع من المحفظة / خصم
+                            </span>
+                            <span className="font-bold">-{impliedDiscount.toFixed(2)}</span>
+                        </div>
+                    );
+                })()}
 
                 <div className="border-t border-slate-200 my-3"></div>
 

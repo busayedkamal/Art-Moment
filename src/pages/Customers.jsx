@@ -48,22 +48,33 @@ export default function Customers() {
     async function fetchData() {
       try {
         setLoading(true);
-        // 1. جلب الطلبات (بما فيها العربون deposit)
+        
+        // 1. جلب الطلبات
         const { data: orders } = await supabase
           .from('orders')
           .select('id, customer_name, phone, total_amount, deposit, created_at')
           .order('created_at', { ascending: false });
 
-        // ملاحظة: لم نعد بحاجة لجدول wallets للعرض، سنحسب الرصيد الفعلي من العمليات
-        
-        const map = {};
+        // 2. جلب أرصدة المحافظ من قاعدة البيانات
+        const { data: wallets } = await supabase
+          .from('wallets')
+          .select('phone, points_balance');
+
+        // خريطة لرصيد المحفظة
+        const walletMap = {};
         const normalizePhone = (p) => {
           if (!p) return 'unknown';
           let clean = p.replace(/\D/g, ''); 
           if (clean.startsWith('966')) clean = clean.substring(3);
           if (clean.startsWith('0')) clean = clean.substring(1);
-          return clean || 'unknown';
+          return clean;
         };
+
+        wallets?.forEach(w => {
+            if(w.phone) walletMap[normalizePhone(w.phone)] = w.points_balance;
+        });
+
+        const map = {};
 
         orders?.forEach((order) => {
           const cleanPhone = normalizePhone(order.phone);
@@ -76,9 +87,11 @@ export default function Customers() {
               phone: order.phone,
               cleanPhone: cleanPhone,
               orderIds: new Set(),
-              totalSpent: 0, // إجمالي المطلوب
-              totalPaid: 0,  // إجمالي المدفوع
+              totalSpent: 0,
+              totalPaid: 0,
+              totalDebt: 0, // مجموع الديون
               lastOrderDate: order.created_at,
+              walletBalance: walletMap[cleanPhone] || 0,
               isVip: false
             };
           }
@@ -86,7 +99,12 @@ export default function Customers() {
           if (!map[key].orderIds.has(order.id)) {
             map[key].orderIds.add(order.id);
             map[key].totalSpent += Number(order.total_amount || 0);
-            map[key].totalPaid += Number(order.deposit || 0); // جمع المدفوعات
+            const deposit = Number(order.deposit || 0);
+            map[key].totalPaid += deposit;
+            
+            // حساب المبلغ المتبقي (الدين) لهذا الطلب
+            const remaining = Math.max(0, (Number(order.total_amount) || 0) - deposit);
+            map[key].totalDebt += remaining; // تجميع الديون
             
             if (new Date(order.created_at) > new Date(map[key].lastOrderDate)) {
               map[key].lastOrderDate = order.created_at;
@@ -95,13 +113,21 @@ export default function Customers() {
         });
 
         const result = Object.values(map).map(c => {
-          // الحساب الديناميكي للرصيد: (المدفوع - المطلوب)
-          const rawBalance = c.totalPaid - c.totalSpent;
+          // --- التعديل الجوهري هنا ---
+          // المنطق الجديد:
+          // 1. إذا كان عليه دين (totalDebt > 0)، نعرض الدين بالسالب (الأولوية للديون).
+          // 2. إذا لم يكن عليه دين، نعرض رصيد المحفظة بالموجب.
           
+          let netBalance = 0;
+          if (c.totalDebt > 0) {
+            netBalance = -c.totalDebt; // يظهر بالسالب (أحمر)
+          } else {
+            netBalance = c.walletBalance; // يظهر بالموجب (أخضر/بنفسجي)
+          }
+
           return {
             ...c,
-            // إذا كان الناتج موجباً فهو رصيد له، وإذا سالب فهو مديونية عليه
-            walletBalance: rawBalance, 
+            netBalance: netBalance, 
             totalOrders: c.orderIds.size,
             isVip: c.orderIds.size >= 3 || c.totalSpent >= 500 
           };
@@ -152,7 +178,7 @@ export default function Customers() {
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <User className="text-fuchsia-600"/> سجل ولاء العملاء
           </h1>
-          <p className="text-sm text-slate-500 mt-1">قائمة بجميع العملاء مع تحليل مالي دقيق</p>
+          <p className="text-sm text-slate-500 mt-1">قائمة بجميع العملاء مع تحليل مالي (رصيد وديون)</p>
         </div>
         
         <div className="flex gap-3">
@@ -186,8 +212,8 @@ export default function Customers() {
           <button onClick={() => setSortConfig({ key: 'totalOrders', direction: 'desc' })} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortConfig.key === 'totalOrders' ? 'bg-blue-50 text-blue-700' : 'bg-slate-50'}`}>
             <ShoppingBag size={14} className="inline ml-1"/> الأكثر طلباً
           </button>
-          <button onClick={() => setSortConfig({ key: 'walletBalance', direction: 'desc' })} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortConfig.key === 'walletBalance' ? 'bg-violet-50 text-violet-700' : 'bg-slate-50'}`}>
-            <Wallet size={14} className="inline ml-1"/> أعلى رصيد
+          <button onClick={() => setSortConfig({ key: 'netBalance', direction: 'desc' })} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortConfig.key === 'netBalance' ? 'bg-violet-50 text-violet-700' : 'bg-slate-50'}`}>
+            <Wallet size={14} className="inline ml-1"/> الرصيد / الديون
           </button>
         </div>
       </div>
@@ -203,7 +229,7 @@ export default function Customers() {
               <thead className="bg-slate-50/80 border-b border-slate-100">
                 <tr>
                   <SortableHeader label="العميل" sortKey="name" />
-                  <SortableHeader label="رصيد المحفظة" sortKey="walletBalance" />
+                  <SortableHeader label="صافي الرصيد" sortKey="netBalance" />
                   <SortableHeader label="الطلبات" sortKey="totalOrders" />
                   <SortableHeader label="الإجمالي" sortKey="totalSpent" />
                   <SortableHeader label="آخر زيارة" sortKey="lastOrderDate" />
@@ -230,18 +256,18 @@ export default function Customers() {
                       </div>
                     </td>
 
-                    {/* رصيد المحفظة (محسوب ديناميكياً) */}
+                    {/* صافي الرصيد (الرصيد - الديون) */}
                     <td className="px-6 py-5">
-                      {customer.walletBalance > 0 ? (
+                      {customer.netBalance > 0 ? (
                         <span className="bg-violet-50 text-violet-700 px-3 py-1 rounded-lg text-xs font-bold flex items-center w-fit gap-1">
-                          <Wallet size={12}/> {customer.walletBalance.toFixed(1)} ريال
+                          <Wallet size={12}/> {customer.netBalance.toFixed(1)} ريال
                         </span>
-                      ) : customer.walletBalance < 0 ? (
+                      ) : customer.netBalance < 0 ? (
                         <span className="bg-red-50 text-red-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center w-fit gap-1 dir-ltr">
-                           {Math.abs(customer.walletBalance).toFixed(1)}- ريال
+                           {Math.abs(customer.netBalance).toFixed(1)}- ريال
                         </span>
                       ) : (
-                        <span className="text-slate-400 text-xs font-bold px-2">-</span>
+                        <span className="text-slate-300 text-xs font-bold px-2">0.00</span>
                       )}
                     </td>
 
