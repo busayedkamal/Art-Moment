@@ -23,7 +23,7 @@ export default function NewOrder() {
 
   const POINTS_EXCHANGE_RATE = 10; 
   // قائمة المدن للاختيار السريع
-  const CITIES = ['الهفوف', 'المبرز', 'القرى', 'الدمام', 'الخبر', 'الرياض', 'أخرى'];
+  const CITIES = ['الهفوف', 'المبرز', 'القرى', 'الدمام', 'الخبر', 'الرميلة', 'أخرى'];
 
   const [couponCode, setCouponCode] = useState('');
   const [couponData, setCouponData] = useState(null); 

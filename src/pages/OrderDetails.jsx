@@ -24,7 +24,7 @@ export default function OrderDetails() {
     album: 1.00
   };
 
-  const CITIES = ['الهفوف', 'المبرز', 'القرى', 'الدمام', 'الخبر', 'الرياض', 'أخرى'];
+  const CITIES = ['الهفوف', 'المبرز', 'القرى', 'الدمام', 'الخبر', 'الرميلة', 'أخرى'];
 
   const [payments, setPayments] = useState([]);
   const [transactions, setTransactions] = useState([]);

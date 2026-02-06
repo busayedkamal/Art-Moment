@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Search, Package, Clock, CheckCircle, Truck, 
   AlertCircle, Banknote, Wallet, Image, Home, FileText, 
-  BookOpen, MapPin, Calendar 
+  BookOpen, Tag, MapPin, Calendar, UserCheck 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo-art-moment.svg';
@@ -13,8 +13,65 @@ export default function TrackOrderPage() {
   const [orderId, setOrderId] = useState('');
   const [order, setOrder] = useState(null);
   const [payments, setPayments] = useState([]); 
+  // حالة جديدة لبيانات العميل المالية
+  const [customerStats, setCustomerStats] = useState({ wallet: 0, debt: 0, net: 0 });
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // دالة توحيد رقم الجوال (مطابقة لما في النظام)
+  const normalizePhone = (raw) => {
+    if (!raw) return '';
+    let p = String(raw).replace(/\D/g, '');
+    if (p.startsWith('966')) p = p.slice(3);
+    if (p.startsWith('0')) p = p.slice(1);
+    return p;
+  };
+
+  // دالة جلب البيانات المالية للعميل (محفظة + ديون سابقة)
+  const fetchCustomerStats = async (phone) => {
+    if (!phone) return;
+    const cleanPhone = normalizePhone(phone);
+
+    try {
+      // 1. جلب رصيد المحفظة الفعلي
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('points_balance')
+        .eq('phone', cleanPhone)
+        .maybeSingle();
+
+      const walletBalance = Number(wallet?.points_balance || 0);
+
+      // 2. جلب كل طلبات العميل لحساب إجمالي الديون (وليس فقط الطلب الحالي)
+      // نبحث بالرقم النظيف لضمان الدقة
+      const { data: allOrders } = await supabase
+        .from('orders')
+        .select('total_amount, deposit, phone')
+        .order('created_at', { ascending: false });
+
+      // تصفية الطلبات الخاصة بهذا العميل يدوياً لضمان تطابق الرقم
+      let totalDebt = 0;
+      if (allOrders) {
+        allOrders.forEach(o => {
+          if (normalizePhone(o.phone) === cleanPhone) {
+            const debt = Number(o.total_amount || 0) - Number(o.deposit || 0);
+            if (debt > 0) totalDebt += debt;
+          }
+        });
+      }
+
+      // 3. حساب الصافي (نفس منطق صفحة العملاء)
+      setCustomerStats({
+        wallet: walletBalance,
+        debt: totalDebt,
+        net: walletBalance - totalDebt
+      });
+
+    } catch (e) {
+      console.error("Error fetching customer stats:", e);
+    }
+  };
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -23,8 +80,10 @@ export default function TrackOrderPage() {
     setLoading(true);
     setError(null);
     setOrder(null);
+    setCustomerStats({ wallet: 0, debt: 0, net: 0 }); // تصفير الحالة
 
     try {
+      // 1. جلب الطلب
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('*')
@@ -34,6 +93,7 @@ export default function TrackOrderPage() {
 
       if (orderError) throw orderError;
 
+      // 2. جلب المدفوعات
       const { data: paymentsData } = await supabase
         .from('order_payments')
         .select('*')
@@ -42,6 +102,11 @@ export default function TrackOrderPage() {
 
       setOrder(orderData);
       setPayments(paymentsData || []);
+
+      // 3. جلب بيانات المحفظة والديون لهذا العميل
+      if (orderData.phone) {
+        await fetchCustomerStats(orderData.phone);
+      }
 
     } catch (err) {
       setError('لم يتم العثور على طلب بهذا الرقم، يرجى التأكد والمحاولة مجدداً.');
@@ -56,9 +121,8 @@ export default function TrackOrderPage() {
   };
 
   const currentStep = order ? getStepStatus(order.status) : 0;
-  const remaining = order ? (order.total_amount - order.deposit) : 0;
+  const remaining = order ? (Number(order.total_amount || 0) - Number(order.deposit || 0)) : 0;
 
-  // دالة مساعدة لتنسيق التاريخ بشكل موحد (عربي - سعودي)
   const formatDate = (dateString) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -69,19 +133,13 @@ export default function TrackOrderPage() {
     });
   };
 
-  // --- منطق حساب المدة (محدث وآمن) ---
   let deliveryDuration = null;
   if (order?.status === 'delivered' && order.date_new && order.date_delivered) {
     const start = new Date(order.date_new);
     const end = new Date(order.date_delivered);
-
-    // التحقق المنطقي: يجب أن يكون التسليم بعد أو في نفس وقت الإنشاء
     if (end >= start) {
       const diffTime = end - start;
-      // نحسب الأيام (أي جزء من اليوم يعتبر يوماً إضافياً)
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      // الحد الأدنى هو يوم واحد (حتى لو تم التسليم في نفس اللحظة)
       deliveryDuration = diffDays > 0 ? diffDays : 1;
     }
   }
@@ -210,38 +268,7 @@ export default function TrackOrderPage() {
                 </div>
               </div>
 
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 mb-4">
-                <h3 className="text-xs font-bold text-slate-400 mb-3 flex items-center gap-1">
-                  <Image size={14}/> تفاصيل الطلب
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
-                    <span className="text-[10px] text-slate-400 block mb-1">صور 4×6</span>
-                    <span className="font-bold text-slate-900 text-lg">{order.photo_4x6_qty}</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
-                    <span className="text-[10px] text-slate-400 block mb-1">صور A4</span>
-                    <span className="font-bold text-slate-900 text-lg">{order.a4_qty}</span>
-                  </div>
-                </div>
-
-                {order.album_qty > 0 && (
-                  <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-3">
-                    <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
-                      <div className="flex items-center justify-center gap-1 text-[10px] text-slate-400 mb-1">
-                        <BookOpen size={12}/> عدد الألبومات
-                      </div>
-                      <span className="font-bold text-slate-900 text-lg">{order.album_qty}</span>
-                    </div>
-                    <div className="bg-white p-3 rounded-xl border border-slate-100 text-center">
-                      <span className="text-[10px] text-slate-400 block mb-1">سعر الألبوم</span>
-                      <span className="font-bold text-slate-900 text-lg">{order.album_price}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
+              {/* ملاحظات */}
               {order.notes && (
                 <div className="bg-yellow-50 rounded-2xl p-5 border border-yellow-100 mb-4">
                   <h3 className="text-xs font-bold text-yellow-600 mb-2 flex items-center gap-1">
@@ -253,14 +280,38 @@ export default function TrackOrderPage() {
                 </div>
               )}
 
+              {/* القسم المالي */}
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+                
+                {/* --- الجديد: ملخص حساب العميل (محفظة + ديون) --- */}
+                <div className="mb-6 bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <UserCheck size={16} className="text-fuchsia-600"/> ملخص حسابك (لكل الطلبات)
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-slate-50 rounded-lg p-2">
+                      <span className="text-[10px] text-slate-400 block mb-1">رصيد المحفظة</span>
+                      <span className="font-bold text-emerald-600 dir-ltr">{customerStats.wallet.toFixed(2)}</span>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-2">
+                      <span className="text-[10px] text-slate-400 block mb-1">إجمالي الديون</span>
+                      <span className="font-bold text-red-600 dir-ltr">{customerStats.debt.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <div className={`mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-sm font-bold ${customerStats.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <span>الصافي النهائي:</span>
+                    <span className="dir-ltr">{customerStats.net.toFixed(2)} ر.س</span>
+                  </div>
+                </div>
+                {/* ----------------------------------------------- */}
+
                 <h3 className="text-xs font-bold text-slate-400 mb-4 flex items-center gap-1">
-                  <Banknote size={14}/> تفاصيل الدفع
+                  <Banknote size={14}/> تفاصيل هذا الطلب
                 </h3>
 
                 <div className="flex justify-between items-center text-sm text-slate-600 mb-2 px-1">
                   <span>قيمة المنتجات</span>
-                  <span className="font-bold">{order.subtotal?.toFixed(2) || '0.00'}</span>
+                  <span className="font-bold">{Number(order.subtotal || 0).toFixed(2)}</span>
                 </div>
 
                 {order.delivery_fee > 0 && (
@@ -270,16 +321,12 @@ export default function TrackOrderPage() {
                   </div>
                 )}
 
-                {/* الكود الجديد: حساب وعرض الخصم/رصيد المحفظة */}
                 {(() => {
-                    const theoreticalTotal = (order.subtotal || 0) + (order.delivery_fee || 0);
-                    const impliedDiscount = theoreticalTotal - order.total_amount;
-                    
+                    const theoreticalTotal = Number(order.subtotal || 0) + Number(order.delivery_fee || 0);
+                    const impliedDiscount = theoreticalTotal - Number(order.total_amount || 0);
                     if (impliedDiscount > 0.01) return (
-                        <div className="flex justify-between items-center text-sm text-fuchsia-600 mb-2 px-1 bg-fuchsia-50 p-2 rounded-lg">
-                            <span className="flex items-center gap-1 font-bold">
-                                <Wallet size={14}/> تم الدفع من المحفظة / خصم نقاط الولاء
-                            </span>
+                        <div className="flex justify-between items-center text-sm text-red-500 mb-2 px-1">
+                            <span className="flex items-center gap-1"><Tag size={12}/> خصم / محفظة</span>
                             <span className="font-bold">-{impliedDiscount.toFixed(2)}</span>
                         </div>
                     );

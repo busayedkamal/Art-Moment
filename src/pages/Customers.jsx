@@ -237,7 +237,7 @@ export default function Customers() {
               <th className="px-6 py-3 text-right">الهاتف</th>
               <th className="px-6 py-3 text-center">الطلبات</th>
               <th className="px-6 py-3 text-right">المبيعات</th>
-              <th className="px-6 py-3 text-right">صافي الرصيد</th>
+              <th className="px-6 py-3 text-right">رصيد المحفظة</th>
               <th className="px-6 py-3 text-right">آخر زيارة</th>
               <th className="px-6 py-3 text-right">تواصل</th>
             </tr>

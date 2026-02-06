@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { 
   Plus, Search, Filter, ChevronRight, Loader2, FileText, 
-  ArrowUpDown, ArrowUp, ArrowDown, Wallet, Play 
+  ArrowUpDown, ArrowUp, ArrowDown 
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
@@ -15,7 +15,6 @@ export default function Orders() {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
-  const [isProcessingLoyalty, setIsProcessingLoyalty] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -38,106 +37,7 @@ export default function Orders() {
     }
   }
 
-  // --- دالة تطبيق النقاط بأثر رجعي (المنطق الجديد) ---
-  const processRetroactiveLoyalty = async () => {
-    if(!window.confirm('⚠️ تنبيه هام:\n\nسيقوم النظام بفحص جميع الطلبات السابقة.\n- سيتم تخطي أي طلب تمت معالجته سابقاً.\n- سيتم حساب النقاط للصور والألبومات للطلبات غير المعالجة فقط.\n\nهل تود الاستمرار؟')) return;
-    
-    setIsProcessingLoyalty(true);
-    let processedCount = 0;
-    let skippedCount = 0; // تم تخطيه لأنه معالج سابقاً
-    let zeroRewardCount = 0; // تم تخطيه لأن قيمته 0
-    let errorCount = 0;
-
-    try {
-      // 1. جلب كل الطلبات
-      const { data: allOrders } = await supabase
-        .from('orders')
-        .select('*');
-
-      // 2. إعداد قيم النقاط
-      const RATE_4x6 = 0.05;  // 100 صورة = 5 ريال (يعني الصورة بـ 0.05)
-      const RATE_A4 = 1.00;   // الصورة بـ 1 ريال
-      const RATE_ALBUM = 1.00; // الألبوم بـ 1 ريال
-
-      for (const order of allOrders) {
-        // [خطوة مهمة جداً] التحقق الفردي لمنع التكرار نهائياً
-        const { data: existingTrans } = await supabase
-          .from('wallet_transactions')
-          .select('id')
-          .eq('order_id', order.id)
-          .eq('type', 'loyalty_earn')
-          .maybeSingle();
-
-        // إذا وجدنا عملية سابقة لهذا الطلب، نتجاوزه فوراً
-        if (existingTrans) {
-          skippedCount++;
-          continue;
-        }
-
-        const cleanPhone = order.phone ? order.phone.replace(/\D/g, '') : '';
-        if (!cleanPhone) {
-            continue; // تجاوز بدون رقم جوال
-        }
-
-        // المعادلة الحسابية الصحيحة
-        // نستخدم Number() لضمان أن القيم أرقام وليست نصوص
-        const qty4x6 = Number(order.photo_4x6_qty) || 0;
-        const qtyA4 = Number(order.a4_qty) || 0;
-        const qtyAlbum = Number(order.album_qty) || 0;
-
-        const reward = (qty4x6 * RATE_4x6) + (qtyA4 * RATE_A4) + (qtyAlbum * RATE_ALBUM);
-        
-        // التحقق أن العميل لم يحصل على خصم يدوي (اختياري حسب سياستك، هنا سأمنح النقاط للجميع ما عدا من أخذ خصماً كبيراً يصفر الفاتورة مثلاً)
-        // إذا كنت تريد منع النقاط لمن أخذ خصم، ألغِ التعليق عن السطر التالي:
-        // if (order.manual_discount > 0) { zeroRewardCount++; continue; }
-
-        if (reward > 0) {
-          try {
-            // البحث عن المحفظة
-            let { data: wallet } = await supabase.from('wallets').select('id, points_balance').eq('phone', cleanPhone).maybeSingle();
-            let walletId = wallet?.id;
-
-            // إنشاء محفظة إن لم توجد
-            if (!wallet) {
-                const { data: newWallet } = await supabase.from('wallets').insert([{ phone: cleanPhone, points_balance: 0 }]).select().single();
-                walletId = newWallet.id;
-                wallet = newWallet;
-            }
-
-            // تحديث الرصيد
-            await supabase.from('wallets').update({ 
-                points_balance: (Number(wallet.points_balance) || 0) + reward 
-            }).eq('id', walletId);
-
-            // تسجيل العملية لضمان عدم التكرار مستقبلاً
-            await supabase.from('wallet_transactions').insert({
-                wallet_id: walletId,
-                order_id: order.id,
-                type: 'loyalty_earn', // هذا النوع هو المفتاح لمنع التكرار
-                amount_value: reward,
-                points: reward, // نخزن نفس القيمة في النقاط للتوافق
-                created_at: new Date().toISOString()
-            });
-            processedCount++;
-          } catch (e) {
-            console.error(`Error processing order ${order.id}:`, e);
-            errorCount++;
-          }
-        } else {
-            zeroRewardCount++;
-        }
-      }
-
-      alert(`✅ اكتملت العملية!\n\n- تمت إضافة رصيد لـ: ${processedCount} طلب جديد\n- تم التخطي (معالج سابقاً): ${skippedCount} طلب\n- لا يستحقون نقاط (0): ${zeroRewardCount}\n- أخطاء: ${errorCount}`);
-
-    } catch (err) {
-      alert('حدث خطأ غير متوقع: ' + err.message);
-    } finally {
-      setIsProcessingLoyalty(false);
-    }
-  };
-
-  const filteredOrders = useMemo(() => {
+   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const term = searchTerm.toLowerCase();
       return (
@@ -223,7 +123,6 @@ export default function Orders() {
         </div>
         <div className="flex gap-2">
             <button onClick={() => setSortConfig({ key: 'remaining', direction: 'desc' })} className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-xs font-bold ${sortConfig.key === 'remaining' ? 'bg-red-50 text-red-600 border-red-200 ring-2 ring-red-100' : 'text-slate-600 hover:bg-slate-50 border-slate-200'}`}><Filter size={16} /><span>المديونيات</span></button>
-            <button onClick={processRetroactiveLoyalty} disabled={isProcessingLoyalty} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all text-xs font-bold" title="تطبيق النقاط على الطلبات القديمة">{isProcessingLoyalty ? <Loader2 className="animate-spin" size={16}/> : <Play size={16}/>}<span>معالجة النقاط</span></button>
         </div>
       </div>
 

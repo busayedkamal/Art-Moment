@@ -228,28 +228,88 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        
+        {/* بطاقة دراسة الجدوى الحية (تم الاستبدال هنا) */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2"><Crown size={18} className="text-amber-500"/> المنتجات الأكثر ربحية</h3>
-            <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-1 rounded-lg">صافي الربح</span>
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Activity size={18} className="text-violet-600"/> دراسة الجدوى الحية
+            </h3>
+            <span className="text-[10px] bg-violet-50 text-violet-600 px-2 py-1 rounded-lg border border-violet-100">
+              تحليل فوري
+            </span>
           </div>
-          <div className="space-y-4">
-            {analytics.profitabilityData.map((item, idx) => (
-              <div key={item.name}>
-                <div className="flex justify-between text-sm font-bold mb-1">
-                  <span className="text-slate-700">{item.name}</span>
-                  <span className="text-emerald-600">+{item.profit.toFixed(0)} ر.س</span>
+
+          <div className="space-y-6">
+            {/* 1. كفاءة التشغيل */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-[10px] text-slate-500 mb-1">متوسط قيمة الطلب (AOV)</p>
+                <p className="text-lg font-bold text-slate-700">
+                  {analytics.totals.avgOrderValue} <span className="text-xs font-normal">ر.س</span>
+                </p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-[10px] text-slate-500 mb-1">صافي الربح لكل طلب</p>
+                <p className={`text-lg font-bold ${analytics.totals.netProfit > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {Math.round(analytics.totals.netProfit / (analytics.totals.totalOrders || 1))} <span className="text-xs font-normal">ر.س</span>
+                </p>
+              </div>
+            </div>
+
+            {/* 2. مؤشر الاستدامة (نقطة التعادل) */}
+            <div>
+              <div className="flex justify-between text-xs mb-2">
+                <span className="text-slate-600 font-bold">تغطية المصروفات</span>
+                <span className="text-slate-400">
+                  {Math.round((analytics.totals.totalRevenue / (analytics.totals.totalExpenses || 1)) * 100)}%
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-1000 ${
+                    analytics.totals.netProfit >= 0 ? 'bg-emerald-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.min(100, (analytics.totals.totalRevenue / (analytics.totals.totalExpenses || 1)) * 100)}%` }}
+                ></div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1.5">
+                {analytics.totals.netProfit >= 0 
+                  ? "✅ المشروع يغطي تكاليفه ويحقق أرباحاً." 
+                  : "⚠️ الدخل الحالي لا يغطي كامل المصروفات."}
+              </p>
+            </div>
+
+            {/* 3. معدل النمو (مقارنة الشهر الحالي بالماضي) */}
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  analytics.monthlyData.length > 1 && 
+                  analytics.monthlyData[analytics.monthlyData.length-1].revenue >= analytics.monthlyData[analytics.monthlyData.length-2].revenue 
+                    ? 'bg-emerald-100 text-emerald-600' 
+                    : 'bg-red-100 text-red-600'
+                }`}>
+                  {analytics.monthlyData.length > 1 && 
+                   analytics.monthlyData[analytics.monthlyData.length-1].revenue >= analytics.monthlyData[analytics.monthlyData.length-2].revenue 
+                    ? <TrendingUp size={16}/> 
+                    : <TrendingDown size={16}/>
+                  }
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                  <div className="bg-amber-400 h-full rounded-full transition-all duration-1000" style={{ width: `${(item.profit / analytics.profitabilityData[0].profit) * 100}%` }}></div>
-                </div>
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                  <span>المبيعات: {item.sales}</span>
-                  <span>الدخل: {item.revenue}</span>
+                <div>
+                  <p className="text-xs font-bold text-slate-700">مؤشر النمو الشهري</p>
+                  <p className="text-[10px] text-slate-400">
+                    {analytics.monthlyData.length > 1 
+                      ? `مقارنة بالشهر السابق (${analytics.monthlyData[analytics.monthlyData.length-2].name})`
+                      : "لا توجد بيانات كافية للمقارنة"
+                    }
+                  </p>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
+          
+          {/* خلفية جمالية خفيفة */}
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-violet-500/5 rounded-full blur-2xl"></div>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
