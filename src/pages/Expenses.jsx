@@ -193,39 +193,39 @@ export default function Expenses() {
     <div className="max-w-5xl mx-auto space-y-8 pb-10">
       
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-slate-900 text-white rounded-xl"><Wallet size={24}/></div>
+        <div className="p-3 bg-[#4A4A4A] text-white rounded-xl"><Wallet size={24}/></div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">التقارير المالية</h1>
-          <p className="text-sm text-slate-500">متابعة الأرباح والمصروفات.</p>
+          <h1 className="text-2xl font-bold text-[#4A4A4A]">التقارير المالية</h1>
+          <p className="text-sm text-[#4A4A4A]/70">متابعة الأرباح والمصروفات.</p>
         </div>
       </div>
 
       {/* الملخص المالي */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-fuchsia-50 rounded-xl text-fuchsia-600"><TrendingUp size={24}/></div>
-            <span className="text-xs font-bold bg-fuchsia-100 text-fuchsia-700 px-2 py-1 rounded-lg">دخل</span>
+            <div className="p-3 bg-[#C5A059]/10 rounded-xl text-[#C5A059]"><TrendingUp size={24}/></div>
+            <span className="text-xs font-bold bg-[#C5A059]/15 text-[#C5A059] px-2 py-1 rounded-lg">دخل</span>
           </div>
-          <p className="text-slate-500 text-sm mb-1">إجمالي المبيعات</p>
-          <h3 className="text-3xl font-black text-slate-900">{stats.totalSales.toLocaleString()} <span className="text-sm font-medium text-slate-400">ر.س</span></h3>
+          <p className="text-[#4A4A4A]/70 text-sm mb-1">إجمالي المبيعات</p>
+          <h3 className="text-3xl font-black text-[#4A4A4A]">{stats.totalSales.toLocaleString()} <span className="text-sm font-medium text-[#4A4A4A]/55">ر.س</span></h3>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-red-50 rounded-xl text-red-600"><TrendingDown size={24}/></div>
             <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded-lg">خروج</span>
           </div>
-          <p className="text-slate-500 text-sm mb-1">إجمالي المصروفات</p>
-          <h3 className="text-3xl font-black text-slate-900">{stats.totalExpenses.toLocaleString()} <span className="text-sm font-medium text-slate-400">ر.س</span></h3>
+          <p className="text-[#4A4A4A]/70 text-sm mb-1">إجمالي المصروفات</p>
+          <h3 className="text-3xl font-black text-[#4A4A4A]">{stats.totalExpenses.toLocaleString()} <span className="text-sm font-medium text-[#4A4A4A]/55">ر.س</span></h3>
         </div>
 
-        <div className={`p-6 rounded-2xl border shadow-sm text-white ${stats.netProfit >= 0 ? 'bg-slate-900 border-slate-800' : 'bg-red-600 border-red-700'}`}>
+        <div className={`p-6 rounded-2xl border shadow-sm text-white ${stats.netProfit >= 0 ? 'bg-[#4A4A4A] border-white/10' : 'bg-red-600 border-red-700'}`}>
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-white/10 rounded-xl"><DollarSign size={24}/></div>
+            <div className="p-3 bg-white/10 rounded-xl"><DollarSign size={24} className="text-[#C5A059]"/></div>
             <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">الصافي</span>
           </div>
-          <p className="text-slate-300 text-sm mb-1">صافي الربح الفعلي</p>
+          <p className="text-white/70 text-sm mb-1">صافي الربح الفعلي</p>
           <h3 className="text-3xl font-black">{stats.netProfit.toLocaleString()} <span className="text-sm font-medium opacity-60">ر.س</span></h3>
         </div>
       </div>
@@ -234,27 +234,27 @@ export default function Expenses() {
         
         {/* نموذج الإضافة */}
         <div className="md:col-span-4 h-fit">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-6">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Plus className="text-orange-500"/> تسجيل مصروف جديد
+          <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm sticky top-6">
+            <h3 className="font-bold text-[#4A4A4A] mb-4 flex items-center gap-2">
+              <Plus className="text-[#C5A059]"/> تسجيل مصروف جديد
             </h3>
             <form onSubmit={handleAddExpense} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">تاريخ المصروف</label>
+                <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">تاريخ المصروف</label>
                 <input 
                   type="date" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500"
+                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA]"
                   value={newExpense.date}
                   onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">بيان المصروف</label>
+                <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">بيان المصروف</label>
                 <input 
                   type="text" 
                   list="expense-titles" // ربط بالقائمة المقترحة
                   placeholder="مثلاً: حبر طابعة، إيجار..." 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500"
+                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA]"
                   value={newExpense.title}
                   onChange={(e) => setNewExpense({...newExpense, title: e.target.value})}
                 />
@@ -266,16 +266,16 @@ export default function Expenses() {
                 </datalist>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">المبلغ (ر.س)</label>
+                <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">المبلغ (ر.س)</label>
                 <input 
                   type="number" 
                   placeholder="0.00" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500 font-bold"
+                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] font-bold"
                   value={newExpense.amount}
                   onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
                 />
               </div>
-              <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 flex justify-center items-center gap-2">
+              <button type="submit" className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#3F3F3F] flex justify-center items-center gap-2">
                 تسجيل
               </button>
             </form>
@@ -284,43 +284,43 @@ export default function Expenses() {
 
         {/* السجل والقائمة */}
         <div className="md:col-span-8">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 shadow-sm overflow-hidden">
             
             {/* شريط الأدوات والفرز */}
-            <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="p-4 border-b border-[#D9A3AA]/10 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-slate-800 flex items-center gap-2"><FileText className="text-blue-500" size={20}/> سجل المصروفات</h3>
-                <span className="text-xs text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded">{expenses.length} عملية</span>
+                <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2"><FileText className="text-[#D9A3AA]" size={20}/> سجل المصروفات</h3>
+                <span className="text-xs text-[#4A4A4A]/55 font-mono bg-[#F8F5F2] px-2 py-1 rounded">{expenses.length} عملية</span>
               </div>
               
-              <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl">
+              <div className="flex items-center gap-2 bg-[#F8F5F2] p-1 rounded-xl">
                 <button 
                   onClick={() => setSortBy('date')} 
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'date' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'date' ? 'bg-white shadow text-[#4A4A4A]' : 'text-[#4A4A4A]/70 hover:text-[#4A4A4A]/80'}`}
                 >
                   <Calendar size={12}/> التاريخ
                 </button>
                 <button 
                   onClick={() => setSortBy('amount')} 
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'amount' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'amount' ? 'bg-white shadow text-[#4A4A4A]' : 'text-[#4A4A4A]/70 hover:text-[#4A4A4A]/80'}`}
                 >
                   <ArrowUpDown size={12}/> المبلغ
                 </button>
                 <button 
                   onClick={() => setSortBy('title')} 
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'title' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'title' ? 'bg-white shadow text-[#4A4A4A]' : 'text-[#4A4A4A]/70 hover:text-[#4A4A4A]/80'}`}
                 >
                   <Filter size={12}/> الاسم
                 </button>
               </div>
             </div>
             
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-[#D9A3AA]/10">
               {sortedExpenses.length === 0 ? (
-                <div className="p-10 text-center text-slate-400">لا توجد مصروفات مسجلة</div>
+                <div className="p-10 text-center text-[#4A4A4A]/55">لا توجد مصروفات مسجلة</div>
               ) : (
                 sortedExpenses.map((item) => (
-                  <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors group">
+                  <div key={item.id} className="p-4 hover:bg-[#F8F5F2] transition-colors group">
                     
                     {/* وضع التعديل */}
                     {editingId === item.id ? (
@@ -329,26 +329,26 @@ export default function Expenses() {
                           type="date" 
                           value={editFormData.date} 
                           onChange={(e) => setEditFormData({...editFormData, date: e.target.value})}
-                          className="w-full sm:w-32 bg-white border border-blue-300 rounded-lg px-2 py-1.5 text-sm outline-none"
+                          className="w-full sm:w-32 bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm outline-none"
                         />
                         <input 
                           type="text" 
                           value={editFormData.title} 
                           list="expense-titles" // استخدام نفس قائمة الاقتراحات
                           onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
-                          className="flex-1 w-full bg-white border border-blue-300 rounded-lg px-2 py-1.5 text-sm outline-none"
+                          className="flex-1 w-full bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm outline-none"
                           placeholder="البيان"
                         />
                         <input 
                           type="number" 
                           value={editFormData.amount} 
                           onChange={(e) => setEditFormData({...editFormData, amount: e.target.value})}
-                          className="w-full sm:w-24 bg-white border border-blue-300 rounded-lg px-2 py-1.5 text-sm font-bold text-left outline-none"
+                          className="w-full sm:w-24 bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm font-bold text-left outline-none"
                           placeholder="المبلغ"
                         />
                         <div className="flex gap-1">
-                          <button onClick={() => saveEdit(item.id)} className="p-2 bg-fuchsia-500 text-white rounded-lg hover:bg-gradient-to-b from-fuchsia-600 to-purple-600"><Check size={16}/></button>
-                          <button onClick={cancelEdit} className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"><X size={16}/></button>
+                          <button onClick={() => saveEdit(item.id)} className="p-2 bg-[#D9A3AA] text-white rounded-lg hover:bg-[#C5A059]"><Check size={16}/></button>
+                          <button onClick={cancelEdit} className="p-2 bg-[#F8F5F2] text-[#4A4A4A]/75 rounded-lg hover:bg-white/80"><X size={16}/></button>
                         </div>
                       </div>
                     ) : (
@@ -359,27 +359,27 @@ export default function Expenses() {
                             <TrendingDown size={18}/>
                           </div>
                           <div>
-                            <p className="font-bold text-slate-800">{item.title}</p>
-                            <p className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                            <p className="font-bold text-[#4A4A4A]">{item.title}</p>
+                            <p className="text-xs text-[#4A4A4A]/55 flex items-center gap-1 font-mono">
                               <Calendar size={10}/> {new Date(item.date || item.created_at).toLocaleDateString('en-GB')}
                             </p>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-4">
-                          <span className="font-bold text-lg text-slate-900">-{item.amount}</span>
+                          <span className="font-bold text-lg text-[#4A4A4A]">-{item.amount}</span>
                           
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               onClick={() => startEdit(item)}
-                              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              className="p-2 text-[#4A4A4A]/55 hover:text-[#D9A3AA] hover:bg-[#D9A3AA]/10 rounded-lg transition-colors"
                               title="تعديل"
                             >
                               <Edit2 size={16}/>
                             </button>
                             <button 
                               onClick={() => handleDelete(item.id, item.amount)}
-                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 text-[#4A4A4A]/55 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="حذف"
                             >
                               <Trash2 size={16}/>

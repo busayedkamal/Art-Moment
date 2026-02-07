@@ -147,15 +147,15 @@ export default function Reports() {
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-  if (loading) return <div className="p-20 text-center"><div className="w-8 h-8 border-4 border-slate-200 border-t-fuchsia-500 rounded-full animate-spin mx-auto"></div><p className="mt-4">جاري تحليل البيانات...</p></div>;
+  if (loading) return <div className="p-20 text-center"><div className="w-8 h-8 border-4 border-[#D9A3AA]/15 border-t-[#D9A3AA] rounded-full animate-spin mx-auto"></div><p className="mt-4">جاري تحليل البيانات...</p></div>;
 
   return (
     <div className="space-y-8 pb-20 max-w-7xl mx-auto">
       
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">التقرير المالي الذكي</h1>
-          <p className="text-slate-500 mt-1">نظرة شاملة على الأداء المالي مع تحليلات ذكية.</p>
+          <h1 className="text-3xl font-bold text-[#4A4A4A]">التقرير المالي الذكي</h1>
+          <p className="text-[#4A4A4A]/60 mt-1">نظرة شاملة على الأداء المالي مع تحليلات ذكية.</p>
         </div>
         <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20">
           <Download size={18} /> طباعة التقرير
@@ -163,35 +163,35 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
-            <div><p className="text-sm text-slate-500 font-medium mb-1">إجمالي الدخل</p><h3 className="text-2xl font-black text-slate-600">{analytics.totals.totalRevenue.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
-            <div className="p-3 bg-fuchsia-50 text-fuchsia-600 rounded-xl"><TrendingUp size={20}/></div>
+            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">إجمالي الدخل</p><h3 className="text-2xl font-black text-[#4A4A4A]/70">{analytics.totals.totalRevenue.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
+            <div className="p-3 bg-[#D9A3AA]/15 text-[#D9A3AA] rounded-xl"><TrendingUp size={20}/></div>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
-            <div><p className="text-sm text-slate-500 font-medium mb-1">إجمالي المصروفات</p><h3 className="text-2xl font-black text-red-500">{analytics.totals.totalExpenses.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
+            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">إجمالي المصروفات</p><h3 className="text-2xl font-black text-red-500">{analytics.totals.totalExpenses.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
             <div className="p-3 bg-red-50 text-red-600 rounded-xl"><TrendingDown size={20}/></div>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
-            <div><p className="text-sm text-slate-500 font-medium mb-1">صافي الربح</p><h3 className={`text-2xl font-black ${analytics.totals.netProfit >= 0 ? 'text-emerald-900' : 'text-red-600'}`}>{analytics.totals.netProfit.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Activity size={20}/></div>
+            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">صافي الربح</p><h3 className={`text-2xl font-black ${analytics.totals.netProfit >= 0 ? 'text-emerald-900' : 'text-red-600'}`}>{analytics.totals.netProfit.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
+            <div className="p-3 bg-[#D9A3AA]/15 text-[#D9A3AA] rounded-xl"><Activity size={20}/></div>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
-            <div><p className="text-sm text-slate-500 font-medium mb-1">هامش الربح</p><h3 className="text-2xl font-black text-purple-600">{analytics.totals.profitMargin}%</h3></div>
-            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><PieIcon size={20}/></div>
+            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">هامش الربح</p><h3 className="text-2xl font-black text-[#C5A059]">{analytics.totals.profitMargin}%</h3></div>
+            <div className="p-3 bg-[#C5A059]/15 text-[#C5A059] rounded-xl"><PieIcon size={20}/></div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6">📈 اتجاهات الدخل والمصروفات</h3>
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
+          <h3 className="font-bold text-[#4A4A4A] mb-6">📈 اتجاهات الدخل والمصروفات</h3>
           <div className="h-72 w-full dir-ltr">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={analytics.monthlyData}>
@@ -209,8 +209,8 @@ export default function Reports() {
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-2">💸 توزيع المصروفات</h3>
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
+          <h3 className="font-bold text-[#4A4A4A] mb-2">💸 توزيع المصروفات</h3>
           <div style={{ width: '100%', height: 300, direction: 'ltr' }}>
             {analytics.expenseData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -222,7 +222,7 @@ export default function Reports() {
                   <Legend verticalAlign="bottom" height={36} iconType="circle"/>
                 </PieChart>
               </ResponsiveContainer>
-            ) : <div className="flex items-center justify-center h-full text-slate-300">لا توجد بيانات</div>}
+            ) : <div className="flex items-center justify-center h-full text-[#4A4A4A]/50">لا توجد بيانات</div>}
           </div>
         </div>
       </div>
@@ -230,12 +230,12 @@ export default function Reports() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* بطاقة دراسة الجدوى الحية (تم الاستبدال هنا) */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm overflow-hidden relative">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-              <Activity size={18} className="text-violet-600"/> دراسة الجدوى الحية
+            <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
+              <Activity size={18} className="text-[#C5A059]"/> دراسة الجدوى الحية
             </h3>
-            <span className="text-[10px] bg-violet-50 text-violet-600 px-2 py-1 rounded-lg border border-violet-100">
+            <span className="text-[10px] bg-[#D9A3AA]/12 text-[#C5A059] px-2 py-1 rounded-lg border border-[#D9A3AA]/20">
               تحليل فوري
             </span>
           </div>
@@ -243,14 +243,14 @@ export default function Reports() {
           <div className="space-y-6">
             {/* 1. كفاءة التشغيل */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-[10px] text-slate-500 mb-1">متوسط قيمة الطلب (AOV)</p>
-                <p className="text-lg font-bold text-slate-700">
+              <div className="p-3 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/10">
+                <p className="text-[10px] text-[#4A4A4A]/60 mb-1">متوسط قيمة الطلب (AOV)</p>
+                <p className="text-lg font-bold text-[#4A4A4A]/80">
                   {analytics.totals.avgOrderValue} <span className="text-xs font-normal">ر.س</span>
                 </p>
               </div>
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-[10px] text-slate-500 mb-1">صافي الربح لكل طلب</p>
+              <div className="p-3 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/10">
+                <p className="text-[10px] text-[#4A4A4A]/60 mb-1">صافي الربح لكل طلب</p>
                 <p className={`text-lg font-bold ${analytics.totals.netProfit > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                   {Math.round(analytics.totals.netProfit / (analytics.totals.totalOrders || 1))} <span className="text-xs font-normal">ر.س</span>
                 </p>
@@ -260,12 +260,12 @@ export default function Reports() {
             {/* 2. مؤشر الاستدامة (نقطة التعادل) */}
             <div>
               <div className="flex justify-between text-xs mb-2">
-                <span className="text-slate-600 font-bold">تغطية المصروفات</span>
-                <span className="text-slate-400">
+                <span className="text-[#4A4A4A]/70 font-bold">تغطية المصروفات</span>
+                <span className="text-[#4A4A4A]/50">
                   {Math.round((analytics.totals.totalRevenue / (analytics.totals.totalExpenses || 1)) * 100)}%
                 </span>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-[#D9A3AA]/15 rounded-full h-2.5 overflow-hidden">
                 <div 
                   className={`h-full rounded-full transition-all duration-1000 ${
                     analytics.totals.netProfit >= 0 ? 'bg-emerald-500' : 'bg-red-500'
@@ -273,7 +273,7 @@ export default function Reports() {
                   style={{ width: `${Math.min(100, (analytics.totals.totalRevenue / (analytics.totals.totalExpenses || 1)) * 100)}%` }}
                 ></div>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1.5">
+              <p className="text-[10px] text-[#4A4A4A]/50 mt-1.5">
                 {analytics.totals.netProfit >= 0 
                   ? "✅ المشروع يغطي تكاليفه ويحقق أرباحاً." 
                   : "⚠️ الدخل الحالي لا يغطي كامل المصروفات."}
@@ -281,7 +281,7 @@ export default function Reports() {
             </div>
 
             {/* 3. معدل النمو (مقارنة الشهر الحالي بالماضي) */}
-            <div className="pt-4 border-t border-slate-100">
+            <div className="pt-4 border-t border-[#D9A3AA]/10">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   analytics.monthlyData.length > 1 && 
@@ -296,8 +296,8 @@ export default function Reports() {
                   }
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-700">مؤشر النمو الشهري</p>
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-xs font-bold text-[#4A4A4A]/80">مؤشر النمو الشهري</p>
+                  <p className="text-[10px] text-[#4A4A4A]/50">
                     {analytics.monthlyData.length > 1 
                       ? `مقارنة بالشهر السابق (${analytics.monthlyData[analytics.monthlyData.length-2].name})`
                       : "لا توجد بيانات كافية للمقارنة"
@@ -309,12 +309,12 @@ export default function Reports() {
           </div>
           
           {/* خلفية جمالية خفيفة */}
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-violet-500/5 rounded-full blur-2xl"></div>
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-[#D9A3AA]/10 rounded-full blur-2xl"></div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2"><MapPin size={18} className="text-red-500"/> المناطق الجغرافية</h3>
+            <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2"><MapPin size={18} className="text-red-500"/> المناطق الجغرافية</h3>
             <span className="text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded-lg">من المصدر</span>
           </div>
           <div className="h-48 w-full dir-ltr">
@@ -331,15 +331,15 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="bg-gradient-to-r from-[#4A4A4A] to-[#343434] rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex-1">
-          <h3 className="text-lg font-bold flex items-center gap-2 mb-2"><Users className="text-indigo-400"/> استعادة العملاء (Churn)</h3>
-          <p className="text-sm text-slate-300 mb-4">هؤلاء العملاء لم يطلبوا منذ 3 أشهر. انسخ كود الخصم وأرسله لهم!</p>
+          <h3 className="text-lg font-bold flex items-center gap-2 mb-2"><Users className="text-[#C5A059]"/> استعادة العملاء (Churn)</h3>
+          <p className="text-sm text-white/80 mb-4">هؤلاء العملاء لم يطلبوا منذ 3 أشهر. انسخ كود الخصم وأرسله لهم!</p>
           <div className="flex flex-wrap gap-2">
             {analytics.churnedList.length > 0 ? analytics.churnedList.map(c => (
               <div key={c.phone} className="bg-white/10 px-3 py-1.5 rounded-lg text-xs flex items-center gap-2">
                 <span>{c.name}</span>
-                <span className="text-slate-400">|</span>
+                <span className="text-[#4A4A4A]/50">|</span>
                 <span className="font-mono">{format(c.date, 'MM/yy')}</span>
               </div>
             )) : <span className="text-sm text-emerald-400 font-bold">رائع! جميع عملائك نشطون 👏</span>}
@@ -347,21 +347,21 @@ export default function Reports() {
         </div>
         <button 
           onClick={() => { navigator.clipboard.writeText("اشتقنا لك! استخدم كود WELCOMEBACK لخصم 15% على طلبك القادم."); toast.success("تم نسخ الرسالة"); }}
-          className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-indigo-50 transition-colors flex items-center gap-2 shadow-lg"
+          className="bg-white text-[#4A4A4A] px-6 py-3 rounded-xl font-bold text-sm hover:bg-[#D9A3AA]/10 transition-colors flex items-center gap-2 shadow-lg"
         >
           <Copy size={16}/> نسخ عرض العودة
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50"><h3 className="font-bold text-slate-700 text-sm">التفاصيل الشهرية</h3></div>
+      <div className="bg-white rounded-2xl border border-[#D9A3AA]/15 overflow-hidden">
+        <div className="p-4 border-b border-[#D9A3AA]/10 bg-[#F8F5F2]/50"><h3 className="font-bold text-[#4A4A4A]/80 text-sm">التفاصيل الشهرية</h3></div>
         <table className="w-full text-right text-sm">
-          <thead className="bg-slate-50 text-slate-500">
+          <thead className="bg-[#F8F5F2] text-[#4A4A4A]/60">
             <tr><th className="px-6 py-4">الشهر</th><th className="px-6 py-4">الدخل</th><th className="px-6 py-4">المصروفات</th><th className="px-6 py-4">الصافي</th><th className="px-6 py-4">الطلبات</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[#D9A3AA]/10">
             {analytics.monthlyData.slice().reverse().map((row) => (
-              <tr key={row.name} className="hover:bg-slate-50">
+              <tr key={row.name} className="hover:bg-[#F8F5F2]">
                 <td className="px-6 py-4 font-bold">{isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name}</td>
                 <td className="px-6 py-4 text-emerald-600">{row.revenue.toLocaleString()}</td>
                 <td className="px-6 py-4 text-red-500">{row.expenses.toLocaleString()}</td>
