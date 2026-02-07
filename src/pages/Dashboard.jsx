@@ -123,22 +123,22 @@ export default function Dashboard() {
   const realNetProfit = stats.totalCashReceived - stats.totalExpenses;
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-10 text-[#4A4A4A]">
       
       {/* البطاقة العلوية (المالية) */}
-      <div className="relative overflow-hidden bg-slate-900 rounded-3xl p-6 text-white shadow-xl">
+      <div className="relative overflow-hidden bg-[#4A4A4A] rounded-3xl p-6 text-white shadow-xl">
         <div className="relative z-10 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
           <div className="mb-2 xl:mb-0">
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">لوحة القيادة 🚀</h1>
-            <p className="text-slate-300 text-sm">
+            <p className="text-white/70 text-sm">
               ملخص الأداء المالي والتشغيلي لمتجرك اليوم.
             </p>
           </div>
           
           <div className="flex flex-wrap gap-3 w-full xl:w-auto justify-start xl:justify-end">
-            <div className="bg-slate-800/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-slate-700 text-center min-w-[140px] flex-1 xl:flex-none">
-               <span className="text-[10px] text-slate-400 block mb-1 font-bold">المصروفات</span>
-               <span className="text-xl font-bold dir-ltr text-slate-200">
+            <div className="bg-[#4A4A4A]/95/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#D9A3AA]/25 text-center min-w-[140px] flex-1 xl:flex-none">
+               <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 font-bold">المصروفات</span>
+               <span className="text-xl font-bold dir-ltr text-white/80">
                  {stats.totalExpenses.toLocaleString()} <span className="text-xs opacity-60">ر.س</span>
                </span>
             </div>
@@ -148,46 +148,46 @@ export default function Dashboard() {
                  {stats.totalDebt.toLocaleString()} <span className="text-xs opacity-60">ر.س</span>
                </span>
             </div>
-            <div className="bg-emerald-500/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-emerald-500/20 text-center min-w-[140px] flex-1 xl:flex-none">
-               <span className="text-[10px] text-emerald-200 block mb-1 font-bold">صافي الربح </span>
-               <span className={`text-xl font-bold dir-ltr ${realNetProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className="bg-[#D9A3AA]/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#D9A3AA]/30 text-center min-w-[140px] flex-1 xl:flex-none">
+               <span className="text-[10px] text-white/70 block mb-1 font-bold">صافي الربح </span>
+               <span className={`text-xl font-bold dir-ltr ${realNetProfit >= 0 ? 'text-[#D9A3AA]' : 'text-red-400'}`}>
                  {realNetProfit.toLocaleString()} <span className="text-xs opacity-60">ر.س</span>
                </span>
             </div>
           </div>
         </div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#D9A3AA]/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
       </div>
 
       {/* الصف الأول: الإحصائيات التشغيلية */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-500 font-bold mb-1">طلبات جديدة</p>
-            <p className="text-2xl font-black text-emerald-600">{stats.newOrders}</p>
+            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">طلبات جديدة</p>
+            <p className="text-2xl font-black text-[#D9A3AA]">{stats.newOrders}</p>
           </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><ShoppingBag size={20} /></div>
+          <div className="p-3 bg-[#D9A3AA]/10 text-[#D9A3AA] rounded-xl"><ShoppingBag size={20} /></div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-500 font-bold mb-1">قيد التنفيذ</p>
-            <p className="text-2xl font-black text-slate-900">{stats.pendingOrders}</p>
+            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">قيد التنفيذ</p>
+            <p className="text-2xl font-black text-[#4A4A4A]">{stats.pendingOrders}</p>
           </div>
           <div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><Clock size={20} /></div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-500 font-bold mb-1">متأخرة</p>
+            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">متأخرة</p>
             <p className="text-2xl font-black text-red-600">{stats.lateOrders}</p>
           </div>
           <div className="p-3 bg-red-50 text-red-600 rounded-xl"><AlertCircle size={20} /></div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-500 font-bold mb-1">مجموع الطلبات</p>
-            <p className="text-2xl font-black text-blue-600">{stats.totalOrders}</p>
+            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">مجموع الطلبات</p>
+            <p className="text-2xl font-black text-[#D9A3AA]">{stats.totalOrders}</p>
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><FileText size={20} /></div>
+          <div className="p-3 bg-[#D9A3AA]/10 text-[#C5A059] rounded-xl"><FileText size={20} /></div>
         </div>
       </div>
 
@@ -195,10 +195,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* رسم المبيعات */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-              <TrendingUp size={18} className="text-emerald-500"/> حركة المبيعات والمصروفات (7 أيام)
+            <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
+              <TrendingUp size={18} className="text-[#D9A3AA]"/> حركة المبيعات والمصروفات (7 أيام)
             </h3>
           </div>
           <div className="h-64 w-full dir-ltr">
@@ -210,15 +210,15 @@ export default function Dashboard() {
                 <RechartsTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
                 <Legend verticalAlign="top" height={36} iconType="circle"/>
                 <Bar dataKey="sales" name="المبيعات" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
-                <Bar dataKey="expenses" name="المصروفات" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="expenses" name="المصروفات" fill="#C5A059" radius={[4, 4, 0, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* --- البطاقة الجديدة: مديونيات (تم التسليم) --- */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col max-h-[350px]">
-          <h3 className="font-bold text-slate-800 w-full mb-4 text-center flex items-center justify-center gap-2">
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex flex-col max-h-[350px]">
+          <h3 className="font-bold text-[#4A4A4A] w-full mb-4 text-center flex items-center justify-center gap-2">
             <Wallet className="text-red-500" size={20}/> مستحقات (تم التسليم)
           </h3>
           
@@ -232,8 +232,8 @@ export default function Dashboard() {
                 return (
                   <div key={order.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100 group hover:border-red-200 transition-colors">
                     <div>
-                      <div className="font-bold text-slate-800 text-sm">{order.customer_name}</div>
-                      <div className="text-[10px] text-slate-500">#{order.id.slice(0, 6)}</div>
+                      <div className="font-bold text-[#4A4A4A] text-sm">{order.customer_name}</div>
+                      <div className="text-[10px] text-[#4A4A4A]/60">#{order.id.slice(0, 6)}</div>
                     </div>
                     
                     <div className="flex items-center gap-3">
@@ -243,7 +243,7 @@ export default function Dashboard() {
                           href={`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`} 
                           target="_blank" 
                           rel="noreferrer"
-                          className="bg-white p-1.5 rounded-lg border border-red-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
+                          className="bg-white p-1.5 rounded-lg border border-red-200 text-[#D9A3AA] hover:bg-[#D9A3AA]/10 hover:border-[#D9A3AA]/40 transition-colors"
                           title="مطالبة عبر واتساب"
                         >
                           <MessageCircle size={16} />
@@ -254,7 +254,7 @@ export default function Dashboard() {
                 );
               })
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-300">
+              <div className="h-full flex flex-col items-center justify-center text-white/70">
                 <span className="text-4xl mb-2">🎉</span>
                 <span className="text-sm">لا توجد مديونيات مستحقة</span>
               </div>
@@ -262,8 +262,8 @@ export default function Dashboard() {
           </div>
           
           {unpaidDelivered.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-slate-100 text-center">
-              <span className="text-xs text-slate-400">إجمالي المستحقات: </span>
+            <div className="mt-4 pt-3 border-t border-[#D9A3AA]/15 text-center">
+              <span className="text-xs text-[#4A4A4A]/50">إجمالي المستحقات: </span>
               <span className="font-bold text-red-600">
                 {unpaidDelivered.reduce((sum, o) => sum + (o.total_amount - (o.deposit || 0)), 0).toLocaleString()} ر.س
               </span>
@@ -274,12 +274,12 @@ export default function Dashboard() {
       </div>
 
       {/* الصف الثالث: الطلبات الجديدة */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2">
-            <ShoppingBag className="text-emerald-500" size={20}/> أحدث الطلبات الجديدة
+      <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-[#D9A3AA]/15 flex justify-between items-center">
+          <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
+            <ShoppingBag className="text-[#D9A3AA]" size={20}/> أحدث الطلبات الجديدة
           </h3>
-          <Link to="/app/orders" className="text-sm text-emerald-600 font-bold hover:underline flex items-center gap-1">
+          <Link to="/app/orders" className="text-sm text-[#D9A3AA] font-bold hover:underline flex items-center gap-1">
             عرض الكل <ChevronRight size={16} className="rotate-180"/>
           </Link>
         </div>
@@ -287,7 +287,7 @@ export default function Dashboard() {
         <div className="overflow-x-auto">
           {recentNewOrders.length > 0 ? (
             <table className="w-full text-right text-sm">
-              <thead className="bg-slate-50 text-slate-500 font-medium">
+              <thead className="bg-[#F8F5F2] text-[#4A4A4A]/60 font-medium">
                 <tr>
                   <th className="px-6 py-4">رقم الطلب</th>
                   <th className="px-6 py-4">العميل</th>
@@ -296,29 +296,29 @@ export default function Dashboard() {
                   <th className="px-6 py-4">الإجراء</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#D9A3AA]/10">
                 {recentNewOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-slate-500">#{order.id.slice(0, 6)}</td>
+                  <tr key={order.id} className="hover:bg-[#F8F5F2] transition-colors">
+                    <td className="px-6 py-4 font-mono text-[#4A4A4A]/60">#{order.id.slice(0, 6)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
+                        <div className="w-8 h-8 rounded-full bg-[#D9A3AA]/15 flex items-center justify-center text-[#D9A3AA] font-bold">
                           <User size={14}/>
                         </div>
                         <div>
-                          <span className="block font-bold text-slate-900">{order.customer_name}</span>
-                          <span className="text-xs text-slate-400">{order.phone}</span>
+                          <span className="block font-bold text-[#4A4A4A]">{order.customer_name}</span>
+                          <span className="text-xs text-[#4A4A4A]/50">{order.phone}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-1 rounded-lg w-fit">
+                      <span className="flex items-center gap-2 text-[#4A4A4A]/70 bg-[#F8F5F2] px-3 py-1 rounded-lg w-fit">
                         <Calendar size={14}/> {order.delivery_date || '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-bold text-slate-900">{order.total_amount} ر.س</td>
+                    <td className="px-6 py-4 font-bold text-[#4A4A4A]">{order.total_amount} ر.س</td>
                     <td className="px-6 py-4">
-                      <Link to={`/app/orders/${order.id}`} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 transition-colors">
+                      <Link to={`/app/orders/${order.id}`} className="px-4 py-2 bg-[#D9A3AA] text-white rounded-xl text-xs font-bold hover:bg-[#C5A059] transition-colors">
                         معالجة
                       </Link>
                     </td>
@@ -327,7 +327,7 @@ export default function Dashboard() {
               </tbody>
             </table>
           ) : (
-            <div className="p-10 text-center text-slate-400">لا توجد طلبات جديدة حالياً 🎉</div>
+            <div className="p-10 text-center text-[#4A4A4A]/50">لا توجد طلبات جديدة حالياً 🎉</div>
           )}
         </div>
       </div>
