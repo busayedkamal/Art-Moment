@@ -130,48 +130,48 @@ export default function Settings() {
     <div className="max-w-6xl mx-auto space-y-8 pb-10">
       
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-slate-900 text-white rounded-xl"><SettingsIcon size={24}/></div>
+        <div className="p-3 bg-[#4A4A4A] text-white rounded-xl"><SettingsIcon size={24}/></div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">الإعدادات العامة</h1>
-          <p className="text-sm text-slate-500">التحكم في الأسعار، المخزون، واتساب، وأكواد الخصم.</p>
+          <h1 className="text-2xl font-bold text-[#4A4A4A]">الإعدادات العامة</h1>
+          <p className="text-sm text-[#4A4A4A]/60">التحكم في الأسعار، المخزون، واتساب، وأكواد الخصم.</p>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 items-start">
         
         {/* 1. قسم الأسعار وواتساب */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-          <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">💰 تسعير وخدمات</h3>
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm space-y-6">
+          <h3 className="font-bold text-[#4A4A4A] mb-2 flex items-center gap-2">💰 تسعير وخدمات</h3>
           
           <form onSubmit={handleSavePrices} className="space-y-6">
             
             {/* الأسعار الأساسية */}
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">سعر طباعة A4</label>
-                <input type="number" step="0.5" value={prices.a4_price} onChange={e => setPrices({...prices, a4_price: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
+                <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">سعر طباعة A4</label>
+                <input type="number" step="0.5" value={prices.a4_price} onChange={e => setPrices({...prices, a4_price: e.target.value})} className="w-full bg-[#F8F5F2] border rounded-xl px-4 py-2"/>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">سعر طباعة 4x6 (الأساسي)</label>
-                <input type="number" step="0.5" value={prices.photo_4x6_price} onChange={e => setPrices({...prices, photo_4x6_price: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
+                <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">سعر طباعة 4x6 (الأساسي)</label>
+                <input type="number" step="0.5" value={prices.photo_4x6_price} onChange={e => setPrices({...prices, photo_4x6_price: e.target.value})} className="w-full bg-[#F8F5F2] border rounded-xl px-4 py-2"/>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">سعر التوصيل الافتراضي</label>
-                <input type="number" value={prices.delivery_fee_default} onChange={e => setPrices({...prices, delivery_fee_default: e.target.value})} className="w-full bg-slate-50 border rounded-xl px-4 py-2"/>
+                <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">سعر التوصيل الافتراضي</label>
+                <input type="number" value={prices.delivery_fee_default} onChange={e => setPrices({...prices, delivery_fee_default: e.target.value})} className="w-full bg-[#F8F5F2] border rounded-xl px-4 py-2"/>
               </div>
             </div>
 
-            <hr className="border-slate-100" />
+            <hr className="border-[#D9A3AA]/15" />
 
             {/* قسم واتساب الجديد */}
             <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <MessageCircle size={18} className="text-emerald-600"/>
-                  <span className="font-bold text-slate-800 text-sm">ربط واتساب (API)</span>
+                  <span className="font-bold text-[#4A4A4A] text-sm">ربط واتساب (API)</span>
                 </div>
                 <button type="button" onClick={() => setPrices({...prices, whatsapp_enabled: !prices.whatsapp_enabled})} className="text-emerald-600 hover:text-emerald-700">
-                  {prices.whatsapp_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-slate-400"/>}
+                  {prices.whatsapp_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-[#4A4A4A]/50"/>}
                 </button>
               </div>
               
@@ -194,14 +194,14 @@ export default function Settings() {
             </div>
 
             {/* قسم التسعير الديناميكي */}
-            <div className="bg-fuchsia-50 p-4 rounded-xl border border-fuchsia-100">
+            <div className="bg-[#D9A3AA]/10 p-4 rounded-xl border border-[#D9A3AA]/20">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Calculator size={18} className="text-fuchsia-600"/>
-                  <span className="font-bold text-slate-800 text-sm">التسعير الذكي (الكميات)</span>
+                  <Calculator size={18} className="text-[#D9A3AA]"/>
+                  <span className="font-bold text-[#4A4A4A] text-sm">التسعير الذكي (الكميات)</span>
                 </div>
-                <button type="button" onClick={toggleDynamicPricing} className="text-fuchsia-600 hover:text-fuchsia-700">
-                  {prices.is_dynamic_pricing_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-slate-400"/>}
+                <button type="button" onClick={toggleDynamicPricing} className="text-[#D9A3AA] hover:text-[#C5A059]">
+                  {prices.is_dynamic_pricing_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-[#4A4A4A]/50"/>}
                 </button>
               </div>
 
@@ -209,56 +209,56 @@ export default function Settings() {
                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="space-y-1">
-                      <label className="font-bold text-slate-500">من 1 إلى</label>
+                      <label className="font-bold text-[#4A4A4A]/60">من 1 إلى</label>
                       <input type="number" value={prices.tier_1_limit} onChange={e => setPrices({...prices, tier_1_limit: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center"/>
                     </div>
                     <div className="space-y-1">
-                      <label className="font-bold text-slate-500">السعر (ريال)</label>
-                      <input type="number" step="0.1" value={prices.tier_1_price} onChange={e => setPrices({...prices, tier_1_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-fuchsia-600"/>
+                      <label className="font-bold text-[#4A4A4A]/60">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_1_price} onChange={e => setPrices({...prices, tier_1_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#D9A3AA]"/>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="space-y-1">
-                      <label className="font-bold text-slate-500">من {Number(prices.tier_1_limit) + 1} إلى</label>
+                      <label className="font-bold text-[#4A4A4A]/60">من {Number(prices.tier_1_limit) + 1} إلى</label>
                       <input type="number" value={prices.tier_2_limit} onChange={e => setPrices({...prices, tier_2_limit: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center"/>
                     </div>
                     <div className="space-y-1">
-                      <label className="font-bold text-slate-500">السعر (ريال)</label>
-                      <input type="number" step="0.1" value={prices.tier_2_price} onChange={e => setPrices({...prices, tier_2_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-fuchsia-600"/>
+                      <label className="font-bold text-[#4A4A4A]/60">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_2_price} onChange={e => setPrices({...prices, tier_2_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#D9A3AA]"/>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="space-y-1 flex items-center h-full pt-4">
-                      <span className="font-bold text-slate-700">أكثر من {prices.tier_2_limit} صورة</span>
+                      <span className="font-bold text-[#4A4A4A]/80">أكثر من {prices.tier_2_limit} صورة</span>
                     </div>
                     <div className="space-y-1">
-                      <label className="font-bold text-slate-500">السعر (ريال)</label>
-                      <input type="number" step="0.1" value={prices.tier_3_price} onChange={e => setPrices({...prices, tier_3_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-fuchsia-600"/>
+                      <label className="font-bold text-[#4A4A4A]/60">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_3_price} onChange={e => setPrices({...prices, tier_3_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#D9A3AA]"/>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 flex justify-center gap-2">
+            <button type="submit" className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#4A4A4A]/90 flex justify-center gap-2">
               <Save size={18}/> حفظ التغييرات
             </button>
           </form>
         </div>
 
         {/* 2. قسم المخزون */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Package className="text-orange-500"/> إدارة المخزون</h3>
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
+          <h3 className="font-bold text-[#4A4A4A] mb-4 flex items-center gap-2"><Package className="text-[#C5A059]"/> إدارة المخزون</h3>
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
             {inventory.length === 0 ? (
-              <p className="text-center text-slate-400 py-4">لا توجد مواد في المخزون</p>
+              <p className="text-center text-[#4A4A4A]/50 py-4">لا توجد مواد في المخزون</p>
             ) : (
               inventory.map((item) => (
-                <div key={item.id} className="p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                <div key={item.id} className="p-3 border border-[#D9A3AA]/15 rounded-xl bg-[#F8F5F2]/50">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-slate-700">{item.item_name}</span>
+                    <span className="font-bold text-[#4A4A4A]/80">{item.item_name}</span>
                     {item.quantity <= item.threshold && (
                       <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold animate-pulse">
                         <AlertTriangle size={10}/> منخفض
@@ -267,21 +267,21 @@ export default function Settings() {
                   </div>
                   <div className="flex gap-2">
                     <div className="flex-1">
-                      <label className="text-[10px] text-slate-400 block mb-1">الكمية الحالية</label>
+                      <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الكمية الحالية</label>
                       <input 
                         type="number" 
                         value={item.quantity} 
                         onChange={(e) => handleUpdateStock(item.id, 'quantity', e.target.value)}
-                        className={`w-full border rounded-lg px-2 py-1.5 text-center font-bold outline-none focus:ring-2 ${item.quantity <= item.threshold ? 'border-red-300 text-red-600 bg-red-50' : 'border-slate-300'}`}
+                        className={`w-full border rounded-lg px-2 py-1.5 text-center font-bold outline-none focus:ring-2 ${item.quantity <= item.threshold ? 'border-red-300 text-red-600 bg-red-50' : 'border-[#D9A3AA]/25'}`}
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="text-[10px] text-slate-400 block mb-1">حد التنبيه</label>
+                      <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">حد التنبيه</label>
                       <input 
                         type="number" 
                         value={item.threshold} 
                         onChange={(e) => handleUpdateStock(item.id, 'threshold', e.target.value)}
-                        className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-center bg-white outline-none focus:border-orange-500"
+                        className="w-full border border-[#D9A3AA]/25 rounded-lg px-2 py-1.5 text-center bg-white outline-none focus:border-[#C5A059]"
                       />
                     </div>
                   </div>
@@ -292,12 +292,12 @@ export default function Settings() {
         </div>
 
         {/* 3. قسم أكواد الخصم */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-fuchsia-500"/> أكواد الخصم</h3>
+        <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
+          <h3 className="font-bold text-[#4A4A4A] mb-6 flex items-center gap-2"><Tag className="text-[#D9A3AA]"/> أكواد الخصم</h3>
           
-          <form onSubmit={handleAddCoupon} className="flex flex-col md:flex-row gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
+          <form onSubmit={handleAddCoupon} className="flex flex-col md:flex-row gap-4 mb-8 bg-[#F8F5F2] p-4 rounded-xl border border-[#D9A3AA]/15">
             <div className="flex-1">
-              <label className="text-xs font-bold text-slate-500 block mb-1">الكود</label>
+              <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">الكود</label>
               <input 
                 type="text" 
                 placeholder="مثلاً SALE20" 
@@ -307,7 +307,7 @@ export default function Settings() {
               />
             </div>
             <div className="w-full md:w-40">
-              <label className="text-xs font-bold text-slate-500 block mb-1">النوع</label>
+              <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">النوع</label>
               <select 
                 className="w-full border rounded-xl px-4 py-2 bg-white"
                 value={newCoupon.discount_type}
@@ -318,7 +318,7 @@ export default function Settings() {
               </select>
             </div>
             <div className="w-full md:w-32">
-              <label className="text-xs font-bold text-slate-500 block mb-1">القيمة</label>
+              <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">القيمة</label>
               <input 
                 type="number" 
                 placeholder="0" 
@@ -328,7 +328,7 @@ export default function Settings() {
               />
             </div>
             <div className="flex items-end">
-              <button type="submit" className="bg-fuchsia-500 hover:bg-gradient-to-b from-fuchsia-600 to-purple-600 text-white px-6 py-2 rounded-xl font-bold h-[42px] flex items-center gap-2 w-full md:w-auto justify-center">
+              <button type="submit" className="bg-[#D9A3AA]/100 hover:bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white px-6 py-2 rounded-xl font-bold h-[42px] flex items-center gap-2 w-full md:w-auto justify-center">
                 <Plus size={18}/> إضافة
               </button>
             </div>
@@ -336,25 +336,25 @@ export default function Settings() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {coupons.length === 0 ? (
-              <p className="col-span-full text-center text-slate-400 py-4">لا توجد أكواد خصم حالياً</p>
+              <p className="col-span-full text-center text-[#4A4A4A]/50 py-4">لا توجد أكواد خصم حالياً</p>
             ) : (
               coupons.map(coupon => (
-                <div key={coupon.id} className={`p-4 rounded-xl border flex justify-between items-center ${coupon.is_active ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-100 opacity-70'}`}>
+                <div key={coupon.id} className={`p-4 rounded-xl border flex justify-between items-center ${coupon.is_active ? 'bg-white border-[#D9A3AA]/20' : 'bg-[#F8F5F2] border-[#D9A3AA]/15 opacity-70'}`}>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-black text-slate-800 text-lg">{coupon.code}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${coupon.is_active ? 'bg-fuchsia-100 text-fuchsia-700' : 'bg-slate-200 text-slate-500'}`}>
+                      <span className="font-black text-[#4A4A4A] text-lg">{coupon.code}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${coupon.is_active ? 'bg-[#D9A3AA]/15 text-[#D9A3AA]' : 'bg-[#D9A3AA]/10 text-[#4A4A4A]/60'}`}>
                         {coupon.is_active ? 'نشط' : 'معطل'}
                       </span>
                     </div>
-                    <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-                      خصم: <span className="font-bold text-slate-700">{coupon.discount_amount}</span> 
+                    <div className="text-sm text-[#4A4A4A]/60 mt-1 flex items-center gap-1">
+                      خصم: <span className="font-bold text-[#4A4A4A]/80">{coupon.discount_amount}</span> 
                       {coupon.discount_type === 'percent' ? <Percent size={12}/> : <span className="text-xs">ر.س</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => toggleCouponStatus(coupon.id, coupon.is_active)} className="text-slate-400 hover:text-slate-600">
-                      {coupon.is_active ? <ToggleRight size={28} className="text-fuchsia-500"/> : <ToggleLeft size={28}/>}
+                    <button onClick={() => toggleCouponStatus(coupon.id, coupon.is_active)} className="text-[#4A4A4A]/50 hover:text-[#4A4A4A]/70">
+                      {coupon.is_active ? <ToggleRight size={28} className="text-[#D9A3AA]"/> : <ToggleLeft size={28}/>}
                     </button>
                     <button onClick={() => deleteCoupon(coupon.id)} className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg">
                       <Trash2 size={18}/>

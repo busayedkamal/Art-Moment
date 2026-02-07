@@ -145,9 +145,9 @@ export default function TrackOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4 relative" dir="rtl">
+    <div className="min-h-screen bg-[#F8F5F2] flex flex-col items-center py-10 px-4 relative" dir="rtl">
       
-      <Link to="/" className="absolute top-6 right-6 flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-slate-600 hover:text-slate-900 transition-colors font-bold text-sm">
+      <Link to="/" className="absolute top-6 right-6 flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-[#D9A3AA]/20 shadow-sm text-[#4A4A4A]/80 hover:text-[#4A4A4A] transition-colors font-bold text-sm">
         <Home size={16} /> الرئيسية
       </Link>
 
@@ -157,8 +157,8 @@ export default function TrackOrderPage() {
           alt="Art Moment" 
           className="w-24 h-24 mx-auto mb-4 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300"
         />
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">تتبع طلبك</h1>
-        <p className="text-slate-500">أدخل رقم الطلب لمعرفة الحالة والمبلغ المتبقي</p>
+        <h1 className="text-3xl font-bold text-[#4A4A4A] mb-2">تتبع طلبك</h1>
+        <p className="text-[#4A4A4A]/70">أدخل رقم الطلب لمعرفة الحالة والمبلغ المتبقي</p>
       </div>
 
       <div className="w-full max-w-md">
@@ -168,13 +168,13 @@ export default function TrackOrderPage() {
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
             placeholder="مثال: bf0177..."
-            className="w-full h-14 pl-14 pr-6 rounded-2xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-fuchsia-500 outline-none text-lg text-center font-mono placeholder:font-sans"
+            className="w-full h-14 pl-14 pr-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm focus:ring-2 focus:ring-[#D9A3AA] outline-none text-lg text-center font-mono placeholder:font-sans"
             dir="ltr"
           />
           <button 
             type="submit"
             disabled={loading}
-            className="absolute left-2 top-2 bottom-2 aspect-square bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-slate-800 transition-colors disabled:opacity-70"
+            className="absolute left-2 top-2 bottom-2 aspect-square bg-[#4A4A4A] text-white rounded-xl flex items-center justify-center hover:bg-[#4A4A4A]/95 transition-colors disabled:opacity-70"
           >
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search size={24} />}
           </button>
@@ -188,12 +188,12 @@ export default function TrackOrderPage() {
         )}
 
         {order && (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-3xl border border-[#D9A3AA]/20 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             
             {/* الشريط الأسود العلوي */}
-            <div className="bg-slate-900 text-white p-6 text-center relative overflow-hidden">
+            <div className="bg-[#4A4A4A] text-white p-6 text-center relative overflow-hidden">
               <div className="relative z-10">
-                <p className="text-slate-400 text-xs mb-1 font-bold uppercase tracking-wider">حالة الطلب الحالي</p>
+                <p className="text-[#4A4A4A]/55 text-xs mb-1 font-bold uppercase tracking-wider">حالة الطلب الحالي</p>
                 <h2 className="text-2xl font-bold">
                   {order.status === 'new' && 'جديد / قيد المراجعة'}
                   {order.status === 'printing' && 'جاري الطباعة والتجهيز'}
@@ -215,7 +215,7 @@ export default function TrackOrderPage() {
             <div className="p-6">
               
               <div className="relative flex justify-between mb-8 px-2">
-                <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-100 -translate-y-1/2 z-0"></div>
+                <div className="absolute top-1/2 left-0 right-0 h-1 bg-white/70 -translate-y-1/2 z-0"></div>
                 <div 
                   className="absolute top-1/2 right-0 h-1 bg-emerald-500 -translate-y-1/2 z-0 transition-all duration-1000"
                   style={{ left: `${100 - ((currentStep - 1) / 3 * 100)}%` }}
@@ -235,15 +235,15 @@ export default function TrackOrderPage() {
                         w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500
                         ${currentStep >= step.id 
                           ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' 
-                          : 'bg-white border-slate-200 text-slate-300'}
+                          : 'bg-white border-[#D9A3AA]/20 text-[#4A4A4A]/45'}
                       `}>
                         <step.icon size={14} />
                       </div>
-                      <span className={`text-[10px] font-bold ${currentStep >= step.id ? 'text-fuchsia-600' : 'text-slate-300'}`}>
+                      <span className={`text-[10px] font-bold ${currentStep >= step.id ? 'text-[#D9A3AA]' : 'text-[#4A4A4A]/45'}`}>
                         {step.label}
                       </span>
                       {stepDate && (
-                        <span className="text-[9px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 mt-1 min-w-[60px] text-center">
+                        <span className="text-[9px] text-[#4A4A4A]/70 font-mono bg-white/70 px-1.5 py-0.5 rounded border border-[#D9A3AA]/20 mt-1 min-w-[60px] text-center">
                           {stepDate}
                         </span>
                       )}
@@ -253,18 +253,18 @@ export default function TrackOrderPage() {
               </div>
 
               {/* تفاصيل الطلب */}
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-3 mb-4">
+              <div className="bg-[#F8F5F2] rounded-2xl p-5 border border-[#D9A3AA]/15 space-y-3 mb-4">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">رقم الطلب</span>
-                  <span className="font-mono font-bold text-slate-900">#{order.id.slice(0, 8)}</span>
+                  <span className="text-[#4A4A4A]/70">رقم الطلب</span>
+                  <span className="font-mono font-bold text-[#4A4A4A]">#{order.id.slice(0, 8)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">العميل</span>
-                  <span className="font-bold text-slate-900">{order.customer_name}</span>
+                  <span className="text-[#4A4A4A]/70">العميل</span>
+                  <span className="font-bold text-[#4A4A4A]">{order.customer_name}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">تاريخ التسليم المتوقع</span>
-                  <span className="font-bold text-slate-900">{order.delivery_date || 'غير محدد'}</span>
+                  <span className="text-[#4A4A4A]/70">تاريخ التسليم المتوقع</span>
+                  <span className="font-bold text-[#4A4A4A]">{order.delivery_date || 'غير محدد'}</span>
                 </div>
               </div>
 
@@ -274,48 +274,48 @@ export default function TrackOrderPage() {
                   <h3 className="text-xs font-bold text-yellow-600 mb-2 flex items-center gap-1">
                     <FileText size={14}/> ملاحظات
                   </h3>
-                  <p className="text-sm text-slate-700 bg-white p-3 rounded-xl border border-yellow-100 leading-relaxed shadow-sm">
+                  <p className="text-sm text-[#4A4A4A]/85 bg-white p-3 rounded-xl border border-yellow-100 leading-relaxed shadow-sm">
                     {order.notes}
                   </p>
                 </div>
               )}
 
               {/* القسم المالي */}
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+              <div className="bg-[#F8F5F2] rounded-2xl p-5 border border-[#D9A3AA]/15">
                 
                 {/* --- الجديد: ملخص حساب العميل (محفظة + ديون) --- */}
-                <div className="mb-6 bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
-                  <h3 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <UserCheck size={16} className="text-fuchsia-600"/> ملخص حسابك (لكل الطلبات)
+                <div className="mb-6 bg-white rounded-xl p-4 border border-[#D9A3AA]/15 shadow-sm">
+                  <h3 className="text-xs font-bold text-[#4A4A4A] mb-3 flex items-center gap-2">
+                    <UserCheck size={16} className="text-[#D9A3AA]"/> ملخص حسابك (لكل الطلبات)
                   </h3>
                   <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="bg-slate-50 rounded-lg p-2">
-                      <span className="text-[10px] text-slate-400 block mb-1">رصيد المحفظة</span>
+                    <div className="bg-[#F8F5F2] rounded-lg p-2">
+                      <span className="text-[15px] font-bold text-emerald-600 /55 block mb-1">رصيد المحفظة</span>
                       <span className="font-bold text-emerald-600 dir-ltr">{customerStats.wallet.toFixed(2)}</span>
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-2">
-                      <span className="text-[10px] text-slate-400 block mb-1">إجمالي الديون</span>
+                    <div className="bg-[#F8F5F2] rounded-lg p-2">
+                      <span className="text-[15px] font-bold text-red-600 /55 block mb-1">إجمالي الديون</span>
                       <span className="font-bold text-red-600 dir-ltr">{customerStats.debt.toFixed(2)}</span>
                     </div>
                   </div>
-                  <div className={`mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-sm font-bold ${customerStats.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <div className={`mt-3 pt-3 border-t border-[#D9A3AA]/15 flex justify-between items-center text-sm font-bold ${customerStats.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     <span>الصافي النهائي:</span>
                     <span className="dir-ltr">{customerStats.net.toFixed(2)} ر.س</span>
                   </div>
                 </div>
                 {/* ----------------------------------------------- */}
 
-                <h3 className="text-xs font-bold text-slate-400 mb-4 flex items-center gap-1">
+                <h3 className="text-xs font-bold text-[#1F5FBF]/55 mb-4 flex items-center gap-1">
                   <Banknote size={14}/> تفاصيل هذا الطلب
                 </h3>
 
-                <div className="flex justify-between items-center text-sm text-slate-600 mb-2 px-1">
+                <div className="flex justify-between items-center text-sm text-[#4A4A4A]/80 mb-2 px-1">
                   <span>قيمة المنتجات</span>
                   <span className="font-bold">{Number(order.subtotal || 0).toFixed(2)}</span>
                 </div>
 
                 {order.delivery_fee > 0 && (
-                  <div className="flex justify-between items-center text-sm text-slate-600 mb-2 px-1">
+                  <div className="flex justify-between items-center text-sm text-[#4A4A4A]/80 mb-2 px-1">
                     <span className="flex items-center gap-1"><MapPin size={12}/> رسوم التوصيل</span>
                     <span className="font-bold">{order.delivery_fee}</span>
                   </div>
@@ -325,29 +325,29 @@ export default function TrackOrderPage() {
                     const theoreticalTotal = Number(order.subtotal || 0) + Number(order.delivery_fee || 0);
                     const impliedDiscount = theoreticalTotal - Number(order.total_amount || 0);
                     if (impliedDiscount > 0.01) return (
-                        <div className="flex justify-between items-center text-sm text-red-500 mb-2 px-1">
-                            <span className="flex items-center gap-1"><Tag size={12}/> خصم / محفظة</span>
+                        <div className="flex justify-between items-center text-sm text-emerald-500 mb-2 px-1">
+                            <span className="flex items-center gap-1"><Tag size={12}/>  خصم / محفظة رصيد سابق</span>
                             <span className="font-bold">-{impliedDiscount.toFixed(2)}</span>
                         </div>
                     );
                 })()}
 
-                <div className="border-t border-slate-200 my-3"></div>
+                <div className="border-t border-[#D9A3AA]/20 my-3"></div>
 
                 <div className="flex justify-between items-center mb-4 px-1">
-                  <span className="font-bold text-slate-900">الإجمالي النهائي</span>
-                  <span className="font-black text-xl text-slate-900">{order.total_amount} ر.س</span>
+                  <span className="font-bold text-[#4A4A4A]">الإجمالي النهائي</span>
+                  <span className="font-black text-xl text-[#4A4A4A]">{order.total_amount} ر.س</span>
                 </div>
 
                 {payments.length > 0 && (
-                  <div className="mb-4 bg-white p-3 rounded-xl border border-slate-100">
-                    <p className="text-[10px] text-slate-400 font-bold mb-2 flex justify-between">
+                  <div className="mb-4 bg-white p-3 rounded-xl border border-[#D9A3AA]/15">
+                    <p className="text-[10px] text-[#4A4A4A]/55 font-bold mb-2 flex justify-between">
                       <span>سجل الدفعات</span>
-                      <span className="text-fuchsia-600">مجموع المدفوع: {order.deposit}</span>
+                      <span className="text-[#D9A3AA]">مجموع المدفوع: {order.deposit}</span>
                     </p>
                     <div className="space-y-1">
                       {payments.map((p) => (
-                        <div key={p.id} className="flex justify-between items-center text-xs text-slate-600 border-b border-slate-50 last:border-0 pb-1 last:pb-0">
+                        <div key={p.id} className="flex justify-between items-center text-xs text-[#4A4A4A]/80 border-b border-slate-50 last:border-0 pb-1 last:pb-0">
                           <span className="flex items-center gap-1">
                             <Calendar size={10}/> {formatDate(p.payment_date)}
                           </span>
@@ -358,7 +358,7 @@ export default function TrackOrderPage() {
                   </div>
                 )}
 
-                <div className={`p-4 rounded-xl flex justify-between items-center ${remaining > 0 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-100'}`}>
+                <div className={`p-4 rounded-xl flex justify-between items-center ${remaining > 0 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-[#D9A3AA]/10 text-[#D9A3AA] border border-[#D9A3AA]/20'}`}>
                   <span className="text-xs font-bold flex items-center gap-2">
                     <Wallet size={16}/> {remaining > 0 ? 'المبلغ المتبقي عليك' : 'حالة الدفع'}
                   </span>
@@ -369,7 +369,7 @@ export default function TrackOrderPage() {
               </div>
 
               {order.status === 'done' && (
-                <div className="mt-6 p-4 bg-fuchsia-50 text-fuchsia-800 text-center rounded-xl text-sm font-medium border border-fuchsia-100 animate-pulse">
+                <div className="mt-6 p-4 bg-[#D9A3AA]/10 text-[#D9A3AA] text-center rounded-xl text-sm font-medium border border-[#D9A3AA]/20 animate-pulse">
                   🎉 طلبك جاهز! تفضل بزيارتنا للاستلام.
                 </div>
               )}
@@ -378,7 +378,7 @@ export default function TrackOrderPage() {
         )}
       </div>
       
-      <Link to="/admin/login" className="mt-auto pt-10 text-slate-300 text-xs hover:text-slate-500 transition-colors">
+      <Link to="/admin/login" className="mt-auto pt-10 text-[#4A4A4A]/45 text-xs hover:text-[#4A4A4A]/70 transition-colors">
         Art Moment Admin
       </Link>
     </div>

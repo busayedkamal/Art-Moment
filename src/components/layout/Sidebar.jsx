@@ -1,75 +1,93 @@
-// src/components/layout/Sidebar.jsx
-import { NavLink, useNavigate } from 'react-router-dom'
-import logo from '../../assets/logo-art-moment.svg'
-import { clearAdminSession } from '../../utils/adminSession.js'
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { clearAdminSession } from '../utils/auth';
 
-function NavItem({ to, label }) {
+import {
+  LayoutGrid,
+  ShoppingCart,
+  Users,
+  FileText,
+  Receipt,
+  Settings as SettingsIcon,
+  LogOut,
+} from 'lucide-react';
+
+import logo from '../assets/logo-art-moment.svg';
+
+function NavItem({ to, label, icon: Icon }) {
   return (
     <NavLink
       to={to}
-      end={to === '/app'}
       className={({ isActive }) =>
         [
-          'flex items-center justify-between rounded-xl px-3 py-2 text-sm border',
-          isActive
-            ? 'bg-slate-900 text-white border-slate-900'
-            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50',
+          'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all',
+          // Base (dark sidebar)
+          'text-[#F8F5F2]/80 hover:text-[#F8F5F2] hover:bg-[#D9A3AA]/15',
+          // Active
+          isActive ? 'bg-[#D9A3AA] text-white shadow-lg shadow-[#D9A3AA]/25' : '',
         ].join(' ')
       }
     >
-      <span>{label}</span>
+      {Icon ? (
+        <span className="shrink-0">
+          <Icon size={18} />
+        </span>
+      ) : null}
+      <span className="truncate">{label}</span>
     </NavLink>
-  )
+  );
 }
 
 export default function Sidebar() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    clearAdminSession()
-    navigate('/admin', { replace: true })
-  }
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      clearAdminSession();
+      navigate('/admin/login');
+    }
+  };
 
   return (
-    <aside className="hidden md:flex md:w-64 md:min-h-screen md:flex-col border-r border-slate-200 bg-white">
-      <div className="p-4 border-b border-slate-200">
+    <aside className="w-64 h-screen bg-[#4A4A4A] text-[#F8F5F2] flex flex-col border-r border-white/10">
+      <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img
-            src={logo}
-            alt="Art Moment"
-            className="w-10 h-10 rounded-xl border border-slate-200 bg-white object-contain"
-          />
-          <div>
-            <div className="text-sm font-bold text-slate-900">لحظة فن</div>
-            <div className="text-[11px] text-slate-500">لوحة التحكم</div>
+          <img src={logo} alt="Art Moment" className="w-10 h-10 object-contain brightness-0 invert opacity-90" />
+          <div className="leading-tight">
+            <div className="font-black tracking-wide">Art Moment</div>
+            <div className="text-xs text-[#F8F5F2]/60 font-bold">لوحة التحكم</div>
           </div>
         </div>
       </div>
 
-      <div className="p-3 space-y-2">
-        <NavItem to="/app" label="الملخص" />
-        <NavItem to="/app/orders" label="الطلبات" />
-        <NavItem to="/app/customers" label="العملاء" />
-        <NavItem to="/app/reports" label="التقارير" />
-        <NavItem to="/app/expenses" label="المصروفات" /> {/* 👈 تم إضافة رابط المصروفات */}
-        <NavItem to="/app/settings" label="الإعدادات" />
-      </div>
+      <nav className="flex-1 px-4 py-6 space-y-2">
+        <NavItem to="/app" label="الرئيسية" icon={LayoutGrid} />
+        <NavItem to="/app/orders" label="الطلبات" icon={ShoppingCart} />
+        <NavItem to="/app/customers" label="العملاء" icon={Users} />
+        <NavItem to="/app/reports" label="التقارير" icon={FileText} />
+        <NavItem to="/app/expenses" label="المصروفات" icon={Receipt} />
+        <NavItem to="/app/settings" label="الإعدادات" icon={SettingsIcon} />
+      </nav>
 
-      <div className="mt-auto p-3 border-t border-slate-200">
+      <div className="px-4 pb-6">
         <button
           onClick={handleLogout}
-          className="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 hover:bg-slate-100"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border border-[#D9A3AA]/50 text-[#F8F5F2] hover:bg-[#D9A3AA]/15 transition-colors"
         >
+          <LogOut size={18} />
           تسجيل خروج
         </button>
 
         <button
           onClick={() => navigate('/')}
-          className="w-full mt-2 px-3 py-2 rounded-xl text-sm bg-slate-900 text-white hover:bg-slate-800"
+          className="w-full mt-3 px-4 py-3 rounded-xl text-sm font-black bg-[#D9A3AA] text-white hover:bg-[#C5A059] transition-colors shadow-md shadow-black/20"
         >
           الرجوع للموقع
         </button>
       </div>
     </aside>
-  )
+  );
 }

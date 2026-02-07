@@ -36,21 +36,21 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-[#F8F5F2] overflow-hidden">
       
       {/* Sidebar - Desktop & Mobile */}
       <aside className={`
-        fixed inset-y-0 right-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-300 ease-in-out
+        fixed inset-y-0 right-0 z-50 w-64 bg-[#4A4A4A] text-white transition-transform duration-300 ease-in-out
         md:relative md:translate-x-0
         ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
         <div className="flex h-full flex-col">
           {/* Logo Area */}
-          <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800">
+          <div className="flex h-16 items-center justify-between px-6 border-b border-white/10">
             <span className="text-lg font-bold tracking-wider">Art Moment</span>
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="md:hidden text-slate-400 hover:text-white"
+              className="md:hidden text-white/70 hover:text-white"
             >
               <X size={24} />
             </button>
@@ -68,8 +68,8 @@ export default function Layout() {
                   className={`
                     flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
                     ${isActive 
-                      ? 'bg-gradient-to-b from-fuchsia-600 to-purple-600 text-white shadow-lg shadow-fuchsia-900/20' 
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                      ? 'bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white shadow-lg shadow-fuchsia-900/20' 
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'}
                   `}
                 >
                   {item.icon}
@@ -80,7 +80,7 @@ export default function Layout() {
           </nav>
 
           {/* Logout Button */}
-          <div className="p-4 border-t border-slate-800">
+          <div className="p-4 border-t border-white/10">
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-400 hover:bg-fuchsia-500/10 transition-colors"
@@ -95,11 +95,11 @@ export default function Layout() {
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col h-full w-full">
         {/* Top Header (Mobile Only) */}
-        <header className="md:hidden flex items-center justify-between bg-white border-b border-slate-200 px-4 py-3">
-          <span className="font-bold text-slate-900">لوحة التحكم</span>
+        <header className="md:hidden flex items-center justify-between bg-white border-b border-[#D9A3AA]/20 px-4 py-3">
+          <span className="font-bold text-[#4A4A4A]">لوحة التحكم</span>
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+            className="p-2 text-[#4A4A4A]/80 hover:bg-slate-100 rounded-lg"
           >
             <Menu size={24} />
           </button>
