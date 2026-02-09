@@ -1,16 +1,18 @@
-// src/pages/LandingPage.jsx
+// src/LandingPage.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// ✅ المسار الصحيح لاستدعاء supabase من داخل مجلد pages
+
+// ✅ تصحيح المسار: نقطة واحدة لأن الملف في src مباشرة
 import { supabase } from './lib/supabase'; 
+
 import { 
   Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck, 
   Printer, Menu, X, ChevronDown, Lock, Star, Quote, BookOpen,
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
-  Share, PlusSquare, Sparkles, FileText, MapPin, Phone, Mail, Instagram, Twitter
+  Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram, Twitter
 } from 'lucide-react';
 
-// ✅ المسار الصحيح للصور (الرجوع خطوة للخلف للوصول إلى assets)
+// ✅ تصحيح مسار الصور
 import logo from './assets/logo-art-moment.svg'; 
 import printedPhotos from './assets/printed-photos.png';
 
@@ -146,9 +148,9 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A] scroll-smooth relative overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A] scroll-smooth relative overflow-x-hidden selection:bg-[#D9A3AA] selection:text-white" dir="rtl">
       
-      {/* خلفية جمالية (لؤلؤي ووردي خفيف) */}
+      {/* خلفية جمالية */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
          <div className="absolute top-[-10%] right-[-5%] w-[40rem] h-[40rem] bg-[#D9A3AA]/5 rounded-full blur-3xl opacity-60 mix-blend-multiply"></div>
          <div className="absolute bottom-[-10%] left-[-10%] w-[50rem] h-[50rem] bg-[#C5A059]/5 rounded-full blur-3xl opacity-50 mix-blend-multiply"></div>
@@ -207,28 +209,39 @@ export default function LandingPage() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-4 shadow-xl absolute w-full">
+          <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-4 shadow-xl absolute w-full z-50">
             <a href="#ai-check" className="block py-2 text-[#D9A3AA] font-bold" onClick={() => setIsMobileMenuOpen(false)}>✨ فحص جودة الصورة</a>
             <a href="#mockups" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>جربيها في برواز</a>
             <a href="#sizes" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
-            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
+            
+            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>
+              تتبع طلبك
+            </Link>
+
+            {/* زر دخول المسؤول في القائمة */}
+            <Link to="/admin/login" className="block w-full text-center py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-white hover:text-[#D9A3AA] transition-all flex items-center justify-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+               <Lock size={16} /> دخول المسؤول
+            </Link>
           </div>
         )}
       </header>
 
       {/* --- 1. Hero Section --- */}
-      <section className="relative py-16 md:py-24 overflow-hidden">
+      <section className="relative py-16 md:py-24 overflow-hidden bg-[#4A4A4A] text-white">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D9A3AA]/10 blur-3xl rounded-full translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-1/3 h-full bg-[#C5A059]/10 blur-3xl rounded-full -translate-x-1/2"></div>
+
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
           <div className="text-center md:text-right space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/10 text-[#D9A3AA] text-xs font-bold border border-[#D9A3AA]/20">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-xs font-bold border border-[#D9A3AA]/30">
               <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-black text-[#4A4A4A] leading-tight">
+            <h1 className="text-4xl md:text-6xl font-black text-white leading-tight">
               اطبعي أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span><br/> لتبقى للأبد.
             </h1>
             
-            <p className="text-lg text-[#4A4A4A]/70 leading-relaxed max-w-xl mx-auto md:mx-0">
+            <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto md:mx-0">
               حوّلي صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية. 
               أرسلي صورك، تابعي الطلب، واستلميها بتغليف فاخر يليق بذكرياتك.
             </p>
@@ -237,12 +250,12 @@ export default function LandingPage() {
               <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#D9A3AA] hover:bg-[#C5A059] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#D9A3AA]/40">
                 <MessageCircle size={20} /> اطلبي عبر واتساب
               </a>
-              <Link to="/track" className="w-full sm:w-auto px-8 py-4 rounded-full bg-white border border-[#D9A3AA]/30 text-[#4A4A4A] font-bold hover:bg-[#D9A3AA]/5 flex items-center justify-center gap-2 transition-colors">
+              <Link to="/track" className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
                 <Search size={20} className="text-[#C5A059]" /> تتبعي طلبك
               </Link>
             </div>
 
-            <div className="pt-4 flex flex-wrap gap-6 justify-center md:justify-start text-xs font-bold text-[#4A4A4A]/60">
+            <div className="pt-4 flex flex-wrap gap-6 justify-center md:justify-start text-xs font-bold text-white/60">
               <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> ورق فاخر</span>
               <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دقة عالية</span>
               <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دفع عند الاستلام</span>
@@ -251,7 +264,7 @@ export default function LandingPage() {
 
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-tr from-[#D9A3AA]/20 to-[#C5A059]/20 rounded-[2.5rem] rotate-3 transition-transform group-hover:rotate-6 duration-500"></div>
-            <img src={printedPhotos} alt="صور مطبوعة" className="relative z-10 w-full rounded-[2.5rem] shadow-2xl shadow-[#D9A3AA]/10 border-4 border-white transform transition-transform group-hover:-rotate-2 duration-500 object-cover h-[500px]" />
+            <img src={printedPhotos} alt="صور مطبوعة" className="relative z-10 w-full rounded-[2.5rem] shadow-2xl shadow-[#D9A3AA]/10 border-4 border-white/20 transform transition-transform group-hover:-rotate-2 duration-500 object-cover h-[500px]" />
             
             <div className="absolute bottom-10 -right-6 bg-white p-4 rounded-2xl shadow-xl shadow-[#C5A059]/10 border border-[#F8F5F2] flex items-center gap-3 z-20 animate-bounce-slow">
                <div className="w-10 h-10 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA]"><Printer size={20}/></div>
@@ -294,7 +307,7 @@ export default function LandingPage() {
             {analysisResult && (
               <div className="animate-in zoom-in duration-300">
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className={`p-4 rounded-2xl border bg-white ${analysisResult.qualityScore === 'low' ? 'border-[#D9A3AA]/50 text-[#D9A3AA]' : 'border-[#C5A059]/50 text-[#C5A059]'}`}>
+                  <div className={`p-4 rounded-2xl border bg-white ${analysisResult.qualityScore === 'low' ? 'border-red-200 text-red-600' : 'border-emerald-200 text-emerald-600'}`}>
                     <div className="text-xs font-bold uppercase opacity-70 mb-1 text-[#4A4A4A]">الدقة</div>
                     <div className="font-black text-xl mb-1">{analysisResult.megaPixels} MP</div>
                     <div className="text-xs font-bold flex items-center justify-center gap-1">
@@ -302,7 +315,7 @@ export default function LandingPage() {
                       {analysisResult.qualityText}
                     </div>
                   </div>
-                  <div className={`p-4 rounded-2xl border bg-white ${analysisResult.lightingStatus === 'good' ? 'border-[#C5A059]/50 text-[#C5A059]' : 'border-[#D9A3AA]/50 text-[#D9A3AA]'}`}>
+                  <div className="p-4 rounded-2xl border border-blue-200 bg-white text-blue-600">
                     <div className="text-xs font-bold uppercase opacity-70 mb-1 text-[#4A4A4A]">الإضاءة</div>
                     <div className="font-black text-xl mb-1">{analysisResult.brightness}/255</div>
                     <div className="text-xs font-bold">إضاءة {analysisResult.brightness > 200 ? 'ساطعة' : analysisResult.brightness < 60 ? 'خافتة' : 'متوازنة'}</div>
@@ -331,7 +344,7 @@ export default function LandingPage() {
                 جربي صورك في براويزنا 🖼️<br/><span className="text-[#C5A059]">قبل ما تطلبي!</span>
               </h2>
               <p className="text-white/70 text-lg leading-relaxed">
-                محتارة كيف بتطلع الصورة على الجدار أو المكتب؟ ارفعي صورتك وشوفيها كأنها مطبوعة قدامك.
+                محتارة كيف بتطلع الصورة على الجدار أو المكتب؟ ارفعي صورك وشوفيها كأنها مطبوعة قدامك.
               </p>
 
               <div className="flex gap-3">

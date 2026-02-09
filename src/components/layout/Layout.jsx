@@ -10,7 +10,8 @@ import {
   LogOut, 
   Menu,
   X,
-  Wallet // 👈 1. تمت إضافة أيقونة المحفظة
+  Wallet,
+  Search // 👈 1. تمت إضافة أيقونة البحث (للتتبع)
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -26,7 +27,9 @@ export default function Layout() {
     { path: '/app/orders', label: 'الطلبات', icon: <ShoppingCart size={20} /> },
     { path: '/app/customers', label: 'العملاء', icon: <Users size={20} /> },
     { path: '/app/reports', label: 'التقارير', icon: <FileBarChart size={20} /> },
-    { path: '/app/expenses', label: 'المصروفات', icon: <Wallet size={20} /> }, // 👈 2. تمت إضافة رابط المصروفات هنا
+    { path: '/app/expenses', label: 'المصروفات', icon: <Wallet size={20} /> },
+    // 👇 2. تمت إضافة زر تتبع الطلب هنا
+    { path: '/track', label: 'تتبع الطلب', icon: <Search size={20} /> }, 
     { path: '/app/settings', label: 'الإعدادات', icon: <Settings size={20} /> },
   ];
 
@@ -59,6 +62,7 @@ export default function Layout() {
           {/* Navigation Links */}
           <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
             {navItems.map((item) => {
+              // التحقق من المسار النشط
               const isActive = location.pathname.startsWith(item.path);
               return (
                 <Link
