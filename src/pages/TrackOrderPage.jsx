@@ -19,28 +19,36 @@ export default function TrackOrderPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // دالة توحيد رقم الجوال
+  // ✅ الإصلاح: دالة تضمن أن الرقم يبدأ بـ 05 ليطابق قاعدة البيانات
   const normalizePhone = (raw) => {
     if (!raw) return '';
-    let p = String(raw).replace(/\D/g, '');
-    if (p.startsWith('966')) p = p.slice(3);
-    if (p.startsWith('0')) p = p.slice(1);
-    return p;
+    let digits = String(raw).replace(/\D/g, ''); // حذف أي رموز
+    if (digits.startsWith('966')) digits = digits.slice(3); // حذف 966
+    if (digits.startsWith('0')) digits = digits.slice(1); // حذف الصفر مؤقتاً لتوحيد المعالجة
+    
+    // إذا كان الرقم سعودي (9 خانات ويبدأ بـ 5)، نرجع له الصفر
+    if (digits.length === 9 && digits.startsWith('5')) {
+      return '0' + digits; 
+    }
+    return digits; // أرقام أخرى ترجع كما هي
   };
 
   // دالة جلب البيانات المالية
   const fetchCustomerStats = async (phone) => {
     if (!phone) return;
-    const cleanPhone = normalizePhone(phone); 
+    const cleanPhone = normalizePhone(phone); // سيصبح الآن 05xxxxxxxx
 
     try {
-      const { data: walletsData } = await supabase
+      // 1. جلب المحفظة (بحث مباشر بالرقم الصحيح)
+      const { data: walletData } = await supabase
         .from('wallets')
-        .select('phone, points_balance');
+        .select('points_balance')
+        .eq('phone', cleanPhone)
+        .maybeSingle();
 
-      const walletEntry = walletsData?.find(w => normalizePhone(w.phone) === cleanPhone);
-      const walletBalance = Number(walletEntry?.points_balance || 0);
+      const walletBalance = Number(walletData?.points_balance || 0);
 
+      // 2. جلب الديون (نجلب كل الطلبات ونفلترها للتأكد)
       const { data: allOrders } = await supabase
         .from('orders')
         .select('total_amount, deposit, phone');
@@ -48,6 +56,7 @@ export default function TrackOrderPage() {
       let totalDebt = 0;
       if (allOrders) {
         allOrders.forEach(o => {
+          // نقارن الأرقام بعد التوحيد
           if (normalizePhone(o.phone) === cleanPhone) {
             const debt = Number(o.total_amount || 0) - Number(o.deposit || 0);
             if (debt > 0.5) totalDebt += debt; 
@@ -189,7 +198,7 @@ export default function TrackOrderPage() {
               <div className="relative flex justify-between mb-8 px-2">
                 <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#F8F5F2] -translate-y-1/2 z-0"></div>
                 <div 
-                  className="absolute top-1/2 right-0 h-1 bg-[#D9A3AA] -translate-y-1/2 z-0 transition-all duration-1000"
+                  className="absolute top-1/2 right-0 h-1 bg-[#50C878] -translate-y-1/2 z-0 transition-all duration-1000"
                   style={{ left: `${100 - ((currentStep - 1) / 3 * 100)}%` }}
                 ></div>
 
@@ -205,7 +214,7 @@ export default function TrackOrderPage() {
                       <div className={`
                         w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500
                         ${currentStep >= step.id 
-                          ? 'bg-[#D9A3AA] border-[#D9A3AA] text-white shadow-md scale-110' 
+                          ? 'bg-[#50C878] border-[#50C878] text-white shadow-md scale-110' 
                           : 'bg-white border-[#F8F5F2] text-[#4A4A4A]/30'}
                       `}>
                         <step.icon size={14} />
@@ -245,7 +254,7 @@ export default function TrackOrderPage() {
                 </div>
               )}
 
-              {/* بطاقة تفاصيل الإنتاج (جديدة - محفوظة) */}
+              {/* بطاقة تفاصيل الإنتاج */}
               <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 p-5 mb-4 shadow-sm">
                 <h3 className="text-xs font-bold text-[#4A4A4A] mb-4 flex items-center gap-2">
                   <Image size={16} className="text-[#D9A3AA]"/> تفاصيل محتويات الطلب
@@ -280,27 +289,31 @@ export default function TrackOrderPage() {
 
               <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 p-1">
                 
-                {/* --- ملخص الحساب (تم إرجاعه للتصميم المفصل السابق) --- */}
+                {/* ✅ ملخص الحساب (تم إرجاعه للتصميم المفصل: رصيد + ديون + صافي) */}
                 <div className="mb-1 bg-[#F8F5F2] rounded-xl p-4">
                   <h3 className="text-xs font-bold text-[#4A4A4A] mb-3 flex items-center gap-2">
                     <UserCheck size={16} className="text-[#D9A3AA]"/> ملخص حسابك
                   </h3>
-                  <div className="grid grid-cols-2 gap-3 text-center">
+                  
+                  {/* صف الرصيد والديون */}
+                  <div className="grid grid-cols-2 gap-3 text-center mb-3">
                     <div className="bg-white rounded-lg p-2 border border-[#D9A3AA]/10">
-                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-1">رصيد المحفظة</span>
+                      <span className="font-black text-emerald-600/50 block mb-1">رصيد المحفظة</span>
                       <span className="font-black text-emerald-600 dir-ltr text-lg">{customerStats.wallet.toFixed(2)}</span>
                     </div>
                     <div className="bg-white rounded-lg p-2 border border-[#D9A3AA]/10">
-                      <span className="text-[10px] text-red-600 /50 block mb-1">إجمالي الديون</span>
-                      <span className={`font-black dir-ltr text-lg ${customerStats.debt > 0 ? 'text-red-500' : 'text-red-600'}`}>{customerStats.debt.toFixed(2)}</span>
+                      <span className="font-black text-red-600/50 block mb-1">إجمالي الديون</span>
+                      <span className={`font-black dir-ltr text-lg ${customerStats.debt > 0 ? 'text-red-600' : 'text-red-600'}`}>{customerStats.debt.toFixed(2)}</span>
                     </div>
                   </div>
-                  <div className={`mt-3 pt-3 border-t border-[#D9A3AA]/10 flex justify-between items-center text-sm font-bold ${customerStats.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    <span>الصافي النهائي:</span>
+
+                  {/* صف الصافي */}
+                  <div className={`pt-3 border-t border-[#D9A3AA]/10 flex justify-between items-center text-sm font-bold ${customerStats.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <span>الصافي (لك/عليك):</span>
                     <span className="dir-ltr">{customerStats.net.toFixed(2)} ر.س</span>
                   </div>
                 </div>
-                {/* ----------------------------------------------------- */}
+                {/* ---------------------------------------------------------------- */}
 
                 <div className="p-4">
                     <h3 className="text-xs font-bold text-[#4A4A4A]/60 mb-4 flex items-center gap-1">
