@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 import { 
   Search, Package, Clock, CheckCircle, Truck, 
   AlertCircle, Banknote, Wallet, FileText, 
-  MapPin, Calendar, UserCheck, Home, ArrowLeft
+  MapPin, Calendar, UserCheck, Home, ArrowLeft,
+  Image, BookOpen 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo-art-moment.svg';
@@ -18,55 +19,48 @@ export default function TrackOrderPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // ✅ الإصلاح الجذري: توحيد صيغة الرقم لتكون (05xxxxxxxx) لتطابق قاعدة البيانات
+  // دالة توحيد رقم الجوال
   const normalizePhone = (raw) => {
     if (!raw) return '';
-    let digits = String(raw).replace(/\D/g, ''); // حذف أي رموز
-    if (digits.startsWith('966')) digits = digits.slice(3); // حذف 966
-    if (digits.startsWith('0')) digits = digits.slice(1); // حذف الصفر مؤقتاً
-    
-    // إذا كان رقم جوال سعودي (9 أرقام ويبدأ بـ 5)، نرجع الصفر له
-    if (digits.length === 9 && digits.startsWith('5')) {
-      return '0' + digits;
-    }
-    return digits;
+    let p = String(raw).replace(/\D/g, '');
+    if (p.startsWith('966')) p = p.slice(3);
+    if (p.startsWith('0')) p = p.slice(1);
+    return p;
   };
 
+  // دالة جلب البيانات المالية
   const fetchCustomerStats = async (phone) => {
     if (!phone) return;
-    const cleanPhone = normalizePhone(phone); // استخدام الرقم الموحد
+    const cleanPhone = normalizePhone(phone); 
 
     try {
-      // 1. جلب رصيد المحفظة
-      const { data: wallet } = await supabase
+      const { data: walletsData } = await supabase
         .from('wallets')
-        .select('points_balance')
-        .eq('phone', cleanPhone)
-        .maybeSingle();
+        .select('phone, points_balance');
 
-      const walletBalance = Number(wallet?.points_balance || 0);
+      const walletEntry = walletsData?.find(w => normalizePhone(w.phone) === cleanPhone);
+      const walletBalance = Number(walletEntry?.points_balance || 0);
 
-      // 2. جلب الديون
       const { data: allOrders } = await supabase
         .from('orders')
-        .select('total_amount, deposit, phone')
-        .order('created_at', { ascending: false });
+        .select('total_amount, deposit, phone');
 
       let totalDebt = 0;
       if (allOrders) {
         allOrders.forEach(o => {
-          // مقارنة الأرقام بعد التوحيد
           if (normalizePhone(o.phone) === cleanPhone) {
             const debt = Number(o.total_amount || 0) - Number(o.deposit || 0);
-            if (debt > 0) totalDebt += debt;
+            if (debt > 0.5) totalDebt += debt; 
           }
         });
       }
 
+      const netBalance = walletBalance - totalDebt;
+
       setCustomerStats({
         wallet: walletBalance,
         debt: totalDebt,
-        net: walletBalance - totalDebt
+        net: netBalance
       });
 
     } catch (e) {
@@ -87,7 +81,7 @@ export default function TrackOrderPage() {
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('*')
-        .ilike('id', `${orderId}%`) // البحث بجزء من الرقم
+        .ilike('id', `${orderId}%`)
         .limit(1)
         .single();
 
@@ -129,7 +123,6 @@ export default function TrackOrderPage() {
   return (
     <div className="min-h-screen bg-[#F8F5F2] flex flex-col items-center py-10 px-4 relative font-sans text-[#4A4A4A]" dir="rtl">
       
-      {/* خلفية جمالية */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
          <div className="absolute top-[-10%] right-[-5%] w-[30rem] h-[30rem] bg-[#D9A3AA]/10 rounded-full blur-3xl"></div>
          <div className="absolute bottom-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-[#C5A059]/10 rounded-full blur-3xl"></div>
@@ -178,7 +171,6 @@ export default function TrackOrderPage() {
         {order && (
           <div className="bg-white rounded-[2rem] border border-[#D9A3AA]/20 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             
-            {/* الشريط العلوي */}
             <div className="bg-[#4A4A4A] text-white p-6 text-center relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/20 rounded-full blur-2xl"></div>
               <div className="relative z-10">
@@ -194,7 +186,6 @@ export default function TrackOrderPage() {
 
             <div className="p-6">
               
-              {/* شريط التقدم */}
               <div className="relative flex justify-between mb-8 px-2">
                 <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#F8F5F2] -translate-y-1/2 z-0"></div>
                 <div 
@@ -232,7 +223,6 @@ export default function TrackOrderPage() {
                 })}
               </div>
 
-              {/* تفاصيل الطلب */}
               <div className="bg-[#F8F5F2] rounded-2xl p-5 border border-[#D9A3AA]/10 space-y-3 mb-4">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-[#4A4A4A]/60">رقم الطلب</span>
@@ -244,7 +234,6 @@ export default function TrackOrderPage() {
                 </div>
               </div>
 
-              {/* ملاحظات */}
               {order.notes && (
                 <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100 mb-4">
                   <h3 className="text-xs font-bold text-amber-600 mb-2 flex items-center gap-1">
@@ -256,9 +245,42 @@ export default function TrackOrderPage() {
                 </div>
               )}
 
+              {/* بطاقة تفاصيل الإنتاج (جديدة - محفوظة) */}
+              <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 p-5 mb-4 shadow-sm">
+                <h3 className="text-xs font-bold text-[#4A4A4A] mb-4 flex items-center gap-2">
+                  <Image size={16} className="text-[#D9A3AA]"/> تفاصيل محتويات الطلب
+                </h3>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="bg-[#F8F5F2] p-3 rounded-xl text-center border border-[#D9A3AA]/10">
+                    <span className="text-[10px] block text-[#4A4A4A]/60 mb-1">صور 4x6</span>
+                    <span className="font-black text-xl text-[#4A4A4A]">{order.photo_4x6_qty || 0}</span>
+                  </div>
+                  <div className="bg-[#F8F5F2] p-3 rounded-xl text-center border border-[#D9A3AA]/10">
+                    <span className="text-[10px] block text-[#4A4A4A]/60 mb-1">صور A4</span>
+                    <span className="font-black text-xl text-[#4A4A4A]">{order.a4_qty || 0}</span>
+                  </div>
+                </div>
+
+                {(order.album_qty > 0) && (
+                  <div className="bg-[#C5A059]/5 p-3 rounded-xl border border-[#C5A059]/20 flex gap-2 text-center text-sm">
+                    <div className="flex-1 border-l border-[#C5A059]/10 pl-2">
+                      <span className="block text-[10px] text-[#4A4A4A]/60 mb-1 flex items-center justify-center gap-1">
+                         <BookOpen size={10}/> عدد الألبومات
+                      </span>
+                      <span className="font-bold text-[#C5A059] text-lg">{order.album_qty}</span>
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-[10px] text-[#4A4A4A]/60 mb-1">سعر الألبوم</span>
+                      <span className="font-bold text-[#4A4A4A]">{order.album_price}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 p-1">
                 
-                {/* --- ملخص المحفظة (الجديد بالألوان الجديدة) --- */}
+                {/* --- ملخص الحساب (تم إرجاعه للتصميم المفصل السابق) --- */}
                 <div className="mb-1 bg-[#F8F5F2] rounded-xl p-4">
                   <h3 className="text-xs font-bold text-[#4A4A4A] mb-3 flex items-center gap-2">
                     <UserCheck size={16} className="text-[#D9A3AA]"/> ملخص حسابك
@@ -266,11 +288,11 @@ export default function TrackOrderPage() {
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <div className="bg-white rounded-lg p-2 border border-[#D9A3AA]/10">
                       <span className="text-[10px] text-[#4A4A4A]/50 block mb-1">رصيد المحفظة</span>
-                      <span className="font-black text-[#C5A059] dir-ltr text-lg">{customerStats.wallet.toFixed(2)}</span>
+                      <span className="font-black text-emerald-600 dir-ltr text-lg">{customerStats.wallet.toFixed(2)}</span>
                     </div>
                     <div className="bg-white rounded-lg p-2 border border-[#D9A3AA]/10">
-                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-1">إجمالي الديون</span>
-                      <span className={`font-black dir-ltr text-lg ${customerStats.debt > 0 ? 'text-red-500' : 'text-[#4A4A4A]'}`}>{customerStats.debt.toFixed(2)}</span>
+                      <span className="text-[10px] text-red-600 /50 block mb-1">إجمالي الديون</span>
+                      <span className={`font-black dir-ltr text-lg ${customerStats.debt > 0 ? 'text-red-500' : 'text-red-600'}`}>{customerStats.debt.toFixed(2)}</span>
                     </div>
                   </div>
                   <div className={`mt-3 pt-3 border-t border-[#D9A3AA]/10 flex justify-between items-center text-sm font-bold ${customerStats.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -278,11 +300,11 @@ export default function TrackOrderPage() {
                     <span className="dir-ltr">{customerStats.net.toFixed(2)} ر.س</span>
                   </div>
                 </div>
-                {/* ----------------------------------------------- */}
+                {/* ----------------------------------------------------- */}
 
                 <div className="p-4">
                     <h3 className="text-xs font-bold text-[#4A4A4A]/60 mb-4 flex items-center gap-1">
-                    <Banknote size={14}/> تفاصيل هذا الطلب
+                    <Banknote size={14}/> الحسابات المالية للطلب
                     </h3>
 
                     <div className="flex justify-between items-center text-sm text-[#4A4A4A] mb-2 px-1">
@@ -296,17 +318,6 @@ export default function TrackOrderPage() {
                         <span className="font-bold">{order.delivery_fee}</span>
                     </div>
                     )}
-
-                    {(() => {
-                        const theoreticalTotal = Number(order.subtotal || 0) + Number(order.delivery_fee || 0);
-                        const impliedDiscount = theoreticalTotal - Number(order.total_amount || 0);
-                        if (impliedDiscount > 0.01) return (
-                            <div className="flex justify-between items-center text-sm text-red-500 mb-2 px-1">
-                                <span className="flex items-center gap-1 font-bold">خصم / محفظة</span>
-                                <span className="font-bold">-{impliedDiscount.toFixed(2)}</span>
-                            </div>
-                        );
-                    })()}
 
                     <div className="border-t border-[#D9A3AA]/20 my-3"></div>
 
