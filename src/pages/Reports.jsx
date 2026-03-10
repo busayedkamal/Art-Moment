@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart3, Calendar, Download, TrendingDown, TrendingUp, 
-  PieChart as PieIcon, Activity, CheckCircle2, MapPin, Crown, Users, Copy 
+  PieChart as PieIcon, Activity, CheckCircle2, MapPin, Crown, Users, Copy, ChevronDown
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -19,6 +19,7 @@ export default function Reports() {
   const [orders, setOrders] = useState([]); 
   const [expenses, setExpenses] = useState([]);
   const [settings, setSettings] = useState({ a4_price: 0, photo_4x6_price: 0 });
+  const [expandedMonth, setExpandedMonth] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -89,7 +90,6 @@ export default function Reports() {
       const dateInfo = getMonthKey(o.created_at);
       if (dateInfo && monthlyMap[dateInfo.key]) monthlyMap[dateInfo.key].orders += 1;
 
-      // 1. تحليل المناطق (محدث: يقرأ من حقل source مباشرة)
       const city = o.source ? o.source.trim() : 'أخرى';
       if (citiesMap.hasOwnProperty(city)) {
         citiesMap[city]++;
@@ -146,6 +146,50 @@ export default function Reports() {
   }, [payments, expenses, orders, settings]);
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+  const generateReturnOfferMsg = () => {
+    const customersMap = {};
+
+    orders.forEach(o => {
+        if (o.status === 'delivered' && o.phone) {
+            if (!customersMap[o.phone]) {
+                customersMap[o.phone] = {
+                    name: o.customer_name,
+                    phone: o.phone,
+                    totalPhotos: 0,
+                    totalA4: 0,
+                    lastOrderDate: new Date(o.created_at)
+                };
+            }
+            
+            customersMap[o.phone].totalPhotos += Number(o.photo_4x6_qty || 0);
+            customersMap[o.phone].totalA4 += Number(o.a4_qty || 0);
+            
+            const orderDate = new Date(o.created_at);
+            if (orderDate > customersMap[o.phone].lastOrderDate) {
+                customersMap[o.phone].lastOrderDate = orderDate;
+            }
+        }
+    });
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const eligibleCustomers = Object.values(customersMap).filter(c => c.lastOrderDate < thirtyDaysAgo);
+
+    if (eligibleCustomers.length === 0) {
+        toast.error('لا يوجد عملاء مطابقين لشروط الحملة (مر أكثر من شهر على آخر طلب).');
+        return;
+    }
+
+    const targetCustomer = eligibleCustomers[0];
+    const savings = ((targetCustomer.totalPhotos * settings.photo_4x6_price) + (targetCustomer.totalA4 * settings.a4_price)).toFixed(0);
+
+    const msg = `أهلاً بك عميلنا العزيز ${targetCustomer.name} 👋\nنفتقدك في لحظة فن! 🎨\n\nلقد طبعنا لك مسبقاً أكثر من ${targetCustomer.totalPhotos} صورة، ووفرت معنا أكثر من ${savings} ريال.\n\nرجعنا لك بعرض خاص لفترة محدودة:\nاطبع 50 صورة بـ 49 ريال فقط بدلاً من 100 ريال! 🎁\n\nللطلب أرسل صورك الآن:\nhttps://wa.me/966569663697`;
+    
+    navigator.clipboard.writeText(msg);
+    toast.success(`تم نسخ رسالة العرض للعميل ${targetCustomer.name}! يمكنك لصقها في الواتساب.`);
+  };
 
   if (loading) return <div className="p-20 text-center"><div className="w-8 h-8 border-4 border-[#D9A3AA]/15 border-t-[#D9A3AA] rounded-full animate-spin mx-auto"></div><p className="mt-4">جاري تحليل البيانات...</p></div>;
 
@@ -227,9 +271,8 @@ export default function Reports() {
         </div>
       </div>
 
+      {/* بطاقة دراسة الجدوى */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* بطاقة دراسة الجدوى الحية (تم الاستبدال هنا) */}
         <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm overflow-hidden relative">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
@@ -280,7 +323,7 @@ export default function Reports() {
               </p>
             </div>
 
-            {/* 3. معدل النمو (مقارنة الشهر الحالي بالماضي) */}
+            {/* 3. معدل النمو */}
             <div className="pt-4 border-t border-[#D9A3AA]/10">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -307,27 +350,73 @@ export default function Reports() {
               </div>
             </div>
           </div>
-          
-          {/* خلفية جمالية خفيفة */}
           <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-[#D9A3AA]/10 rounded-full blur-2xl"></div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2"><MapPin size={18} className="text-red-500"/> المناطق الجغرافية</h3>
-            <span className="text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded-lg">من المصدر</span>
+{/* بطاقة محفز النمو وفرص المبيعات (كبديل للمناطق الجغرافية) */}
+        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
+              <TrendingUp size={18} className="text-[#C5A059]"/> محفز النمو الشهري
+            </h3>
+            <span className="text-[10px] bg-[#C5A059]/10 text-[#C5A059] px-2 py-1 rounded-lg font-bold">
+              الهدف: +20%
+            </span>
           </div>
-          <div className="h-48 w-full dir-ltr">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics.geoData} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false}/>
-                <XAxis type="number" hide/>
-                <YAxis dataKey="name" type="category" width={60} tick={{fontSize: 11}} axisLine={false} tickLine={false}/>
-                <Tooltip cursor={{fill: 'transparent'}} />
-                <Bar dataKey="value" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={15} name="الطلبات" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+
+          {(() => {
+            // 1. حساب الهدف الشهري (زيادة 20% عن الشهر الماضي)
+            const target = analytics.lastMonthRevenue > 0 ? analytics.lastMonthRevenue * 1.2 : 1000;
+            const current = analytics.currentMonthRevenue;
+            const progress = Math.min(100, (current / target) * 100);
+            const remaining = Math.max(0, target - current);
+            
+            // 2. اكتشاف فرص البيع الضائعة (طلبات صور كثيرة بدون ألبوم)
+            const currentMonthPrefix = new Date().toISOString().substring(0, 7);
+            const upsellOrders = orders.filter(o => 
+              o.created_at?.startsWith(currentMonthPrefix) && 
+              (Number(o.photo_4x6_qty) > 20) && // طلب أكثر من 20 صورة
+              (Number(o.album_qty) === 0)       // ولم يشترِ ألبوم
+            );
+            // بافتراض متوسط سعر الألبوم 35 ريال
+            const potentialRevenue = upsellOrders.length * 35; 
+
+            return (
+              <div className="space-y-6 mt-2">
+                {/* شريط تقدم الهدف المالي */}
+                <div>
+                  <div className="flex justify-between text-xs mb-2">
+                    <span className="text-[#4A4A4A]/70 font-bold">تخطي مبيعات الشهر الماضي</span>
+                    <span className="font-bold text-[#C5A059]">{target.toLocaleString(undefined, {maximumFractionDigits: 0})} ر.س</span>
+                  </div>
+                  <div className="w-full bg-[#F8F5F2] rounded-full h-3 mb-2 overflow-hidden border border-[#D9A3AA]/10 relative">
+                    <div className="bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+                  </div>
+                  <p className="text-[10px] text-[#4A4A4A]/60 text-center">
+                    {remaining > 0 
+                      ? `باقي ${remaining.toLocaleString(undefined, {maximumFractionDigits: 0})} ر.س لتحطيم الرقم القياسي 💪` 
+                      : '🎉 بطل! لقد حققت هدف النمو بنجاح!'}
+                  </p>
+                </div>
+
+                {/* نصيحة زيادة الدخل (البيع المتقاطع) */}
+                <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-1.5 h-full bg-amber-400"></div>
+                  <h4 className="text-xs font-bold text-amber-800 mb-1.5 flex items-center gap-1">
+                    💡 فرصة ذكية لزيادة الدخل!
+                  </h4>
+                  <p className="text-[11px] text-amber-700/80 leading-relaxed">
+                    هذا الشهر، يوجد <span className="font-bold text-amber-900 bg-amber-200/50 px-1 rounded">{upsellOrders.length} طلبات</span> تحتوي على كمية صور كبيرة بدون ألبومات لحفظها.
+                  </p>
+                  
+                  <div className="mt-3 pt-3 border-t border-amber-200/50 flex justify-between items-center text-xs font-bold text-amber-800">
+                    <span>اقترح عليهم ألبوماً واكسب:</span>
+                    <span className="bg-amber-200 px-2 py-1 rounded-md text-amber-900">+{potentialRevenue} ر.س</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -353,22 +442,111 @@ export default function Reports() {
         </button>
       </div>
 
+      {/* ✅ جدول التفاصيل الشهرية الديناميكي ✅ */}
       <div className="bg-white rounded-2xl border border-[#D9A3AA]/15 overflow-hidden">
         <div className="p-4 border-b border-[#D9A3AA]/10 bg-[#F8F5F2]/50"><h3 className="font-bold text-[#4A4A4A]/80 text-sm">التفاصيل الشهرية</h3></div>
         <table className="w-full text-right text-sm">
           <thead className="bg-[#F8F5F2] text-[#4A4A4A]/60">
-            <tr><th className="px-6 py-4">الشهر</th><th className="px-6 py-4">الدخل</th><th className="px-6 py-4">المصروفات</th><th className="px-6 py-4">الصافي</th><th className="px-6 py-4">الطلبات</th></tr>
+            <tr>
+              <th className="px-6 py-4">الشهر</th>
+              <th className="px-6 py-4">الدخل</th>
+              <th className="px-6 py-4">المصروفات</th>
+              <th className="px-6 py-4">الصافي</th>
+              <th className="px-6 py-4">الطلبات</th>
+            </tr>
           </thead>
           <tbody className="divide-y divide-[#D9A3AA]/10">
-            {analytics.monthlyData.slice().reverse().map((row) => (
-              <tr key={row.name} className="hover:bg-[#F8F5F2]">
-                <td className="px-6 py-4 font-bold">{isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name}</td>
-                <td className="px-6 py-4 text-emerald-600">{row.revenue.toLocaleString()}</td>
-                <td className="px-6 py-4 text-red-500">{row.expenses.toLocaleString()}</td>
-                <td className="px-6 py-4 font-bold">{(row.revenue - row.expenses).toLocaleString()}</td>
-                <td className="px-6 py-4">{row.orders}</td>
-              </tr>
-            ))}
+            {analytics.monthlyData.slice().reverse().map((row) => {
+              
+              const monthPayments = payments.filter(p => p.payment_date?.startsWith(row.name));
+              const monthExpenses = expenses.filter(e => e.date?.startsWith(row.name));
+
+              const incomeByCustomer = monthPayments.reduce((acc, curr) => {
+                const order = orders.find(o => o.id === curr.order_id);
+                const customerName = order ? order.customer_name : 'عميل غير معروف';
+                acc[customerName] = (acc[customerName] || 0) + Number(curr.amount);
+                return acc;
+              }, {});
+
+              // ✅ التعديل هنا: قراءة 'title' بدلاً من 'category'
+              const expensesByCategory = monthExpenses.reduce((acc, curr) => {
+                const cat = curr.title || 'غير مصنف';
+                acc[cat] = (acc[cat] || 0) + Number(curr.amount);
+                return acc;
+              }, {});
+
+              const isExpanded = expandedMonth === row.name;
+
+              return (
+                <React.Fragment key={row.name}>
+                  <tr 
+                    onClick={() => setExpandedMonth(isExpanded ? null : row.name)}
+                    className="hover:bg-[#F8F5F2] cursor-pointer transition-colors group"
+                  >
+                    <td className="px-6 py-4 font-bold flex items-center gap-2">
+                      <div className={`p-1 rounded-full transition-colors ${isExpanded ? 'bg-[#D9A3AA] text-white' : 'bg-[#D9A3AA]/10 text-[#D9A3AA] group-hover:bg-[#D9A3AA] group-hover:text-white'}`}>
+                         <ChevronDown size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </div>
+                      {isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name}
+                    </td>
+                    <td className="px-6 py-4 text-emerald-600">{row.revenue.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-red-500">{row.expenses.toLocaleString()}</td>
+                    <td className="px-6 py-4 font-bold">{(row.revenue - row.expenses).toLocaleString()}</td>
+                    <td className="px-6 py-4">{row.orders}</td>
+                  </tr>
+
+                  {isExpanded && (
+                    <tr className="bg-[#F8F5F2]/40 border-b-2 border-[#D9A3AA]/20">
+                      <td colSpan="5" className="p-0">
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2 fade-in duration-300">
+                          
+                          <div className="bg-white p-5 rounded-xl border border-emerald-100 shadow-sm">
+                            <h4 className="font-bold text-emerald-700 mb-4 text-xs flex items-center gap-2 pb-2 border-b border-emerald-50">
+                              <TrendingUp size={16}/> مصادر الدخل (العملاء)
+                            </h4>
+                            {Object.keys(incomeByCustomer).length > 0 ? (
+                              <ul className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                {Object.entries(incomeByCustomer)
+                                  .sort((a, b) => b[1] - a[1]) 
+                                  .map(([name, amount], idx) => (
+                                  <li key={idx} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                                    <span className="text-[#4A4A4A]/80 font-medium">{name}</span>
+                                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{amount.toLocaleString()} ر.س</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-[#4A4A4A]/40 text-center py-2">لا توجد دفعات مسجلة</p>
+                            )}
+                          </div>
+
+                          <div className="bg-white p-5 rounded-xl border border-red-100 shadow-sm">
+                            <h4 className="font-bold text-red-600 mb-4 text-xs flex items-center gap-2 pb-2 border-b border-red-50">
+                              <TrendingDown size={16}/> بنود المصروفات
+                            </h4>
+                            {Object.keys(expensesByCategory).length > 0 ? (
+                              <ul className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                {Object.entries(expensesByCategory)
+                                  .sort((a, b) => b[1] - a[1])
+                                  .map(([category, amount], idx) => (
+                                  <li key={idx} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                                    <span className="text-[#4A4A4A]/80 font-medium">{category}</span>
+                                    <span className="font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md">{amount.toLocaleString()} ر.س</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-[#4A4A4A]/40 text-center py-2">لا توجد مصروفات مسجلة</p>
+                            )}
+                          </div>
+
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
