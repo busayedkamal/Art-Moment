@@ -10,7 +10,7 @@ import {
   Printer, Menu, X, ChevronDown, Lock, Star, Quote, BookOpen,
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
   Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram, 
-  Ghost, Music, Link2 // 👈 تمت إضافة هذه الأيقونات هنا
+  Ghost, Music, Link2, Plane, Gift, Smartphone, LayoutDashboard // 👈 تمت إضافة الأيقونات هنا
 } from 'lucide-react';
 
 // ✅ تصحيح مسار الصور
@@ -26,6 +26,7 @@ import printedPhotos from './assets/printed-photos.png';
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [activePackage, setActivePackage] = useState(0);
 
   // --- حالات فحص الصور ---
   const [analyzing, setAnalyzing] = useState(false);
@@ -332,51 +333,124 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- 3. قسم المحاكاة (Mockups) --- */}
-      <section id="mockups" className="py-20 bg-[#4A4A4A] text-white overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/10 rounded-full blur-3xl"></div>
+{/* --- 3. قسم مستشار باقات الذكريات (البديل الجبار للمحاكاة) --- */}
+      <section id="packages" className="py-20 bg-[#4A4A4A] text-white overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-[#D9A3AA]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#C5A059]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
+        
         <div className="max-w-6xl mx-auto px-4 relative z-10">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/20 text-[#C5A059] font-bold text-xs mb-2">
-                <Frame size={16} /> تجربة تفاعلية
-              </div>
-              <h2 className="text-3xl md:text-4xl font-black leading-tight">
-                جربي صورك في براويزنا 🖼️<br/><span className="text-[#C5A059]">قبل ما تطلبي!</span>
-              </h2>
-              <p className="text-white/70 text-lg leading-relaxed">
-                محتار كيف بتطلع الصورة على الجدار أو المكتب؟ ارفع صورك وشوفها كأنها مطبوعة قدامك.
-              </p>
-
-              <div className="flex gap-3">
-                {[ { id: 0, label: 'على الجدار', icon: Frame }, { id: 1, label: 'على المكتب', icon: ImageIcon }, { id: 2, label: 'في الألبوم', icon: BookOpen } ].map((frame) => (
-                  <button key={frame.id} onClick={() => setActiveFrame(frame.id)} className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold transition-all ${activeFrame === frame.id ? 'bg-[#D9A3AA] text-white shadow-lg' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
-                    <frame.icon size={18} /> {frame.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="pt-4">
-                <button onClick={() => mockupInputRef.current?.click()} className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-[#4A4A4A] font-bold hover:bg-[#F8F5F2] transition-colors flex items-center justify-center gap-2">
-                  <Upload size={20} /> ارفع صورة للتجربة
-                </button>
-                <input type="file" ref={mockupInputRef} onChange={handleMockupUpload} accept="image/*" className="hidden" />
-              </div>
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/20 text-[#C5A059] font-bold text-xs mb-4 border border-[#C5A059]/30">
+              <Sparkles size={14} /> حلك الجاهز عندنا
             </div>
-
-            <div className="relative">
-              <div className="aspect-square bg-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10 relative">
-                <img src={activeFrame === 0 ? "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80" : activeFrame === 1 ? "https://images.unsplash.com/photo-1593060235732-22fdba40604b?auto=format&fit=crop&w=800&q=80" : "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=800&q=80"} alt="Frame" className="w-full h-full object-cover opacity-60 mix-blend-overlay"/>
-                {mockupImage ? (
-                  <div className={`absolute shadow-2xl transition-all duration-500 overflow-hidden ${activeFrame === 0 ? "top-[20%] left-[25%] w-[50%] h-[40%] border-8 border-white bg-white rotate-1" : activeFrame === 1 ? "top-[35%] left-[60%] w-[25%] h-[35%] border-4 border-black bg-white -rotate-6" : "top-[15%] left-[15%] w-[35%] h-[70%] rotate-2 shadow-inner"}`}>
-                    <img src={mockupImage} className="w-full h-full object-cover" alt="User Upload" />
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-center p-6"><div className="bg-[#4A4A4A]/80 backdrop-blur-md p-6 rounded-3xl border border-white/10"><Eye size={40} className="mx-auto mb-2 text-[#C5A059]"/><p className="text-white/80 font-bold">ارفعي صورة لتظهر هنا</p></div></div>
-                )}
-              </div>
-            </div>
+            <h2 className="text-3xl md:text-4xl font-black leading-tight mb-4">
+              محتار وش تطبع؟ <br/><span className="text-[#C5A059]">اختر المناسبة وخلي الباقي علينا!</span>
+            </h2>
+            <p className="text-white/70 text-lg max-w-2xl mx-auto">
+              صممنا لك باقات ذكية ومدروسة توفر عليك التفكير، وتضمن لك توثيق ذكرياتك بأفضل شكل وبأنسب سعر.
+            </p>
           </div>
+
+          {(() => {
+            const packages = [
+              {
+                id: 0,
+                icon: Plane,
+                title: 'ذكريات السفر',
+                desc: 'لا تخلي صور السفرة محبوسة بالجوال! وثق أجمل أيامك في ألبوم يجمع كل تفاصيلها لتعيشها كل ما فتحته.',
+                contents: ['ألبوم صور أنيق ومقاوم', '100 صورة مقاس 4x6', 'ألوان زاهية وتفاصيل دقيقة'],
+                color: 'from-blue-500 to-cyan-400',
+                whatsappMsg: 'مرحباً، مهتم بطلب "باقة ذكريات السفر" (ألبوم + 100 صورة)'
+              },
+              {
+                id: 1,
+                icon: Gift,
+                title: 'الهدية المثالية',
+                desc: 'أجمل هدية ممكن تقدمها لشخص غالي هي ذكرياتكم المشتركة. جهزناها لك بعناية لتكون مفاجأة لا تُنسى.',
+                contents: ['ألبوم فاخر لحفظ الصور', '50 صورة لأجمل لحظاتكم', 'تغليف هدايا فاخر + كرت إهداء'],
+                color: 'from-[#D9A3AA] to-pink-500',
+                whatsappMsg: 'مرحباً، مهتم بطلب "باقة الهدية المثالية" (مع التغليف)'
+              },
+              {
+                id: 2,
+                icon: Smartphone,
+                title: 'تفريغ زحمة الجوال',
+                desc: 'الجوالات تخرب وتضيع، لكن الصور المطبوعة تعيش للأبد. نظف مساحة جوالك واحفظ ذكرياتك بأمان.',
+                contents: ['200 صورة مقاس 4x6', 'طباعة عالية الجودة تدوم طويلاً', 'توفير ممتاز للكميات'],
+                color: 'from-[#C5A059] to-amber-600',
+                whatsappMsg: 'مرحباً، مهتم بطلب "باقة تفريغ الجوال" (200 صورة)'
+              },
+              {
+                id: 3,
+                icon: LayoutDashboard,
+                title: 'جدار الذكريات',
+                desc: 'جدد غرفتك أو مكتبك بصورك المفضلة! صور بحجم كبير تناسب البراويز وتضيف روح للمكان.',
+                contents: ['6 صور كبيرة مقاس A4', 'دقة استثنائية تناسب البراويز', 'جاهزة للتعليق فوراً'],
+                color: 'from-emerald-500 to-teal-400',
+                whatsappMsg: 'مرحباً، مهتم بطلب "باقة جدار الذكريات" (6 صور A4)'
+              }
+            ];
+
+            const active = packages[activePackage];
+
+            return (
+              <div className="grid md:grid-cols-12 gap-8 items-start">
+                
+                {/* قائمة الخيارات (الأزرار) */}
+                <div className="md:col-span-4 space-y-3">
+                  {packages.map((pkg) => (
+                    <button 
+                      key={pkg.id} 
+                      onClick={() => setActivePackage(pkg.id)}
+                      className={`w-full text-right p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 border ${activePackage === pkg.id ? 'bg-white text-[#4A4A4A] border-white shadow-xl scale-105' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${pkg.color} shadow-md`}>
+                        <pkg.icon size={24} />
+                      </div>
+                      <div>
+                        <h4 className={`font-black ${activePackage === pkg.id ? 'text-[#4A4A4A]' : 'text-white'}`}>{pkg.title}</h4>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* تفاصيل الباقة المحددة */}
+                <div className="md:col-span-8">
+                  <div className="bg-white/5 backdrop-blur-md rounded-[2rem] p-8 md:p-10 border border-white/10 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-500" key={active.id}>
+                    <div className={`absolute top-0 right-0 w-2 h-full bg-gradient-to-b ${active.color}`}></div>
+                    
+                    <h3 className="text-3xl font-black text-white mb-4">{active.title}</h3>
+                    <p className="text-white/70 leading-relaxed mb-8 text-lg">
+                      {active.desc}
+                    </p>
+
+                    <div className="bg-[#F8F5F2]/10 rounded-2xl p-6 mb-8 border border-white/5">
+                      <h4 className="font-bold text-[#C5A059] mb-4 text-sm uppercase tracking-wider">محتويات الباقة الافتراضية:</h4>
+                      <ul className="space-y-3">
+                        {active.contents.map((item, idx) => (
+                          <li key={idx} className="flex items-center gap-3 text-white/90">
+                            <CheckCircle size={18} className="text-[#D9A3AA]" />
+                            <span className="font-medium">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <a 
+                      href={`https://wa.me/966569663697?text=${encodeURIComponent(active.whatsappMsg)}`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-[#4A4A4A] font-black hover:bg-[#F8F5F2] hover:scale-105 transition-all shadow-xl"
+                    >
+                      <MessageCircle size={20} className={`text-transparent bg-clip-text bg-gradient-to-br ${active.color} text-black`} /> 
+                      اطلب هذه الباقة الآن
+                    </a>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })()}
         </div>
       </section>
 
