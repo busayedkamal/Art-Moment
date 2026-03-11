@@ -9,7 +9,8 @@ import {
   Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck, 
   Printer, Menu, X, ChevronDown, Lock, Star, Quote, BookOpen,
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
-  Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram, Twitter
+  Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram, 
+  Ghost, Music, Link2 // 👈 تمت إضافة هذه الأيقونات هنا
 } from 'lucide-react';
 
 // ✅ تصحيح مسار الصور
@@ -242,16 +243,16 @@ export default function LandingPage() {
             </h1>
             
             <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto md:mx-0">
-              حوّلي صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية. 
-              أرسلي صورك، تابعي الطلب، واستلميها بتغليف فاخر يليق بذكرياتك.
+              حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية. 
+              أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر يليق بذكرياتك.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
               <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#D9A3AA] hover:bg-[#C5A059] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#D9A3AA]/40">
-                <MessageCircle size={20} /> اطلبي عبر واتساب
+                <MessageCircle size={20} /> اطلب عبر واتساب
               </a>
               <Link to="/track" className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
-                <Search size={20} className="text-[#C5A059]" /> تتبعي طلبك
+                <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
               </Link>
             </div>
 
@@ -282,7 +283,7 @@ export default function LandingPage() {
           </div>
           <h2 className="text-3xl font-black text-[#4A4A4A] mb-4">هل صورتك مناسبة للطباعة؟ 🧐</h2>
           <p className="text-[#4A4A4A]/70 mb-10 max-w-lg mx-auto">
-            ارفعي صورتك هنا، وسيقوم النظام فوراً بتحليل دقتها وإضاءتها ليخبرك بأفضل مقاس للطباعة.
+            ارفع صورتك هنا، وسيقوم النظام فوراً بتحليل دقتها وإضاءتها ليخبرك بأفضل مقاس للطباعة.
           </p>
 
           <div className="bg-[#F8F5F2] rounded-[2.5rem] p-8 shadow-inner border border-[#D9A3AA]/10 max-w-2xl mx-auto relative overflow-hidden">
@@ -291,7 +292,7 @@ export default function LandingPage() {
                 <div className="w-20 h-20 bg-white text-[#D9A3AA] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-sm">
                   <Upload size={32}/>
                 </div>
-                <h3 className="font-bold text-[#4A4A4A] text-lg mb-2">اضغطي هنا لرفع الصورة</h3>
+                <h3 className="font-bold text-[#4A4A4A] text-lg mb-2">اضغط هنا لرفع الصورة</h3>
                 <p className="text-sm text-[#4A4A4A]/60">نقبل صور JPG, PNG بجودة عالية</p>
                 <input type="file" ref={fileInputRef} onChange={handleImageCheck} accept="image/*" className="hidden" />
               </div>
@@ -344,7 +345,7 @@ export default function LandingPage() {
                 جربي صورك في براويزنا 🖼️<br/><span className="text-[#C5A059]">قبل ما تطلبي!</span>
               </h2>
               <p className="text-white/70 text-lg leading-relaxed">
-                محتارة كيف بتطلع الصورة على الجدار أو المكتب؟ ارفعي صورك وشوفيها كأنها مطبوعة قدامك.
+                محتار كيف بتطلع الصورة على الجدار أو المكتب؟ ارفع صورك وشوفها كأنها مطبوعة قدامك.
               </p>
 
               <div className="flex gap-3">
@@ -357,7 +358,7 @@ export default function LandingPage() {
 
               <div className="pt-4">
                 <button onClick={() => mockupInputRef.current?.click()} className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-[#4A4A4A] font-bold hover:bg-[#F8F5F2] transition-colors flex items-center justify-center gap-2">
-                  <Upload size={20} /> ارفعي صورة للتجربة
+                  <Upload size={20} /> ارفع صورة للتجربة
                 </button>
                 <input type="file" ref={mockupInputRef} onChange={handleMockupUpload} accept="image/*" className="hidden" />
               </div>
@@ -384,7 +385,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black text-[#4A4A4A] mb-4">خدمات الطباعة <span className="text-[#D9A3AA]">والألبومات</span></h2>
-            <p className="text-[#4A4A4A]/70 max-w-2xl mx-auto">اختاري المقاس المناسب لصورك، واحصلي على جودة تدوم.</p>
+            <p className="text-[#4A4A4A]/70 max-w-2xl mx-auto">اختار المقاس المناسب لصورك، واحصل على جودة تدوم.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
@@ -411,8 +412,8 @@ export default function LandingPage() {
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
                   <div className="flex-1 text-center md:text-right">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] font-bold text-xs mb-3 border border-[#D9A3AA]/30"><Sparkles size={14} className="animate-pulse"/> وفر أكثر</div>
-                    <h3 className="text-3xl font-black mb-4">كل ما طبعتي أكثر، <span className="text-[#C5A059]">وفرتي أكثر!</span></h3>
-                    <p className="text-white/70 text-sm mb-8">حركي المؤشر وشوفي السعر يتغير تلقائياً.</p>
+                    <h3 className="text-3xl font-black mb-4">كل ما طبعت أكثر، <span className="text-[#C5A059]">وفرت أكثر!</span></h3>
+                    <p className="text-white/70 text-sm mb-8">حرك المؤشر وشوف السعر يتغير تلقائياً.</p>
                     
                     <div className="space-y-6">
                       <input type="range" min="1" max="100" value={calcQty} onChange={(e) => setCalcQty(Number(e.target.value))} className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#D9A3AA]" />
@@ -502,23 +503,44 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- تذييل الصفحة --- */}
+{/* --- تذييل الصفحة --- */}
       <footer className="bg-[#4A4A4A] text-white py-16 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none"><div className="absolute -top-1/2 -right-1/2 w-[100rem] h-[100rem] bg-[#D9A3AA] rounded-full blur-3xl"></div></div>
         <div className="max-w-7xl mx-auto px-4 relative z-10">
-          <img src={logo} alt="Art Moment" className="h-16 w-auto mx-auto mb-6 brightness-0 invert" /> 
+          
+          {/* ✅ تم إرجاع الشعار للونه الأسود الأصلي (تمت إزالة الفلتر الأبيض) */}
+          <div className="bg-white/10 w-fit mx-auto p-4 rounded-2xl mb-6 backdrop-blur-sm border border-white/10">
+            <img src={logo} alt="Art Moment" className="h-16 w-auto brightness-0" /> 
+          </div>
+
           <p className="mb-8 max-w-md mx-auto text-white/60">
             خدمة طباعة منظمة من أول رسالة حتى الاستلام. هدفنا أن تكون تجربتك بسيطة وواضحة، ونجهز لك صورك بأفضل جودة.
           </p>
+          
           <div className="flex justify-center gap-6 text-sm font-bold mb-8">
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
             <Link to="/admin/login" className="hover:text-[#D9A3AA] transition-colors">دخول الموظفين</Link>
           </div>
-          <div className="flex justify-center gap-4 mb-8">
-             <Instagram className="text-[#C5A059] hover:text-white cursor-pointer transition-colors"/>
-             <Twitter className="text-[#C5A059] hover:text-white cursor-pointer transition-colors"/>
-             <Mail className="text-[#C5A059] hover:text-white cursor-pointer transition-colors"/>
+          
+          {/* ✅ روابط وسائل التواصل الجديدة مع تصميم أزرار أنيق */}
+          <div className="flex justify-center flex-wrap gap-4 mb-8">
+             <a href="https://www.instagram.com/art.moment__/" target="_blank" rel="noreferrer" title="Instagram" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-gradient-to-tr hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
+               <Instagram size={22}/>
+             </a>
+             <a href="https://www.snapchat.com/add/omsayedkamal" target="_blank" rel="noreferrer" title="Snapchat" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-yellow-400 hover:text-black transition-all border border-white/10 hover:border-transparent">
+               <Ghost size={22}/>
+             </a>
+             <a href="https://www.tiktok.com/@ayatalshaqaq" target="_blank" rel="noreferrer" title="TikTok" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-black hover:text-white transition-all border border-white/10 hover:border-transparent">
+               <Music size={22}/>
+             </a>
+             <a href="https://linktr.ee/Art_Moment" target="_blank" rel="noreferrer" title="Linktree" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-[#43E660] hover:text-white transition-all border border-white/10 hover:border-transparent">
+               <Link2 size={22}/>
+             </a>
+             <a href="mailto:omsayedkamal@gmail.com" title="Email" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-red-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
+               <Mail size={22}/>
+             </a>
           </div>
+
           <p className="text-xs text-white/30 border-t border-white/10 pt-8">
             © 2026 Art Moment. جميع الحقوق محفوظة.
           </p>
