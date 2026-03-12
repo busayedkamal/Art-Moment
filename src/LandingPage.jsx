@@ -10,7 +10,8 @@ import {
   Printer, Menu, X, ChevronDown, Lock, Star, Quote, BookOpen,
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
   Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram, 
-  Ghost, Music, Link2, Plane, Gift, Smartphone, LayoutDashboard // 👈 تمت إضافة الأيقونات هنا
+  Ghost, Music, Link2, Plane, Gift, Smartphone, LayoutDashboard,
+  MessageSquarePlus, Send // 👈 أضفنا هاتين الأيقونتين
 } from 'lucide-react';
 
 // ✅ تصحيح مسار الصور
@@ -47,6 +48,18 @@ export default function LandingPage() {
   // --- حالات التسعير ---
   const [pricingSettings, setPricingSettings] = useState(null);
   const [calcQty, setCalcQty] = useState(50);
+
+  // --- حالات صندوق الاقتراحات والشكاوى ---
+  const [feedbackType, setFeedbackType] = useState('تقييم ⭐️');
+  const [feedbackText, setFeedbackText] = useState('');
+
+  const handleSendFeedback = () => {
+    if(!feedbackText.trim()) return;
+    const adminWhatsApp = "966569663697"; // رقم الإدارة
+    const msg = `مرحباً، لدي رسالة للإدارة:\n\n*نوع الرسالة:* ${feedbackType}\n*النص:* ${feedbackText}`;
+    window.open(`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(msg)}`, '_blank');
+    setFeedbackText(''); // تفريغ الحقل بعد الإرسال
+  };
 
   const [scrolled, setScrolled] = useState(false);
 
@@ -189,7 +202,7 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-[#4A4A4A]/80">
             <a href="#ai-check" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1"><ScanFace size={16} className="text-[#D9A3AA]"/> فحص الجودة</a>
-            <a href="#mockups" className="hover:text-[#D9A3AA] transition-colors">المحاكاة</a>
+            <a href="#packages" className="hover:text-[#D9A3AA] transition-colors">الباقات</a>
             <a href="#sizes" className="hover:text-[#D9A3AA] transition-colors">الخدمات</a>
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
           </nav>
@@ -213,7 +226,7 @@ export default function LandingPage() {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-4 shadow-xl absolute w-full z-50">
             <a href="#ai-check" className="block py-2 text-[#D9A3AA] font-bold" onClick={() => setIsMobileMenuOpen(false)}>✨ فحص جودة الصورة</a>
-            <a href="#mockups" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>جربيها في برواز</a>
+            <a href="#packages" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
             <a href="#sizes" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
             
             <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>
@@ -249,9 +262,9 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
-              <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#D9A3AA] hover:bg-[#C5A059] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#D9A3AA]/40">
-                <MessageCircle size={20} /> اطلب عبر واتساب
-              </a>
+            <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
+             <MessageCircle size={20} /> اطلب عبر واتساب
+            </a>
               <Link to="/track" className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
                 <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
               </Link>
@@ -454,7 +467,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- 4. الخدمات والتسعير الديناميكي --- */}
+{/* --- 4. الخدمات والتسعير الديناميكي --- */}
       <section id="sizes" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
@@ -464,21 +477,53 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
             {[ 
-              { icon: ImageIcon, title: 'صور 4×6', desc: 'المقاس الكلاسيكي للألبومات.', color: 'text-[#D9A3AA]', bg: 'bg-[#D9A3AA]/10' },
-              { icon: FileText, title: 'صور A4', desc: 'مثالية للبراويز الكبيرة.', color: 'text-[#C5A059]', bg: 'bg-[#C5A059]/10' },
-              { icon: BookOpen, title: 'ألبومات', desc: 'حفظ آمن للذكريات.', color: 'text-[#4A4A4A]', bg: 'bg-[#4A4A4A]/10' }
+              { 
+                icon: ImageIcon, 
+                title: 'صور 4×6', 
+                desc: 'المقاس الأشهر والأكثر طلباً. مثالي لحفظ يومياتك وتوثيق اللحظات العفوية والرحلات.', 
+                features: ['ورق تصوير فاخر مقاوم للبهتان', 'ألوان زاهية وواقعية تدوم طويلاً', 'المقاس المثالي للألبومات الكلاسيكية'],
+                color: 'text-[#D9A3AA]', 
+                bg: 'bg-[#D9A3AA]/10' 
+              },
+              { 
+                icon: FileText, 
+                title: 'صور A4', 
+                desc: 'لصورك الاحترافية واللوحات الفنية. المقاس الأفضل لإبراز أدق التفاصيل وتزيين المكان.', 
+                features: ['دقة طباعة استثنائية للتفاصيل', 'حجم كبير مناسب للبراويز الجدارية', 'مثالية لصور التخرج والمناسبات الكبرى'],
+                color: 'text-[#C5A059]', 
+                bg: 'bg-[#C5A059]/10' 
+              },
+              { 
+                icon: BookOpen, 
+                title: 'الألبومات', 
+                desc: 'لا تترك صورك متناثرة. اختر من تشكيلتنا الأنيقة لحفظ ذكرياتك بطريقة فخمة ومرتبة.', 
+                features: ['تصاميم عصرية وأغلفة متينة', 'سعات مختلفة تناسب كمية صورك', 'حماية تامة للصور من الغبار والتلف'],
+                color: 'text-[#4A4A4A]', 
+                bg: 'bg-[#4A4A4A]/10' 
+              }
             ].map((service, i) => (
-              <div key={i} className="bg-[#F8F5F2] rounded-3xl p-8 hover:shadow-xl hover:shadow-[#D9A3AA]/10 transition-all border border-transparent hover:border-[#D9A3AA]/30 group">
+              <div key={i} className="bg-[#F8F5F2] rounded-3xl p-8 hover:shadow-xl hover:shadow-[#D9A3AA]/10 transition-all border border-transparent hover:border-[#D9A3AA]/30 group flex flex-col">
                 <div className={`w-14 h-14 ${service.bg} rounded-2xl flex items-center justify-center ${service.color} mb-6 group-hover:scale-110 transition-transform`}>
                   <service.icon size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-[#4A4A4A] mb-3">{service.title}</h3>
-                <p className="text-[#4A4A4A]/60 text-sm leading-relaxed">{service.desc}</p>
+                <p className="text-[#4A4A4A]/60 text-sm leading-relaxed mb-6 flex-1">{service.desc}</p>
+                
+                {/* قائمة المميزات */}
+                <ul className="space-y-3 pt-4 border-t border-[#D9A3AA]/10">
+                  {service.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-[#4A4A4A]/80 font-medium">
+                      <CheckCircle size={16} className={`shrink-0 mt-0.5 ${service.color}`} />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
 
           {/* الحاسبة الديناميكية */}
+          {/* ... (باقي كود الحاسبة كما هو بدون تغيير) ... */}
           {pricingSettings?.is_dynamic_pricing_enabled && (
             <div className="max-w-4xl mx-auto mt-16 animate-in slide-in-from-bottom duration-700">
               <div className="bg-[#4A4A4A] rounded-[3rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
@@ -522,30 +567,77 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- قسم التقييمات --- */}
+{/* --- قسم التقييمات وصندوق تواصل الإدارة --- */}
       <section id="reviews" className="py-20 bg-[#F8F5F2]">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-black text-[#4A4A4A] mb-4">ماذا يقول <span className="text-[#D9A3AA]">عملاؤنا؟</span></h2>
-          <div className="flex justify-center gap-1 mb-12 text-[#C5A059]">
-             {[...Array(5)].map((_,i) => <Star key={i} size={24} fill="currentColor"/>)}
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {reviews.map((review) => (
-              <div key={review.id} className="bg-white p-8 rounded-[2rem] border border-[#D9A3AA]/10 relative hover:-translate-y-2 transition-transform duration-300 shadow-sm">
-                <Quote className="absolute top-6 left-6 text-[#F8F5F2]" size={40} />
-                <p className="text-[#4A4A4A]/80 font-medium leading-relaxed mb-6 relative z-10">"{review.comment}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-white font-bold">
-                    {review.name.charAt(0)}
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-[#4A4A4A]">{review.name}</div>
-                    <div className="text-xs text-[#D9A3AA]">عميل موثوق ✅</div>
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-black text-[#4A4A4A] mb-4">ماذا يقول <span className="text-[#D9A3AA]">عملاؤنا؟</span></h2>
+            <div className="flex justify-center gap-1 mb-12 text-[#C5A059]">
+               {[...Array(5)].map((_,i) => <Star key={i} size={24} fill="currentColor"/>)}
+            </div>
+            
+            {/* التقييمات السابقة */}
+            <div className="grid md:grid-cols-3 gap-8 mb-20">
+              {reviews.map((review) => (
+                <div key={review.id} className="bg-white p-8 rounded-[2rem] border border-[#D9A3AA]/10 relative hover:-translate-y-2 transition-transform duration-300 shadow-sm">
+                  <Quote className="absolute top-6 left-6 text-[#F8F5F2]" size={40} />
+                  <p className="text-[#4A4A4A]/80 font-medium leading-relaxed mb-6 relative z-10">"{review.comment}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-white font-bold">
+                      {review.name.charAt(0)}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-[#4A4A4A]">{review.name}</div>
+                      <div className="text-xs text-[#D9A3AA]">عميل موثوق ✅</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* صندوق الاقتراحات والشكاوى (الخط المباشر للإدارة) */}
+            <div className="max-w-3xl mx-auto bg-white rounded-[2rem] p-8 shadow-xl border border-[#D9A3AA]/20 relative overflow-hidden animate-in slide-in-from-bottom duration-700">
+               <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-[#D9A3AA] to-[#C5A059]"></div>
+               <div className="text-center mb-8">
+                 <h3 className="text-2xl font-black text-[#4A4A4A] flex items-center justify-center gap-2 mb-2">
+                   <MessageSquarePlus className="text-[#C5A059]"/> الإدارة في خدمتك دائماً
+                 </h3>
+                 <p className="text-[#4A4A4A]/60 text-sm">نستقبل تقييماتك، مقترحاتك التطويرية، أو حتى شكواك بصدر رحب لخدمتك بشكل أفضل.</p>
+               </div>
+
+               <div className="space-y-6">
+                 {/* أزرار اختيار نوع الرسالة */}
+                 <div className="flex flex-wrap gap-3 justify-center">
+                   {['تقييم ⭐️', 'اقتراح 💡', 'شكوى ⚠️'].map(type => (
+                     <button 
+                       key={type}
+                       onClick={() => setFeedbackType(type)}
+                       className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${feedbackType === type ? 'bg-[#4A4A4A] text-white border-[#4A4A4A] shadow-md scale-105' : 'bg-white text-[#4A4A4A]/60 border-[#D9A3AA]/30 hover:border-[#4A4A4A]/50 hover:bg-[#F8F5F2]'}`}
+                     >
+                       {type}
+                     </button>
+                   ))}
+                 </div>
+                 
+                 {/* حقل النص */}
+                 <textarea 
+                   value={feedbackText}
+                   onChange={(e) => setFeedbackText(e.target.value)}
+                   placeholder="اكتب رسالتك هنا بكل شفافية وسرية تامة..."
+                   className="w-full h-32 bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl p-4 text-[#4A4A4A] outline-none focus:border-[#D9A3AA] focus:ring-4 focus:ring-[#D9A3AA]/10 resize-none transition-all"
+                 ></textarea>
+
+                 {/* زر الإرسال */}
+                 <button 
+                   onClick={handleSendFeedback}
+                   disabled={!feedbackText.trim()}
+                   className="w-full bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white py-4 rounded-xl font-bold hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                 >
+                   <Send size={18} /> إرسال الرسالة للإدارة
+                 </button>
+               </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -621,8 +713,8 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* زر واتساب العائم */}
-      <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="fixed bottom-6 left-6 z-40 bg-[#D9A3AA] hover:bg-[#C5A059] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group border-4 border-white">
+     {/* زر واتساب العائم */}
+      <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="fixed bottom-6 left-6 z-40 bg-[#25D366] hover:bg-[#128C7E] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group border-4 border-white">
         <MessageCircle size={28} />
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-bold">تواصل معنا</span>
       </a>
