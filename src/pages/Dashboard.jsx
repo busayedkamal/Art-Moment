@@ -136,22 +136,25 @@ export default function Dashboard() {
           </div>
           
           <div className="flex flex-wrap gap-3 w-full xl:w-auto justify-start xl:justify-end">
-            <div className="bg-[#4A4A4A]/95/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#D9A3AA]/25 text-center min-w-[140px] flex-1 xl:flex-none">
-               <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 font-bold">المصروفات</span>
-               <span className="text-xl font-bold dir-ltr text-white/80">
-                 {stats.totalExpenses.toLocaleString()} <span className="text-xs opacity-60">ر.س</span>
+{/* بطاقة إجمالي المبيعات */}
+            <div className="bg-white px-5 py-3 rounded-2xl border border-[#D9A3AA]/20 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-black/5">
+               <span className="text-[10px] text-[#4A4A4A]/70 block mb-1 font-bold">إجمالي المبيعات</span>
+               <span className="text-xl font-bold dir-ltr text-[#4A4A4A]">
+                 {stats.totalRevenue.toLocaleString()} <span className="text-xs opacity-70">ر.س</span>
                </span>
             </div>
-            <div className="bg-red-500/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-red-500/20 text-center min-w-[140px] flex-1 xl:flex-none">
-               <span className="text-[10px] text-red-200 block mb-1 font-bold">المديونية</span>
-               <span className="text-xl font-bold dir-ltr text-red-400">
-                 {stats.totalDebt.toLocaleString()} <span className="text-xs opacity-60">ر.س</span>
+{/* بطاقة المديونية (لون صلب) */}
+            <div className="bg-red-600 backdrop-blur-md px-5 py-3 rounded-2xl border border-red-600 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-red-600/30">
+               <span className="text-[10px] text-white/80 block mb-1 font-bold">المديونية</span>
+               <span className="text-xl font-bold dir-ltr text-white">
+                 {stats.totalDebt.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
                </span>
             </div>
-            <div className="bg-[#D9A3AA]/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#D9A3AA]/30 text-center min-w-[140px] flex-1 xl:flex-none">
-               <span className="text-[10px] text-white/70 block mb-1 font-bold">صافي الربح </span>
-               <span className={`text-xl font-bold dir-ltr ${realNetProfit >= 0 ? 'text-[#D9A3AA]' : 'text-red-400'}`}>
-                 {realNetProfit.toLocaleString()} <span className="text-xs opacity-60">ر.س</span>
+{/* بطاقة صافي الربح ) */}
+            <div className="bg-[#00674F] backdrop-blur-md px-5 py-3 rounded-2xl border border-[#00674F] text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-[#00674F]/30">
+               <span className="text-[10px] text-white/80 block mb-1 font-bold">صافي الربح </span>
+               <span className={`text-xl font-bold dir-ltr ${realNetProfit >= 0 ? 'text-white' : 'text-red-200'}`}>
+                 {realNetProfit.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
                </span>
             </div>
           </div>
