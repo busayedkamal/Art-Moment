@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 import {
   Search, Users, Wallet, ShoppingBag, Sparkles, Crown, ArrowLeft,
-  Phone, Calendar, Gift, X, Loader2
+  Phone, Calendar, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save
 } from "lucide-react";
 
 export default function Customers() {
@@ -13,18 +13,22 @@ export default function Customers() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all"); // all | vip
-  const [sortBy, setSortBy] = useState("netBalance"); // netBalance | walletBalance | totalOrders | totalRequired | lastOrderDate
+  const [filter, setFilter] = useState("all"); 
+  const [sortBy, setSortBy] = useState("netBalance");
 
-  // --- حالات نافذة المكافآت (Referral Bonus) ---
+  // --- حالات القائمة المنسدلة ---
+  const [expandedCustomerId, setExpandedCustomerId] = useState(null);
+  
+  // --- حالات تعديل بيانات العميل ---
+  const [customerDetails, setCustomerDetails] = useState({ address: '', notes: '' });
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
+
+  // --- حالات نافذة المكافآت ---
   const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [bonusAmount, setBonusAmount] = useState(10); // الافتراضي 10 ريال
+  const [bonusAmount, setBonusAmount] = useState(10);
   const [bonusReason, setBonusReason] = useState("مكافأة إحالة (شارك الفن)");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // معيار VIP
-  const VIP_THRESHOLD = 500;
 
   useEffect(() => {
     fetchData();
@@ -49,10 +53,10 @@ export default function Customers() {
 
       if (ordersError) throw ordersError;
 
-      // 2) المحافظ
+      // 2) المحافظ (تمت إضافة address و notes)
       const { data: walletsData, error: walletsError } = await supabase
         .from('wallets')
-        .select('phone, points_balance');
+        .select('phone, points_balance, address, notes');
 
       if (walletsError) throw walletsError;
 
@@ -60,7 +64,11 @@ export default function Customers() {
       (walletsData || []).forEach(w => {
         const key = normalizePhone(w.phone);
         if (!key) return;
-        walletMap.set(key, Number(w.points_balance || 0));
+        walletMap.set(key, { 
+          balance: Number(w.points_balance || 0),
+          address: w.address || '',
+          notes: w.notes || ''
+        });
       });
 
       const map = {};
@@ -100,13 +108,19 @@ export default function Customers() {
       });
 
       const result = Object.values(map).map(c => {
-        const walletBalance = c.cleanPhone ? (walletMap.get(c.cleanPhone) || 0) : 0;
+        const walletData = c.cleanPhone ? walletMap.get(c.cleanPhone) : null;
+        const walletBalance = walletData ? walletData.balance : 0;
+        const address = walletData ? walletData.address : '';
+        const notes = walletData ? walletData.notes : '';
+        
         const debt = Number(c.debt || 0);
         const netBalance = walletBalance - debt;
 
         return {
           ...c,
           walletBalance,
+          address,
+          notes,
           debt,
           netBalance,
           totalOrders: c.orderIds.size,
@@ -123,70 +137,103 @@ export default function Customers() {
     }
   }
 
-  // --- دالة إضافة المكافأة للمحفظة وتسجيلها كمصروف ---
+  // --- دالة حفظ بيانات العميل (العنوان والملاحظات) ---
+  const handleSaveCustomerDetails = async (customer) => {
+    if (!customer.cleanPhone) {
+      toast.error("لا يمكن حفظ البيانات لعميل بدون رقم هاتف");
+      return;
+    }
+    
+    setIsSavingDetails(true);
+    try {
+      // التحقق من وجود محفظة مسبقاً
+      const { data: existingWallet } = await supabase
+        .from('wallets')
+        .select('id')
+        .eq('phone', customer.cleanPhone)
+        .maybeSingle();
+
+      if (existingWallet) {
+        // تحديث
+        const { error } = await supabase
+          .from('wallets')
+          .update({ address: customerDetails.address, notes: customerDetails.notes })
+          .eq('id', existingWallet.id);
+        if (error) throw error;
+      } else {
+        // إنشاء محفظة جديدة لحفظ البيانات
+        const { error } = await supabase
+          .from('wallets')
+          .insert([{ 
+            phone: customer.cleanPhone, 
+            points_balance: 0, 
+            address: customerDetails.address, 
+            notes: customerDetails.notes 
+          }]);
+        if (error) throw error;
+      }
+
+      toast.success("تم حفظ بيانات العميل بنجاح ✨");
+      fetchData(); // تحديث الجدول
+    } catch (error) {
+      console.error('Error saving details:', error);
+      toast.error("حدث خطأ أثناء الحفظ");
+    } finally {
+      setIsSavingDetails(false);
+    }
+  };
+
+  const handleExpandRow = (customer) => {
+    if (expandedCustomerId === customer.id) {
+      setExpandedCustomerId(null);
+    } else {
+      setExpandedCustomerId(customer.id);
+      setCustomerDetails({ address: customer.address || '', notes: customer.notes || '' });
+    }
+  };
+
+  // --- دالة إضافة المكافأة (كما هي) ---
   const handleGiveBonus = async (e) => {
     e.preventDefault();
     if (!selectedCustomer || !bonusAmount || bonusAmount <= 0 || !bonusReason) {
-      toast.error("يرجى تعبئة جميع الحقول بشكل صحيح");
-      return;
+      toast.error("يرجى تعبئة جميع الحقول"); return;
     }
-
     setIsSubmitting(true);
     try {
       const amountNum = Number(bonusAmount);
       const phone = selectedCustomer.cleanPhone;
+      if (!phone) throw new Error("لا يوجد رقم هاتف صالح");
 
-      if (!phone) throw new Error("لا يوجد رقم هاتف صالح للعميل لربط المحفظة");
-
-      // 1. فحص هل للعميل محفظة سابقة
       const { data: existingWallet, error: fetchErr } = await supabase
-        .from('wallets')
-        .select('id, points_balance')
-        .eq('phone', phone)
-        .maybeSingle(); // maybeSingle بدل single لتجنب الخطأ إذا لم تكن موجودة
-
+        .from('wallets').select('id, points_balance').eq('phone', phone).maybeSingle();
       if (fetchErr) throw fetchErr;
 
-      // 2. تحديث أو إنشاء المحفظة
       if (existingWallet) {
         const { error: updateErr } = await supabase
-          .from('wallets')
-          .update({ points_balance: Number(existingWallet.points_balance || 0) + amountNum })
-          .eq('id', existingWallet.id);
+          .from('wallets').update({ points_balance: Number(existingWallet.points_balance || 0) + amountNum }).eq('id', existingWallet.id);
         if (updateErr) throw updateErr;
       } else {
         const { error: insertErr } = await supabase
-          .from('wallets')
-          .insert([{ phone: phone, points_balance: amountNum }]);
+          .from('wallets').insert([{ phone: phone, points_balance: amountNum }]);
         if (insertErr) throw insertErr;
       }
 
-      // 3. إضافة المبلغ في جدول المصروفات
-      const expenseTitle = `${bonusReason} - للعميل: ${selectedCustomer.name}`;
       const { error: expError } = await supabase
-        .from('expenses')
-        .insert([{
-          title: expenseTitle,
-          amount: amountNum,
-          date: new Date().toISOString().split('T')[0] // تاريخ اليوم
-        }]);
-      
+        .from('expenses').insert([{ title: `${bonusReason} - للعميل: ${selectedCustomer.name}`, amount: amountNum, date: new Date().toISOString().split('T')[0] }]);
       if (expError) throw expError;
 
-      // 4. الإغلاق والتحديث
-      toast.success(`تمت إضافة ${amountNum} ريال لمحفظة ${selectedCustomer.name} وتم تقييدها كمصروف بنجاح 🎁`);
+      toast.success(`تمت إضافة ${amountNum} ريال لمحفظة العميل 🎁`);
       setIsBonusModalOpen(false);
-      fetchData(); // إعادة جلب البيانات لتحديث الجدول
-
+      fetchData();
     } catch (error) {
-      console.error('Error adding bonus:', error);
       toast.error(error.message || 'حدث خطأ أثناء تنفيذ العملية');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const openBonusModal = (customer) => {
+  const openBonusModal = (customer, e) => {
+    e.stopPropagation(); // لمنع فتح القائمة المنسدلة عند الضغط على الزر
     setSelectedCustomer(customer);
     setBonusAmount(10);
     setBonusReason("مكافأة إحالة (شارك الفن)");
@@ -196,24 +243,15 @@ export default function Customers() {
 
   const filtered = useMemo(() => {
     let data = customersData;
-
     if (filter === "vip") data = data.filter(c => c.isVip);
-
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      data = data.filter(c =>
-        (c.name || "").toLowerCase().includes(q) ||
-        (c.phone || "").toLowerCase().includes(q)
-      );
+      data = data.filter(c => (c.name || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q));
     }
-
     data = [...data].sort((a, b) => {
-      if (sortBy === "lastOrderDate") {
-        return (b.lastOrderDate?.getTime() || 0) - (a.lastOrderDate?.getTime() || 0);
-      }
+      if (sortBy === "lastOrderDate") return (b.lastOrderDate?.getTime() || 0) - (a.lastOrderDate?.getTime() || 0);
       return (Number(b[sortBy] || 0) - Number(a[sortBy] || 0));
     });
-
     return data;
   }, [customersData, search, filter, sortBy]);
 
@@ -225,13 +263,14 @@ export default function Customers() {
 
   return (
     <div className="max-w-6xl mx-auto pb-20 space-y-6">
+      
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-black text-[#4A4A4A] flex items-center gap-2">
             <Users className="text-[#D9A3AA]" /> سجل ولاء العملاء
           </h1>
-          <p className="text-[#4A4A4A]/70 text-sm">قائمة تجمع العملاء مع تحليل مالي دقيق</p>
+          <p className="text-[#4A4A4A]/70 text-sm">إدارة متقدمة لبيانات ومحافظ العملاء</p>
         </div>
         <Link to="/app/orders" className="text-sm font-bold text-[#4A4A4A]/70 hover:text-[#4A4A4A] flex items-center gap-1">
           <ArrowLeft size={16} /> العودة للطلبات
@@ -241,23 +280,23 @@ export default function Customers() {
       {/* Stats */}
       <div className="grid md:grid-cols-4 gap-4">
         <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm">
-          <div className="text-[#4A4A4A]/70 text-xs">العملاء</div>
+          <div className="text-[#4A4A4A]/70 text-xs font-bold">العملاء</div>
           <div className="text-2xl font-black text-[#4A4A4A] mt-1">{stats.totalCustomers}</div>
         </div>
         <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm">
-          <div className="text-[#4A4A4A]/70 text-xs flex items-center gap-1"><Crown size={14} className="text-amber-500" /> VIP</div>
+          <div className="text-[#4A4A4A]/70 text-xs font-bold flex items-center gap-1"><Crown size={14} className="text-amber-500" /> كبار العملاء VIP</div>
           <div className="text-2xl font-black text-[#4A4A4A] mt-1">{stats.vipCustomers}</div>
         </div>
         <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm">
-          <div className="text-[#4A4A4A]/70 text-xs flex items-center gap-1"><Wallet size={14} className="text-violet-600" /> الصافي (محفظة - دين)</div>
+          <div className="text-[#4A4A4A]/70 text-xs font-bold flex items-center gap-1"><Wallet size={14} className="text-violet-600" /> إجمالي المحافظ (صافي)</div>
           <div className="text-2xl font-black text-[#4A4A4A] mt-1">
-            {customersData.reduce((sum, c) => sum + (Number(c.netBalance || 0)), 0).toFixed(1)}
+            {customersData.reduce((sum, c) => sum + (Number(c.netBalance || 0)), 0).toFixed(1)} <span className="text-xs">ر.س</span>
           </div>
         </div>
         <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm">
-          <div className="text-[#4A4A4A]/70 text-xs flex items-center gap-1"><ShoppingBag size={14} className="text-blue-600" /> إجمالي المبيعات</div>
+          <div className="text-[#4A4A4A]/70 text-xs font-bold flex items-center gap-1"><ShoppingBag size={14} className="text-blue-600" /> المبيعات التراكمية</div>
           <div className="text-2xl font-black text-[#4A4A4A] mt-1">
-            {customersData.reduce((sum, c) => sum + (Number(c.totalRequired || 0)), 0).toFixed(0)} ر.س
+            {customersData.reduce((sum, c) => sum + (Number(c.totalRequired || 0)), 0).toFixed(0)} <span className="text-xs">ر.س</span>
           </div>
         </div>
       </div>
@@ -267,163 +306,214 @@ export default function Customers() {
         <div className="flex items-center gap-2 w-full md:w-auto">
           <div className="relative w-full md:w-80">
             <Search size={16} className="absolute right-3 top-3 text-[#4A4A4A]/50" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="بحث بالاسم أو الجوال..."
-              className="w-full border border-[#D9A3AA]/20 rounded-xl px-4 py-2 pr-9 outline-none focus:border-[#D9A3AA]"
-            />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالاسم أو الجوال..." className="w-full border border-[#D9A3AA]/20 rounded-xl px-4 py-2 pr-9 outline-none focus:border-[#D9A3AA]" />
           </div>
-
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-3 py-2 rounded-xl text-sm font-bold border ${filter === "all" ? "bg-[#4A4A4A] text-white border-[#4A4A4A]" : "bg-white text-[#4A4A4A]/80 border-[#D9A3AA]/20"}`}
-          >
-            الكل
-          </button>
-          <button
-            onClick={() => setFilter("vip")}
-            className={`px-3 py-2 rounded-xl text-sm font-bold border flex items-center gap-1 ${filter === "vip" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-[#4A4A4A]/80 border-[#D9A3AA]/20"}`}
-          >
-            <Crown size={14} /> VIP
-          </button>
+          <button onClick={() => setFilter("all")} className={`px-3 py-2 rounded-xl text-sm font-bold border ${filter === "all" ? "bg-[#4A4A4A] text-white border-[#4A4A4A]" : "bg-white text-[#4A4A4A]/80 border-[#D9A3AA]/20"}`}>الكل</button>
+          <button onClick={() => setFilter("vip")} className={`px-3 py-2 rounded-xl text-sm font-bold border flex items-center gap-1 ${filter === "vip" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-[#4A4A4A]/80 border-[#D9A3AA]/20"}`}><Crown size={14} /> VIP</button>
         </div>
-
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-xs text-[#4A4A4A]/70">ترتيب:</span>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm">
-            <option value="netBalance">الصافي</option>
-            <option value="walletBalance">رصيد المحفظة</option>
-            <option value="debt">الدين</option>
-            <option value="totalRequired">إجمالي المبيعات</option>
-            <option value="totalOrders">عدد الطلبات</option>
-            <option value="lastOrderDate">آخر زيارة</option>
+          <span className="text-xs text-[#4A4A4A]/70 font-bold">ترتيب حسب:</span>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none">
+            <option value="netBalance">الرصيد الصافي</option>
+            <option value="totalRequired">أعلى المبيعات</option>
+            <option value="totalOrders">أكثر الطلبات</option>
+            <option value="lastOrderDate">تاريخ آخر زيارة</option>
           </select>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl shadow-sm overflow-x-auto">
-        <table className="min-w-full">
+      {/* Table - النسخة النظيفة والمختصرة */}
+      <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl shadow-sm overflow-hidden">
+        <table className="min-w-full text-right">
           <thead className="bg-[#F8F5F2] border-b border-[#D9A3AA]/20">
-            <tr className="text-xs text-[#4A4A4A]/70">
-              <th className="px-6 py-3 text-right">العميل</th>
-              <th className="px-6 py-3 text-right">الهاتف</th>
-              <th className="px-6 py-3 text-center">الطلبات</th>
-              <th className="px-6 py-3 text-right">المبيعات</th>
-              <th className="px-6 py-3 text-right">رصيد المحفظة</th>
-              <th className="px-6 py-3 text-right">آخر زيارة</th>
-              <th className="px-6 py-3 text-right">إجراءات وتواصل</th>
+            <tr className="text-sm font-bold text-[#4A4A4A]/70">
+              <th className="px-6 py-4">بيانات العميل</th>
+              <th className="px-6 py-4 hidden sm:table-cell">رقم الجوال</th>
+              <th className="px-6 py-4 text-center">الرصيد الصافي</th>
+              <th className="px-6 py-4 text-left">إجراءات</th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-[#D9A3AA]/10">
             {loading ? (
-              <tr>
-                <td className="p-8 text-center text-[#4A4A4A]/70" colSpan={7}>جاري التحميل...</td>
-              </tr>
+              <tr><td className="p-8 text-center text-[#4A4A4A]/70" colSpan={4}>جاري التحميل...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr>
-                <td className="p-8 text-center text-[#4A4A4A]/70" colSpan={7}>لا يوجد عملاء</td>
-              </tr>
+              <tr><td className="p-8 text-center text-[#4A4A4A]/70" colSpan={4}>لا يوجد عملاء</td></tr>
             ) : (
-              filtered.map((customer) => (
-                <tr key={customer.id} className="hover:bg-[#D9A3AA]/5 transition-colors">
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-full bg-[#D9A3AA]/10 text-[#D9A3AA] flex items-center justify-center font-black">
-                        {(customer.name || "؟").slice(0, 1)}
-                      </div>
-                      <div>
-                        <div className="font-bold text-[#4A4A4A] flex items-center gap-2">
-                          {customer.name}
-                          {customer.isVip && (
-                            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                              <Crown size={12} /> VIP
-                            </span>
-                          )}
+              filtered.map((customer) => {
+                const isExpanded = expandedCustomerId === customer.id;
+
+                return (
+                  <React.Fragment key={customer.id}>
+                    {/* الصف الرئيسي المبسط */}
+                    <tr 
+                      onClick={() => handleExpandRow(customer)}
+                      className={`hover:bg-[#F8F5F2] cursor-pointer transition-colors group ${isExpanded ? 'bg-[#F8F5F2]/50' : ''}`}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg transition-transform ${isExpanded ? 'bg-[#D9A3AA] text-white scale-110' : 'bg-[#D9A3AA]/10 text-[#D9A3AA] group-hover:scale-105'}`}>
+                            {(customer.name || "؟").slice(0, 1)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-[#4A4A4A] text-base flex items-center gap-2">
+                              {customer.name}
+                              {customer.isVip && (
+                                <span className="bg-amber-100 text-amber-700 p-1 rounded-full" title="عميل VIP">
+                                  <Crown size={12} />
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-[#4A4A4A]/50 sm:hidden mt-0.5" dir="ltr">{customer.phone || "-"}</div>
+                          </div>
                         </div>
-                        <div className="text-[11px] text-[#4A4A4A]/50">#{customer.id.slice(0, 8)}</div>
-                      </div>
-                    </div>
-                  </td>
+                      </td>
 
-                  <td className="px-6 py-5 font-mono text-sm text-[#4A4A4A]/80 dir-ltr text-right">
-                    {customer.phone || "-"}
-                  </td>
+                      <td className="px-6 py-4 font-mono text-sm text-[#4A4A4A]/80 dir-ltr text-right hidden sm:table-cell">
+                        {customer.phone || "-"}
+                      </td>
 
-                  <td className="px-6 py-5 text-center">
-                    <span className="inline-flex items-center gap-1 bg-[#F8F5F2] text-[#4A4A4A]/80 px-3 py-1 rounded-lg text-xs font-bold">
-                      <ShoppingBag size={14} /> {customer.orderIds.size}
-                    </span>
-                  </td>
+                      <td className="px-6 py-4 text-center">
+                        {customer.netBalance > 0.5 ? (
+                          <span className="bg-violet-50 border border-violet-100 text-violet-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px]">
+                            {customer.netBalance.toFixed(1)} ر.س
+                          </span>
+                        ) : customer.netBalance < -0.5 ? (
+                          <span className="bg-red-50 border border-red-100 text-red-600 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px] dir-ltr">
+                            {Math.abs(customer.netBalance).toFixed(1)}- ر.س
+                          </span>
+                        ) : (
+                          <span className="text-[#4A4A4A]/40 text-xs font-bold">0.00</span>
+                        )}
+                      </td>
 
-                  <td className="px-6 py-5">
-                    <span className="font-bold text-[#4A4A4A]">{Number(customer.totalRequired || 0).toFixed(0)} ر.س</span>
-                  </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          {customer.phone && (
+                            <a
+                              href={`https://wa.me/966${String(customer.phone).startsWith("0") ? String(customer.phone).slice(1) : customer.phone}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()} // لمنع فتح القائمة عند ضغط الواتساب
+                              className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100"
+                              title="مراسلة واتساب"
+                            >
+                              <Phone size={18} />
+                            </a>
+                          )}
+                          
+                          {customer.cleanPhone && (
+                            <button 
+                              onClick={(e) => openBonusModal(customer, e)}
+                              className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-colors border border-amber-100"
+                              title="إضافة مكافأة إحالة"
+                            >
+                              <Gift size={18} />
+                            </button>
+                          )}
 
-                  <td className="px-6 py-5">
-                    <div className="space-y-1">
-                      {customer.netBalance > 0.5 ? (
-                        <span className="bg-violet-50 text-violet-700 px-3 py-1 rounded-lg text-xs font-bold flex items-center w-fit gap-1">
-                          <Wallet size={12} /> {customer.netBalance.toFixed(1)} ريال
-                        </span>
-                      ) : customer.netBalance < -0.5 ? (
-                        <span className="bg-red-50 text-red-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center w-fit gap-1 dir-ltr">
-                          {Math.abs(customer.netBalance).toFixed(1)}- ريال
-                        </span>
-                      ) : (
-                        <span className="text-[#4A4A4A]/30 text-xs font-bold px-2">0.00</span>
-                      )}
-                      <div className="text-[10px] text-[#4A4A4A]/50">
-                        محفظة {Number(customer.walletBalance || 0).toFixed(1)} − دين {Number(customer.debt || 0).toFixed(1)}
-                      </div>
-                    </div>
-                  </td>
+                          <button className={`p-2 rounded-xl text-[#4A4A4A]/50 transition-all ${isExpanded ? 'bg-[#D9A3AA]/10 text-[#D9A3AA] rotate-180' : 'group-hover:bg-[#F8F5F2]'}`}>
+                             <ChevronDown size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
 
-                  <td className="px-6 py-5">
-                    <span className="text-[#4A4A4A]/70 text-sm flex items-center gap-1">
-                      <Calendar size={14} className="text-[#4A4A4A]/50" />
-                      {customer.lastOrderDate ? customer.lastOrderDate.toLocaleDateString("en-GB") : "-"}
-                    </span>
-                  </td>
+                    {/* القائمة المنسدلة (التفاصيل المخفية) */}
+                    {isExpanded && (
+                      <tr className="bg-[#F8F5F2]/40 border-b-2 border-[#D9A3AA]/20">
+                        <td colSpan="4" className="p-0">
+                          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-top-2 fade-in duration-300">
+                            
+                            {/* القسم الأيمن: الإحصائيات والأرقام */}
+                            <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
+                               <h4 className="font-bold text-[#4A4A4A] mb-4 flex items-center gap-2 border-b border-[#F8F5F2] pb-3">
+                                 <ShoppingBag size={18} className="text-[#C5A059]"/> ملخص نشاط العميل
+                               </h4>
+                               
+                               <div className="grid grid-cols-2 gap-4">
+                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
+                                    <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">إجمالي المشتريات</span>
+                                    <span className="font-black text-[#4A4A4A] text-lg">{Number(customer.totalRequired || 0).toFixed(0)} <span className="text-xs font-normal">ر.س</span></span>
+                                 </div>
+                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
+                                    <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">عدد الطلبات</span>
+                                    <span className="font-black text-[#4A4A4A] text-lg">{customer.orderIds.size} <span className="text-xs font-normal">طلبات</span></span>
+                                 </div>
+                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
+                                    <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">تاريخ آخر طلب</span>
+                                    <span className="font-bold text-[#4A4A4A] text-sm mt-1 block">
+                                      {customer.lastOrderDate ? customer.lastOrderDate.toLocaleDateString("en-GB") : "-"}
+                                    </span>
+                                 </div>
+                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
+                                    <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">تفصيل الرصيد</span>
+                                    <span className="font-bold text-[#4A4A4A] text-[11px] mt-1 block leading-tight">
+                                      محفظة: <span className="text-violet-600">{Number(customer.walletBalance || 0).toFixed(1)}</span><br/>
+                                      مديونية: <span className="text-red-500">{Number(customer.debt || 0).toFixed(1)}</span>
+                                    </span>
+                                 </div>
+                               </div>
+                            </div>
 
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-2">
-                      {customer.phone ? (
-                        <a
-                          href={`https://wa.me/966${String(customer.phone).startsWith("0") ? String(customer.phone).slice(1) : customer.phone}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100"
-                          title="مراسلة واتساب"
-                        >
-                          <Phone size={16} />
-                        </a>
-                      ) : (
-                        <span className="text-xs text-[#4A4A4A]/50">-</span>
-                      )}
-                      
-                      {/* زر إضافة المكافأة الجديد */}
-                      {customer.cleanPhone && (
-                        <button 
-                          onClick={() => openBonusModal(customer)}
-                          className="inline-flex items-center justify-center p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-colors border border-amber-100"
-                          title="إضافة مكافأة إحالة"
-                        >
-                          <Gift size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                            {/* القسم الأيسر: البيانات القابلة للتعديل (عنوان + ملاحظات) */}
+                            <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex flex-col">
+                               <h4 className="font-bold text-[#4A4A4A] mb-4 flex items-center gap-2 border-b border-[#F8F5F2] pb-3">
+                                 <StickyNote size={18} className="text-[#D9A3AA]"/> تفاصيل وشحن العميل
+                               </h4>
+
+                               <div className="space-y-4 flex-1">
+                                 <div>
+                                   <label className="flex items-center gap-1 text-xs font-bold text-[#4A4A4A]/70 mb-1.5">
+                                     <MapPin size={12}/> العنوان / موقع التوصيل
+                                   </label>
+                                   <input 
+                                     type="text" 
+                                     placeholder="مثال: الرميلة، العمران، شارع..."
+                                     value={customerDetails.address}
+                                     onChange={(e) => setCustomerDetails({...customerDetails, address: e.target.value})}
+                                     className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] transition-colors"
+                                   />
+                                 </div>
+
+                                 <div className="flex-1">
+                                   <label className="flex items-center gap-1 text-xs font-bold text-[#4A4A4A]/70 mb-1.5">
+                                     <StickyNote size={12}/> ملاحظات خاصة بالعميل
+                                   </label>
+                                   <textarea 
+                                     placeholder="مثال: يفضل التغليف الوردي، يطلب دائماً طباعة مطفية..."
+                                     value={customerDetails.notes}
+                                     onChange={(e) => setCustomerDetails({...customerDetails, notes: e.target.value})}
+                                     className="w-full h-20 resize-none bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] transition-colors custom-scrollbar"
+                                   ></textarea>
+                                 </div>
+                               </div>
+
+                               <div className="mt-4 pt-4 border-t border-[#F8F5F2] flex justify-end">
+                                 <button 
+                                   onClick={() => handleSaveCustomerDetails(customer)}
+                                   disabled={isSavingDetails}
+                                   className="bg-[#4A4A4A] hover:bg-[#333333] text-white text-sm font-bold py-2 px-6 rounded-xl transition-all flex items-center gap-2 disabled:opacity-70"
+                                 >
+                                   {isSavingDetails ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>}
+                                   حفظ التعديلات
+                                 </button>
+                               </div>
+                            </div>
+
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
-      {/* --- نافذة إضافة المكافأة (Modal) --- */}
+      {/* --- نافذة إضافة المكافأة (Modal) - تبقى كما هي --- */}
       {isBonusModalOpen && selectedCustomer && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">

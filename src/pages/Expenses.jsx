@@ -3,14 +3,13 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { 
-  TrendingUp, TrendingDown, Wallet, Plus, Trash2, 
-  DollarSign, FileText, Calendar, Edit2, Check, X, Filter, ArrowUpDown 
+  TrendingDown, Wallet, Plus, Trash2, 
+  FileText, Calendar, Edit2, Check, X, Filter, ArrowUpDown, PieChart
 } from 'lucide-react';
 
 export default function Expenses() {
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState([]);
-  const [stats, setStats] = useState({ totalSales: 0, totalExpenses: 0, netProfit: 0 });
   const [sortBy, setSortBy] = useState('date'); // 'date' | 'amount' | 'title'
   
   // حالة المصروف الجديد
@@ -31,31 +30,14 @@ export default function Expenses() {
   async function fetchData() {
     try {
       setLoading(true);
-      
-      // 1. جلب المصروفات
+      // جلب المصروفات فقط (حذفنا جلب الطلبات لتسريع الصفحة)
       const { data: expensesData, error: expError } = await supabase
         .from('expenses')
-        .select('*');
+        .select('*')
+        .order('date', { ascending: false });
         
       if (expError) throw expError;
-
-      // 2. جلب إجمالي المبيعات
-      const { data: ordersData, error: ordError } = await supabase
-        .from('orders')
-        .select('total_amount');
-
-      if (ordError) throw ordError;
-
-      const totalExp = expensesData.reduce((sum, item) => sum + Number(item.amount), 0);
-      const totalSale = ordersData.reduce((sum, item) => sum + Number(item.total_amount), 0);
-
       setExpenses(expensesData || []);
-      setStats({
-        totalSales: totalSale,
-        totalExpenses: totalExp,
-        netProfit: totalSale - totalExp
-      });
-
     } catch (err) {
       toast.error('حدث خطأ في جلب البيانات');
     } finally {
@@ -63,11 +45,46 @@ export default function Expenses() {
     }
   }
 
+  // --- حساب إحصائيات المصروفات ديناميكياً ---
+  const stats = useMemo(() => {
+    let total = 0;
+    let currentMonth = 0;
+    const categoryMap = {};
+
+    const currentMonthPrefix = new Date().toISOString().substring(0, 7); // يمثل "YYYY-MM"
+
+    expenses.forEach(exp => {
+      const amt = Number(exp.amount) || 0;
+      total += amt;
+
+      // حساب مصروفات الشهر الحالي
+      const expDate = exp.date || exp.created_at;
+      if (expDate && expDate.startsWith(currentMonthPrefix)) {
+        currentMonth += amt;
+      }
+
+      // تجميع المصروفات لمعرفة أكثر بند مكلف
+      const title = exp.title ? exp.title.trim() : 'غير مصنف';
+      categoryMap[title] = (categoryMap[title] || 0) + amt;
+    });
+
+    // استخراج أعلى بند
+    let highestTitle = 'لا يوجد';
+    let highestAmount = 0;
+    Object.entries(categoryMap).forEach(([title, amt]) => {
+      if (amt > highestAmount) {
+        highestAmount = amt;
+        highestTitle = title;
+      }
+    });
+
+    return { total, currentMonth, highestTitle, highestAmount };
+  }, [expenses]);
+
   // --- استخراج الأصناف المحفوظة مسبقاً للاقتراحات ---
-  // هذه القائمة تتحدث تلقائياً بناءً على ما قمت بإدخاله سابقاً
   const savedTitles = useMemo(() => {
-    const titles = expenses.map(e => e.title);
-    return [...new Set(titles)]; // حذف التكرار
+    const titles = expenses.map(e => e.title?.trim()).filter(Boolean);
+    return [...new Set(titles)]; 
   }, [expenses]);
 
   // --- دوال الإضافة ---
@@ -89,15 +106,7 @@ export default function Expenses() {
       if (error) throw error;
 
       toast.success('تم تسجيل المصروف');
-      setExpenses([data, ...expenses]); // تحديث محلي سريع
-      
-      // تحديث الإحصائيات محلياً
-      setStats(prev => ({
-        ...prev,
-        totalExpenses: prev.totalExpenses + Number(newExpense.amount),
-        netProfit: prev.netProfit - Number(newExpense.amount)
-      }));
-
+      setExpenses([data, ...expenses]); 
       setNewExpense({ title: '', amount: '', date: new Date().toISOString().split('T')[0] });
     } catch (err) {
       toast.error('فشل الإضافة');
@@ -110,7 +119,6 @@ export default function Expenses() {
     setEditFormData({ 
       title: item.title, 
       amount: item.amount, 
-      // التأكد من تنسيق التاريخ الصحيح للinput
       date: item.date || item.created_at.split('T')[0]
     });
   };
@@ -133,20 +141,10 @@ export default function Expenses() {
 
       if (error) throw error;
 
-      // تحديث القائمة محلياً
       const updatedExpenses = expenses.map(item => 
         item.id === id ? { ...item, ...editFormData, amount: Number(editFormData.amount) } : item
       );
       setExpenses(updatedExpenses);
-      
-      // إعادة حساب الإجمالي محلياً
-      const newTotalExp = updatedExpenses.reduce((sum, item) => sum + Number(item.amount), 0);
-      setStats(prev => ({
-        ...prev,
-        totalExpenses: newTotalExp,
-        netProfit: prev.totalSales - newTotalExp
-      }));
-
       setEditingId(null);
       toast.success('تم التعديل بنجاح');
     } catch (err) {
@@ -154,20 +152,11 @@ export default function Expenses() {
     }
   };
 
-  const handleDelete = async (id, amount) => {
+  const handleDelete = async (id) => {
     if(!window.confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
     try {
       await supabase.from('expenses').delete().eq('id', id);
-      
-      const updatedExpenses = expenses.filter(e => e.id !== id);
-      setExpenses(updatedExpenses);
-      
-      setStats(prev => ({
-        ...prev,
-        totalExpenses: prev.totalExpenses - amount,
-        netProfit: prev.netProfit + amount
-      }));
-      
+      setExpenses(expenses.filter(e => e.id !== id));
       toast.success('تم الحذف');
     } catch {
       toast.error('فشل الحذف');
@@ -180,14 +169,14 @@ export default function Expenses() {
     if (sortBy === 'date') {
       sorted.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
     } else if (sortBy === 'amount') {
-      sorted.sort((a, b) => b.amount - a.amount); // الأغلى أولاً
+      sorted.sort((a, b) => b.amount - a.amount); 
     } else if (sortBy === 'title') {
-      sorted.sort((a, b) => a.title.localeCompare(b.title));
+      sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     }
     return sorted;
   }, [expenses, sortBy]);
 
-  if (loading) return <div className="p-10 text-center">جاري حساب الأرباح...</div>;
+  if (loading) return <div className="p-10 text-center">جاري تحميل سجل المصروفات...</div>;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-10">
@@ -195,38 +184,45 @@ export default function Expenses() {
       <div className="flex items-center gap-3">
         <div className="p-3 bg-[#4A4A4A] text-white rounded-xl"><Wallet size={24}/></div>
         <div>
-          <h1 className="text-2xl font-bold text-[#4A4A4A]">التقارير المالية</h1>
-          <p className="text-sm text-[#4A4A4A]/70">متابعة الأرباح والمصروفات.</p>
+          <h1 className="text-2xl font-bold text-[#4A4A4A]">سجل المصروفات</h1>
+          <p className="text-sm text-[#4A4A4A]/70">إدارة وتتبع التكاليف التشغيلية للمشروع.</p>
         </div>
       </div>
 
-      {/* الملخص المالي */}
+      {/* --- البطاقات التحليلية الجديدة --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
+        
+        {/* 1. إجمالي المصروفات (طوال الوقت) */}
+        <div className="bg-red-50 p-6 rounded-2xl border border-red-100 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-2 h-full bg-red-400"></div>
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-[#C5A059]/10 rounded-xl text-[#C5A059]"><TrendingUp size={24}/></div>
-            <span className="text-xs font-bold bg-[#C5A059]/15 text-[#C5A059] px-2 py-1 rounded-lg">دخل</span>
+            <div className="p-3 bg-red-100 rounded-xl text-red-600"><TrendingDown size={24}/></div>
+            <span className="text-xs font-bold bg-red-200 text-red-800 px-2 py-1 rounded-lg">طوال الوقت</span>
           </div>
-          <p className="text-[#4A4A4A]/70 text-sm mb-1">إجمالي المبيعات</p>
-          <h3 className="text-3xl font-black text-[#4A4A4A]">{stats.totalSales.toLocaleString()} <span className="text-sm font-medium text-[#4A4A4A]/55">ر.س</span></h3>
+          <p className="text-red-900/70 text-sm mb-1 font-bold">إجمالي المصروفات التراكمي</p>
+          <h3 className="text-3xl font-black text-red-600">{stats.total.toLocaleString()} <span className="text-sm font-medium opacity-70">ر.س</span></h3>
         </div>
 
+        {/* 2. مصروفات الشهر الحالي */}
         <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-red-50 rounded-xl text-red-600"><TrendingDown size={24}/></div>
-            <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded-lg">خروج</span>
+            <div className="p-3 bg-amber-50 rounded-xl text-amber-600"><Calendar size={24}/></div>
+            <span className="text-xs font-bold bg-[#F8F5F2] text-[#4A4A4A] px-2 py-1 rounded-lg">الشهر الحالي</span>
           </div>
-          <p className="text-[#4A4A4A]/70 text-sm mb-1">إجمالي المصروفات</p>
-          <h3 className="text-3xl font-black text-[#4A4A4A]">{stats.totalExpenses.toLocaleString()} <span className="text-sm font-medium text-[#4A4A4A]/55">ر.س</span></h3>
+          <p className="text-[#4A4A4A]/70 text-sm mb-1 font-bold">ما تم صرفه هذا الشهر</p>
+          <h3 className="text-3xl font-black text-[#4A4A4A]">{stats.currentMonth.toLocaleString()} <span className="text-sm font-medium opacity-50">ر.س</span></h3>
         </div>
 
-        <div className={`p-6 rounded-2xl border shadow-sm text-white ${stats.netProfit >= 0 ? 'bg-[#4A4A4A] border-white/10' : 'bg-red-600 border-red-700'}`}>
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-white/10 rounded-xl"><DollarSign size={24} className="text-[#C5A059]"/></div>
-            <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">الصافي</span>
+        {/* 3. أعلى بند مكلف */}
+        <div className="bg-[#4A4A4A] p-6 rounded-2xl border border-[#4A4A4A] shadow-sm text-white relative overflow-hidden">
+          <div className="absolute -left-6 -bottom-6 opacity-10"><PieChart size={120}/></div>
+          <div className="flex justify-between items-start mb-4 relative z-10">
+            <div className="p-3 bg-white/10 rounded-xl text-[#C5A059]"><PieChart size={24}/></div>
+            <span className="text-xs font-bold bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/30 px-2 py-1 rounded-lg">تنبيه تكاليف</span>
           </div>
-          <p className="text-white/70 text-sm mb-1">صافي الربح الفعلي</p>
-          <h3 className="text-3xl font-black">{stats.netProfit.toLocaleString()} <span className="text-sm font-medium opacity-60">ر.س</span></h3>
+          <p className="text-white/70 text-sm mb-1 font-bold">أكثر بند يستنزف الميزانية</p>
+          <h3 className="text-xl font-black text-white relative z-10 truncate" title={stats.highestTitle}>{stats.highestTitle}</h3>
+          <p className="text-[#D9A3AA] font-bold text-sm mt-1">{stats.highestAmount.toLocaleString()} ر.س</p>
         </div>
       </div>
 
@@ -252,13 +248,12 @@ export default function Expenses() {
                 <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">بيان المصروف</label>
                 <input 
                   type="text" 
-                  list="expense-titles" // ربط بالقائمة المقترحة
+                  list="expense-titles" 
                   placeholder="مثلاً: حبر طابعة، إيجار..." 
                   className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA]"
                   value={newExpense.title}
                   onChange={(e) => setNewExpense({...newExpense, title: e.target.value})}
                 />
-                {/* قائمة الاقتراحات الذكية */}
                 <datalist id="expense-titles">
                   {savedTitles.map((title, index) => (
                     <option key={index} value={title} />
@@ -270,13 +265,13 @@ export default function Expenses() {
                 <input 
                   type="number" 
                   placeholder="0.00" 
-                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] font-bold"
+                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] font-bold text-[#4A4A4A]"
                   value={newExpense.amount}
                   onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
                 />
               </div>
               <button type="submit" className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#3F3F3F] flex justify-center items-center gap-2">
-                تسجيل
+                تسجيل المصروف
               </button>
             </form>
           </div>
@@ -289,7 +284,7 @@ export default function Expenses() {
             {/* شريط الأدوات والفرز */}
             <div className="p-4 border-b border-[#D9A3AA]/10 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2"><FileText className="text-[#D9A3AA]" size={20}/> سجل المصروفات</h3>
+                <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2"><FileText className="text-[#D9A3AA]" size={20}/> القائمة المفصلة</h3>
                 <span className="text-xs text-[#4A4A4A]/55 font-mono bg-[#F8F5F2] px-2 py-1 rounded">{expenses.length} عملية</span>
               </div>
               
@@ -315,7 +310,7 @@ export default function Expenses() {
               </div>
             </div>
             
-            <div className="divide-y divide-[#D9A3AA]/10">
+            <div className="divide-y divide-[#D9A3AA]/10 max-h-[600px] overflow-y-auto custom-scrollbar">
               {sortedExpenses.length === 0 ? (
                 <div className="p-10 text-center text-[#4A4A4A]/55">لا توجد مصروفات مسجلة</div>
               ) : (
@@ -334,16 +329,16 @@ export default function Expenses() {
                         <input 
                           type="text" 
                           value={editFormData.title} 
-                          list="expense-titles" // استخدام نفس قائمة الاقتراحات
+                          list="expense-titles" 
                           onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
-                          className="flex-1 w-full bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm outline-none"
+                          className="flex-1 w-full bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm outline-none text-[#4A4A4A]"
                           placeholder="البيان"
                         />
                         <input 
                           type="number" 
                           value={editFormData.amount} 
                           onChange={(e) => setEditFormData({...editFormData, amount: e.target.value})}
-                          className="w-full sm:w-24 bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm font-bold text-left outline-none"
+                          className="w-full sm:w-24 bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm font-bold text-left outline-none text-[#4A4A4A]"
                           placeholder="المبلغ"
                         />
                         <div className="flex gap-1">
@@ -367,7 +362,7 @@ export default function Expenses() {
                         </div>
                         
                         <div className="flex items-center gap-4">
-                          <span className="font-bold text-lg text-[#4A4A4A]">-{item.amount}</span>
+                          <span className="font-bold text-lg text-red-500">-{item.amount}</span>
                           
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
@@ -378,7 +373,7 @@ export default function Expenses() {
                               <Edit2 size={16}/>
                             </button>
                             <button 
-                              onClick={() => handleDelete(item.id, item.amount)}
+                              onClick={() => handleDelete(item.id)}
                               className="p-2 text-[#4A4A4A]/55 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="حذف"
                             >
