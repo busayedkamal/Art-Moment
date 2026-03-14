@@ -702,7 +702,7 @@ export default function LandingPage() {
              <a href="https://linktr.ee/Art_Moment" target="_blank" rel="noreferrer" title="Linktree" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-[#43E660] hover:text-white transition-all border border-white/10 hover:border-transparent">
                <Link2 size={22}/>
              </a>
-             <a href="mailto:omsayedkamal@gmail.com" title="Email" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-red-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
+             <a href="mailto:art.moment26@gmail.com" title="Email" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-red-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
                <Mail size={22}/>
              </a>
           </div>
