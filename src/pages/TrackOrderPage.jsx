@@ -287,84 +287,100 @@ export default function TrackOrderPage() {
                 )}
               </div>
 
-              <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 p-1">
+<div className="bg-white rounded-2xl border border-[#D9A3AA]/20 p-1">
                 
-                {/* ✅ ملخص الحساب (تم إرجاعه للتصميم المفصل: رصيد + ديون + صافي) */}
+                {/* ✅ ملخص الحساب (رصيد الكاش باك) */}
                 <div className="mb-1 bg-[#F8F5F2] rounded-xl p-4">
-                  <h3 className="text-xs font-bold text-[#4A4A4A] mb-3 flex items-center gap-2">
+                  <h3 className="text-xs font-bold text-[#4A4A4A] mb-3 flex items-center gap-1">
                     <UserCheck size={16} className="text-[#D9A3AA]"/> ملخص حسابك
                   </h3>
                   
-                  {/* صف الرصيد والديون */}
-                  <div className="grid grid-cols-2 gap-3 text-center mb-3">
-                    <div className="bg-white rounded-lg p-2 border border-[#D9A3AA]/10">
-                      <span className="font-black text-emerald-600/50 block mb-1">رصيد المحفظة</span>
-                      <span className="font-black text-emerald-600 dir-ltr text-lg">{customerStats.wallet.toFixed(2)}</span>
+                  <div className="grid grid-cols-1 gap-3 text-center mb-1">
+                    <div className="bg-white rounded-lg p-3 border border-[#D9A3AA]/10 shadow-sm">
+                      <span className="font-black text-emerald-600/60 block mb-1 text-[10px]">رصيد الكاش باك الحالي</span>
+                      <span className="font-black text-emerald-600 dir-ltr text-xl">{customerStats.wallet.toFixed(2)}</span>
                     </div>
-                    <div className="bg-white rounded-lg p-2 border border-[#D9A3AA]/10">
-                      <span className="font-black text-red-600/50 block mb-1">إجمالي الديون</span>
-                      <span className={`font-black dir-ltr text-lg ${customerStats.debt > 0 ? 'text-red-600' : 'text-red-600'}`}>{customerStats.debt.toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  {/* صف الصافي */}
-                  <div className={`pt-3 border-t border-[#D9A3AA]/10 flex justify-between items-center text-sm font-bold ${customerStats.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    <span>الصافي (لك/عليك):</span>
-                    <span className="dir-ltr">{customerStats.net.toFixed(2)} ر.س</span>
                   </div>
                 </div>
-                {/* ---------------------------------------------------------------- */}
 
                 <div className="p-4">
                     <h3 className="text-xs font-bold text-[#4A4A4A]/60 mb-4 flex items-center gap-1">
-                    <Banknote size={14}/> الحسابات المالية للطلب
+                      <Banknote size={14}/> الحسابات المالية للطلب
                     </h3>
 
-                    <div className="flex justify-between items-center text-sm text-[#4A4A4A] mb-2 px-1">
-                    <span>قيمة المنتجات</span>
-                    <span className="font-bold">{Number(order.subtotal || 0).toFixed(2)}</span>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm text-[#4A4A4A] px-1">
+                        <span>قيمة المنتجات</span>
+                        <span className="font-bold">{Number(order.subtotal || 0).toFixed(2)}</span>
+                      </div>
+
+                      {Number(order.delivery_fee || 0) > 0 && (
+                        <div className="flex justify-between items-center text-sm text-[#4A4A4A] px-1">
+                            <span className="flex items-center gap-1"><MapPin size={12}/> رسوم التوصيل</span>
+                            <span className="font-bold">{Number(order.delivery_fee).toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {/* تفاصيل الخصم (إن وجد) */}
+                      {Number(order.discount || 0) > 0 && (
+                        <div className="flex justify-between items-center text-sm text-red-500 px-2 bg-red-50 py-1.5 rounded-lg border border-red-100/50">
+                            <span className="font-bold">الخصم</span>
+                            <span className="font-bold dir-ltr">-{Number(order.discount).toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {/* تفاصيل الدفع من المحفظة/النقاط (إن وجد) */}
+                      {Number(order.wallet_used || 0) > 0 && (
+                        <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg border border-emerald-100/50">
+                            <span className="font-bold">استخدام رصيد النقاط</span>
+                            <span className="font-bold dir-ltr">-{Number(order.wallet_used).toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {/* تفاصيل الدفع من المحفظة/النقاط (إن وجد) */}
+                      {Number(order.wallet_used || 0) > 0 && (
+                        <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg border border-emerald-100/50">
+                            <span className="font-bold">استخدام رصيد النقاط</span>
+                            <span className="font-bold dir-ltr">-{Number(order.wallet_used).toFixed(2)}</span>
+                        </div>
+                      )}
                     </div>
 
-                    {order.delivery_fee > 0 && (
-                    <div className="flex justify-between items-center text-sm text-[#4A4A4A] mb-2 px-1">
-                        <span className="flex items-center gap-1"><MapPin size={12}/> رسوم التوصيل</span>
-                        <span className="font-bold">{order.delivery_fee}</span>
-                    </div>
-                    )}
+                    <div className="border-t border-[#D9A3AA]/20 my-4"></div>
 
-                    <div className="border-t border-[#D9A3AA]/20 my-3"></div>
-
-                    <div className="flex justify-between items-center mb-4 px-1">
-                    <span className="font-bold text-[#4A4A4A]">الإجمالي النهائي</span>
-                    <span className="font-black text-xl text-[#4A4A4A]">{order.total_amount} ر.س</span>
+                    <div className="flex justify-between items-center mb-5 px-1">
+                      <span className="font-bold text-[#4A4A4A]">الإجمالي النهائي</span>
+                      <span className="font-black text-xl text-[#4A4A4A]">{Number(order.total_amount || 0).toFixed(2)} ر.س</span>
                     </div>
 
+                    {/* سجل الدفعات السابقة (إن وجدت) */}
                     {payments.length > 0 && (
                     <div className="mb-4 bg-[#F8F5F2] p-3 rounded-xl border border-[#D9A3AA]/10">
-                        <p className="text-[10px] text-[#4A4A4A]/50 font-bold mb-2 flex justify-between">
-                        <span>سجل الدفعات</span>
-                        <span className="text-[#D9A3AA]">مجموع المدفوع: {order.deposit}</span>
+                        <p className="text-[10px] text-[#4A4A4A]/50 font-bold mb-2 flex justify-between items-center">
+                          <span>سجل الدفعات (المبالغ المستلمة)</span>
+                          <span className="text-[#D9A3AA] bg-[#D9A3AA]/10 px-2 py-1 rounded">مجموع المدفوع: {Number(order.deposit || 0).toFixed(2)}</span>
                         </p>
                         <div className="space-y-1">
                         {payments.map((p) => (
-                            <div key={p.id} className="flex justify-between items-center text-xs text-[#4A4A4A] border-b border-white last:border-0 pb-1 last:pb-0">
-                            <span className="flex items-center gap-1">
-                                <Calendar size={10}/> {formatDate(p.payment_date)}
-                            </span>
-                            <span className="font-bold">{p.amount} ر.س</span>
+                            <div key={p.id} className="flex justify-between items-center text-xs text-[#4A4A4A] border-b border-white last:border-0 pb-1.5 last:pb-0 pt-1.5 first:pt-0">
+                              <span className="flex items-center gap-1">
+                                  <Calendar size={10} className="text-[#C5A059]"/> {formatDate(p.payment_date)}
+                              </span>
+                              <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">+{Number(p.amount).toFixed(2)} ر.س</span>
                             </div>
                         ))}
                         </div>
                     </div>
                     )}
 
+                    {/* المتبقي أو حالة الدفع */}
                     <div className={`p-4 rounded-xl flex justify-between items-center ${remaining > 0 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-[#D9A3AA] text-white shadow-lg shadow-[#D9A3AA]/30'}`}>
-                    <span className="text-xs font-bold flex items-center gap-2">
-                        <Wallet size={16}/> {remaining > 0 ? 'المبلغ المتبقي عليك' : 'حالة الدفع'}
-                    </span>
-                    <span className="text-xl font-black">
-                        {remaining > 0 ? `${remaining.toFixed(2)} ر.س` : 'خالص ✅'}
-                    </span>
+                      <span className="text-xs font-bold flex items-center gap-2">
+                          <Wallet size={16}/> {remaining > 0 ? 'المبلغ المتبقي' : 'حالة الدفع'}
+                      </span>
+                      <span className="text-xl font-black">
+                          {remaining > 0 ? `${remaining.toFixed(2)} ر.س` : 'خالص ✅'}
+                      </span>
                     </div>
                 </div>
               </div>
