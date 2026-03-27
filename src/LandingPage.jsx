@@ -253,7 +253,7 @@ export default function LandingPage() {
             </div>
             
             <h1 className="text-4xl md:text-6xl font-black text-white leading-tight">
-              اطبعي أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span><br/> لتبقى للأبد.
+              اطبع أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span><br/> لتبقى للأبد.
             </h1>
             
             <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto md:mx-0">
