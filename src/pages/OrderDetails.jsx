@@ -761,7 +761,7 @@ export default function OrderDetails() {
   return (
     <>
       <div className="min-h-screen bg-[#F8F5F2] text-[#4A4A4A]">
-        <div className="max-w-6xl mx-auto pb-20 space-y-6 print:hidden">
+        <div className="w-full px-4 sm:px-6 lg:px-8 pb-20 space-y-6 print:hidden">
 
           {/* Header */}
           <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-[#D9A3AA]/25 shadow-sm">

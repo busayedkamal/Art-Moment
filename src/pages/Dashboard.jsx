@@ -123,7 +123,7 @@ export default function Dashboard() {
   const realNetProfit = stats.totalCashReceived - stats.totalExpenses;
 
   return (
-    <div className="space-y-8 pb-10 text-[#4A4A4A]">
+    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-10 text-[#4A4A4A]">
       
       {/* البطاقة العلوية (المالية) */}
       <div className="relative overflow-hidden bg-[#4A4A4A] rounded-3xl p-6 text-white shadow-xl">

@@ -127,7 +127,7 @@ export default function Settings() {
   if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline-block"/> جاري التحميل...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-10">
+    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-10">
       
       <div className="flex items-center gap-3">
         <div className="p-3 bg-[#4A4A4A] text-white rounded-xl"><SettingsIcon size={24}/></div>

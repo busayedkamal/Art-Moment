@@ -179,7 +179,7 @@ export default function Expenses() {
   if (loading) return <div className="p-10 text-center">جاري تحميل سجل المصروفات...</div>;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-10">
+    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-10">
       
       <div className="flex items-center gap-3">
         <div className="p-3 bg-[#4A4A4A] text-white rounded-xl"><Wallet size={24}/></div>

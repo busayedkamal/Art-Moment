@@ -305,7 +305,7 @@ export default function Customers() {
   }, [customersData]);
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 space-y-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 pb-20 space-y-6">
       
       {/* Header */}
       <div className="flex justify-between items-center">

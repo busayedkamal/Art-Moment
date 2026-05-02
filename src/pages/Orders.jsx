@@ -94,16 +94,12 @@ export default function Orders() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'new':
-        // أحمر ناعم (متناسق مع الهوية)
         return 'bg-[#FDECEC] text-[#C0392B] border border-[#F5B7B1]';
       case 'printing':
-        // أزرق ناعم
         return 'bg-[#EAF2FF] text-[#1F5FBF] border border-[#BBD4FF]';
       case 'done':
-        // وردي الهوية
         return 'bg-[#F7E9EB] text-[#B46C78] border border-[#E9C7CC]';
       case 'delivered':
-        // أخضر ناعم
         return 'bg-[#E9F7EF] text-[#1E7F4D] border border-[#BFE8D0]';
       default:
         return 'bg-slate-100 text-slate-700 border border-slate-200';
@@ -116,7 +112,7 @@ export default function Orders() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div><h1 className="text-2xl font-bold text-[#4A4A4A]">الطلبات</h1><p className="text-sm text-[#4A4A4A]/70">إدارة ومتابعة طلبات الطباعة</p></div>
         <div className="flex items-center gap-3">
