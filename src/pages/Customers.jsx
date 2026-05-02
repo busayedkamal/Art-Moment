@@ -5,7 +5,8 @@ import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 import {
   Search, Users, Wallet, ShoppingBag, Sparkles, Crown, ArrowLeft,
-  Phone, Calendar, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save
+  Phone, Calendar, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
+  Edit2, Check // تمت إضافة أيقونات التعديل
 } from "lucide-react";
 
 export default function Customers() {
@@ -22,6 +23,11 @@ export default function Customers() {
   // --- حالات تعديل بيانات العميل ---
   const [customerDetails, setCustomerDetails] = useState({ address: '', notes: '' });
   const [isSavingDetails, setIsSavingDetails] = useState(false);
+
+  // --- حالات تعديل رصيد المحفظة يدوياً ---
+  const [editingBalanceId, setEditingBalanceId] = useState(null);
+  const [editWalletBalance, setEditWalletBalance] = useState('');
+  const [isSavingBalance, setIsSavingBalance] = useState(false);
 
   // --- حالات نافذة المكافآت ---
   const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
@@ -53,7 +59,7 @@ export default function Customers() {
 
       if (ordersError) throw ordersError;
 
-      // 2) المحافظ (تمت إضافة address و notes)
+      // 2) المحافظ
       const { data: walletsData, error: walletsError } = await supabase
         .from('wallets')
         .select('phone, points_balance, address, notes');
@@ -146,7 +152,6 @@ export default function Customers() {
     
     setIsSavingDetails(true);
     try {
-      // التحقق من وجود محفظة مسبقاً
       const { data: existingWallet } = await supabase
         .from('wallets')
         .select('id')
@@ -154,15 +159,12 @@ export default function Customers() {
         .maybeSingle();
 
       if (existingWallet) {
-        // تحديث
-        const { error } = await supabase
+        await supabase
           .from('wallets')
           .update({ address: customerDetails.address, notes: customerDetails.notes })
           .eq('id', existingWallet.id);
-        if (error) throw error;
       } else {
-        // إنشاء محفظة جديدة لحفظ البيانات
-        const { error } = await supabase
+        await supabase
           .from('wallets')
           .insert([{ 
             phone: customer.cleanPhone, 
@@ -170,11 +172,10 @@ export default function Customers() {
             address: customerDetails.address, 
             notes: customerDetails.notes 
           }]);
-        if (error) throw error;
       }
 
       toast.success("تم حفظ بيانات العميل بنجاح ✨");
-      fetchData(); // تحديث الجدول
+      fetchData(); 
     } catch (error) {
       console.error('Error saving details:', error);
       toast.error("حدث خطأ أثناء الحفظ");
@@ -183,16 +184,65 @@ export default function Customers() {
     }
   };
 
+  // --- دالة التعديل اليدوي للرصيد ---
+  const handleSaveWalletBalance = async (customer) => {
+    if (!customer.cleanPhone) return toast.error("لا يمكن تعديل رصيد عميل بدون رقم هاتف");
+    setIsSavingBalance(true);
+    
+    try {
+      const newBalance = Number(editWalletBalance);
+      const oldBalance = Number(customer.walletBalance || 0);
+      const diff = newBalance - oldBalance;
+
+      if (diff === 0) {
+        setEditingBalanceId(null);
+        setIsSavingBalance(false);
+        return;
+      }
+
+      let walletId;
+      const { data: existingWallet } = await supabase
+        .from('wallets')
+        .select('id')
+        .eq('phone', customer.cleanPhone)
+        .maybeSingle();
+
+      if (existingWallet) {
+        walletId = existingWallet.id;
+        await supabase.from('wallets').update({ points_balance: newBalance }).eq('id', walletId);
+      } else {
+        const { data: newW } = await supabase.from('wallets').insert([{ phone: customer.cleanPhone, points_balance: newBalance }]).select().single();
+        walletId = newW.id;
+      }
+
+      // توثيق التعديل اليدوي في الحركات
+      await supabase.from('wallet_transactions').insert({
+        wallet_id: walletId,
+        type: 'manual_adjustment',
+        amount_value: Math.abs(diff),
+        points: 0
+      });
+
+      toast.success('تم تعديل الرصيد بنجاح');
+      setEditingBalanceId(null);
+      fetchData(); // تحديث الجدول فوراً
+    } catch (error) {
+      toast.error('حدث خطأ أثناء تعديل الرصيد');
+    } finally {
+      setIsSavingBalance(false);
+    }
+  };
+
   const handleExpandRow = (customer) => {
     if (expandedCustomerId === customer.id) {
       setExpandedCustomerId(null);
+      setEditingBalanceId(null); // إغلاق التعديل عند إغلاق الصف
     } else {
       setExpandedCustomerId(customer.id);
       setCustomerDetails({ address: customer.address || '', notes: customer.notes || '' });
     }
   };
 
-  // --- دالة إضافة المكافأة (كما هي) ---
   const handleGiveBonus = async (e) => {
     e.preventDefault();
     if (!selectedCustomer || !bonusAmount || bonusAmount <= 0 || !bonusReason) {
@@ -209,18 +259,12 @@ export default function Customers() {
       if (fetchErr) throw fetchErr;
 
       if (existingWallet) {
-        const { error: updateErr } = await supabase
-          .from('wallets').update({ points_balance: Number(existingWallet.points_balance || 0) + amountNum }).eq('id', existingWallet.id);
-        if (updateErr) throw updateErr;
+        await supabase.from('wallets').update({ points_balance: Number(existingWallet.points_balance || 0) + amountNum }).eq('id', existingWallet.id);
       } else {
-        const { error: insertErr } = await supabase
-          .from('wallets').insert([{ phone: phone, points_balance: amountNum }]);
-        if (insertErr) throw insertErr;
+        await supabase.from('wallets').insert([{ phone: phone, points_balance: amountNum }]);
       }
 
-      const { error: expError } = await supabase
-        .from('expenses').insert([{ title: `${bonusReason} - للعميل: ${selectedCustomer.name}`, amount: amountNum, date: new Date().toISOString().split('T')[0] }]);
-      if (expError) throw expError;
+      await supabase.from('expenses').insert([{ title: `${bonusReason} - للعميل: ${selectedCustomer.name}`, amount: amountNum, date: new Date().toISOString().split('T')[0] }]);
 
       toast.success(`تمت إضافة ${amountNum} ريال لمحفظة العميل 🎁`);
       setIsBonusModalOpen(false);
@@ -233,13 +277,12 @@ export default function Customers() {
   };
 
   const openBonusModal = (customer, e) => {
-    e.stopPropagation(); // لمنع فتح القائمة المنسدلة عند الضغط على الزر
+    e.stopPropagation();
     setSelectedCustomer(customer);
     setBonusAmount(10);
     setBonusReason("مكافأة إحالة (شارك الفن)");
     setIsBonusModalOpen(true);
   };
-
 
   const filtered = useMemo(() => {
     let data = customersData;
@@ -322,7 +365,7 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Table - النسخة النظيفة والمختصرة */}
+      {/* Table */}
       <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl shadow-sm overflow-hidden">
         <table className="min-w-full text-right">
           <thead className="bg-[#F8F5F2] border-b border-[#D9A3AA]/20">
@@ -345,7 +388,6 @@ export default function Customers() {
 
                 return (
                   <React.Fragment key={customer.id}>
-                    {/* الصف الرئيسي المبسط */}
                     <tr 
                       onClick={() => handleExpandRow(customer)}
                       className={`hover:bg-[#F8F5F2] cursor-pointer transition-colors group ${isExpanded ? 'bg-[#F8F5F2]/50' : ''}`}
@@ -394,7 +436,7 @@ export default function Customers() {
                               href={`https://wa.me/966${String(customer.phone).startsWith("0") ? String(customer.phone).slice(1) : customer.phone}`}
                               target="_blank"
                               rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()} // لمنع فتح القائمة عند ضغط الواتساب
+                              onClick={(e) => e.stopPropagation()}
                               className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100"
                               title="مراسلة واتساب"
                             >
@@ -446,12 +488,46 @@ export default function Customers() {
                                       {customer.lastOrderDate ? customer.lastOrderDate.toLocaleDateString("en-GB") : "-"}
                                     </span>
                                  </div>
-                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
+
+                                 {/* تفصيل الرصيد مع إمكانية التعديل */}
+                                 <div className="bg-[#F8F5F2] p-3 rounded-xl relative group">
                                     <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">تفصيل الرصيد</span>
-                                    <span className="font-bold text-[#4A4A4A] text-[11px] mt-1 block leading-tight">
-                                      محفظة: <span className="text-violet-600">{Number(customer.walletBalance || 0).toFixed(1)}</span><br/>
-                                      مديونية: <span className="text-red-500">{Number(customer.debt || 0).toFixed(1)}</span>
-                                    </span>
+                                    
+                                    {editingBalanceId === customer.id ? (
+                                      <div className="mt-1 animate-in fade-in">
+                                        <div className="flex items-center gap-1 mb-1">
+                                          <span className="text-[10px] font-bold text-[#4A4A4A]">المحفظة:</span>
+                                          <input 
+                                            type="number" 
+                                            value={editWalletBalance}
+                                            onChange={(e) => setEditWalletBalance(e.target.value)}
+                                            className="w-full h-6 text-xs text-center border border-[#D9A3AA]/40 rounded outline-none font-bold text-violet-600 bg-white"
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-1 mt-2">
+                                          <button onClick={() => handleSaveWalletBalance(customer)} disabled={isSavingBalance} className="flex-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded py-0.5 text-[10px] font-bold hover:bg-emerald-100 flex justify-center items-center gap-1">
+                                            {isSavingBalance ? <Loader2 size={10} className="animate-spin"/> : <Check size={10}/>} حفظ
+                                          </button>
+                                          <button onClick={() => setEditingBalanceId(null)} className="flex-1 bg-red-50 text-red-600 border border-red-200 rounded py-0.5 text-[10px] font-bold hover:bg-red-100 flex justify-center items-center gap-1">
+                                             <X size={10}/> إلغاء
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <span className="font-bold text-[#4A4A4A] text-[11px] mt-1 block leading-tight">
+                                          محفظة: <span className="text-violet-600">{Number(customer.walletBalance || 0).toFixed(1)}</span><br/>
+                                          مديونية: <span className="text-red-500">{Number(customer.debt || 0).toFixed(1)}</span>
+                                        </span>
+                                        <button 
+                                          onClick={() => { setEditingBalanceId(customer.id); setEditWalletBalance(customer.walletBalance || 0); }}
+                                          className="absolute top-2 left-2 p-1 bg-white border border-[#D9A3AA]/20 rounded shadow-sm text-[#4A4A4A]/50 hover:text-[#D9A3AA] opacity-0 group-hover:opacity-100 transition-opacity"
+                                          title="تعديل رصيد المحفظة"
+                                        >
+                                          <Edit2 size={12}/>
+                                        </button>
+                                      </>
+                                    )}
                                  </div>
                                </div>
                             </div>
@@ -513,7 +589,7 @@ export default function Customers() {
         </table>
       </div>
 
-      {/* --- نافذة إضافة المكافأة (Modal) - تبقى كما هي --- */}
+      {/* --- نافذة إضافة المكافأة (Modal) --- */}
       {isBonusModalOpen && selectedCustomer && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
