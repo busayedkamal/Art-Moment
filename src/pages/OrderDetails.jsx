@@ -1029,7 +1029,7 @@ export default function OrderDetails() {
 
               <div className="space-y-3 text-sm flex-1">
                 <div className="flex justify-between text-[#4A4A4A]/55">
-                  <span>المجموع (منتجات)</span>
+                  <span>الإجمالي قبل الخصم والتوصيل</span>
                   <span>{Number(order.subtotal || 0).toFixed(2)}</span>
                 </div>
 
@@ -1100,9 +1100,15 @@ export default function OrderDetails() {
 
                 <div className="border-t border-white/10 my-2"></div>
 
+                {/* ✅ تم إضافة الإجمالي قبل الخصم لتوضيح الحسبة */}
+                <div className="flex justify-between text-white/60 text-xs mb-1">
+                  <span>الإجمالي (مع التوصيل)</span>
+                  <span className="line-through">{(Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2)} ر.س</span>
+                </div>
+
                 <div className="flex justify-between items-center mb-5 px-1">
-                  <span className="font-bold text-[#4A4A4A]">الإجمالي النهائي</span>
-                  <span className="font-black text-xl text-[#4A4A4A]">
+                  <span className="font-bold text-white">الإجمالي النهائي</span>
+                  <span className="font-black text-xl text-white">
                     {Number(order.total_amount || 0).toFixed(2)} ر.س
                   </span>
                 </div>
@@ -1229,7 +1235,7 @@ export default function OrderDetails() {
           </div>
         </div>
 
-        {/* الفاتورة القابلة للطباعة (كما هي) */}
+        {/* الفاتورة القابلة للطباعة */}
         <div id="printable-invoice" className="hidden print:block bg-white text-black print-no-extra-space">
           <div className="mx-auto">
             <div className="no-break flex justify-between items-start border-b-2 border-[#4A4A4A]/35 pb-4 mb-4">
@@ -1276,8 +1282,17 @@ export default function OrderDetails() {
                   <tr>
                     <td className="py-2 px-2 text-xs font-medium">طباعة صور 4×6</td>
                     <td className="py-2 px-2 text-center text-xs font-bold">{order.photo_4x6_qty}</td>
-                    <td className="py-2 px-2 text-left text-xs text-[#4A4A4A]/70">{prices.photo4x6}</td>
-                    <td className="py-2 px-2 text-left text-xs font-bold">{(order.photo_4x6_qty * prices.photo4x6).toFixed(2)}</td>
+                    <td className="py-2 px-2 text-left text-xs text-[#4A4A4A]/70">
+                       {/* عرض السعر الديناميكي إذا كان مطبقاً */}
+                       {Number(order.subtotal) > 0 ? (
+                          ((Number(order.photo_4x6_qty) * prices.photo4x6) === Number(order.subtotal) - (Number(order.a4_qty) * prices.a4) - (Number(order.album_qty) * Number(order.album_price))) ? prices.photo4x6 : 'تسعير ذكي'
+                       ) : prices.photo4x6}
+                    </td>
+                    <td className="py-2 px-2 text-left text-xs font-bold">
+                       {Number(order.subtotal) > 0 ? (
+                          (Number(order.subtotal) - (Number(order.a4_qty) * prices.a4) - (Number(order.album_qty) * Number(order.album_price))).toFixed(2)
+                       ) : (order.photo_4x6_qty * prices.photo4x6).toFixed(2)}
+                    </td>
                   </tr>
                 )}
                 {order.a4_qty > 0 && (
