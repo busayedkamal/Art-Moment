@@ -264,8 +264,6 @@ export default function Customers() {
         await supabase.from('wallets').insert([{ phone: phone, points_balance: amountNum }]);
       }
 
-      await supabase.from('expenses').insert([{ title: `${bonusReason} - للعميل: ${selectedCustomer.name}`, amount: amountNum, date: new Date().toISOString().split('T')[0] }]);
-
       toast.success(`تمت إضافة ${amountNum} ريال لمحفظة العميل 🎁`);
       setIsBonusModalOpen(false);
       fetchData();
@@ -597,9 +595,9 @@ export default function Customers() {
               <div className="absolute -right-4 -top-4 text-amber-200 opacity-50"><Gift size={80}/></div>
               <div className="relative z-10">
                 <h3 className="text-xl font-black text-amber-800 flex items-center gap-2">
-                  <Gift size={20}/> إضافة مكافأة للعميل
+                  <Gift size={20}/> إضافة رصيد للعميل
                 </h3>
-                <p className="text-amber-700/70 text-sm mt-1">تضاف للمحفظة وتُقيد كمصروف تسويقي</p>
+                <p className="text-amber-700/70 text-sm mt-1">تضاف للمحفظة</p>
               </div>
               <button onClick={() => setIsBonusModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A] hover:bg-red-50 hover:text-red-500 transition-colors relative z-10 shadow-sm"><X size={16}/></button>
             </div>
@@ -625,7 +623,7 @@ export default function Customers() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">سبب المكافأة (يظهر في المصروفات):</label>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">سبب إضافة الرصيد:</label>
                 <input 
                   type="text" 
                   required
@@ -642,7 +640,7 @@ export default function Customers() {
                   className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-amber-500/30 transition-all flex justify-center items-center gap-2 disabled:opacity-70"
                 >
                   {isSubmitting ? <Loader2 size={18} className="animate-spin"/> : <Sparkles size={18}/>}
-                  {isSubmitting ? 'جاري التنفيذ...' : 'اعتماد المكافأة'}
+                  {isSubmitting ? 'جاري التنفيذ...' : 'إضافة الرصيد'}
                 </button>
               </div>
             </form>
