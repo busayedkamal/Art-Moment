@@ -54,7 +54,7 @@ export default function Dashboard() {
         // 3. جلب رصيد المحافظ
         const { data: wallets, error: walletsError } = await supabase
           .from('wallets')
-          .select('points_balance, package_balance');
+          .select('points_balance');
         
         if (walletsError) throw walletsError;
 
