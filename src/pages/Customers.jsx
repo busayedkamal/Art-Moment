@@ -587,7 +587,7 @@ export default function Customers() {
         </table>
       </div>
 
-      {/* --- نافذة إضافة المكافأة (Modal) --- */}
+      {/* --- نافذة إضافة رصيد (Modal) --- */}
       {isBonusModalOpen && selectedCustomer && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">

@@ -51,12 +51,20 @@ export default function Dashboard() {
         
         if (expensesError) throw expensesError;
 
+        // 3. جلب رصيد المحافظ
+        const { data: wallets, error: walletsError } = await supabase
+          .from('wallets')
+          .select('points_balance');
+        
+        if (walletsError) throw walletsError;
+
         // --- الحسابات العامة ---
         const totalOrders = orders.length;
         const totalRevenue = orders.reduce((acc, order) => acc + (order.total_amount || 0), 0);
         const totalCashReceived = orders.reduce((acc, order) => acc + (order.deposit || 0), 0);
         const totalDebt = totalRevenue - totalCashReceived;
         const totalExpenses = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
+        const totalWalletBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
         
         const pendingOrders = orders.filter(o => o.status === 'printing' || o.status === 'new').length;
         const newOrdersCount = orders.filter(o => o.status === 'new').length;
@@ -75,7 +83,7 @@ export default function Dashboard() {
         );
 
         setStats({ 
-          totalOrders, totalRevenue, totalCashReceived, totalDebt, totalExpenses, 
+          totalOrders, totalRevenue, totalCashReceived, totalDebt, totalExpenses, totalWalletBalance,
           pendingOrders, newOrders: newOrdersCount, lateOrders 
         });
         setRecentNewOrders(recentNew);
@@ -120,7 +128,7 @@ export default function Dashboard() {
 
   if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline-block ml-2"/> جاري تحميل البيانات...</div>;
 
-  const realNetProfit = stats.totalCashReceived - stats.totalExpenses;
+  const realNetProfit = stats.totalCashReceived + stats.totalWalletBalance - stats.totalExpenses;
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-10 text-[#4A4A4A]">
@@ -141,6 +149,13 @@ export default function Dashboard() {
                <span className="text-[10px] text-[#4A4A4A]/70 block mb-1 font-bold">إجمالي المبيعات</span>
                <span className="text-xl font-bold dir-ltr text-[#4A4A4A]">
                  {stats.totalRevenue.toLocaleString()} <span className="text-xs opacity-70">ر.س</span>
+               </span>
+            </div>
+{/* بطاقة رصيد المحافظ */}
+            <div className="bg-amber-600 backdrop-blur-md px-5 py-3 rounded-2xl border border-amber-600 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-amber-600/30">
+               <span className="text-[10px] text-white/80 block mb-1 font-bold">رصيد المحافظ</span>
+               <span className="text-xl font-bold dir-ltr text-white">
+                 {stats.totalWalletBalance.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
                </span>
             </div>
 {/* بطاقة المديونية (لون صلب) */}
