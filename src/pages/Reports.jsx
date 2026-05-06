@@ -29,7 +29,7 @@ export default function Reports() {
         const { data: paymentsData } = await supabase.from('order_payments').select('*');
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
-        const { data: walletsData } = await supabase.from('wallets').select('points_balance');
+        const { data: walletsData } = await supabase.from('wallets').select('points_balance, package_balance');
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
         setPayments(paymentsData || []);
@@ -59,7 +59,8 @@ export default function Reports() {
     const customerLastOrder = {};
     let totalRevenue = 0;
     let totalExpenses = 0;
-    let totalWalletBalance = 0;
+    let totalPointsBalance = 0;
+    let totalPackageBalance = 0;
 
     const getMonthKey = (dateString) => {
       const date = new Date(dateString);
@@ -139,16 +140,17 @@ export default function Reports() {
     const threeMonthsAgo = subMonths(new Date(), 3);
     const churnedList = Object.values(customerLastOrder).filter(c => isBefore(c.date, threeMonthsAgo)).slice(0, 5);
 
-    // Calculate total wallet balance
-    totalWalletBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
+    // Calculate separate wallet balances
+    totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
+    totalPackageBalance = wallets.reduce((acc, wallet) => acc + (wallet.package_balance || 0), 0);
     
-    const netProfit = totalRevenue + totalWalletBalance - totalExpenses;
+    const netProfit = totalRevenue + totalPackageBalance - totalExpenses;
     const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
     const avgOrderValue = orders.length > 0 ? (totalRevenue / orders.length).toFixed(0) : 0;
 
     return {
       monthlyData, expenseData, profitabilityData, geoData, churnedList,
-      totals: { totalRevenue, totalExpenses, totalWalletBalance, netProfit, profitMargin, avgOrderValue, totalOrders: orders.length }
+      totals: { totalRevenue, totalExpenses, totalWalletBalance, totalPointsBalance, totalPackageBalance, netProfit, profitMargin, avgOrderValue, totalOrders: orders.length }
     };
   }, [payments, expenses, orders, wallets, settings]);
 
@@ -213,7 +215,7 @@ export default function Reports() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
             <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">إجمالي الدخل</p><h3 className="text-2xl font-black text-[#4A4A4A]/70">{analytics.totals.totalRevenue.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
@@ -228,8 +230,14 @@ export default function Reports() {
         </div>
         <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
-            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد المحافظ</p><h3 className="text-2xl font-black text-amber-600">{analytics.totals.totalWalletBalance.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
+            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد الباقات (ربح)</p><h3 className="text-2xl font-black text-amber-600">{analytics.totals.totalPackageBalance.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
             <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Wallet size={20}/></div>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
+          <div className="flex justify-between items-start">
+            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد النقاط (خصم)</p><h3 className="text-2xl font-black text-orange-600">{analytics.totals.totalPointsBalance.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
+            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><Wallet size={20}/></div>
           </div>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
