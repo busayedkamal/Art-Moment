@@ -11,7 +11,7 @@ import {
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
   Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram, 
   Ghost, Music, Link2, Plane, Gift, Smartphone, LayoutDashboard,
-  MessageSquarePlus, Send, CreditCard, Award, Gem // 👈 أضفنا أيقونات الباقات هنا
+  MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet // 👈 أضفنا أيقونات الباقات هنا
 } from 'lucide-react';
 
 // ✅ تصحيح مسار الصور
