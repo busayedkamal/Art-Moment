@@ -56,7 +56,14 @@ export default function Dashboard() {
           .from('wallets')
           .select('points_balance');
         
+        // 4. جلب معاملات الباقات لحساب رصيد الباقات بشكل منفصل
+        const { data: packageTransactions, error: transactionsError } = await supabase
+          .from('wallet_transactions')
+          .select('amount_value')
+          .eq('type', 'package_add');
+        
         if (walletsError) throw walletsError;
+        if (transactionsError) throw transactionsError;
 
         // --- الحسابات العامة ---
         const totalOrders = orders.length;
@@ -65,7 +72,7 @@ export default function Dashboard() {
         const totalDebt = totalRevenue - totalCashReceived;
         const totalExpenses = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
         const totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
-        const totalPackageBalance = 0; // TODO: Update when package_balance column exists
+        const totalPackageBalance = packageTransactions.reduce((acc, transaction) => acc + Number(transaction.amount_value || 0), 0);
         const totalWalletBalance = totalPointsBalance;
         
         const pendingOrders = orders.filter(o => o.status === 'printing' || o.status === 'new').length;
@@ -158,7 +165,7 @@ export default function Dashboard() {
             <div className="bg-amber-600 backdrop-blur-md px-5 py-3 rounded-2xl border border-amber-600 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-amber-600/30">
                <span className="text-[10px] text-white/80 block mb-1 font-bold">رصيد الباقات</span>
                <span className="text-xl font-bold dir-ltr text-white">
-                 {stats.totalPointsBalance.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
+                 {stats.totalPackageBalance.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
                </span>
             </div>
 {/* بطاقة رصيد النقاط (الخصم) */}

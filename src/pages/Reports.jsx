@@ -19,6 +19,7 @@ export default function Reports() {
   const [orders, setOrders] = useState([]); 
   const [expenses, setExpenses] = useState([]);
   const [wallets, setWallets] = useState([]);
+  const [packageTransactions, setPackageTransactions] = useState([]);
   const [settings, setSettings] = useState({ a4_price: 0, photo_4x6_price: 0 });
   const [expandedMonth, setExpandedMonth] = useState(null);
 
@@ -30,12 +31,14 @@ export default function Reports() {
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
         const { data: walletsData } = await supabase.from('wallets').select('points_balance');
+        const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('amount_value').eq('type', 'package_add');
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
         setPayments(paymentsData || []);
         setOrders(ordersData || []);
         setExpenses(expensesData || []);
         setWallets(walletsData || []);
+        setPackageTransactions(packageTransactionsData || []);
         if (settingsData) setSettings(settingsData);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -142,7 +145,7 @@ export default function Reports() {
 
     // Calculate separate wallet balances
     totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
-    totalPackageBalance = wallets.reduce((acc, wallet) => acc + (wallet.package_balance || 0), 0);
+    totalPackageBalance = packageTransactions.reduce((acc, transaction) => acc + Number(transaction.amount_value || 0), 0);
     const totalWalletBalance = totalPointsBalance + totalPackageBalance;
     
     const netProfit = totalRevenue + totalPackageBalance - totalExpenses;
@@ -153,7 +156,7 @@ export default function Reports() {
       monthlyData, expenseData, profitabilityData, geoData, churnedList,
       totals: { totalRevenue, totalExpenses, totalWalletBalance, totalPointsBalance, totalPackageBalance, netProfit, profitMargin, avgOrderValue, totalOrders: orders.length }
     };
-  }, [payments, expenses, orders, wallets, settings]);
+  }, [payments, expenses, orders, wallets, packageTransactions, settings]);
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 

@@ -34,6 +34,7 @@ export default function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [bonusAmount, setBonusAmount] = useState(10);
   const [bonusReason, setBonusReason] = useState("مكافأة إحالة (شارك الفن)");
+  const [bonusType, setBonusType] = useState("points");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -254,17 +255,57 @@ export default function Customers() {
       const phone = selectedCustomer.cleanPhone;
       if (!phone) throw new Error("لا يوجد رقم هاتف صالح");
 
+      // جلب بيانات المحفظة الحالية
       const { data: existingWallet, error: fetchErr } = await supabase
         .from('wallets').select('id, points_balance').eq('phone', phone).maybeSingle();
       if (fetchErr) throw fetchErr;
 
-      if (existingWallet) {
-        await supabase.from('wallets').update({ points_balance: Number(existingWallet.points_balance || 0) + amountNum }).eq('id', existingWallet.id);
+      if (bonusType === 'package') {
+        // إضافة إلى رصيد الباقات (شحن مسبق - ربح مباشر)
+        // لا نغير points_balance، نسجل فقط معاملة الباقات
+        if (existingWallet) {
+          // تسجيل معاملة الباقات فقط بدون تغيير رصيد النقاط
+          await supabase.from('wallet_transactions').insert({
+            wallet_id: existingWallet.id,
+            type: 'package_add',
+            points: 0,
+            amount_value: amountNum.toString(),
+            created_at: new Date().toISOString()
+          });
+        } else {
+          // إنشاء محفظة جديدة مع رصيد نقاط 0 فقط
+          const { data: newWallet } = await supabase.from('wallets').insert([{ 
+            phone: phone, 
+            points_balance: 0 
+          }]).select().single();
+          
+          if (newWallet) {
+            // تسجيل معاملة الباقات
+            await supabase.from('wallet_transactions').insert({
+              wallet_id: newWallet.id,
+              type: 'package_add',
+              points: 0,
+              amount_value: amountNum.toString(),
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+        toast.success(`تمت إضافة ${amountNum} ريال لرصيد الباقات (شحن مسبق) 💰`);
       } else {
-        await supabase.from('wallets').insert([{ phone: phone, points_balance: amountNum }]);
+        // إضافة إلى رصيد النقاط (خصم)
+        if (existingWallet) {
+          await supabase.from('wallets').update({ 
+            points_balance: Number(existingWallet.points_balance || 0) + amountNum 
+          }).eq('id', existingWallet.id);
+        } else {
+          await supabase.from('wallets').insert([{ 
+            phone: phone, 
+            points_balance: amountNum 
+          }]);
+        }
+        toast.success(`تمت إضافة ${amountNum} ريال لرصيد النقاط (خصم) 🎁`);
       }
 
-      toast.success(`تمت إضافة ${amountNum} ريال لمحفظة العميل 🎁`);
       setIsBonusModalOpen(false);
       fetchData();
     } catch (error) {
@@ -608,6 +649,19 @@ export default function Customers() {
                 <div className="p-3 bg-[#F8F5F2] rounded-xl text-[#4A4A4A] font-medium border border-[#D9A3AA]/20">
                   {selectedCustomer.name} <span className="text-xs text-[#4A4A4A]/50 dir-ltr block">{selectedCustomer.phone}</span>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">نوع الرصيد:</label>
+                <select 
+                  required
+                  value={bonusType || 'points'}
+                  onChange={(e) => setBonusType(e.target.value)}
+                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 text-sm font-medium"
+                >
+                  <option value="points">رصيد النقاط (خصم)</option>
+                  <option value="package">رصيد الباقات (شحن مسبق - ربح مباشر)</option>
+                </select>
               </div>
 
               <div>
