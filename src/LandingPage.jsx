@@ -11,7 +11,7 @@ import {
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
   Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram, 
   Ghost, Music, Link2, Plane, Gift, Smartphone, LayoutDashboard,
-  MessageSquarePlus, Send // 👈 أضفنا هاتين الأيقونتين
+  MessageSquarePlus, Send, CreditCard, Award, Gem // 👈 أضفنا أيقونات الباقات هنا
 } from 'lucide-react';
 
 // ✅ تصحيح مسار الصور
@@ -201,6 +201,7 @@ export default function LandingPage() {
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-[#4A4A4A]/80">
+            <a href="#wallet-packages" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1"><Wallet size={16} className="text-[#C5A059]"/> شحن المحفظة</a>
             <a href="#ai-check" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1"><ScanFace size={16} className="text-[#D9A3AA]"/> فحص الجودة</a>
             <a href="#packages" className="hover:text-[#D9A3AA] transition-colors">الباقات</a>
             <a href="#sizes" className="hover:text-[#D9A3AA] transition-colors">الخدمات</a>
@@ -225,6 +226,7 @@ export default function LandingPage() {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-4 shadow-xl absolute w-full z-50">
+            <a href="#wallet-packages" className="block py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}>💳 شحن المحفظة</a>
             <a href="#ai-check" className="block py-2 text-[#D9A3AA] font-bold" onClick={() => setIsMobileMenuOpen(false)}>✨ فحص جودة الصورة</a>
             <a href="#packages" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
             <a href="#sizes" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
@@ -289,10 +291,120 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- قسم باقات الشحن والمحفظة الجديد --- */}
+      <section id="wallet-packages" className="py-20 bg-white relative">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-16 max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-bold text-xs mb-6 border border-[#C5A059]/20">
+              <Wallet size={16}/> رصيد ذكرياتك.. يعطيك أكثر!
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black text-[#4A4A4A] mb-4 leading-tight">
+              اشحني محفظتك، <span className="text-[#C5A059]">واطبعي براحتك</span>
+            </h2>
+            <p className="text-[#4A4A4A]/70 text-lg leading-relaxed mb-6">
+              بدل ما تنتظري العروض، اشحني محفظتك في <span className="font-bold text-[#D9A3AA]">لحظة فن</span> واحصلي على رصيد إضافي تستخدميه بحرية لطباعة صورك وألبوماتك بأفضل جودة.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 text-xs font-bold text-[#4A4A4A]/80">
+               <span className="flex items-center gap-1 bg-[#F8F5F2] px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500"/> الرصيد لا ينتهي صلاحيته</span>
+               <span className="flex items-center gap-1 bg-[#F8F5F2] px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500"/> تقسمين طلباتك براحتك</span>
+               <span className="flex items-center gap-1 bg-[#F8F5F2] px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500"/> هدايا وميزات حصرية</span>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            
+            {/* الباقة النحاسية */}
+            <div className="bg-[#F8F5F2] rounded-[2rem] p-8 border border-orange-200/50 hover:shadow-xl hover:shadow-orange-900/5 transition-all flex flex-col relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-orange-400 to-orange-200"></div>
+              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:scale-110 transition-transform">
+                <CreditCard size={28} />
+              </div>
+              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة النحاسية</h3>
+              <div className="mb-6">
+                <span className="text-3xl font-black text-orange-600">299</span> <span className="text-sm text-[#4A4A4A]/50">ر.س</span>
+              </div>
+              <div className="bg-white rounded-xl p-4 mb-6 border border-orange-100">
+                <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
+                <span className="text-2xl font-black text-[#4A4A4A]">333 ر.س</span>
+              </div>
+              <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
+                المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!
+              </p>
+              <a 
+                href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة النحاسية بـ 299 ريال" 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-full py-3 rounded-xl bg-orange-100 text-orange-700 font-bold hover:bg-orange-600 hover:text-white transition-colors flex justify-center items-center gap-2"
+              >
+                اشحن الآن
+              </a>
+            </div>
+
+            {/* الباقة الفضية (المميزة) */}
+            <div className="bg-white rounded-[2rem] p-8 border-2 border-slate-300 shadow-xl shadow-slate-200/50 transform md:-translate-y-4 flex flex-col relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-l from-slate-400 to-slate-200"></div>
+              <div className="absolute top-4 left-4 bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full border border-slate-200">
+                الأكثر طلباً
+              </div>
+              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 mb-6 group-hover:scale-110 transition-transform">
+                <Award size={28} />
+              </div>
+              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الفضية</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-black text-slate-600">699</span> <span className="text-sm text-[#4A4A4A]/50">ر.س</span>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
+                <span className="block text-[10px] text-slate-500 font-bold mb-1">يصير رصيدك في المحفظة:</span>
+                <span className="text-3xl font-black text-slate-700">808 ر.س</span>
+              </div>
+              <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
+                المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!
+              </p>
+              <a 
+                href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة الفضية بـ 699 ريال" 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-full py-4 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-md"
+              >
+                اشحن الآن
+              </a>
+            </div>
+
+            {/* الباقة الذهبية */}
+            <div className="bg-[#F8F5F2] rounded-[2rem] p-8 border border-amber-200/50 hover:shadow-xl hover:shadow-amber-900/5 transition-all flex flex-col relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-amber-400 to-amber-200"></div>
+              <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform">
+                <Gem size={28} />
+              </div>
+              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الذهبية</h3>
+              <div className="mb-6">
+                <span className="text-3xl font-black text-amber-600">999</span> <span className="text-sm text-[#4A4A4A]/50">ر.س</span>
+              </div>
+              <div className="bg-white rounded-xl p-4 mb-6 border border-amber-100">
+                <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
+                <span className="text-2xl font-black text-[#4A4A4A]">1,202 ر.س</span>
+              </div>
+              <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
+                رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!
+              </p>
+              <a 
+                href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة الذهبية بـ 999 ريال" 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-full py-3 rounded-xl bg-amber-100 text-amber-700 font-bold hover:bg-amber-500 hover:text-white transition-colors flex justify-center items-center gap-2"
+              >
+                اشحن الآن
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
       {/* --- 2. قسم فحص الجودة (AI Check) --- */}
-      <section id="ai-check" className="py-20 bg-white relative">
+      <section id="ai-check" className="py-20 bg-[#F8F5F2] border-t border-[#D9A3AA]/10 relative">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#F8F5F2] border border-[#D9A3AA]/30 text-[#D9A3AA] font-bold text-xs mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#D9A3AA]/30 text-[#D9A3AA] font-bold text-xs mb-6">
             <ScanFace size={16}/> الذكاء الاصطناعي
           </div>
           <h2 className="text-3xl font-black text-[#4A4A4A] mb-4">هل صورتك مناسبة للطباعة؟ 🧐</h2>
@@ -300,10 +412,10 @@ export default function LandingPage() {
             ارفع صورتك هنا، وسيقوم النظام فوراً بتحليل دقتها وإضاءتها ليخبرك بأفضل مقاس للطباعة.
           </p>
 
-          <div className="bg-[#F8F5F2] rounded-[2.5rem] p-8 shadow-inner border border-[#D9A3AA]/10 max-w-2xl mx-auto relative overflow-hidden">
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-[#D9A3AA]/10 max-w-2xl mx-auto relative overflow-hidden">
             {!analysisResult && !analyzing && (
-              <div onClick={() => fileInputRef.current?.click()} className="border-3 border-dashed border-[#D9A3AA]/30 hover:border-[#D9A3AA] hover:bg-white rounded-3xl p-10 cursor-pointer transition-all group">
-                <div className="w-20 h-20 bg-white text-[#D9A3AA] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-sm">
+              <div onClick={() => fileInputRef.current?.click()} className="border-3 border-dashed border-[#D9A3AA]/30 hover:border-[#D9A3AA] hover:bg-[#F8F5F2]/50 rounded-3xl p-10 cursor-pointer transition-all group">
+                <div className="w-20 h-20 bg-[#F8F5F2] text-[#D9A3AA] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-sm">
                   <Upload size={32}/>
                 </div>
                 <h3 className="font-bold text-[#4A4A4A] text-lg mb-2">اضغط هنا لرفع الصورة</h3>
@@ -523,7 +635,6 @@ export default function LandingPage() {
           </div>
 
           {/* الحاسبة الديناميكية */}
-          {/* ... (باقي كود الحاسبة كما هو بدون تغيير) ... */}
           {pricingSettings?.is_dynamic_pricing_enabled && (
             <div className="max-w-4xl mx-auto mt-16 animate-in slide-in-from-bottom duration-700">
               <div className="bg-[#4A4A4A] rounded-[3rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
@@ -643,7 +754,7 @@ export default function LandingPage() {
       </section>
 
       {/* --- الأسئلة الشائعة --- */}
-      <section id="faq" className="py-20 bg-white">
+      <section id="faq" className="py-20 bg-white border-t border-[#D9A3AA]/10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-black text-[#4A4A4A] mb-4">أسئلة شائعة</h2>
@@ -674,9 +785,8 @@ export default function LandingPage() {
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none"><div className="absolute -top-1/2 -right-1/2 w-[100rem] h-[100rem] bg-[#D9A3AA] rounded-full blur-3xl"></div></div>
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           
-          {/* ✅ تم إرجاع الشعار للونه الأسود الأصلي (تمت إزالة الفلتر الأبيض) */}
           <div className="bg-white/10 w-fit mx-auto p-4 rounded-2xl mb-6 backdrop-blur-sm border border-white/10">
-            <img src={logo} alt="Art Moment" className="h-16 w-auto brightness-0" /> 
+            <img src={logo} alt="Art Moment" className="h-16 w-auto brightness-0 invert" /> 
           </div>
 
           <p className="mb-8 max-w-md mx-auto text-white/60">
@@ -688,7 +798,6 @@ export default function LandingPage() {
             <Link to="/admin/login" className="hover:text-[#D9A3AA] transition-colors">دخول الموظفين</Link>
           </div>
           
-          {/* ✅ روابط وسائل التواصل الجديدة مع تصميم أزرار أنيق */}
           <div className="flex justify-center flex-wrap gap-4 mb-8">
              <a href="https://www.instagram.com/art.moment__/" target="_blank" rel="noreferrer" title="Instagram" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-gradient-to-tr hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
                <Instagram size={22}/>
