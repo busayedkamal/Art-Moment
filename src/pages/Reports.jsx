@@ -29,7 +29,7 @@ export default function Reports() {
         const { data: paymentsData } = await supabase.from('order_payments').select('*');
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
-        const { data: walletsData } = await supabase.from('wallets').select('points_balance, package_balance');
+        const { data: walletsData } = await supabase.from('wallets').select('points_balance');
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
         setPayments(paymentsData || []);
