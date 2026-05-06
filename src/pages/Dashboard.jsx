@@ -158,7 +158,7 @@ export default function Dashboard() {
             <div className="bg-amber-600 backdrop-blur-md px-5 py-3 rounded-2xl border border-amber-600 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-amber-600/30">
                <span className="text-[10px] text-white/80 block mb-1 font-bold">رصيد الباقات</span>
                <span className="text-xl font-bold dir-ltr text-white">
-                 {stats.totalPackageBalance.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
+                 {(stats.totalPackageBalance || 0).toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
                </span>
             </div>
 {/* بطاقة رصيد النقاط (الخصم) */}

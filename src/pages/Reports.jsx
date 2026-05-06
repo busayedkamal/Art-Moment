@@ -230,7 +230,7 @@ export default function Reports() {
         </div>
         <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
-            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد الباقات (ربح)</p><h3 className="text-2xl font-black text-amber-600">{analytics.totals.totalPackageBalance.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
+            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد الباقات (ربح)</p><h3 className="text-2xl font-black text-amber-600">{(analytics.totals.totalPackageBalance || 0).toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
             <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Wallet size={20}/></div>
           </div>
         </div>
