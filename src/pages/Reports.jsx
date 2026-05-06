@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart3, Calendar, Download, TrendingDown, TrendingUp, 
-  PieChart as PieIcon, Activity, CheckCircle2, MapPin, Crown, Users, Copy, ChevronDown
+  PieChart as PieIcon, Activity, CheckCircle2, MapPin, Crown, Users, Copy, ChevronDown, Wallet
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
