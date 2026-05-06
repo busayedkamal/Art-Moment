@@ -143,6 +143,7 @@ export default function Reports() {
     // Calculate separate wallet balances
     totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
     totalPackageBalance = wallets.reduce((acc, wallet) => acc + (wallet.package_balance || 0), 0);
+    const totalWalletBalance = totalPointsBalance + totalPackageBalance;
     
     const netProfit = totalRevenue + totalPackageBalance - totalExpenses;
     const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
