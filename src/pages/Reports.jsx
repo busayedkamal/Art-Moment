@@ -31,7 +31,7 @@ export default function Reports() {
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
         const { data: walletsData } = await supabase.from('wallets').select('points_balance');
-        const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('amount_value').eq('type', 'package_add');
+        const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('type, amount_value').in('type', ['package_add', 'package_redeem']);
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
         setPayments(paymentsData || []);
@@ -143,18 +143,31 @@ export default function Reports() {
     const threeMonthsAgo = subMonths(new Date(), 3);
     const churnedList = Object.values(customerLastOrder).filter(c => isBefore(c.date, threeMonthsAgo)).slice(0, 5);
 
-    // Calculate separate wallet balances
+    // حساب أرصدة المحافظ
     totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
-    totalPackageBalance = packageTransactions.reduce((acc, transaction) => acc + Number(transaction.amount_value || 0), 0);
+    
+    // الربح المشحون (كل ما دفعه العملاء للباقات - ربح مباشر عند الشحن)
+    const totalPackageCharged = packageTransactions
+      .filter(t => t.type === 'package_add')
+      .reduce((acc, t) => acc + Number(t.amount_value || 0), 0);
+    
+    // ما تم استخدامه من رصيد الباقات في الطلبات
+    const totalPackageRedeemed = packageTransactions
+      .filter(t => t.type === 'package_redeem')
+      .reduce((acc, t) => acc + Number(t.amount_value || 0), 0);
+    
+    // الرصيد المتبقي للباقات (ما لم يُستخدم بعد)
+    totalPackageBalance = Math.max(0, totalPackageCharged - totalPackageRedeemed);
+    
     const totalWalletBalance = totalPointsBalance + totalPackageBalance;
     
-    const netProfit = totalRevenue + totalPackageBalance - totalExpenses;
+    const netProfit = totalRevenue + totalPackageCharged - totalExpenses;
     const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
     const avgOrderValue = orders.length > 0 ? (totalRevenue / orders.length).toFixed(0) : 0;
 
     return {
       monthlyData, expenseData, profitabilityData, geoData, churnedList,
-      totals: { totalRevenue, totalExpenses, totalWalletBalance, totalPointsBalance, totalPackageBalance, netProfit, profitMargin, avgOrderValue, totalOrders: orders.length }
+      totals: { totalRevenue, totalExpenses, totalWalletBalance, totalPointsBalance, totalPackageBalance, totalPackageCharged, netProfit, profitMargin, avgOrderValue, totalOrders: orders.length }
     };
   }, [payments, expenses, orders, wallets, packageTransactions, settings]);
 
@@ -234,7 +247,11 @@ export default function Reports() {
         </div>
         <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
-            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد الباقات (ربح)</p><h3 className="text-2xl font-black text-amber-600">{(analytics.totals.totalPackageBalance || 0).toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
+            <div>
+              <p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">ربح الباقات (مشحون)</p>
+              <h3 className="text-2xl font-black text-amber-600">{(analytics.totals.totalPackageCharged || 0).toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3>
+              <p className="text-[10px] text-amber-500/70 mt-1">متبقي: {(analytics.totals.totalPackageBalance || 0).toFixed(1)} ر.س</p>
+            </div>
             <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Wallet size={20}/></div>
           </div>
         </div>
