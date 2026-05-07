@@ -32,6 +32,7 @@ export default function OrderDetails() {
   const [transactions, setTransactions] = useState([]);
   const [showPaymentInput, setShowPaymentInput] = useState(false);
   const [newPayment, setNewPayment] = useState({ amount: '', date: new Date().toISOString().split('T')[0] });
+  const [walletUsed, setWalletUsed] = useState(0);
 
   const [manualDiscount, setManualDiscount] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -104,6 +105,7 @@ export default function OrderDetails() {
       setManualDiscount(Number(orderData.manual_discount || 0));
       setDeliveryFee(Number(orderData.delivery_fee || 0));
       setNotes(orderData.notes || '');
+      setWalletUsed(Number(orderData.wallet_used || 0));
 
       if (settingsData) {
         setAppSettings(settingsData);
@@ -353,6 +355,7 @@ export default function OrderDetails() {
         manual_discount: safeDiscount,
         subtotal: newSubtotal,
         total_amount: newTotal,
+        wallet_used: overrides.wallet_used ?? walletUsed,
         payment_status: isPaid ? 'paid' : 'unpaid'
       };
 

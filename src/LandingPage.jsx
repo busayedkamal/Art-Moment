@@ -202,7 +202,6 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-[#4A4A4A]/80">
             <a href="#wallet-packages" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1"><Wallet size={16} className="text-[#C5A059]" /> شحن المحفظة</a>
-            <a href="#ai-check" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1"><ScanFace size={16} className="text-[#D9A3AA]" /> فحص الجودة</a>
             <a href="#packages" className="hover:text-[#D9A3AA] transition-colors">الباقات</a>
             <a href="#sizes" className="hover:text-[#D9A3AA] transition-colors">الخدمات</a>
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>

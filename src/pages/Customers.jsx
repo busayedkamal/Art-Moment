@@ -50,7 +50,7 @@ export default function Customers() {
       // 1) الطلبات
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select('id, customer_name, phone, total_amount, deposit, created_at')
+        .select('id, customer_name, phone, total_amount, deposit, wallet_used, created_at')
         .order('created_at', { ascending: false });
       if (ordersError) throw ordersError;
 
@@ -115,9 +115,10 @@ export default function Customers() {
         map[key].orderIds.add(order.id);
         const totalAmount = Number(order.total_amount || 0);
         const paid = Number(order.deposit || 0);
-        const remaining = totalAmount - paid;
+        const walletUsed = Number(order.wallet_used || 0);
+        const remaining = totalAmount - paid - walletUsed;
         map[key].totalRequired += totalAmount;
-        map[key].totalPaid += paid;
+        map[key].totalPaid += paid + walletUsed;
         if (remaining > 0) map[key].debt += remaining;
 
         if (order.created_at) {

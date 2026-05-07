@@ -51,14 +51,15 @@ export default function TrackOrderPage() {
       // 2. جلب الديون (نجلب كل الطلبات ونفلترها للتأكد)
       const { data: allOrders } = await supabase
         .from('orders')
-        .select('total_amount, deposit, phone');
+        .select('total_amount, deposit, wallet_used, phone');
 
       let totalDebt = 0;
       if (allOrders) {
         allOrders.forEach(o => {
           // نقارن الأرقام بعد التوحيد
           if (normalizePhone(o.phone) === cleanPhone) {
-            const debt = Number(o.total_amount || 0) - Number(o.deposit || 0);
+            const walletUsed = Number(o.wallet_used || 0);
+            const debt = Number(o.total_amount || 0) - Number(o.deposit || 0) - walletUsed;
             if (debt > 0.5) totalDebt += debt; 
           }
         });
@@ -122,7 +123,8 @@ export default function TrackOrderPage() {
   };
 
   const currentStep = order ? getStepStatus(order.status) : 0;
-  const remaining = order ? (Number(order.total_amount || 0) - Number(order.deposit || 0)) : 0;
+  const walletUsed = order ? Number(order.wallet_used || 0) : 0;
+  const remaining = order ? (Number(order.total_amount || 0) - Number(order.deposit || 0) - walletUsed) : 0;
 
   const formatDate = (dateString) => {
     if (!dateString) return null;
@@ -329,19 +331,11 @@ export default function TrackOrderPage() {
                         </div>
                       )}
 
-                      {/* تفاصيل الدفع من المحفظة/النقاط (إن وجد) */}
-                      {Number(order.wallet_used || 0) > 0 && (
+                      {/* تفاصيل الدفع من المحفظة (إن وجد) */}
+                      {walletUsed > 0 && (
                         <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg border border-emerald-100/50">
-                            <span className="font-bold">استخدام رصيد النقاط</span>
-                            <span className="font-bold dir-ltr">-{Number(order.wallet_used).toFixed(2)}</span>
-                        </div>
-                      )}
-
-                      {/* تفاصيل الدفع من المحفظة/النقاط (إن وجد) */}
-                      {Number(order.wallet_used || 0) > 0 && (
-                        <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg border border-emerald-100/50">
-                            <span className="font-bold">استخدام رصيد النقاط</span>
-                            <span className="font-bold dir-ltr">-{Number(order.wallet_used).toFixed(2)}</span>
+                            <span className="font-bold">تم الدفع من المحفظة</span>
+                            <span className="font-bold dir-ltr">-{walletUsed.toFixed(2)}</span>
                         </div>
                       )}
                     </div>

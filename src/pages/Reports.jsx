@@ -64,6 +64,7 @@ export default function Reports() {
     let totalExpenses = 0;
     let totalPointsBalance = 0;
     let totalPackageBalance = 0;
+    let totalWalletUsed = 0;
 
     const getMonthKey = (dateString) => {
       const date = new Date(dateString);
@@ -97,6 +98,7 @@ export default function Reports() {
     orders.forEach(o => {
       const dateInfo = getMonthKey(o.created_at);
       if (dateInfo && monthlyMap[dateInfo.key]) monthlyMap[dateInfo.key].orders += 1;
+      totalWalletUsed += Number(o.wallet_used || 0);
 
       const city = o.source ? o.source.trim() : 'أخرى';
       if (citiesMap.hasOwnProperty(city)) {
@@ -162,6 +164,7 @@ export default function Reports() {
     const totalWalletBalance = totalPointsBalance + totalPackageBalance;
     
     const netProfit = totalRevenue + totalPackageCharged - totalExpenses;
+    const totalDebt = totalSales - totalCashReceived - totalWalletUsed;
     const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
     const avgOrderValue = orders.length > 0 ? (totalRevenue / orders.length).toFixed(0) : 0;
 
