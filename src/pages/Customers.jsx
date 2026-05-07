@@ -71,8 +71,13 @@ export default function Customers() {
       (packageTxData || []).forEach(tx => {
         if (!packageBalanceByWalletId[tx.wallet_id]) packageBalanceByWalletId[tx.wallet_id] = 0;
         const val = Number(tx.amount_value || 0);
-        if (tx.type === 'package_add') packageBalanceByWalletId[tx.wallet_id] += val;
-        if (tx.type === 'package_redeem') packageBalanceByWalletId[tx.wallet_id] -= val;
+        if (tx.type === 'package_add') {
+          packageBalanceByWalletId[tx.wallet_id] += val;
+          console.log(`Package ADD: wallet ${tx.wallet_id}, amount ${val}, new balance: ${packageBalanceByWalletId[tx.wallet_id]}`);
+        } else if (tx.type === 'package_redeem') {
+          packageBalanceByWalletId[tx.wallet_id] -= val;
+          console.log(`Package REDEEM: wallet ${tx.wallet_id}, amount ${val}, new balance: ${packageBalanceByWalletId[tx.wallet_id]}`);
+        }
       });
 
       const walletMap = new Map();
@@ -129,6 +134,12 @@ export default function Customers() {
         const notes = walletData ? walletData.notes : '';
         const debt = Number(c.debt || 0);
         const netBalance = walletBalance - debt;
+        
+        // تسجيل تصحيح لتشخيص المشكلة
+        if (c.cleanPhone && walletData) {
+          console.log(`Customer ${c.name} - Phone: ${c.cleanPhone}`);
+          console.log(`Wallet Balance: ${walletBalance}, Package Balance: ${packageBalance}, Net Balance: ${netBalance}`);
+        }
 
         return {
           ...c,
