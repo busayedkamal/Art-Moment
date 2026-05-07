@@ -27,9 +27,9 @@ export default function Customers() {
 
   const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [bonusAmount, setBonusAmount] = useState(10);
-  const [bonusReason, setBonusReason] = useState("مكافأة إحالة (شارك الفن)");
-  const [bonusType, setBonusType] = useState("points");
+  const [paidAmount, setPaidAmount] = useState(10);
+  const [addedAmount, setAddedAmount] = useState(10);
+  const [packageNote, setPackageNote] = useState("شحن باقة مسبق");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -243,48 +243,50 @@ export default function Customers() {
     }
   };
 
-  const handleGiveBonus = async (e) => {
+  const handleChargePackage = async (e) => {
     e.preventDefault();
-    if (!selectedCustomer || !bonusAmount || bonusAmount <= 0 || !bonusReason) {
+    if (!selectedCustomer || !paidAmount || paidAmount <= 0 || !addedAmount || addedAmount <= 0 || !packageNote) {
       toast.error("يرجى تعبئة جميع الحقول"); return;
     }
     setIsSubmitting(true);
     try {
-      const amountNum = Number(bonusAmount);
+      const paidNum = Number(paidAmount);
+      const addedNum = Number(addedAmount);
       const phone = selectedCustomer.cleanPhone;
       if (!phone) throw new Error("لا يوجد رقم هاتف صالح");
 
+      // جلب أو إنشاء محفظة العميل
+      let wallet;
       const { data: existingWallet, error: fetchErr } = await supabase
         .from('wallets').select('id, points_balance').eq('phone', phone).maybeSingle();
       if (fetchErr) throw fetchErr;
 
-      if (bonusType === 'package') {
-        // رصيد الباقات: ربح مباشر، يُحفظ فقط كحركة في wallet_transactions
-        let walletId;
-        if (existingWallet) {
-          walletId = existingWallet.id;
-        } else {
-          const { data: newWallet } = await supabase.from('wallets')
-            .insert([{ phone, points_balance: 0 }]).select().single();
-          walletId = newWallet.id;
-        }
-        await supabase.from('wallet_transactions').insert({
-          wallet_id: walletId, type: 'package_add',
-          points: 0, amount_value: amountNum.toString(),
-          created_at: new Date().toISOString()
-        });
-        toast.success(`تمت إضافة ${amountNum} ريال لرصيد الباقات (ربح مباشر) 💰`);
+      if (existingWallet) {
+        wallet = existingWallet;
       } else {
-        // رصيد النقاط: خصم على الطلبات
-        if (existingWallet) {
-          await supabase.from('wallets')
-            .update({ points_balance: Number(existingWallet.points_balance || 0) + amountNum })
-            .eq('id', existingWallet.id);
-        } else {
-          await supabase.from('wallets').insert([{ phone, points_balance: amountNum }]);
-        }
-        toast.success(`تمت إضافة ${amountNum} ريال لرصيد النقاط (خصم) 🎁`);
+        const { data: newWallet, error: createErr } = await supabase.from('wallets')
+          .insert([{ phone, points_balance: 0 }]).select().single();
+        if (createErr) throw createErr;
+        wallet = newWallet;
       }
+
+      // تحديث رصيد النقاط في المحفظة
+      const newBalance = Number(wallet.points_balance || 0) + addedNum;
+      const { error: updateErr } = await supabase.from('wallets')
+        .update({ points_balance: newBalance })
+        .eq('id', wallet.id);
+      if (updateErr) throw updateErr;
+
+      // إدخال معاملة شحن الباقة
+      await supabase.from('wallet_transactions').insert({
+        wallet_id: wallet.id,
+        type: 'package_charge',
+        amount_value: paidNum.toString(),
+        points: addedNum,
+        created_at: new Date().toISOString()
+      });
+
+      toast.success(`تم شحن الباقة بنجاح! 💰 المدفوع: ${paidNum} ريال، الرصيد المضاف: ${addedNum} ريال`);
 
       setIsBonusModalOpen(false);
       fetchData();
@@ -298,9 +300,9 @@ export default function Customers() {
   const openBonusModal = (customer, e) => {
     e.stopPropagation();
     setSelectedCustomer(customer);
-    setBonusAmount(10);
-    setBonusReason("شحن باقة مسبق");
-    setBonusType("package");
+    setPaidAmount(10);
+    setAddedAmount(10);
+    setPackageNote("شحن باقة مسبق");
     setIsBonusModalOpen(true);
   };
 
@@ -482,7 +484,7 @@ export default function Customers() {
                             <button
                               onClick={(e) => openBonusModal(customer, e)}
                               className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-colors border border-amber-100"
-                              title="شحن رصيد / مكافأة"
+                              title="شحن باقة للعميل"
                             >
                               <Gift size={18} />
                             </button>
@@ -641,61 +643,45 @@ export default function Customers() {
               <div className="absolute -right-4 -top-4 text-amber-200 opacity-50"><Gift size={80} /></div>
               <div className="relative z-10">
                 <h3 className="text-xl font-black text-amber-800 flex items-center gap-2">
-                  <Gift size={20} /> إضافة رصيد للعميل
+                  <Gift size={20} /> إضافة رصيد للباقات (دفع مسبق)
                 </h3>
                 <p className="text-amber-700/70 text-sm mt-1">{selectedCustomer.name}</p>
               </div>
               <button onClick={() => setIsBonusModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A] hover:bg-red-50 hover:text-red-500 transition-colors relative z-10 shadow-sm"><X size={16} /></button>
             </div>
 
-            <form onSubmit={handleGiveBonus} className="p-6 space-y-5">
-              <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-2">نوع الرصيد:</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setBonusType('package')}
-                    className={`p-3 rounded-xl border-2 text-right transition-all ${bonusType === 'package' ? 'border-amber-400 bg-amber-50' : 'border-[#D9A3AA]/20 bg-[#F8F5F2]'}`}
-                  >
-                    <Package size={16} className={`mb-1 ${bonusType === 'package' ? 'text-amber-600' : 'text-[#4A4A4A]/50'}`} />
-                    <div className={`text-xs font-black ${bonusType === 'package' ? 'text-amber-700' : 'text-[#4A4A4A]/70'}`}>رصيد الباقات</div>
-                    <div className="text-[10px] text-[#4A4A4A]/50 mt-0.5">ربح مباشر ✓</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBonusType('points')}
-                    className={`p-3 rounded-xl border-2 text-right transition-all ${bonusType === 'points' ? 'border-violet-400 bg-violet-50' : 'border-[#D9A3AA]/20 bg-[#F8F5F2]'}`}
-                  >
-                    <Wallet size={16} className={`mb-1 ${bonusType === 'points' ? 'text-violet-600' : 'text-[#4A4A4A]/50'}`} />
-                    <div className={`text-xs font-black ${bonusType === 'points' ? 'text-violet-700' : 'text-[#4A4A4A]/70'}`}>رصيد النقاط</div>
-                    <div className="text-[10px] text-[#4A4A4A]/50 mt-0.5">خصم على الطلبات</div>
-                  </button>
-                </div>
+            <form onSubmit={handleChargePackage} className="p-6 space-y-5">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
+                <Package size={14} className="shrink-0 mt-0.5" />
+                <span>شحن الباقة: المبلغ المدفوع يُحفظ كسجل، والرصيد المضاف يُضاف للمحفظة للاستخدام في الطلبات القادمة.</span>
               </div>
 
-              {bonusType === 'package' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
-                  <Package size={14} className="shrink-0 mt-0.5" />
-                  <span>المبلغ المُضاف سيُحتسب كربح مباشر فوري، ويتم خصمه من طلبات العميل القادمة.</span>
-                </div>
-              )}
-
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المضاف (ر.س):</label>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (ر.س):</label>
                 <input
                   type="number" min="1" required
-                  value={bonusAmount}
-                  onChange={(e) => setBonusAmount(e.target.value)}
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(e.target.value)}
                   className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 font-bold text-lg text-amber-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">سبب إضافة الرصيد:</label>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">الرصيد المضاف للمحفظة (ر.س):</label>
+                <input
+                  type="number" min="1" required
+                  value={addedAmount}
+                  onChange={(e) => setAddedAmount(e.target.value)}
+                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 font-bold text-lg text-amber-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">ملاحظة / اسم الباقة:</label>
                 <input
                   type="text" required
-                  value={bonusReason}
-                  onChange={(e) => setBonusReason(e.target.value)}
+                  value={packageNote}
+                  onChange={(e) => setPackageNote(e.target.value)}
                   className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 text-sm"
                 />
               </div>
@@ -706,7 +692,7 @@ export default function Customers() {
                   className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-amber-500/30 transition-all flex justify-center items-center gap-2 disabled:opacity-70"
                 >
                   {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-                  {isSubmitting ? 'جاري التنفيذ...' : 'إضافة الرصيد'}
+                  {isSubmitting ? 'جاري التنفيذ...' : 'شحن الباقة'}
                 </button>
               </div>
             </form>

@@ -31,7 +31,7 @@ export default function Reports() {
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
         const { data: walletsData } = await supabase.from('wallets').select('points_balance');
-        const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('type, amount_value').in('type', ['package_add', 'package_redeem']);
+        const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('*').eq('type', 'package_charge');
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
         setPayments(paymentsData || []);
@@ -78,7 +78,7 @@ export default function Reports() {
       if (!dateInfo) return;
       const { key, date } = dateInfo;
       const amount = Number(p.amount) || 0;
-      if (!monthlyMap[key]) monthlyMap[key] = { name: key, date, revenue: 0, expenses: 0, orders: 0 };
+      if (!monthlyMap[key]) monthlyMap[key] = { name: key, date, revenue: 0, expenses: 0, orders: 0, packagesTotal: 0 };
       monthlyMap[key].revenue += amount;
       totalRevenue += amount;
     });
@@ -88,7 +88,7 @@ export default function Reports() {
       if (!dateInfo) return;
       const { key, date } = dateInfo;
       const amount = Number(e.amount) || 0;
-      if (!monthlyMap[key]) monthlyMap[key] = { name: key, date, revenue: 0, expenses: 0, orders: 0 };
+      if (!monthlyMap[key]) monthlyMap[key] = { name: key, date, revenue: 0, expenses: 0, orders: 0, packagesTotal: 0 };
       monthlyMap[key].expenses += amount;
       totalExpenses += amount;
       const cat = e.title || 'غير مصنف';
@@ -136,6 +136,16 @@ export default function Reports() {
       }
     });
 
+    // حساب الباقات المشحونة شهرياً
+    packageTransactions.forEach(pt => {
+      const dateInfo = getMonthKey(pt.created_at);
+      if (!dateInfo) return;
+      const { key } = dateInfo;
+      if (monthlyMap[key]) {
+        monthlyMap[key].packagesTotal += Number(pt.amount_value || 0);
+      }
+    });
+
     const monthlyData = Object.values(monthlyMap).sort((a, b) => a.date - b.date);
     const expenseData = Object.entries(expenseCategoryMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
     
@@ -148,22 +158,13 @@ export default function Reports() {
     // حساب أرصدة المحافظ
     totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
     
-    // الربح المشحون (كل ما دفعه العملاء للباقات - ربح مباشر عند الشحن)
-    const totalPackageCharged = packageTransactions
-      .filter(t => t.type === 'package_add')
-      .reduce((acc, t) => acc + Number(t.amount_value || 0), 0);
-    
-    // ما تم استخدامه من رصيد الباقات في الطلبات
-    const totalPackageRedeemed = packageTransactions
-      .filter(t => t.type === 'package_redeem')
-      .reduce((acc, t) => acc + Number(t.amount_value || 0), 0);
-    
-    // الرصيد المتبقي للباقات (ما لم يُستخدم بعد)
-    totalPackageBalance = Math.max(0, totalPackageCharged - totalPackageRedeemed);
+    // إجمالي الباقات المشحونة (المبالغ المدفوعة للباقات)
+    const packagesTotal = packageTransactions
+      .reduce((acc, pt) => acc + Number(pt.amount_value || 0), 0);
     
     const totalWalletBalance = totalPointsBalance + totalPackageBalance;
     
-    const netProfit = totalRevenue + totalPackageCharged - totalExpenses;
+    const netProfit = (totalCashReceived + packagesTotal) - totalExpenses;
     const totalDebt = totalSales - totalCashReceived - totalWalletUsed;
     const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
     const avgOrderValue = orders.length > 0 ? (totalRevenue / orders.length).toFixed(0) : 0;

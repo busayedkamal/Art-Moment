@@ -59,8 +59,8 @@ export default function Dashboard() {
         // 4. جلب معاملات الباقات لحساب رصيد الباقات بشكل منفصل
         const { data: packageTransactions, error: transactionsError } = await supabase
           .from('wallet_transactions')
-          .select('amount_value')
-          .eq('type', 'package_add');
+          .select('*')
+          .eq('type', 'package_charge');
         
         if (walletsError) throw walletsError;
         if (transactionsError) throw transactionsError;
@@ -72,7 +72,8 @@ export default function Dashboard() {
         const totalDebt = totalRevenue - totalCashReceived;
         const totalExpenses = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
         const totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
-        const totalPackageBalance = packageTransactions.reduce((acc, transaction) => acc + Number(transaction.amount_value || 0), 0);
+        const packagesTotal = packageTransactions ? packageTransactions.reduce((sum, pt) => sum + Number(pt.amount_value || 0), 0) : 0;
+        const totalPackageBalance = packagesTotal;
         const totalWalletBalance = totalPointsBalance;
         
         const pendingOrders = orders.filter(o => o.status === 'printing' || o.status === 'new').length;
@@ -93,7 +94,7 @@ export default function Dashboard() {
 
         setStats({ 
           totalOrders, totalRevenue, totalCashReceived, totalDebt, totalExpenses, 
-          totalWalletBalance, totalPointsBalance, totalPackageBalance,
+          totalWalletBalance, totalPointsBalance, totalPackageBalance, packagesTotal,
           pendingOrders, newOrders: newOrdersCount, lateOrders 
         });
         setRecentNewOrders(recentNew);
@@ -138,7 +139,7 @@ export default function Dashboard() {
 
   if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline-block ml-2"/> جاري تحميل البيانات...</div>;
 
-  const realNetProfit = stats.totalCashReceived + stats.totalPackageBalance - stats.totalExpenses;
+  const realNetProfit = stats.totalCashReceived + (stats.packagesTotal || 0) - stats.totalExpenses;
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-10 text-[#4A4A4A]">
