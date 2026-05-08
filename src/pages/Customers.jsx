@@ -60,37 +60,38 @@ export default function Customers() {
         .select('id, phone, points_balance, address, notes');
       if (walletsError) throw walletsError;
 
-      // 3) حركات الباقات لكل محفظة
+      // 3) حركات الباقات لكل محفظة (package_charge = الشحن، package_redeem = الاستخدام)
       const { data: packageTxData } = await supabase
         .from('wallet_transactions')
-        .select('wallet_id, type, amount_value')
-        .in('type', ['package_add', 'package_redeem']);
+        .select('wallet_id, type, points, amount_value')
+        .in('type', ['package_charge', 'package_redeem']);
 
       // بناء خريطة رصيد الباقات لكل wallet_id
+      // package_charge: points = الرصيد المضاف (مع المكافأة)
+      // package_redeem: amount_value = المُخصوم
       const packageBalanceByWalletId = {};
       (packageTxData || []).forEach(tx => {
         if (!packageBalanceByWalletId[tx.wallet_id]) packageBalanceByWalletId[tx.wallet_id] = 0;
-        const val = Number(tx.amount_value || 0);
-        if (tx.type === 'package_add') {
-          packageBalanceByWalletId[tx.wallet_id] += val;
-          console.log(`Package ADD: wallet ${tx.wallet_id}, amount ${val}, new balance: ${packageBalanceByWalletId[tx.wallet_id]}`);
+        if (tx.type === 'package_charge') {
+          packageBalanceByWalletId[tx.wallet_id] += Number(tx.points || 0);
         } else if (tx.type === 'package_redeem') {
-          packageBalanceByWalletId[tx.wallet_id] -= val;
-          console.log(`Package REDEEM: wallet ${tx.wallet_id}, amount ${val}, new balance: ${packageBalanceByWalletId[tx.wallet_id]}`);
+          packageBalanceByWalletId[tx.wallet_id] -= Number(tx.amount_value || 0);
         }
       });
 
       const walletMap = new Map();
       (walletsData || []).forEach(w => {
-        const key = normalizePhone(w.phone);
-        if (!key) return;
-        walletMap.set(key, {
+        const key = normalizePhone(w.phone); // 9 أرقام
+        const keyWithZero = key.length === 9 ? '0' + key : key; // 10 أرقام
+        const entry = {
           id: w.id,
           balance: Number(w.points_balance || 0),
           packageBalance: Math.max(0, packageBalanceByWalletId[w.id] || 0),
           address: w.address || '',
           notes: w.notes || ''
-        });
+        };
+        if (key) walletMap.set(key, entry);
+        if (keyWithZero !== key) walletMap.set(keyWithZero, entry);
       });
 
       const map = {};
@@ -128,19 +129,17 @@ export default function Customers() {
       });
 
       const result = Object.values(map).map(c => {
-        const walletData = c.cleanPhone ? walletMap.get(c.cleanPhone) : null;
+        // نبحث بالشكلين (مع وبدون الصفر)
+        const cleanKey = c.cleanPhone || '';
+        const cleanWithZero = cleanKey.length === 9 ? '0' + cleanKey : cleanKey;
+        const walletData = walletMap.get(cleanKey) || walletMap.get(cleanWithZero) || null;
+
         const walletBalance = walletData ? walletData.balance : 0;
         const packageBalance = walletData ? walletData.packageBalance : 0;
         const address = walletData ? walletData.address : '';
         const notes = walletData ? walletData.notes : '';
         const debt = Number(c.debt || 0);
         const netBalance = walletBalance - debt;
-        
-        // تسجيل تصحيح لتشخيص المشكلة
-        if (c.cleanPhone && walletData) {
-          console.log(`Customer ${c.name} - Phone: ${c.cleanPhone}`);
-          console.log(`Wallet Balance: ${walletBalance}, Package Balance: ${packageBalance}, Net Balance: ${netBalance}`);
-        }
 
         return {
           ...c,
@@ -205,22 +204,27 @@ export default function Customers() {
 
       if (diff === 0) { setEditingBalanceId(null); setIsSavingBalance(false); return; }
 
-      let walletId;
-      const { data: existingWallet } = await supabase
-        .from('wallets').select('id').eq('phone', customer.cleanPhone).maybeSingle();
+      // نبحث بكل أشكال الرقم
+      let digits = customer.cleanPhone;
+      const withZero = digits.length === 9 ? '0' + digits : digits;
+      const allFormats = [withZero, digits, '966' + digits, '+966' + digits];
 
-      if (existingWallet) {
-        walletId = existingWallet.id;
+      const { data: walletsFound } = await supabase
+        .from('wallets').select('id').in('phone', allFormats);
+
+      let walletId;
+      if (walletsFound && walletsFound.length > 0) {
+        walletId = walletsFound[0].id;
         await supabase.from('wallets').update({ points_balance: newBalance }).eq('id', walletId);
       } else {
         const { data: newW } = await supabase.from('wallets')
-          .insert([{ phone: customer.cleanPhone, points_balance: newBalance }]).select().single();
+          .insert([{ phone: withZero, points_balance: newBalance }]).select().single();
         walletId = newW.id;
       }
 
       await supabase.from('wallet_transactions').insert({
         wallet_id: walletId, type: 'manual_adjustment',
-        amount_value: Math.abs(diff), points: 0
+        amount_value: Math.abs(diff).toString(), points: 0
       });
 
       toast.success('تم تعديل الرصيد بنجاح');
@@ -245,52 +249,64 @@ export default function Customers() {
 
   const handleChargePackage = async (e) => {
     e.preventDefault();
-    if (!selectedCustomer || !paidAmount || paidAmount <= 0 || !addedAmount || addedAmount <= 0 || !packageNote) {
+    if (!selectedCustomer || !paidAmount || paidAmount <= 0 || !packageNote) {
       toast.error("يرجى تعبئة جميع الحقول"); return;
     }
     setIsSubmitting(true);
     try {
       const paidNum = Number(paidAmount);
-      const addedNum = Number(addedAmount);
-      const phone = selectedCustomer.cleanPhone;
-      if (!phone) throw new Error("لا يوجد رقم هاتف صالح");
+      
+      let creditToAdd;
+      if (paidNum >= 999) creditToAdd = paidNum + 203;
+      else if (paidNum >= 699) creditToAdd = paidNum + 109;
+      else if (paidNum >= 299) creditToAdd = paidNum + 34;
+      else creditToAdd = paidNum;
+      
+      const rawPhone = selectedCustomer.cleanPhone || selectedCustomer.phone || '';
+      if (!rawPhone) throw new Error("لا يوجد رقم هاتف صالح");
 
-      // جلب أو إنشاء محفظة العميل
+      // نبني كل أشكال الرقم للبحث
+      let digits = rawPhone.replace(/\D/g, '');
+      if (digits.startsWith('966')) digits = digits.slice(3);
+      if (digits.startsWith('0')) digits = digits.slice(1);
+      const withZero = digits.length === 9 ? '0' + digits : digits;
+      const allFormats = [withZero, digits, '966' + digits, '+966' + digits];
+
+      // جلب المحفظة بكل الأشكال الممكنة
       let wallet;
-      const { data: existingWallet, error: fetchErr } = await supabase
-        .from('wallets').select('id, points_balance').eq('phone', phone).maybeSingle();
-      if (fetchErr) throw fetchErr;
+      const { data: walletsFound } = await supabase
+        .from('wallets').select('id, points_balance').in('phone', allFormats);
 
-      if (existingWallet) {
-        wallet = existingWallet;
+      if (walletsFound && walletsFound.length > 0) {
+        wallet = walletsFound[0];
       } else {
+        // ننشئ محفظة جديدة بالرقم بصيغة 05xxxxxxxx
         const { data: newWallet, error: createErr } = await supabase.from('wallets')
-          .insert([{ phone, points_balance: 0 }]).select().single();
+          .insert([{ 
+            phone: withZero,
+            points_balance: 0,
+            notes: `اسم العميل: ${selectedCustomer.name}`
+          }]).select('id, points_balance').single();
         if (createErr) throw createErr;
         wallet = newWallet;
       }
 
-      // تحديث رصيد النقاط في المحفظة
-      const newBalance = Number(wallet.points_balance || 0) + addedNum;
-      const { error: updateErr } = await supabase.from('wallets')
-        .update({ points_balance: newBalance })
-        .eq('id', wallet.id);
-      if (updateErr) throw updateErr;
-
-      // إدخال معاملة شحن الباقة
-      await supabase.from('wallet_transactions').insert({
+      // تسجيل الحركة في wallet_transactions فقط
+      const { error: txErr } = await supabase.from('wallet_transactions').insert({
         wallet_id: wallet.id,
         type: 'package_charge',
         amount_value: paidNum.toString(),
-        points: addedNum,
+        points: creditToAdd,
         created_at: new Date().toISOString()
       });
+      if (txErr) throw txErr;
 
-      toast.success(`تم شحن الباقة بنجاح! 💰 المدفوع: ${paidNum} ريال، الرصيد المضاف: ${addedNum} ريال`);
+      toast.success(`✅ تم شحن الباقة! المدفوع: ${paidNum} ريال | الرصيد المضاف: ${creditToAdd} ريال`);
 
       setIsBonusModalOpen(false);
       fetchData();
     } catch (error) {
+      console.error('Package charge error:', error);
       toast.error(error.message || 'حدث خطأ أثناء تنفيذ العملية');
     } finally {
       setIsSubmitting(false);
@@ -300,8 +316,7 @@ export default function Customers() {
   const openBonusModal = (customer, e) => {
     e.stopPropagation();
     setSelectedCustomer(customer);
-    setPaidAmount(10);
-    setAddedAmount(10);
+    setPaidAmount('');
     setPackageNote("شحن باقة مسبق");
     setIsBonusModalOpen(true);
   };
@@ -399,6 +414,7 @@ export default function Customers() {
               <th className="px-6 py-4">بيانات العميل</th>
               <th className="px-6 py-4 hidden sm:table-cell">رقم الجوال</th>
               <th className="px-6 py-4 text-center">رصيد الباقات</th>
+              <th className="px-6 py-4 text-center">رصيد النقاط</th>
               <th className="px-6 py-4 text-center">الرصيد الصافي</th>
               <th className="px-6 py-4 text-left">إجراءات</th>
             </tr>
@@ -406,9 +422,9 @@ export default function Customers() {
 
           <tbody className="divide-y divide-[#D9A3AA]/10">
             {loading ? (
-              <tr><td className="p-8 text-center text-[#4A4A4A]/70" colSpan={5}>جاري التحميل...</td></tr>
+              <tr><td className="p-8 text-center text-[#4A4A4A]/70" colSpan={6}>جاري التحميل...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td className="p-8 text-center text-[#4A4A4A]/70" colSpan={5}>لا يوجد عملاء</td></tr>
+              <tr><td className="p-8 text-center text-[#4A4A4A]/70" colSpan={6}>لا يوجد عملاء</td></tr>
             ) : (
               filtered.map((customer) => {
                 const isExpanded = expandedCustomerId === customer.id;
@@ -447,6 +463,17 @@ export default function Customers() {
                           <span className="bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1 min-w-[80px]">
                             <Package size={11} />
                             {customer.packageBalance.toFixed(1)} ر.س
+                          </span>
+                        ) : (
+                          <span className="text-[#4A4A4A]/30 text-xs font-bold">—</span>
+                        )}
+                      </td>
+
+                      {/* عمود رصيد النقاط */}
+                      <td className="px-6 py-4 text-center">
+                        {customer.walletBalance > 0.5 ? (
+                          <span className="bg-violet-50 border border-violet-100 text-violet-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px]">
+                            {customer.walletBalance.toFixed(1)} ر.س
                           </span>
                         ) : (
                           <span className="text-[#4A4A4A]/30 text-xs font-bold">—</span>
@@ -499,7 +526,7 @@ export default function Customers() {
                     {/* القائمة المنسدلة */}
                     {isExpanded && (
                       <tr className="bg-[#F8F5F2]/40 border-b-2 border-[#D9A3AA]/20">
-                        <td colSpan="5" className="p-0">
+                        <td colSpan="6" className="p-0">
                           <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-top-2 fade-in duration-300">
 
                             {/* القسم الأيمن */}
@@ -663,17 +690,19 @@ export default function Customers() {
                   value={paidAmount}
                   onChange={(e) => setPaidAmount(e.target.value)}
                   className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 font-bold text-lg text-amber-600"
+                  placeholder="0"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">الرصيد المضاف للمحفظة (ر.س):</label>
-                <input
-                  type="number" min="1" required
-                  value={addedAmount}
-                  onChange={(e) => setAddedAmount(e.target.value)}
-                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 font-bold text-lg text-amber-600"
-                />
+                {paidAmount && Number(paidAmount) > 0 && (
+                  <div className="mt-2 text-xs text-amber-600 font-medium">
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                      💰 الرصيد الذي سيتم إضافته: 
+                      {Number(paidAmount) >= 999 && ` ${Number(paidAmount) + 203} ريال (+203 مكافأة)`}
+                      {Number(paidAmount) >= 699 && Number(paidAmount) < 999 && ` ${Number(paidAmount) + 109} ريال (+109 مكافأة)`}
+                      {Number(paidAmount) >= 299 && Number(paidAmount) < 699 && ` ${Number(paidAmount) + 34} ريال (+34 مكافأة)`}
+                      {Number(paidAmount) < 299 && ` ${Number(paidAmount)} ريال (لا توجد مكافأة)`}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

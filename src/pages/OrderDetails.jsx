@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
   ArrowRight, Printer, CheckCircle, Truck, Trash2,
   Banknote, FileText, User,
-  MessageCircle, X, Tag, MapPin, Receipt, StickyNote, Plus, Wallet, Gift
+  MessageCircle, X, Tag, MapPin, Receipt, StickyNote, Plus, Wallet, Gift, Package
 } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
 
@@ -38,8 +38,12 @@ export default function OrderDetails() {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [isEditingDelivery, setIsEditingDelivery] = useState(false);
 
-  // ✅ مصدر الخصم: خصم عادي أو خصم من المحفظة
-  const [discountSource, setDiscountSource] = useState('discount'); // 'discount' | 'wallet'
+  // مصدر الخصم ومبالغ منفصلة لكل نظام
+  const [discountSource, setDiscountSource] = useState('discount'); // 'discount' | 'wallet' | 'package'
+  const [customerPackageBalance, setCustomerPackageBalance] = useState(0);
+  const [packageDiscountInput, setPackageDiscountInput] = useState('');   // مبلغ الخصم من الباقات
+  const [pointsDiscountInput, setPointsDiscountInput] = useState('');     // مبلغ الخصم من النقاط
+  const [customerPointsBalance, setCustomerPointsBalance] = useState(0); // رصيد نقاط العميل
 
   const [notes, setNotes] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -71,6 +75,23 @@ export default function OrderDetails() {
     return digits;
   };
 
+  // ✅ يجلب كل المحافظ المطابقة لكل أشكال الرقم
+  const findAllWalletsByPhone = async (rawPhone) => {
+    let digits = String(rawPhone || '').replace(/\D/g, '');
+    if (digits.startsWith('966')) digits = digits.slice(3);
+    if (digits.startsWith('0')) digits = digits.slice(1);
+    const withZero = digits.length === 9 ? '0' + digits : digits;
+    const allFormats = [withZero, digits, '966' + digits, '+966' + digits, '00966' + digits];
+    const { data } = await supabase.from('wallets').select('*').in('phone', allFormats);
+    return data || [];
+  };
+
+  // ✅ يُرجع أول محفظة (للاستخدام في عمليات النقاط التي تحتاج wallet واحدة)
+  const findWalletByPhone = async (rawPhone) => {
+    const wallets = await findAllWalletsByPhone(rawPhone);
+    return wallets.length > 0 ? wallets[0] : null;
+  };
+
   async function fetchOrderAndSettings() {
     try {
       const { data: orderData, error: orderError } = await supabase
@@ -100,7 +121,42 @@ export default function OrderDetails() {
       setOrder(orderData);
       setPayments(paymentsData || []);
       setTransactions(transData || []);
-      setDiscountSource((transData || []).some(t => t.type === 'wallet_spend') ? 'wallet' : 'discount');
+
+      // تحديد مصدر الخصم الحالي
+      const hasWalletSpend = (transData || []).some(t => t.type === 'wallet_spend');
+      const hasPkgRedeem = (transData || []).some(t => t.type === 'package_redeem');
+      setDiscountSource(hasPkgRedeem ? 'package' : hasWalletSpend ? 'wallet' : 'discount');
+
+      // جلب رصيد الباقات والنقاط للعميل — نجمع من كل المحافظ المطابقة
+      if (orderData.phone) {
+        const allWallets = await findAllWalletsByPhone(orderData.phone);
+        const allWalletIds = allWallets.map(w => w.id);
+
+        // رصيد النقاط = مجموع points_balance من كل المحافظ
+        const totalPoints = allWallets.reduce((sum, w) => sum + Number(w.points_balance || 0), 0);
+        setCustomerPointsBalance(totalPoints);
+
+        // رصيد الباقات = من wallet_transactions لكل المحافظ
+        if (allWalletIds.length > 0) {
+          const { data: pkgTx } = await supabase
+            .from('wallet_transactions')
+            .select('type, points, amount_value')
+            .in('wallet_id', allWalletIds)
+            .in('type', ['package_charge', 'package_redeem']);
+          let pkgBal = 0;
+          (pkgTx || []).forEach(tx => {
+            if (tx.type === 'package_charge') pkgBal += Number(tx.points || 0);
+            if (tx.type === 'package_redeem') pkgBal -= Number(tx.amount_value || 0);
+          });
+          setCustomerPackageBalance(Math.max(0, pkgBal));
+        }
+
+          // تعيين المبالغ الأولية من الحركات الموجودة على هذا الطلب
+          const existPkg = (transData || []).find(t => t.type === 'package_redeem');
+          const existPts = (transData || []).find(t => t.type === 'wallet_spend');
+          if (existPkg) setPackageDiscountInput(existPkg.amount_value?.toString() || '');
+          if (existPts) setPointsDiscountInput(existPts.amount_value?.toString() || '');
+      }
 
       setManualDiscount(Number(orderData.manual_discount || 0));
       setDeliveryFee(Number(orderData.delivery_fee || 0));
@@ -152,16 +208,7 @@ export default function OrderDetails() {
 
   // ✅ مزامنة خصم المحفظة (wallet_spend) مع رصيد العميل — فرق التغيير فقط
   const syncWalletSpend = async (desiredAmount) => {
-    const cleanPhone = normalizePhone(order?.phone);
-    if (!cleanPhone) throw new Error('رقم الجوال غير صالح');
-
-    const { data: wallet, error: walletError } = await supabase
-      .from('wallets')
-      .select('*')
-      .eq('phone', cleanPhone)
-      .maybeSingle();
-
-    if (walletError) throw walletError;
+    const wallet = await findWalletByPhone(order?.phone);
     if (!wallet) throw new Error('لا توجد محفظة لهذا العميل');
 
     const { data: existingSpend, error: spendError } = await supabase
@@ -233,6 +280,83 @@ export default function OrderDetails() {
 
     if (insErr) throw insErr;
     setTransactions(prev => [...prev, created]);
+  };
+
+  // ✅ مزامنة خصم رصيد الباقات (package_redeem)
+  const syncPackageSpend = async (desiredAmount) => {
+    // نجلب كل المحافظ ونختار التي تحتوي رصيد الباقات
+    const allWallets = await findAllWalletsByPhone(order?.phone);
+    if (allWallets.length === 0) throw new Error('لا توجد محفظة لهذا العميل');
+
+    const allWalletIds = allWallets.map(w => w.id);
+
+    // نجلب حركات الباقات من كل المحافظ لنعرف أين الرصيد
+    const { data: allPkgTx } = await supabase
+      .from('wallet_transactions')
+      .select('wallet_id, type, points, amount_value')
+      .in('wallet_id', allWalletIds)
+      .in('type', ['package_charge', 'package_redeem']);
+
+    // نحسب رصيد كل محفظة
+    const balanceByWallet = {};
+    allWallets.forEach(w => { balanceByWallet[w.id] = 0; });
+    (allPkgTx || []).forEach(tx => {
+      if (tx.type === 'package_charge') balanceByWallet[tx.wallet_id] = (balanceByWallet[tx.wallet_id] || 0) + Number(tx.points || 0);
+      if (tx.type === 'package_redeem') balanceByWallet[tx.wallet_id] = (balanceByWallet[tx.wallet_id] || 0) - Number(tx.amount_value || 0);
+    });
+
+    // نختار المحفظة التي تحتوي أعلى رصيد باقات
+    const wallet = allWallets.reduce((best, w) =>
+      (balanceByWallet[w.id] || 0) > (balanceByWallet[best.id] || 0) ? w : best
+    , allWallets[0]);
+
+    const { data: existingSpend } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('order_id', id)
+      .eq('type', 'package_redeem')
+      .maybeSingle();
+
+    const prevAmount = existingSpend ? Number(existingSpend.amount_value || 0) : 0;
+    const desired = Math.max(0, Number(desiredAmount || 0));
+    const delta = desired - prevAmount;
+
+    if (delta > 0 && customerPackageBalance + 1e-9 < delta) {
+      throw new Error(`رصيد الباقات غير كافٍ. المتاح: ${customerPackageBalance.toFixed(2)}`);
+    }
+
+    if (desired <= 1e-9) {
+      if (existingSpend) {
+        await supabase.from('wallet_transactions').delete().eq('id', existingSpend.id);
+        setTransactions(prev => prev.filter(t => t.id !== existingSpend.id));
+      }
+      return;
+    }
+
+    if (existingSpend) {
+      const { data: updated, error: updErr } = await supabase
+        .from('wallet_transactions')
+        .update({ amount_value: desired, created_at: new Date().toISOString() })
+        .eq('id', existingSpend.id)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+      setTransactions(prev => prev.map(t => (t.id === updated.id ? updated : t)));
+      setCustomerPackageBalance(prev => Math.max(0, prev - delta));
+      return;
+    }
+
+    const { data: created, error: insErr } = await supabase
+      .from('wallet_transactions')
+      .insert({
+        wallet_id: wallet.id, order_id: id,
+        type: 'package_redeem', points: 0, amount_value: desired,
+        created_at: new Date().toISOString()
+      })
+      .select().single();
+    if (insErr) throw insErr;
+    setTransactions(prev => [...prev, created]);
+    setCustomerPackageBalance(prev => Math.max(0, prev - desired));
   };
 
   // --- إضافة نقاط الولاء ---
@@ -344,7 +468,7 @@ export default function OrderDetails() {
       const safeDiscount = Math.min(theoreticalTotal, Math.max(0, currentDiscount));
 
       const newTotal = Math.max(0, theoreticalTotal - safeDiscount);
-      const isPaid = Number(order.deposit || 0) >= newTotal;
+      const isPaid = (Number(order.deposit || 0) + Number(overrides.wallet_used ?? walletUsed ?? 0)) >= newTotal;
 
       const updatedData = {
         a4_qty: overrides.a4_qty ?? order.a4_qty,
@@ -423,7 +547,7 @@ export default function OrderDetails() {
   const convertExcessToWallet = async () => {
     if (isConvertingExcess) return; // منع النقر المزدوج
     
-    const excessAmount = Number(order.deposit || 0) - Number(order.total_amount || 0);
+    const excessAmount = Number(order.deposit || 0) + Number(order.wallet_used || 0) - Number(order.total_amount || 0);
     if (excessAmount <= 0) return;
 
     const cleanPhone = normalizePhone(order.phone);
@@ -544,15 +668,52 @@ export default function OrderDetails() {
 
     const toastId = toast.loading('تحديث الخصم...');
     try {
-      if (discountSource === 'wallet') {
-        await syncWalletSpend(discountValue);
-      } else {
-        await syncWalletSpend(0);
-      }
-
+      // الخصم العادي فقط — لا يمس المحافظ
+      await syncWalletSpend(0);
+      await syncPackageSpend(0);
       const success = await recalculateAndSaveTotal({ manual_discount: discountValue });
       toast.dismiss(toastId);
       if (success) toast.success('تم تحديث الخصم');
+    } catch (e) {
+      toast.dismiss(toastId);
+      toast.error(e?.message || 'فشل التحديث');
+    }
+  };
+
+  const handleSavePackageDiscount = async () => {
+    const inputVal = Number(packageDiscountInput) || 0;
+    if (inputVal <= 0) return toast.error('أدخل مبلغاً صحيحاً');
+    if (inputVal > customerPackageBalance + 0.01) return toast.error(`رصيد الباقات غير كافٍ. المتاح: ${customerPackageBalance.toFixed(2)}`);
+    const theoreticalTotal = Number(order.subtotal || 0) + Number(deliveryFee || 0);
+    const discountValue = Math.min(inputVal, theoreticalTotal);
+
+    const toastId = toast.loading('تحديث الخصم...');
+    try {
+      await syncPackageSpend(discountValue);
+      await syncWalletSpend(0);
+      const success = await recalculateAndSaveTotal({ manual_discount: discountValue, wallet_used: 0 });
+      toast.dismiss(toastId);
+      if (success) { toast.success('تم خصم من رصيد الباقات ✅'); setDiscountSource('package'); }
+    } catch (e) {
+      toast.dismiss(toastId);
+      toast.error(e?.message || 'فشل التحديث');
+    }
+  };
+
+  const handleSavePointsDiscount = async () => {
+    const inputVal = Number(pointsDiscountInput) || 0;
+    if (inputVal <= 0) return toast.error('أدخل مبلغاً صحيحاً');
+    if (inputVal > customerPointsBalance + 0.01) return toast.error(`رصيد النقاط غير كافٍ. المتاح: ${customerPointsBalance.toFixed(2)}`);
+    const theoreticalTotal = Number(order.subtotal || 0) + Number(deliveryFee || 0);
+    const discountValue = Math.min(inputVal, theoreticalTotal);
+
+    const toastId = toast.loading('تحديث الخصم...');
+    try {
+      await syncWalletSpend(discountValue);
+      await syncPackageSpend(0);
+      const success = await recalculateAndSaveTotal({ manual_discount: discountValue, wallet_used: discountValue });
+      toast.dismiss(toastId);
+      if (success) { toast.success('تم خصم من رصيد النقاط ✅'); setDiscountSource('wallet'); }
     } catch (e) {
       toast.dismiss(toastId);
       toast.error(e?.message || 'فشل التحديث');
@@ -622,7 +783,7 @@ export default function OrderDetails() {
   };
 
   const markAsFullyPaid = async () => {
-    const remaining = Number(order.total_amount || 0) - Number(order.deposit || 0);
+    const remaining = Number(order.total_amount || 0) - Number(order.deposit || 0) - Number(order.wallet_used || 0);
     if (remaining <= 0) return;
 
     try {
@@ -641,11 +802,11 @@ export default function OrderDetails() {
 
       await supabase
         .from('orders')
-        .update({ deposit: Number(order.total_amount || 0), payment_status: 'paid' })
+        .update({ deposit: Number(order.total_amount || 0) + remaining, payment_status: 'paid' })
         .eq('id', id);
 
       setPayments(prev => [...prev, payData]);
-      setOrder(prev => ({ ...prev, deposit: Number(order.total_amount || 0), payment_status: 'paid' }));
+      setOrder(prev => ({ ...prev, deposit: Number(order.total_amount || 0) + remaining, payment_status: 'paid' }));
       toast.success('تم السداد بالكامل');
     } catch {
       toast.error('فشل العملية');
@@ -758,7 +919,7 @@ export default function OrderDetails() {
   if (loading) return <div className="p-10 text-center">جاري التحميل...</div>;
   if (!order) return <div className="p-10 text-center text-red-500">حدث خطأ</div>;
 
-  const remaining = Number(order.total_amount || 0) - Number(order.deposit || 0);
+  const remaining = Number(order.total_amount || 0) - Number(order.deposit || 0) - Number(order.wallet_used || 0);
   const rewardAmount = calculateLoyaltyReward();
 
   return (
@@ -1053,52 +1214,110 @@ export default function OrderDetails() {
                   )}
                 </div>
 
-                {/* ✅ خانة الخصم مع اختيار مصدره */}
-                <div className="flex justify-between items-center bg-[#3b3b3b] p-2 rounded mb-2">
-                  <div className="flex items-center gap-2 text-[#D9A3AA]/85">
-                    <span className="flex items-center gap-2"><Tag size={14} /> خصم / محفظة</span>
-                    <div className="flex items-center gap-1 bg-[#4A4A4A]/30 p-0.5 rounded-lg">
-                      <button
-                        type="button"
-                        onClick={() => setDiscountSource('discount')}
-                        className={`px-1.5 py-1 rounded-md text-[10px] flex items-center gap-1 transition-colors ${discountSource === 'discount'
-                            ? 'bg-[#D9A3AA] text-white'
-                            : 'text-white/75 hover:text-white'
-                          }`}
-                        title="خصم عادي"
-                      >
-                        <Tag size={10} /> خصم
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setDiscountSource('wallet')}
-                        className={`px-1.5 py-1 rounded-md text-[10px] flex items-center gap-1 transition-colors ${discountSource === 'wallet'
-                            ? 'bg-amber-600 text-white'
-                            : 'text-white/75 hover:text-white'
-                          }`}
-                        title="خصم من المحفظة"
-                      >
-                        <Wallet size={10} /> محفظة
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-1">
+                {/* ── خصم إضافي عادي ── */}
+                <div className="flex justify-between items-center text-white/70 text-xs">
+                  <span className="flex items-center gap-1"><Tag size={12} /> خصم إضافي</span>
+                  <div className="flex gap-1 items-center">
                     <input
-                      type="number"
+                      type="number" min="0"
                       value={manualDiscount}
                       onChange={e => setManualDiscount(Number(e.target.value))}
                       onKeyDown={e => e.key === 'Enter' && handleSaveDiscount()}
-                      className="w-20 bg-[#4A4A4A]/70 border border-white/15 rounded text-center font-bold text-white focus:border-[#D9A3AA] outline-none"
+                      className="w-16 bg-[#3b3b3b] border border-white/15 rounded-lg text-center text-xs font-bold text-white focus:border-[#D9A3AA] outline-none py-1"
                     />
-                    <button
-                      onClick={handleSaveDiscount}
-                      className="text-xs text-[#D9A3AA] hover:text-white bg-[#4A4A4A]/40 hover:bg-[#D9A3AA] px-2 rounded transition-colors"
-                    >
+                    <button onClick={handleSaveDiscount}
+                      className="text-[10px] text-[#D9A3AA] bg-[#D9A3AA]/15 hover:bg-[#D9A3AA]/30 px-2 py-1 rounded-lg transition-colors">
                       حفظ
                     </button>
                   </div>
+                </div>
+
+                {/* ── خصم من رصيد الباقات ── */}
+                <div className={`rounded-xl border overflow-hidden transition-all ${discountSource === 'package' ? 'border-orange-400/50' : 'border-white/10'}`}>
+                  <button type="button"
+                    onClick={() => setDiscountSource(discountSource === 'package' ? 'discount' : 'package')}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${discountSource === 'package' ? 'bg-orange-500/20' : 'bg-white/5 hover:bg-orange-500/10'}`}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'package' ? 'bg-orange-400 border-orange-400' : 'border-orange-400/40'}`}>
+                        {discountSource === 'package' && <div className="w-2 h-2 bg-white rounded-full" />}
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-orange-300 flex items-center gap-1">
+                          <Package size={11} /> خصم من رصيد الباقات
+                        </span>
+                        <span className="text-[10px] text-orange-300/60 block">المتاح: {customerPackageBalance.toFixed(2)} ر.س</span>
+                      </div>
+                    </div>
+                    {discountSource === 'package' && Number(packageDiscountInput) > 0 && (
+                      <span className="text-orange-300 font-black text-sm bg-orange-500/20 px-2 py-0.5 rounded-lg">
+                        -{Number(packageDiscountInput).toFixed(2)} ر.س
+                      </span>
+                    )}
+                  </button>
+                  {discountSource === 'package' && (
+                    <div className="bg-orange-500/10 border-t border-orange-400/20 px-3 py-2 flex items-center gap-2">
+                      <span className="text-[11px] text-orange-300/80 shrink-0">المبلغ:</span>
+                      <input
+                        type="number" min="0.01" max={customerPackageBalance} step="0.01"
+                        value={packageDiscountInput}
+                        onChange={e => setPackageDiscountInput(e.target.value)}
+                        className="flex-1 text-center border border-orange-400/40 rounded-lg px-2 py-1.5 text-sm font-bold text-orange-200 bg-[#3b3b3b] outline-none focus:ring-2 ring-orange-400/30"
+                      />
+                      <button type="button"
+                        onClick={() => setPackageDiscountInput(Math.min(customerPackageBalance, Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2))}
+                        className="text-[10px] text-orange-300 bg-orange-500/20 hover:bg-orange-500/30 px-2 py-1 rounded-lg shrink-0 transition-colors">
+                        الكل
+                      </button>
+                      <button onClick={handleSavePackageDiscount}
+                        className="text-[10px] text-white bg-orange-500 hover:bg-orange-400 px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">
+                        حفظ
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── خصم من رصيد النقاط ── */}
+                <div className={`rounded-xl border overflow-hidden transition-all ${discountSource === 'wallet' ? 'border-violet-400/50' : 'border-white/10'}`}>
+                  <button type="button"
+                    onClick={() => setDiscountSource(discountSource === 'wallet' ? 'discount' : 'wallet')}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${discountSource === 'wallet' ? 'bg-violet-500/20' : 'bg-white/5 hover:bg-violet-500/10'}`}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'wallet' ? 'bg-violet-400 border-violet-400' : 'border-violet-400/40'}`}>
+                        {discountSource === 'wallet' && <div className="w-2 h-2 bg-white rounded-full" />}
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-violet-300 flex items-center gap-1">
+                          <Wallet size={11} /> خصم من رصيد النقاط
+                        </span>
+                        <span className="text-[10px] text-violet-300/60 block">المتاح: {customerPointsBalance.toFixed(2)} ر.س</span>
+                      </div>
+                    </div>
+                    {discountSource === 'wallet' && Number(pointsDiscountInput) > 0 && (
+                      <span className="text-violet-300 font-black text-sm bg-violet-500/20 px-2 py-0.5 rounded-lg">
+                        -{Number(pointsDiscountInput).toFixed(2)} ر.س
+                      </span>
+                    )}
+                  </button>
+                  {discountSource === 'wallet' && (
+                    <div className="bg-violet-500/10 border-t border-violet-400/20 px-3 py-2 flex items-center gap-2">
+                      <span className="text-[11px] text-violet-300/80 shrink-0">المبلغ:</span>
+                      <input
+                        type="number" min="0.01" max={customerPointsBalance} step="0.01"
+                        value={pointsDiscountInput}
+                        onChange={e => setPointsDiscountInput(e.target.value)}
+                        className="flex-1 text-center border border-violet-400/40 rounded-lg px-2 py-1.5 text-sm font-bold text-violet-200 bg-[#3b3b3b] outline-none focus:ring-2 ring-violet-400/30"
+                      />
+                      <button type="button"
+                        onClick={() => setPointsDiscountInput(Math.min(customerPointsBalance, Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2))}
+                        className="text-[10px] text-violet-300 bg-violet-500/20 hover:bg-violet-500/30 px-2 py-1 rounded-lg shrink-0 transition-colors">
+                        الكل
+                      </button>
+                      <button onClick={handleSavePointsDiscount}
+                        className="text-[10px] text-white bg-violet-500 hover:bg-violet-400 px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">
+                        حفظ
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-white/10 my-2"></div>
@@ -1194,7 +1413,7 @@ export default function OrderDetails() {
                 {rewardAmount > 0 && (
                   <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-amber-400 text-xs font-bold flex items-center gap-1"><Gift size={12} /> نقاط ولاء مستحقة</span>
+                      <span className="text-amber-400 text-xs font-bold flex items-center gap-1"><Gift size={12} /> كاش باك مستحق للمحفظة</span>
                       <span className="text-amber-300 font-bold">{rewardAmount.toFixed(2)} ريال</span>
                     </div>
 

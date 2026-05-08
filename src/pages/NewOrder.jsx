@@ -31,9 +31,11 @@ export default function NewOrder() {
 
   const [wallet, setWallet] = useState(null);
   const [walletId, setWalletId] = useState(null);
-  const [packageBalance, setPackageBalance] = useState(0); // رصيد الباقات
-  const [usePoints, setUsePoints] = useState(false);       // استخدام رصيد النقاط
-  const [usePackage, setUsePackage] = useState(false);     // استخدام رصيد الباقات
+  const [packageBalance, setPackageBalance] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+  const [usePackage, setUsePackage] = useState(false);
+  const [packageAmountInput, setPackageAmountInput] = useState(''); // مبلغ جزئي من الباقات
+  const [pointsAmountInput, setPointsAmountInput] = useState('');   // مبلغ جزئي من النقاط
   const [checkingLoyalty, setCheckingLoyalty] = useState(false);
 
   const [previousCustomers, setPreviousCustomers] = useState([]);
@@ -122,8 +124,16 @@ export default function NewOrder() {
   // جلب بيانات المحفظة ورصيد الباقات عند تغيير رقم الجوال
   useEffect(() => {
     const fetchWalletData = async () => {
-      const cleanSearchPhone = normalizePhone(phoneWatcher);
-      if (!cleanSearchPhone || cleanSearchPhone.length < 10) {
+      const rawPhone = phoneWatcher || '';
+      const digits = rawPhone.replace(/\D/g, '');
+      // نبني كل الأشكال الممكنة للرقم للبحث في قاعدة البيانات
+      let stripped = digits;
+      if (stripped.startsWith('966')) stripped = stripped.slice(3);
+      if (stripped.startsWith('0')) stripped = stripped.slice(1);
+      // stripped = 9 أرقام بدون 0  |  withZero = 10 أرقام بـ 05
+      const withZero = stripped.length === 9 ? '0' + stripped : stripped;
+
+      if (stripped.length < 9) {
         setWallet(null); setWalletId(null); setPackageBalance(0);
         setUsePoints(false); setUsePackage(false);
         return;
@@ -131,33 +141,43 @@ export default function NewOrder() {
 
       setCheckingLoyalty(true);
       try {
-        let { data } = await supabase.from('wallets').select('*').eq('phone', cleanSearchPhone).maybeSingle();
+        // نبحث بكل الأشكال الممكنة للرقم
+        const { data: allWallets } = await supabase
+          .from('wallets')
+          .select('*')
+          .in('phone', [withZero, stripped, '966' + stripped, '+966' + stripped,
+            '+966' + withZero, '00966' + stripped]);
+
+        // نجمع كل المحافظ المطابقة
+        const data = allWallets && allWallets.length > 0 ? allWallets[0] : null;
+        const allWalletIds = (allWallets || []).map(w => w.id);
 
         if (data) {
           setWallet(data);
           setWalletId(data.id);
 
-          // جلب حركات الباقات لحساب الرصيد الحقيقي
+          // حساب رصيد الباقات من كل المحافظ المطابقة
           const { data: pkgTx } = await supabase
             .from('wallet_transactions')
-            .select('type, amount_value')
-            .eq('wallet_id', data.id)
-            .in('type', ['package_add', 'package_redeem']);
+            .select('type, points, amount_value')
+            .in('wallet_id', allWalletIds.length > 0 ? allWalletIds : [data.id])
+            .in('type', ['package_charge', 'package_redeem']);
 
           let pkgBalance = 0;
           (pkgTx || []).forEach(tx => {
-            const val = Number(tx.amount_value || 0);
-            if (tx.type === 'package_add') pkgBalance += val;
-            if (tx.type === 'package_redeem') pkgBalance -= val;
+            if (tx.type === 'package_charge') pkgBalance += Number(tx.points || 0);
+            if (tx.type === 'package_redeem') pkgBalance -= Number(tx.amount_value || 0);
           });
           setPackageBalance(Math.max(0, pkgBalance));
         } else {
+          // عميل جديد: لا محفظة، لكن ممكن يكون له رصيد باقات تم شحنه من Orders
+          // نبحث في wallet_transactions عبر الـ wallet الذي قد يكون أُنشئ بشكل مختلف
           setWallet({ points_balance: 0, total_spent: 0, isNew: true });
           setWalletId(null);
           setPackageBalance(0);
         }
       } catch (err) {
-        console.error(err);
+        console.error('wallet fetch error:', err);
       } finally {
         setCheckingLoyalty(false);
       }
@@ -167,8 +187,20 @@ export default function NewOrder() {
   }, [phoneWatcher]);
 
   // عند تفعيل أحد الخيارين، يُلغى الآخر تلقائياً
-  const toggleUsePoints = () => { setUsePoints(v => !v); setUsePackage(false); };
-  const toggleUsePackage = () => { setUsePackage(v => !v); setUsePoints(false); };
+  const toggleUsePoints = () => {
+    const next = !usePoints;
+    setUsePoints(next);
+    setUsePackage(false);
+    if (next && wallet?.points_balance > 0) setPointsAmountInput(Math.min(Number(wallet.points_balance), Math.max(0, baseAfterCoupon)).toFixed(2));
+    else setPointsAmountInput('');
+  };
+  const toggleUsePackage = () => {
+    const next = !usePackage;
+    setUsePackage(next);
+    setUsePoints(false);
+    if (next && packageBalance > 0) setPackageAmountInput(Math.min(packageBalance, Math.max(0, baseAfterCoupon)).toFixed(2));
+    else setPackageAmountInput('');
+  };
 
   let active4x6Price = settings.photo_4x6_price;
   let isDynamicApplied = false;
@@ -195,16 +227,20 @@ export default function NewOrder() {
 
   const baseAfterCoupon = subtotal + Number(deliveryFee || 0) - couponDiscountValue - Number(manualDiscount || 0);
 
-  // حساب الخصم من النقاط
+  // حساب الخصم من النقاط (يأخذ المبلغ المُدخل أو الحد الأقصى)
   let pointsDiscountValue = 0;
   if (usePoints && wallet && wallet.points_balance > 0) {
-    pointsDiscountValue = Math.min(Number(wallet.points_balance), Math.max(0, baseAfterCoupon));
+    const inputVal = Number(pointsAmountInput) || 0;
+    const maxPoints = Math.min(Number(wallet.points_balance), Math.max(0, baseAfterCoupon));
+    pointsDiscountValue = inputVal > 0 ? Math.min(inputVal, maxPoints) : maxPoints;
   }
 
-  // حساب الخصم من الباقات
+  // حساب الخصم من الباقات (يأخذ المبلغ المُدخل أو الحد الأقصى)
   let packageDiscountValue = 0;
   if (usePackage && packageBalance > 0) {
-    packageDiscountValue = Math.min(packageBalance, Math.max(0, baseAfterCoupon));
+    const inputVal = Number(packageAmountInput) || 0;
+    const maxPkg = Math.min(packageBalance, Math.max(0, baseAfterCoupon));
+    packageDiscountValue = inputVal > 0 ? Math.min(inputVal, maxPkg) : maxPkg;
   }
 
   const total = Math.max(0, baseAfterCoupon - pointsDiscountValue - packageDiscountValue);
@@ -240,6 +276,7 @@ export default function NewOrder() {
         subtotal: subtotal,
         total_amount: total,
         deposit: Number(data.deposit) || 0,
+        wallet_used: pointsDiscountValue + packageDiscountValue, // إجمالي المبلغ المستخدم من المحفظة
         notes: data.notes
           + (couponData ? ` | كوبون: ${couponData.code}` : '')
           + (isDynamicApplied ? ` | تسعير ذكي` : '')
@@ -258,15 +295,23 @@ export default function NewOrder() {
         let currentWalletId = walletId;
 
         if (wallet?.isNew || !wallet) {
-          let { data: existingWallet } = await supabase.from('wallets').select('*').eq('phone', cleanPhone).maybeSingle();
-          if (existingWallet) {
-            currentWallet = existingWallet;
-            currentWalletId = existingWallet.id;
+          // نبحث بكل أشكال الرقم
+          let cleanDigits = cleanPhone.replace(/\D/g, '');
+          if (cleanDigits.startsWith('966')) cleanDigits = cleanDigits.slice(3);
+          if (cleanDigits.startsWith('0')) cleanDigits = cleanDigits.slice(1);
+          const cleanWithZero = cleanDigits.length === 9 ? '0' + cleanDigits : cleanDigits;
+
+          const { data: foundWallets } = await supabase.from('wallets').select('*')
+            .in('phone', [cleanWithZero, cleanDigits, '966' + cleanDigits, '+966' + cleanDigits]);
+
+          if (foundWallets && foundWallets.length > 0) {
+            currentWallet = foundWallets[0];
+            currentWalletId = foundWallets[0].id;
           } else {
             const { data: newWallet } = await supabase.from('wallets')
-              .insert([{ phone: cleanPhone, points_balance: 0, total_spent: 0 }]).select().single();
+              .insert([{ phone: cleanWithZero, points_balance: 0, total_spent: 0 }]).select().single();
             currentWallet = newWallet;
-            currentWalletId = newWallet.id;
+            currentWalletId = newWallet?.id;
           }
         }
 
@@ -356,10 +401,10 @@ export default function NewOrder() {
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
             <div className="flex justify-between items-start mb-6">
               <h3 className="font-bold text-slate-800">بيانات العميل</h3>
-              {wallet && !wallet.isNew && (
-                <div className="flex items-center gap-2">
-                  {/* بادج رصيد النقاط */}
-                  {wallet.points_balance > 0 && (
+              {/* بادجات الأرصدة - تظهر حتى للعميل الجديد إذا كان له رصيد */}
+              {wallet && (packageBalance > 0 || (wallet.points_balance > 0 && !wallet.isNew)) && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {!wallet.isNew && wallet.points_balance > 0 && (
                     <div className="bg-gradient-to-r from-violet-500 to-violet-400 text-white px-3 py-1.5 rounded-xl shadow-md flex items-center gap-2 animate-in zoom-in">
                       <Coins size={14} className="text-white/80" />
                       <div>
@@ -368,7 +413,6 @@ export default function NewOrder() {
                       </div>
                     </div>
                   )}
-                  {/* بادج رصيد الباقات */}
                   {packageBalance > 0 && (
                     <div className="bg-gradient-to-r from-amber-500 to-amber-400 text-white px-3 py-1.5 rounded-xl shadow-md flex items-center gap-2 animate-in zoom-in">
                       <Package size={14} className="text-white/80" />
@@ -536,42 +580,82 @@ export default function NewOrder() {
 
               {/* خيار رصيد الباقات */}
               {packageBalance > 0 && (
-                <div className={`py-2 px-3 rounded-xl border transition-all ${usePackage ? 'bg-amber-50 border-amber-300' : 'bg-[#F8F5F2] border-[#D9A3AA]/20'}`}>
-                  <label className="flex items-center justify-between cursor-pointer">
+                <div className={`rounded-xl border transition-all overflow-hidden ${usePackage ? 'border-amber-300' : 'border-[#D9A3AA]/20'}`}>
+                  {/* رأس الخيار */}
+                  <button type="button" onClick={toggleUsePackage}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${usePackage ? 'bg-amber-50' : 'bg-[#F8F5F2] hover:bg-amber-50/50'}`}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${usePackage ? 'bg-amber-500 border-amber-500' : 'border-amber-400/50'}`}>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${usePackage ? 'bg-amber-500 border-amber-500' : 'border-amber-300'}`}>
                         {usePackage && <div className="w-2 h-2 bg-white rounded-full" />}
                       </div>
-                      <span className="text-amber-700 text-xs font-bold flex items-center gap-1">
-                        <Package size={12} /> استخدام الباقات ({packageBalance.toFixed(2)} ر.س)
-                      </span>
+                      <div>
+                        <span className="text-xs font-bold text-amber-800 flex items-center gap-1">
+                          <Package size={11} /> خصم من رصيد الباقات
+                        </span>
+                        <span className="text-[10px] text-amber-600/70 block">المتاح: {packageBalance.toFixed(2)} ر.س</span>
+                      </div>
                     </div>
-                    {usePackage && <span className="text-amber-700 font-bold text-xs">-{packageDiscountValue.toFixed(2)}</span>}
-                    <input type="checkbox" className="hidden" checked={usePackage} onChange={toggleUsePackage} />
-                  </label>
+                    {usePackage && (
+                      <span className="text-amber-700 font-black text-sm bg-amber-100 px-2 py-0.5 rounded-lg">
+                        -{packageDiscountValue.toFixed(2)} ر.س
+                      </span>
+                    )}
+                  </button>
+                  {/* حقل المبلغ الجزئي */}
                   {usePackage && (
-                    <p className="text-[10px] text-amber-600/70 mt-1 mr-6">سيُخصم من رصيد الباقات المشحون</p>
+                    <div className="bg-amber-50/50 border-t border-amber-200/50 px-3 py-2 flex items-center gap-3">
+                      <span className="text-[11px] text-amber-700 shrink-0">المبلغ:</span>
+                      <input
+                        type="number" min="0.01" max={packageBalance} step="0.01"
+                        value={packageAmountInput}
+                        onChange={e => setPackageAmountInput(e.target.value)}
+                        className="flex-1 text-center border border-amber-300 rounded-lg px-2 py-1.5 text-sm font-bold text-amber-700 bg-white outline-none focus:ring-2 ring-amber-300/40"
+                      />
+                      <button type="button" onClick={() => setPackageAmountInput(Math.min(packageBalance, Math.max(0, baseAfterCoupon)).toFixed(2))}
+                        className="text-[10px] text-amber-600 bg-amber-100 hover:bg-amber-200 px-2 py-1 rounded-lg shrink-0 transition-colors">
+                        الكل
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
 
               {/* خيار رصيد النقاط */}
-              {wallet && wallet.points_balance > 0 && (
-                <div className={`py-2 px-3 rounded-xl border transition-all ${usePoints ? 'bg-violet-50 border-violet-300' : 'bg-[#F8F5F2] border-[#D9A3AA]/20'}`}>
-                  <label className="flex items-center justify-between cursor-pointer">
+              {wallet && !wallet.isNew && wallet.points_balance > 0 && (
+                <div className={`rounded-xl border transition-all overflow-hidden ${usePoints ? 'border-violet-300' : 'border-[#D9A3AA]/20'}`}>
+                  <button type="button" onClick={toggleUsePoints}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${usePoints ? 'bg-violet-50' : 'bg-[#F8F5F2] hover:bg-violet-50/50'}`}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${usePoints ? 'bg-violet-500 border-violet-500' : 'border-[#D9A3AA]/40'}`}>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${usePoints ? 'bg-violet-500 border-violet-500' : 'border-violet-300'}`}>
                         {usePoints && <div className="w-2 h-2 bg-white rounded-full" />}
                       </div>
-                      <span className="text-violet-700 text-xs font-bold flex items-center gap-1">
-                        <Coins size={12} /> استخدام النقاط ({Number(wallet.points_balance).toFixed(2)} ر.س)
-                      </span>
+                      <div>
+                        <span className="text-xs font-bold text-violet-800 flex items-center gap-1">
+                          <Coins size={11} /> خصم من رصيد النقاط
+                        </span>
+                        <span className="text-[10px] text-violet-600/70 block">المتاح: {Number(wallet.points_balance).toFixed(2)} ر.س</span>
+                      </div>
                     </div>
-                    {usePoints && <span className="text-violet-700 font-bold text-xs">-{pointsDiscountValue.toFixed(2)}</span>}
-                    <input type="checkbox" className="hidden" checked={usePoints} onChange={toggleUsePoints} />
-                  </label>
+                    {usePoints && (
+                      <span className="text-violet-700 font-black text-sm bg-violet-100 px-2 py-0.5 rounded-lg">
+                        -{pointsDiscountValue.toFixed(2)} ر.س
+                      </span>
+                    )}
+                  </button>
                   {usePoints && (
-                    <p className="text-[10px] text-violet-600/70 mt-1 mr-6">سيُخصم من رصيد نقاط الولاء</p>
+                    <div className="bg-violet-50/50 border-t border-violet-200/50 px-3 py-2 flex items-center gap-3">
+                      <span className="text-[11px] text-violet-700 shrink-0">المبلغ:</span>
+                      <input
+                        type="number" min="0.01" max={wallet.points_balance} step="0.01"
+                        value={pointsAmountInput}
+                        onChange={e => setPointsAmountInput(e.target.value)}
+                        className="flex-1 text-center border border-violet-300 rounded-lg px-2 py-1.5 text-sm font-bold text-violet-700 bg-white outline-none focus:ring-2 ring-violet-300/40"
+                      />
+                      <button type="button" onClick={() => setPointsAmountInput(Math.min(Number(wallet.points_balance), Math.max(0, baseAfterCoupon)).toFixed(2))}
+                        className="text-[10px] text-violet-600 bg-violet-100 hover:bg-violet-200 px-2 py-1 rounded-lg shrink-0 transition-colors">
+                        الكل
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

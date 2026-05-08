@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { 
   Plus, Search, Filter, ChevronRight, Loader2, FileText, 
-  ArrowUpDown, ArrowUp, ArrowDown 
+  ArrowUpDown, ArrowUp, ArrowDown, UserPlus, Wallet, X, Loader2 as Spinner
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -15,6 +16,13 @@ export default function Orders() {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+
+  // حالة الـ Modal للشحن
+  const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [paidAmount, setPaidAmount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -54,8 +62,8 @@ export default function Orders() {
       sortableItems.sort((a, b) => {
         let aValue, bValue;
         if (sortConfig.key === 'remaining') {
-          aValue = (a.total_amount || 0) - (a.deposit || 0);
-          bValue = (b.total_amount || 0) - (b.deposit || 0);
+          aValue = (a.total_amount || 0) - (a.deposit || 0) - Number(a.wallet_used || 0);
+          bValue = (b.total_amount || 0) - (b.deposit || 0) - Number(b.wallet_used || 0);
         } else {
           aValue = a[sortConfig.key];
           bValue = b[sortConfig.key];
@@ -111,12 +119,89 @@ export default function Orders() {
     return map[status] || status;
   };
 
+  const handlePackageCharge = async (e) => {
+    e.preventDefault();
+    if (!customerName || !customerPhone || !paidAmount || paidAmount <= 0) {
+      toast.error("يرجى تعبئة جميع الحقول");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const paidNum = Number(paidAmount);
+      
+      // حساب الرصيد المضاف بناءً على شريحة المكافأة
+      let creditToAdd;
+      if (paidNum >= 999) creditToAdd = paidNum + 203;
+      else if (paidNum >= 699) creditToAdd = paidNum + 109;
+      else if (paidNum >= 299) creditToAdd = paidNum + 34;
+      else creditToAdd = paidNum;
+
+      // تنظيف رقم الهاتف
+      const normalizePhone = (raw) => {
+        if (!raw) return '';
+        let p = String(raw).replace(/\D/g, '');
+        if (p.startsWith('966')) p = p.slice(3);
+        if (p.startsWith('0')) p = p.slice(1);
+        return p;
+      };
+      
+      const cleanPhone = normalizePhone(customerPhone);
+      if (!cleanPhone) throw new Error("رقم الهاتف غير صالح");
+
+      // جلب أو إنشاء محفظة العميل
+      let wallet;
+      const { data: existingWallet, error: fetchErr } = await supabase
+        .from('wallets').select('id, points_balance').eq('phone', cleanPhone).maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      if (existingWallet) {
+        wallet = existingWallet;
+      } else {
+        // عميل جديد كلياً: ننشئ محفظة بالاسم ورقم الجوال
+        const { data: newWallet, error: createErr } = await supabase.from('wallets')
+          .insert([{ 
+            phone: cleanPhone,
+            points_balance: 0,
+            notes: `اسم العميل: ${customerName}`
+          }]).select().single();
+        if (createErr) throw createErr;
+        wallet = newWallet;
+      }
+
+      // ✅ نُسجّل الحركة فقط في wallet_transactions (المصدر الوحيد للحقيقة)
+      // amount_value = المبلغ المدفوع الفعلي (للإحصاءات والربح)
+      // points = الرصيد الكامل المُضاف للعميل (يشمل المكافأة)
+      const { error: txErr } = await supabase.from('wallet_transactions').insert({
+        wallet_id: wallet.id,
+        type: 'package_charge',
+        amount_value: paidNum.toString(),   // المدفوع الفعلي → يُحتسب في صافي الربح
+        points: creditToAdd,                 // الرصيد المضاف للعميل (مع المكافأة)
+        created_at: new Date().toISOString()
+      });
+      if (txErr) throw txErr;
+
+      toast.success(`✅ تم شحن الباقة! المدفوع: ${paidNum} ريال | الرصيد المضاف: ${creditToAdd} ريال`);
+
+      setIsPackageModalOpen(false);
+      setCustomerName('');
+      setCustomerPhone('');
+      setPaidAmount('');
+    } catch (error) {
+      console.error('Package charge error:', error);
+      toast.error(error.message || 'حدث خطأ أثناء تنفيذ العملية');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div><h1 className="text-2xl font-bold text-[#4A4A4A]">الطلبات</h1><p className="text-sm text-[#4A4A4A]/70">إدارة ومتابعة طلبات الطباعة</p></div>
         <div className="flex items-center gap-3">
           <div className="bg-white border border-slate-200 text-[#4A4A4A]/80 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"><FileText size={16} className="text-[#4A4A4A]/55"/><span>{filteredOrders.length} طلب</span></div>
+          <button onClick={() => setIsPackageModalOpen(true)} className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all"><Wallet size={18} />شحن باقة / عميل جديد</button>
           <Link to="/app/orders/new" className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-[#D9A3AA]/25 transition-all"><Plus size={18} />طلب جديد</Link>
         </div>
       </div>
@@ -147,7 +232,7 @@ export default function Orders() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {sortedOrders.map((order) => {
-                  const remaining = (order.total_amount || 0) - (order.deposit || 0);
+                  const remaining = (order.total_amount || 0) - (order.deposit || 0) - Number(order.wallet_used || 0);
                   const isPaid = remaining <= 0.5; 
                   return (
                     <tr key={order.id} className="hover:bg-[#D9A3AA]/10/30 transition-colors duration-200 group">
@@ -162,6 +247,83 @@ export default function Orders() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+    {/* Modal شحن الباقة */}
+      {isPackageModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-amber-50 p-6 border-b border-amber-100 flex justify-between items-center relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 text-amber-200 opacity-50"><Wallet size={80} /></div>
+              <div className="relative z-10">
+                <h3 className="text-xl font-black text-amber-800 flex items-center gap-2">
+                  <Wallet size={20} /> شحن باقة / عميل جديد
+                </h3>
+                <p className="text-amber-700/70 text-sm mt-1">إضافة رصيد باقات لعميل جديد</p>
+              </div>
+              <button onClick={() => setIsPackageModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A] hover:bg-red-50 hover:text-red-500 transition-colors relative z-10 shadow-sm"><X size={16} /></button>
+            </div>
+
+            <form onSubmit={handlePackageCharge} className="p-6 space-y-5">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 flex items-start gap-2">
+                <Wallet size={14} className="shrink-0 mt-0.5" />
+                <span>شحن الباقة: المبلغ المدفوع يُحفظ كسجل، والرصيد المضاف يُضاف للمحفظة للاستخدام في الطلبات القادمة.</span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">اسم العميل:</label>
+                <input
+                  type="text" required
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 text-sm"
+                  placeholder="أدخل اسم العميل"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">رقم الجوال:</label>
+                <input
+                  type="tel" required
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 text-sm"
+                  placeholder="05xxxxxxxx"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (ر.س):</label>
+                <input
+                  type="number" min="1" required
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(e.target.value)}
+                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 font-bold text-lg text-amber-600"
+                  placeholder="0"
+                />
+                <div className="mt-2 text-xs text-amber-600 font-medium">
+                  {paidAmount && Number(paidAmount) >= 299 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                      💰 المكافأة: 
+                      {Number(paidAmount) >= 999 && ` +203 ريال (إجمالي: ${Number(paidAmount) + 203} ريال)`}
+                      {Number(paidAmount) >= 699 && Number(paidAmount) < 999 && ` +109 ريال (إجمالي: ${Number(paidAmount) + 109} ريال)`}
+                      {Number(paidAmount) >= 299 && Number(paidAmount) < 699 && ` +34 ريال (إجمالي: ${Number(paidAmount) + 34} ريال)`}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit" disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-amber-500/30 transition-all flex justify-center items-center gap-2 disabled:opacity-70"
+                >
+                  {isSubmitting ? <Spinner size={18} className="animate-spin" /> : <Wallet size={18} />}
+                  {isSubmitting ? 'جاري التنفيذ...' : 'شحن الباقة'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

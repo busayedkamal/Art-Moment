@@ -14,7 +14,7 @@ export default function TrackOrderPage() {
   const [orderId, setOrderId] = useState('');
   const [order, setOrder] = useState(null);
   const [payments, setPayments] = useState([]); 
-  const [customerStats, setCustomerStats] = useState({ wallet: 0, debt: 0, net: 0 });
+  const [customerStats, setCustomerStats] = useState({ points: 0, packages: 0, debt: 0, net: 0 });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -36,19 +36,44 @@ export default function TrackOrderPage() {
   // دالة جلب البيانات المالية
   const fetchCustomerStats = async (phone) => {
     if (!phone) return;
-    const cleanPhone = normalizePhone(phone); // سيصبح الآن 05xxxxxxxx
+
+    // نبني كل الأشكال الممكنة للرقم
+    let digits = String(phone).replace(/\D/g, '');
+    if (digits.startsWith('966')) digits = digits.slice(3);
+    if (digits.startsWith('0')) digits = digits.slice(1);
+    // digits = 9 أرقام بدون صفر
+    const withZero = digits.length === 9 ? '0' + digits : digits;
+    const allFormats = [withZero, digits, '966' + digits, '+966' + digits,
+      '+966' + withZero, '00966' + digits];
 
     try {
-      // 1. جلب المحفظة (بحث مباشر بالرقم الصحيح)
-      const { data: walletData } = await supabase
+      // 1. جلب كل المحافظ المطابقة (قد تكون أكثر من واحدة بسبب فروق التنسيق)
+      const { data: walletsFound } = await supabase
         .from('wallets')
-        .select('points_balance')
-        .eq('phone', cleanPhone)
-        .maybeSingle();
+        .select('id, points_balance')
+        .in('phone', allFormats);
 
-      const walletBalance = Number(walletData?.points_balance || 0);
+      const allWalletIds = (walletsFound || []).map(w => w.id);
+      const pointsBalance = (walletsFound || [])
+        .reduce((sum, w) => sum + Number(w.points_balance || 0), 0);
 
-      // 2. جلب الديون (نجلب كل الطلبات ونفلترها للتأكد)
+      // 2. حساب رصيد الباقات من wallet_transactions لكل المحافظ المطابقة
+      let packageBalance = 0;
+      if (allWalletIds.length > 0) {
+        const { data: pkgTx } = await supabase
+          .from('wallet_transactions')
+          .select('type, points, amount_value')
+          .in('wallet_id', allWalletIds)
+          .in('type', ['package_charge', 'package_redeem']);
+
+        (pkgTx || []).forEach(tx => {
+          if (tx.type === 'package_charge') packageBalance += Number(tx.points || 0);
+          if (tx.type === 'package_redeem') packageBalance -= Number(tx.amount_value || 0);
+        });
+        packageBalance = Math.max(0, packageBalance);
+      }
+
+      // 3. جلب الديون — نقارن الرقم المُنظَّف من الجانبين
       const { data: allOrders } = await supabase
         .from('orders')
         .select('total_amount, deposit, wallet_used, phone');
@@ -56,19 +81,23 @@ export default function TrackOrderPage() {
       let totalDebt = 0;
       if (allOrders) {
         allOrders.forEach(o => {
-          // نقارن الأرقام بعد التوحيد
-          if (normalizePhone(o.phone) === cleanPhone) {
+          // ننظّف رقم الطلب بنفس الطريقة
+          let oDigits = String(o.phone || '').replace(/\D/g, '');
+          if (oDigits.startsWith('966')) oDigits = oDigits.slice(3);
+          if (oDigits.startsWith('0')) oDigits = oDigits.slice(1);
+          if (oDigits === digits) {
             const walletUsed = Number(o.wallet_used || 0);
             const debt = Number(o.total_amount || 0) - Number(o.deposit || 0) - walletUsed;
-            if (debt > 0.5) totalDebt += debt; 
+            if (debt > 0.5) totalDebt += debt;
           }
         });
       }
 
-      const netBalance = walletBalance - totalDebt;
+      const netBalance = pointsBalance - totalDebt;
 
       setCustomerStats({
-        wallet: walletBalance,
+        points: pointsBalance,
+        packages: packageBalance,
         debt: totalDebt,
         net: netBalance
       });
@@ -85,7 +114,7 @@ export default function TrackOrderPage() {
     setLoading(true);
     setError(null);
     setOrder(null);
-    setCustomerStats({ wallet: 0, debt: 0, net: 0 });
+    setCustomerStats({ points: 0, packages: 0, debt: 0, net: 0 });
 
     try {
       const { data: orderData, error: orderError } = await supabase
@@ -297,10 +326,14 @@ export default function TrackOrderPage() {
                     <UserCheck size={16} className="text-[#D9A3AA]"/> ملخص حسابك
                   </h3>
                   
-                  <div className="grid grid-cols-1 gap-3 text-center mb-1">
-                    <div className="bg-white rounded-lg p-3 border border-[#D9A3AA]/10 shadow-sm">
-                      <span className="font-black text-emerald-600/60 block mb-1 text-[10px]">رصيد الكاش باك الحالي</span>
-                      <span className="font-black text-emerald-600 dir-ltr text-xl">{customerStats.wallet.toFixed(2)}</span>
+                  <div className="grid grid-cols-2 gap-3 text-center mb-1">
+                    <div className="bg-white rounded-lg p-3 border border-violet-200 shadow-sm">
+                      <span className="font-black text-violet-600/60 block mb-1 text-[10px]">رصيد الباقات المتاح</span>
+                      <span className="font-black text-violet-600 dir-ltr text-xl">{customerStats.packages.toFixed(2)}</span>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border border-emerald-200 shadow-sm">
+                      <span className="font-black text-emerald-600/60 block mb-1 text-[10px]">رصيد النقاط (كاش باك)</span>
+                      <span className="font-black text-emerald-600 dir-ltr text-xl">{customerStats.points.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

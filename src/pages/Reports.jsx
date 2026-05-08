@@ -31,7 +31,8 @@ export default function Reports() {
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
         const { data: walletsData } = await supabase.from('wallets').select('points_balance');
-        const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('*').eq('type', 'package_charge');
+        // نجلب شحن الباقات واستخدامها
+        const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('*').in('type', ['package_charge', 'package_add', 'package_redeem']);
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
         setPayments(paymentsData || []);
@@ -63,8 +64,6 @@ export default function Reports() {
     let totalRevenue = 0;
     let totalExpenses = 0;
     let totalPointsBalance = 0;
-    let totalPackageBalance = 0;
-    let totalWalletUsed = 0;
 
     const getMonthKey = (dateString) => {
       const date = new Date(dateString);
@@ -98,7 +97,6 @@ export default function Reports() {
     orders.forEach(o => {
       const dateInfo = getMonthKey(o.created_at);
       if (dateInfo && monthlyMap[dateInfo.key]) monthlyMap[dateInfo.key].orders += 1;
-      totalWalletUsed += Number(o.wallet_used || 0);
 
       const city = o.source ? o.source.trim() : 'أخرى';
       if (citiesMap.hasOwnProperty(city)) {
@@ -146,6 +144,12 @@ export default function Reports() {
       }
     });
 
+    // حساب الربح الشهري لكل شهر
+    Object.keys(monthlyMap).forEach(monthKey => {
+      const monthData = monthlyMap[monthKey];
+      monthData.profit = (monthData.revenue + monthData.packagesTotal) - monthData.expenses;
+    });
+
     const monthlyData = Object.values(monthlyMap).sort((a, b) => a.date - b.date);
     const expenseData = Object.entries(expenseCategoryMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
     
@@ -156,26 +160,38 @@ export default function Reports() {
     const churnedList = Object.values(customerLastOrder).filter(c => isBefore(c.date, threeMonthsAgo)).slice(0, 5);
 
     // حساب أرصدة المحافظ
-    totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
+    totalPointsBalance = wallets.reduce((acc, wallet) => acc + (Number(wallet.points_balance) || 0), 0);
     
-    // إجمالي الباقات المشحونة (المبالغ المدفوعة للباقات)
-    const packagesTotal = packageTransactions
+    // إجمالي مبالغ الباقات المشحونة (المبلغ المدفوع الفعلي = ربح مباشر فوري)
+    const packagesCharged = packageTransactions
+      .filter(pt => pt.type === 'package_charge' || pt.type === 'package_add')
       .reduce((acc, pt) => acc + Number(pt.amount_value || 0), 0);
     
-    const totalWalletBalance = totalPointsBalance + totalPackageBalance;
+    // إجمالي ما تم استخدامه من رصيد الباقات في الطلبات
+    const packagesRedeemed = packageTransactions
+      .filter(pt => pt.type === 'package_redeem')
+      .reduce((acc, pt) => acc + Number(pt.amount_value || 0), 0);
+
+    // الرصيد المتبقي في باقات العملاء (ما لم يُستخدم بعد)
+    const packagesTotal = Math.max(0, packagesCharged - packagesRedeemed);
     
-    const netProfit = (totalCashReceived + packagesTotal) - totalExpenses;
-    const totalDebt = totalSales - totalCashReceived - totalWalletUsed;
-    const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
+    const totalWalletBalance = totalPointsBalance;
+    
+    // صافي الربح = (الدفعات النقدية + ما شُحن للباقات فعلاً) - المصروفات
+    // الخصم من الباقات لا يُعاد طرحه من الربح لأنه دُفع مسبقاً
+    const netProfit = (totalRevenue + packagesCharged) - totalExpenses;
+    const profitMargin = (totalRevenue + packagesCharged) > 0 
+      ? ((netProfit / (totalRevenue + packagesCharged)) * 100).toFixed(1) 
+      : 0;
     const avgOrderValue = orders.length > 0 ? (totalRevenue / orders.length).toFixed(0) : 0;
 
     return {
       monthlyData, expenseData, profitabilityData, geoData, churnedList,
-      totals: { totalRevenue, totalExpenses, totalWalletBalance, totalPointsBalance, totalPackageBalance, totalPackageCharged, netProfit, profitMargin, avgOrderValue, totalOrders: orders.length }
+      totals: { totalRevenue, totalExpenses, totalWalletBalance, totalPointsBalance, packagesTotal, packagesCharged, packagesRedeemed, netProfit, profitMargin, avgOrderValue, totalOrders: orders.length }
     };
   }, [payments, expenses, orders, wallets, packageTransactions, settings]);
 
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   const generateReturnOfferMsg = () => {
     const customersMap = {};
@@ -221,6 +237,23 @@ export default function Reports() {
     toast.success(`تم نسخ رسالة العرض للعميل ${targetCustomer.name}! يمكنك لصقها في الواتساب.`);
   };
 
+  const customerInsights = useMemo(() => {
+    let totalA4 = 0; let total4x6 = 0; let totalAlbums = 0;
+    orders.forEach(order => {
+      totalA4 += Number(order.a4_qty || 0);
+      total4x6 += Number(order.photo_4x6_qty || 0);
+      totalAlbums += Number(order.album_qty || 0);
+    });
+    return { totalA4, total4x6, totalAlbums };
+  }, [orders]);
+
+  const PIE_COLORS = ['#D9A3AA', '#C5A059', '#4A4A4A'];
+  const pieData = useMemo(() => [
+    { name: 'صور 4x6', value: customerInsights.total4x6 },
+    { name: 'صور A4', value: customerInsights.totalA4 },
+    { name: 'الألبومات', value: customerInsights.totalAlbums }
+  ].filter(d => d.value > 0), [customerInsights]);
+
   if (loading) return <div className="p-20 text-center"><div className="w-8 h-8 border-4 border-[#D9A3AA]/15 border-t-[#D9A3AA] rounded-full animate-spin mx-auto"></div><p className="mt-4">جاري تحليل البيانات...</p></div>;
 
   return (
@@ -252,9 +285,12 @@ export default function Reports() {
         <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">ربح الباقات (مشحون)</p>
-              <h3 className="text-2xl font-black text-amber-600">{(analytics.totals.totalPackageCharged || 0).toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3>
-              <p className="text-[10px] text-amber-500/70 mt-1">متبقي: {(analytics.totals.totalPackageBalance || 0).toFixed(1)} ر.س</p>
+              <p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد الباقات (متبقي)</p>
+              <h3 className="text-2xl font-black text-amber-600">{(analytics.totals.packagesTotal || 0).toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3>
+              <div className="flex gap-2 mt-1">
+                <span className="text-[10px] text-emerald-600">↑ مشحون: {(analytics.totals.packagesCharged || 0).toFixed(0)}</span>
+                <span className="text-[10px] text-red-500">↓ مُستخدم: {(analytics.totals.packagesRedeemed || 0).toFixed(0)}</span>
+              </div>
             </div>
             <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Wallet size={20}/></div>
           </div>
@@ -306,7 +342,7 @@ export default function Reports() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={analytics.expenseData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {analytics.expenseData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                    {analytics.expenseData.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
                   </Pie>
                   <Tooltip />
                   <Legend verticalAlign="bottom" height={36} iconType="circle"/>
