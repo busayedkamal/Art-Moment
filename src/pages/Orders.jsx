@@ -17,12 +17,8 @@ export default function Orders() {
   
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
-  // حالة الـ Modal للشحن
+  // حالة الـ Modal للشحن (تم نقله لصفحة العملاء)
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [paidAmount, setPaidAmount] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -201,7 +197,7 @@ export default function Orders() {
         <div><h1 className="text-2xl font-bold text-[#4A4A4A]">الطلبات</h1><p className="text-sm text-[#4A4A4A]/70">إدارة ومتابعة طلبات الطباعة</p></div>
         <div className="flex items-center gap-3">
           <div className="bg-white border border-slate-200 text-[#4A4A4A]/80 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"><FileText size={16} className="text-[#4A4A4A]/55"/><span>{filteredOrders.length} طلب</span></div>
-          <button onClick={() => setIsPackageModalOpen(true)} className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all"><Wallet size={18} />شحن باقة / عميل جديد</button>
+          <Link to="/app/customers" className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all"><Wallet size={18} />شحن باقة / عملاء</Link>
           <Link to="/app/orders/new" className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-[#D9A3AA]/25 transition-all"><Plus size={18} />طلب جديد</Link>
         </div>
       </div>

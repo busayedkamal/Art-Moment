@@ -32,6 +32,19 @@ export default function Customers() {
   const [packageNote, setPackageNote] = useState("شحن باقة مسبق");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // حالات شحن عميل جديد
+  const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
+  const [newCustomerPaid, setNewCustomerPaid] = useState('');
+  const [isNewSubmitting, setIsNewSubmitting] = useState(false);
+
+  // حالات تعديل رصيد الباقات
+  const [isEditPkgModalOpen, setIsEditPkgModalOpen] = useState(false);
+  const [editPkgCustomer, setEditPkgCustomer] = useState(null);
+  const [editPkgAmount, setEditPkgAmount] = useState('');
+  const [isSavingPkg, setIsSavingPkg] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -95,6 +108,8 @@ export default function Customers() {
       });
 
       const map = {};
+
+      // أولاً: العملاء من الطلبات
       (ordersData || []).forEach(order => {
         const clean = normalizePhone(order.phone);
         const key = clean || `unknown_${order.id}`;
@@ -126,6 +141,41 @@ export default function Customers() {
           const dt = new Date(order.created_at);
           if (!map[key].lastOrderDate || dt > map[key].lastOrderDate) map[key].lastOrderDate = dt;
         }
+      });
+
+      // ثانياً: العملاء الذين لديهم محافظ فقط (شحن باقة بدون طلبات سابقة)
+      // نستخرج اسمهم من حقل notes بصيغة "اسم العميل: XXX"
+      (walletsData || []).forEach(w => {
+        if (!w.phone) return;
+        const clean = normalizePhone(w.phone);
+        const withZero = clean.length === 9 ? '0' + clean : clean;
+        // إذا كان موجوداً مسبقاً في map من الطلبات فلا نضيفه مرة أخرى
+        if (map[clean] || map[withZero]) return;
+
+        // استخرج الاسم من notes
+        let name = 'عميل باقة';
+        if (w.notes && w.notes.includes('اسم العميل:')) {
+          name = w.notes.replace('اسم العميل:', '').trim();
+        }
+        if (!name || name === 'اسم العميل:') name = 'عميل باقة';
+
+        // تحقق أن هذه المحفظة لها رصيد باقات فعلاً (ليست محفظة فارغة)
+        const hasPkgBalance = (packageBalanceByWalletId[w.id] || 0) > 0;
+        const hasPoints = Number(w.points_balance || 0) > 0;
+        if (!hasPkgBalance && !hasPoints) return; // تجاهل المحافظ الفارغة تماماً
+
+        map[clean] = {
+          id: clean,
+          name,
+          phone: withZero,
+          cleanPhone: clean,
+          totalRequired: 0,
+          totalPaid: 0,
+          debt: 0,
+          orderIds: new Set(),
+          lastOrderDate: null,
+          isWalletOnly: true // علامة أنه عميل باقة بدون طلبات
+        };
       });
 
       const result = Object.values(map).map(c => {
@@ -321,6 +371,116 @@ export default function Customers() {
     setIsBonusModalOpen(true);
   };
 
+  const openEditPkgModal = (customer, e) => {
+    e.stopPropagation();
+    setEditPkgCustomer(customer);
+    setEditPkgAmount(Number(customer.packageBalance || 0).toFixed(2));
+    setIsEditPkgModalOpen(true);
+  };
+
+  // شحن باقة لعميل جديد (بدون طلبات سابقة)
+  const handleNewCustomerCharge = async (e) => {
+    e.preventDefault();
+    if (!newCustomerName.trim() || !newCustomerPhone.trim() || !newCustomerPaid || Number(newCustomerPaid) <= 0) {
+      toast.error("يرجى تعبئة جميع الحقول"); return;
+    }
+    setIsNewSubmitting(true);
+    try {
+      const paidNum = Number(newCustomerPaid);
+      let creditToAdd;
+      if (paidNum >= 999) creditToAdd = paidNum + 203;
+      else if (paidNum >= 699) creditToAdd = paidNum + 109;
+      else if (paidNum >= 299) creditToAdd = paidNum + 34;
+      else creditToAdd = paidNum;
+
+      const normalizeP = (raw) => {
+        let p = String(raw || '').replace(/\D/g, '');
+        if (p.startsWith('966')) p = p.slice(3);
+        if (p.startsWith('0')) p = p.slice(1);
+        return p;
+      };
+      const digits = normalizeP(newCustomerPhone);
+      const withZero = digits.length === 9 ? '0' + digits : digits;
+      if (!digits) throw new Error("رقم الهاتف غير صالح");
+
+      const { data: found } = await supabase.from('wallets').select('id')
+        .in('phone', [withZero, digits, '966' + digits]);
+
+      let walletId;
+      if (found && found.length > 0) {
+        walletId = found[0].id;
+      } else {
+        const { data: created, error: cErr } = await supabase.from('wallets')
+          .insert([{ phone: withZero, points_balance: 0, notes: `اسم العميل: ${newCustomerName.trim()}` }])
+          .select('id').single();
+        if (cErr) throw cErr;
+        walletId = created.id;
+      }
+
+      const { error: txErr } = await supabase.from('wallet_transactions').insert({
+        wallet_id: walletId, type: 'package_charge',
+        amount_value: paidNum.toString(), points: creditToAdd,
+        created_at: new Date().toISOString()
+      });
+      if (txErr) throw txErr;
+
+      toast.success(`✅ تم شحن الباقة لـ ${newCustomerName.trim()}! المدفوع: ${paidNum} | الرصيد: ${creditToAdd} ريال`);
+      setIsNewCustomerModalOpen(false);
+      setNewCustomerName(''); setNewCustomerPhone(''); setNewCustomerPaid('');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'حدث خطأ');
+    } finally {
+      setIsNewSubmitting(false);
+    }
+  };
+
+  // تعديل رصيد الباقات (يُسجَّل كـ package_charge إضافة أو package_redeem خصم)
+  const handleEditPkgBalance = async (e) => {
+    e.preventDefault();
+    const newBalance = Number(editPkgAmount);
+    if (isNaN(newBalance) || newBalance < 0) { toast.error("أدخل مبلغاً صحيحاً"); return; }
+    setIsSavingPkg(true);
+    try {
+      const customer = editPkgCustomer;
+      const currentBalance = Number(customer.packageBalance || 0);
+      const diff = newBalance - currentBalance;
+      if (Math.abs(diff) < 0.01) { setIsEditPkgModalOpen(false); setIsSavingPkg(false); return; }
+
+      const digits = customer.cleanPhone || '';
+      const withZero = digits.length === 9 ? '0' + digits : digits;
+      const { data: wallets } = await supabase.from('wallets').select('id')
+        .in('phone', [withZero, digits, '966' + digits]);
+      if (!wallets || wallets.length === 0) throw new Error('لا توجد محفظة لهذا العميل');
+
+      const walletId = wallets[0].id;
+      if (diff > 0) {
+        await supabase.from('wallet_transactions').insert({
+          wallet_id: walletId, type: 'package_charge',
+          amount_value: diff.toFixed(2), points: diff,
+          created_at: new Date().toISOString()
+        });
+        toast.success(`تمت إضافة ${diff.toFixed(2)} ريال لرصيد الباقات ✅`);
+      } else {
+        await supabase.from('wallet_transactions').insert({
+          wallet_id: walletId, type: 'package_redeem',
+          amount_value: Math.abs(diff).toFixed(2), points: 0,
+          created_at: new Date().toISOString()
+        });
+        toast.success(`تم خصم ${Math.abs(diff).toFixed(2)} ريال من رصيد الباقات`);
+      }
+
+      setIsEditPkgModalOpen(false);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'حدث خطأ');
+    } finally {
+      setIsSavingPkg(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     let data = customersData;
     if (filter === "vip") data = data.filter(c => c.isVip);
@@ -353,9 +513,17 @@ export default function Customers() {
           </h1>
           <p className="text-[#4A4A4A]/70 text-sm">إدارة متقدمة لبيانات ومحافظ العملاء</p>
         </div>
-        <Link to="/app/orders" className="text-sm font-bold text-[#4A4A4A]/70 hover:text-[#4A4A4A] flex items-center gap-1">
-          <ArrowLeft size={16} /> العودة للطلبات
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsNewCustomerModalOpen(true)}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:shadow-amber-500/25 transition-all"
+          >
+            <Package size={16} /> شحن باقة / عميل جديد
+          </button>
+          <Link to="/app/orders" className="text-sm font-bold text-[#4A4A4A]/70 hover:text-[#4A4A4A] flex items-center gap-1">
+            <ArrowLeft size={16} /> العودة للطلبات
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
@@ -514,6 +682,15 @@ export default function Customers() {
                               title="شحن باقة للعميل"
                             >
                               <Gift size={18} />
+                            </button>
+                          )}
+                          {customer.packageBalance > 0 && (
+                            <button
+                              onClick={(e) => openEditPkgModal(customer, e)}
+                              className="p-2 rounded-xl bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors border border-orange-100"
+                              title="تعديل رصيد الباقات"
+                            >
+                              <Package size={18} />
                             </button>
                           )}
                           <button className={`p-2 rounded-xl text-[#4A4A4A]/50 transition-all ${isExpanded ? 'bg-[#D9A3AA]/10 text-[#D9A3AA] rotate-180' : 'group-hover:bg-[#F8F5F2]'}`}>
@@ -724,6 +901,92 @@ export default function Customers() {
                   {isSubmitting ? 'جاري التنفيذ...' : 'شحن الباقة'}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal شحن باقة / عميل جديد */}
+      {isNewCustomerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+            <div className="bg-amber-50 p-5 border-b border-amber-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-black text-amber-800 flex items-center gap-2"><Package size={18} /> شحن باقة / عميل جديد</h3>
+                <p className="text-amber-700/70 text-xs mt-0.5">إضافة رصيد باقات لعميل جديد</p>
+              </div>
+              <button onClick={() => setIsNewCustomerModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A] hover:bg-red-50 hover:text-red-500 transition-colors shadow-sm"><X size={16} /></button>
+            </div>
+            <form onSubmit={handleNewCustomerCharge} className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">اسم العميل:</label>
+                <input type="text" required value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)}
+                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-2.5 outline-none focus:border-amber-400 text-sm"
+                  placeholder="أدخل اسم العميل" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">رقم الجوال:</label>
+                <input type="tel" required dir="ltr" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)}
+                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-2.5 outline-none focus:border-amber-400 text-sm text-right"
+                  placeholder="05xxxxxxxx" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (ر.س):</label>
+                <input type="number" min="1" required value={newCustomerPaid} onChange={e => setNewCustomerPaid(e.target.value)}
+                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 font-bold text-lg text-amber-600" />
+                {newCustomerPaid && Number(newCustomerPaid) > 0 && (
+                  <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700 font-medium">
+                    💰 الرصيد المضاف:
+                    {Number(newCustomerPaid) >= 999 && ` ${Number(newCustomerPaid) + 203} ريال (+203 مكافأة)`}
+                    {Number(newCustomerPaid) >= 699 && Number(newCustomerPaid) < 999 && ` ${Number(newCustomerPaid) + 109} ريال (+109 مكافأة)`}
+                    {Number(newCustomerPaid) >= 299 && Number(newCustomerPaid) < 699 && ` ${Number(newCustomerPaid) + 34} ريال (+34 مكافأة)`}
+                    {Number(newCustomerPaid) < 299 && ` ${Number(newCustomerPaid)} ريال (بدون مكافأة)`}
+                  </div>
+                )}
+              </div>
+              <button type="submit" disabled={isNewSubmitting}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 disabled:opacity-70">
+                {isNewSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />}
+                {isNewSubmitting ? 'جاري الشحن...' : 'شحن الباقة'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal تعديل رصيد الباقات */}
+      {isEditPkgModalOpen && editPkgCustomer && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden">
+            <div className="bg-orange-50 p-5 border-b border-orange-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-black text-orange-800 flex items-center gap-2"><Package size={18} /> تعديل رصيد الباقات</h3>
+                <p className="text-orange-700/70 text-xs mt-0.5">{editPkgCustomer.name}</p>
+              </div>
+              <button onClick={() => setIsEditPkgModalOpen(false)} className="p-2 bg-white rounded-full hover:bg-red-50 hover:text-red-500 transition-colors shadow-sm"><X size={16} /></button>
+            </div>
+            <form onSubmit={handleEditPkgBalance} className="p-5 space-y-4">
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex justify-between items-center">
+                <span className="text-sm text-orange-700">الرصيد الحالي</span>
+                <span className="font-black text-orange-600">{Number(editPkgCustomer.packageBalance || 0).toFixed(2)} ر.س</span>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">الرصيد الجديد (ر.س):</label>
+                <input type="number" min="0" step="0.01" required value={editPkgAmount} onChange={e => setEditPkgAmount(e.target.value)}
+                  className="w-full border border-orange-200 rounded-xl px-4 py-3 outline-none focus:border-orange-400 font-bold text-lg text-orange-600 text-center" />
+              </div>
+              {editPkgAmount !== '' && Math.abs(Number(editPkgAmount) - Number(editPkgCustomer.packageBalance || 0)) > 0.01 && (
+                <div className={`text-xs font-bold rounded-lg p-2 text-center ${Number(editPkgAmount) > Number(editPkgCustomer.packageBalance || 0) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                  {Number(editPkgAmount) > Number(editPkgCustomer.packageBalance || 0)
+                    ? `↑ إضافة ${(Number(editPkgAmount) - Number(editPkgCustomer.packageBalance || 0)).toFixed(2)} ريال`
+                    : `↓ خصم ${(Number(editPkgCustomer.packageBalance || 0) - Number(editPkgAmount)).toFixed(2)} ريال`}
+                </div>
+              )}
+              <button type="submit" disabled={isSavingPkg}
+                className="w-full bg-orange-500 hover:bg-orange-400 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 disabled:opacity-70">
+                {isSavingPkg ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />}
+                {isSavingPkg ? 'جاري الحفظ...' : 'حفظ التعديل'}
+              </button>
             </form>
           </div>
         </div>
