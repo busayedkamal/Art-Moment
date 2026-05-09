@@ -54,24 +54,46 @@ export default function Dashboard() {
         // 3. جلب رصيد المحافظ
         const { data: wallets, error: walletsError } = await supabase
           .from('wallets')
-          .select('points_balance');
-        
+          .select('phone, points_balance')
+          .order('id', { ascending: true }); // الأحدث (id أعلى) يفوز عند التكرار
+
         // 4. جلب معاملات الباقات لحساب رصيد الباقات بشكل منفصل
         const { data: packageTransactions, error: transactionsError } = await supabase
           .from('wallet_transactions')
           .select('*')
           .eq('type', 'package_charge');
-        
+
         if (walletsError) throw walletsError;
         if (transactionsError) throw transactionsError;
+
+        // دالة تطبيع رقم الهاتف (نفس منطق صفحة العملاء)
+        const normalizePhone = (raw) => {
+          if (!raw) return '';
+          let p = String(raw).replace(/\D/g, '');
+          if (p.startsWith('966')) p = p.slice(3);
+          if (p.startsWith('0')) p = p.slice(1);
+          return p;
+        };
 
         // --- الحسابات العامة ---
         const totalOrders = orders.length;
         const totalRevenue = orders.reduce((acc, order) => acc + (order.total_amount || 0), 0);
         const totalCashReceived = orders.reduce((acc, order) => acc + (order.deposit || 0), 0);
-        const totalDebt = totalRevenue - totalCashReceived;
+        // ✅ المديونيات الفعلية: المتبقي الإيجابي فقط (لا نطرح الحالات السالبة "الدفع الزائد")
+        const totalDebt = orders
+          .filter(o => ((o.total_amount || 0) - (o.deposit || 0) - Number(o.wallet_used || 0)) > 0.5)
+          .reduce((sum, o) => sum + ((o.total_amount || 0) - (o.deposit || 0) - Number(o.wallet_used || 0)), 0);
         const totalExpenses = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
-        const totalPointsBalance = wallets.reduce((acc, wallet) => acc + (wallet.points_balance || 0), 0);
+
+        // إزالة التكرار: نحسب رصيداً واحداً لكل رقم هاتف (الأحدث يفوز)
+        // نتجاهل المحافظ بدون رقم هاتف (مثل المحفظة الإدارية)
+        const walletByPhone = {};
+        (wallets || []).forEach(w => {
+          const key = normalizePhone(w.phone);
+          if (!key) return;
+          walletByPhone[key] = Number(w.points_balance || 0);
+        });
+        const totalPointsBalance = Object.values(walletByPhone).reduce((acc, v) => acc + v, 0);
         const packagesTotal = packageTransactions ? packageTransactions.reduce((sum, pt) => sum + Number(pt.amount_value || 0), 0) : 0;
         const totalPackageBalance = packagesTotal;
         const totalWalletBalance = totalPointsBalance;
@@ -87,9 +109,9 @@ export default function Dashboard() {
         const recentNew = orders.filter(o => o.status === 'new').slice(0, 5);
 
         // --- فلترة المديونيات المستحقة (تم التسليم + باقي مبلغ) ---
-        const debts = orders.filter(o => 
-          o.status === 'delivered' && 
-          (o.total_amount - (o.deposit || 0)) > 0.5 // هامش بسيط للكسور
+        const debts = orders.filter(o =>
+          o.status === 'delivered' &&
+          (o.total_amount - (o.deposit || 0) - Number(o.wallet_used || 0)) > 0.5
         );
 
         setStats({ 
@@ -137,152 +159,179 @@ export default function Dashboard() {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline-block ml-2"/> جاري تحميل البيانات...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="text-center">
+        <Loader2 className="animate-spin text-[#D9A3AA] mx-auto mb-3" size={36}/>
+        <p className="text-[#4A4A4A]/60 text-sm">جاري تحميل البيانات...</p>
+      </div>
+    </div>
+  );
 
   const realNetProfit = stats.totalCashReceived + (stats.packagesTotal || 0) - stats.totalExpenses;
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-10 text-[#4A4A4A]">
-      
-      {/* البطاقة العلوية (المالية) */}
-      <div className="relative overflow-hidden bg-[#4A4A4A] rounded-3xl p-6 text-white shadow-xl">
-        <div className="relative z-10 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
-          <div className="mb-2 xl:mb-0">
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">لوحة القيادة 🚀</h1>
-            <p className="text-white/70 text-sm">
-              ملخص الأداء المالي والتشغيلي لمتجرك اليوم.
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap gap-3 w-full xl:w-auto justify-start xl:justify-end">
-{/* بطاقة إجمالي المبيعات */}
-            <div className="bg-white px-5 py-3 rounded-2xl border border-[#D9A3AA]/20 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-black/5">
-               <span className="text-[10px] text-[#4A4A4A]/70 block mb-1 font-bold">إجمالي المبيعات</span>
-               <span className="text-xl font-bold dir-ltr text-[#4A4A4A]">
-                 {stats.totalRevenue.toLocaleString()} <span className="text-xs opacity-70">ر.س</span>
-               </span>
-            </div>
-{/* بطاقة رصيد الباقات (الربح المباشر) */}
-            <div className="bg-amber-600 backdrop-blur-md px-5 py-3 rounded-2xl border border-amber-600 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-amber-600/30">
-               <span className="text-[10px] text-white/80 block mb-1 font-bold">رصيد الباقات</span>
-               <span className="text-xl font-bold dir-ltr text-white">
-                 {stats.totalPackageBalance.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
-               </span>
-            </div>
-{/* بطاقة رصيد النقاط (الخصم) */}
-            <div className="bg-orange-600 backdrop-blur-md px-5 py-3 rounded-2xl border border-orange-600 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-orange-600/30">
-               <span className="text-[10px] text-white/80 block mb-1 font-bold">رصيد النقاط</span>
-               <span className="text-xl font-bold dir-ltr text-white">
-                 {stats.totalPointsBalance.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
-               </span>
-            </div>
-{/* بطاقة المديونية (لون صلب) */}
-            <div className="bg-red-600 backdrop-blur-md px-5 py-3 rounded-2xl border border-red-600 text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-red-600/30">
-               <span className="text-[10px] text-white/80 block mb-1 font-bold">المديونية</span>
-               <span className="text-xl font-bold dir-ltr text-white">
-                 {stats.totalDebt.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
-               </span>
-            </div>
-{/* بطاقة صافي الربح ) */}
-            <div className="bg-[#00674F] backdrop-blur-md px-5 py-3 rounded-2xl border border-[#00674F] text-center min-w-[140px] flex-1 xl:flex-none shadow-lg shadow-[#00674F]/30">
-               <span className="text-[10px] text-white/80 block mb-1 font-bold">صافي الربح </span>
-               <span className={`text-xl font-bold dir-ltr ${realNetProfit >= 0 ? 'text-white' : 'text-red-200'}`}>
-                 {realNetProfit.toLocaleString()} <span className="text-xs opacity-80">ر.س</span>
-               </span>
-            </div>
-          </div>
+    <div className="w-full px-6 xl:px-10 space-y-6 pb-12 text-[#4A4A4A]">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between pt-2">
+        <div>
+          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">لوحة القيادة</h1>
+          <p className="text-sm text-[#4A4A4A]/50 mt-0.5">ملخص الأداء المالي والتشغيلي</p>
         </div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#D9A3AA]/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+        <div className="text-3xl select-none">🚀</div>
       </div>
 
-      {/* الصف الأول: الإحصائيات التشغيلية */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">طلبات جديدة</p>
-            <p className="text-2xl font-black text-[#D9A3AA]">{stats.newOrders}</p>
+      {/* ── KPI Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* إجمالي المبيعات */}
+        <div className="col-span-2 lg:col-span-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#4A4A4A]/50 uppercase tracking-wide">إجمالي المبيعات</span>
+            <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center">
+              <TrendingUp size={15} className="text-slate-400"/>
+            </div>
           </div>
-          <div className="p-3 bg-[#D9A3AA]/10 text-[#D9A3AA] rounded-xl"><ShoppingBag size={20} /></div>
+          <p className="text-2xl font-black text-[#4A4A4A]">{stats.totalRevenue.toLocaleString()}</p>
+          <span className="text-xs text-[#4A4A4A]/40">ريال </span>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">قيد التنفيذ</p>
-            <p className="text-2xl font-black text-[#4A4A4A]">{stats.pendingOrders}</p>
+
+        {/* رصيد الباقات */}
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl shadow-lg shadow-amber-500/20 p-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-white/70 uppercase tracking-wide">رصيد الباقات</span>
+            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+              <Wallet size={15} className="text-white"/>
+            </div>
           </div>
-          <div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><Clock size={20} /></div>
+          <p className="text-2xl font-black text-white">{(stats.totalPackageBalance || 0).toLocaleString()}</p>
+          <span className="text-xs text-white/60">ريال مشحون مسبقاً</span>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">متأخرة</p>
-            <p className="text-2xl font-black text-red-600">{stats.lateOrders}</p>
+
+        {/* رصيد النقاط */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#4A4A4A]/50 uppercase tracking-wide">رصيد النقاط</span>
+            <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center">
+              <Banknote size={15} className="text-orange-400"/>
+            </div>
           </div>
-          <div className="p-3 bg-red-50 text-red-600 rounded-xl"><AlertCircle size={20} /></div>
+          <p className="text-2xl font-black text-orange-500">{stats.totalPointsBalance.toLocaleString()}</p>
+          <span className="text-xs text-[#4A4A4A]/40">ريال (خصومات مكتسبة)</span>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">مجموع الطلبات</p>
-            <p className="text-2xl font-black text-[#D9A3AA]">{stats.totalOrders}</p>
+
+        {/* المديونية */}
+        <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-red-400/80 uppercase tracking-wide">المديونية</span>
+            <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">
+              <TrendingDown size={15} className="text-red-400"/>
+            </div>
           </div>
-          <div className="p-3 bg-[#D9A3AA]/10 text-[#C5A059] rounded-xl"><FileText size={20} /></div>
+          <p className="text-2xl font-black text-red-500">{stats.totalDebt.toLocaleString()}</p>
+          <span className="text-xs text-red-400/60">ريال غير محصّل</span>
+        </div>
+
+        {/* صافي الربح */}
+        <div className={`rounded-2xl shadow-lg p-5 flex flex-col gap-2 ${realNetProfit >= 0 ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/20' : 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/20'}`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-white/70 uppercase tracking-wide">صافي الربح</span>
+            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+              <TrendingUp size={15} className="text-white"/>
+            </div>
+          </div>
+          <p className="text-2xl font-black text-white">{realNetProfit.toLocaleString()}</p>
+          <span className="text-xs text-white/60">ريال (محصّل - مصروفات)</span>
         </div>
       </div>
 
-      {/* الصف الثاني: الرسوم البيانية */}
+      {/* ── Operational Stats ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'طلبات جديدة', value: stats.newOrders, color: 'text-[#D9A3AA]', bg: 'bg-[#D9A3AA]/8', icon: <ShoppingBag size={18}/>, iconColor: 'text-[#D9A3AA]' },
+          { label: 'قيد التنفيذ', value: stats.pendingOrders, color: 'text-orange-500', bg: 'bg-orange-50', icon: <Clock size={18}/>, iconColor: 'text-orange-500' },
+          { label: 'متأخرة', value: stats.lateOrders, color: 'text-red-500', bg: 'bg-red-50', icon: <AlertCircle size={18}/>, iconColor: 'text-red-500' },
+          { label: 'مجموع الطلبات', value: stats.totalOrders, color: 'text-[#4A4A4A]', bg: 'bg-slate-50', icon: <FileText size={18}/>, iconColor: 'text-slate-400' },
+        ].map((item, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-[#4A4A4A]/50 font-bold mb-2">{item.label}</p>
+              <p className={`text-3xl font-black ${item.color}`}>{item.value}</p>
+            </div>
+            <div className={`w-11 h-11 ${item.bg} rounded-xl flex items-center justify-center ${item.iconColor}`}>
+              {item.icon}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Chart + Debts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* رسم المبيعات */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
-              <TrendingUp size={18} className="text-[#D9A3AA]"/> حركة المبيعات والمصروفات (7 أيام)
-            </h3>
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="font-black text-[#4A4A4A]">حركة المبيعات والمصروفات</h3>
+              <p className="text-xs text-[#4A4A4A]/40 mt-0.5">آخر 7 أيام</p>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-[#4A4A4A]/50">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>مبيعات</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#C5A059] inline-block"></span>مصروفات</span>
+            </div>
           </div>
           <div className="h-64 w-full dir-ltr">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
-                <RechartsTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                <Legend verticalAlign="top" height={36} iconType="circle"/>
-                <Bar dataKey="sales" name="المبيعات" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
-                <Bar dataKey="expenses" name="المصروفات" fill="#C5A059" radius={[4, 4, 0, 0]} barSize={20} />
+              <BarChart data={chartData} barGap={6}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#94a3b8'}}/>
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#94a3b8'}} width={40}/>
+                <RechartsTooltip cursor={{fill: '#f8fafc', radius: 8}} contentStyle={{borderRadius: '14px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', padding: '10px 16px'}}/>
+                <Bar dataKey="sales" name="المبيعات" fill="#10b981" radius={[6, 6, 0, 0]} barSize={22}/>
+                <Bar dataKey="expenses" name="المصروفات" fill="#C5A059" radius={[6, 6, 0, 0]} barSize={22}/>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* --- البطاقة الجديدة: مديونيات (تم التسليم) --- */}
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex flex-col max-h-[350px]">
-          <h3 className="font-bold text-[#4A4A4A] w-full mb-4 text-center flex items-center justify-center gap-2">
-            <Wallet className="text-red-500" size={20}/> مستحقات (تم التسليم)
-          </h3>
-          
-          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
+        {/* مستحقات تم التسليم */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center">
+                <Wallet size={16} className="text-red-500"/>
+              </div>
+              <div>
+                <h3 className="font-black text-[#4A4A4A] text-sm">مستحقات التسليم</h3>
+                <p className="text-[10px] text-[#4A4A4A]/40">مُسلَّمة ولم تُدفع</p>
+              </div>
+            </div>
+            {unpaidDelivered.length > 0 && (
+              <span className="bg-red-100 text-red-600 text-xs font-black px-2 py-0.5 rounded-full">
+                {unpaidDelivered.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2.5" style={{maxHeight: 280}}>
             {unpaidDelivered.length > 0 ? (
               unpaidDelivered.map((order) => {
-                const remaining = order.total_amount - (order.deposit || 0);
+                const remaining = order.total_amount - (order.deposit || 0) - Number(order.wallet_used || 0);
                 const phone = order.phone?.replace(/^0/, '966') || '';
                 const msg = `مرحباً ${order.customer_name} 🌸\n\nنود تذكيرك بأن طلبك رقم *#${order.id.slice(0, 6)}* قد تم تسليمه.\n\nالمبلغ المتبقي: *${remaining} ريال*.\n\nنرجو التحويل وشكراً لتعاملك معنا ✨`;
-
                 return (
-                  <div key={order.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100 group hover:border-red-200 transition-colors">
+                  <div key={order.id} className="flex items-center justify-between p-3 bg-red-50/60 hover:bg-red-50 rounded-xl border border-red-100/80 transition-colors group">
                     <div>
-                      <div className="font-bold text-[#4A4A4A] text-sm">{order.customer_name}</div>
-                      <div className="text-[10px] text-[#4A4A4A]/60">#{order.id.slice(0, 6)}</div>
+                      <p className="font-bold text-[#4A4A4A] text-sm leading-tight">{order.customer_name}</p>
+                      <p className="text-[10px] text-[#4A4A4A]/40 mt-0.5 font-mono">#{order.id.slice(0, 6)}</p>
                     </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <span className="text-red-600 font-black text-sm">{remaining} ر.س</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-red-600 font-black text-sm">{remaining.toFixed(0)} ر.س</span>
                       {order.phone && (
-                        <a 
-                          href={`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="bg-white p-1.5 rounded-lg border border-red-200 text-[#D9A3AA] hover:bg-[#D9A3AA]/10 hover:border-[#D9A3AA]/40 transition-colors"
-                          title="مطالبة عبر واتساب"
-                        >
-                          <MessageCircle size={16} />
+                        <a href={`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer"
+                          className="w-7 h-7 bg-white rounded-lg border border-red-100 flex items-center justify-center text-[#D9A3AA] hover:text-emerald-600 hover:border-emerald-200 transition-colors opacity-0 group-hover:opacity-100"
+                          title="مطالبة واتساب">
+                          <MessageCircle size={13}/>
                         </a>
                       )}
                     </div>
@@ -290,82 +339,96 @@ export default function Dashboard() {
                 );
               })
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-white/70">
+              <div className="h-full flex flex-col items-center justify-center py-10 text-center">
                 <span className="text-4xl mb-2">🎉</span>
-                <span className="text-sm">لا توجد مديونيات مستحقة</span>
+                <p className="text-sm text-[#4A4A4A]/40 font-medium">لا توجد مديونيات</p>
               </div>
             )}
           </div>
-          
+
           {unpaidDelivered.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-[#D9A3AA]/15 text-center">
-              <span className="text-xs text-[#4A4A4A]/50">إجمالي المستحقات: </span>
-              <span className="font-bold text-red-600">
-                {unpaidDelivered.reduce((sum, o) => sum + (o.total_amount - (o.deposit || 0)), 0).toLocaleString()} ر.س
+            <div className="px-5 py-3 bg-red-50/50 border-t border-red-100/60 flex justify-between items-center">
+              <span className="text-xs text-[#4A4A4A]/50 font-medium">المستحقات المسلّمة</span>
+              <span className="font-black text-red-600 text-sm">
+                {unpaidDelivered.reduce((sum, o) => sum + (o.total_amount - (o.deposit||0) - Number(o.wallet_used||0)), 0).toFixed(2)} ر.س
               </span>
             </div>
           )}
         </div>
-
       </div>
 
-      {/* الصف الثالث: الطلبات الجديدة */}
-      <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-[#D9A3AA]/15 flex justify-between items-center">
-          <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
-            <ShoppingBag className="text-[#D9A3AA]" size={20}/> أحدث الطلبات الجديدة
-          </h3>
-          <Link to="/app/orders" className="text-sm text-[#D9A3AA] font-bold hover:underline flex items-center gap-1">
-            عرض الكل <ChevronRight size={16} className="rotate-180"/>
+      {/* ── Latest New Orders ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-50 flex justify-between items-center">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-[#D9A3AA]/10 rounded-xl flex items-center justify-center">
+              <ShoppingBag size={16} className="text-[#D9A3AA]"/>
+            </div>
+            <div>
+              <h3 className="font-black text-[#4A4A4A] text-sm">أحدث الطلبات الجديدة</h3>
+              <p className="text-[10px] text-[#4A4A4A]/40">بانتظار المعالجة</p>
+            </div>
+          </div>
+          <Link to="/app/orders" className="text-xs text-[#D9A3AA] font-bold hover:text-[#C5A059] transition-colors flex items-center gap-1">
+            عرض الكل <ChevronRight size={14} className="rotate-180"/>
           </Link>
         </div>
-        
-        <div className="overflow-x-auto">
-          {recentNewOrders.length > 0 ? (
+
+        {recentNewOrders.length > 0 ? (
+          <div className="overflow-x-auto">
             <table className="w-full text-right text-sm">
-              <thead className="bg-[#F8F5F2] text-[#4A4A4A]/60 font-medium">
-                <tr>
-                  <th className="px-6 py-4">رقم الطلب</th>
-                  <th className="px-6 py-4">العميل</th>
-                  <th className="px-6 py-4">تاريخ التسليم</th>
-                  <th className="px-6 py-4">الإجمالي</th>
-                  <th className="px-6 py-4">الإجراء</th>
+              <thead>
+                <tr className="bg-slate-50/60 text-[#4A4A4A]/40 text-xs font-bold uppercase tracking-wide">
+                  <th className="px-6 py-3.5">رقم الطلب</th>
+                  <th className="px-6 py-3.5">العميل</th>
+                  <th className="px-6 py-3.5">موعد التسليم</th>
+                  <th className="px-6 py-3.5">الإجمالي</th>
+                  <th className="px-6 py-3.5"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D9A3AA]/10">
+              <tbody className="divide-y divide-slate-50">
                 {recentNewOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-[#F8F5F2] transition-colors">
-                    <td className="px-6 py-4 font-mono text-[#4A4A4A]/60">#{order.id.slice(0, 6)}</td>
+                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-xs font-bold text-[#4A4A4A]/50 bg-slate-100 px-2 py-1 rounded-md">#{order.id.slice(0, 6)}</span>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#D9A3AA]/15 flex items-center justify-center text-[#D9A3AA] font-bold">
-                          <User size={14}/>
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#D9A3AA]/20 to-[#C5A059]/20 flex items-center justify-center text-[#C5A059] font-black text-base shrink-0">
+                          {order.customer_name?.charAt(0)}
                         </div>
                         <div>
-                          <span className="block font-bold text-[#4A4A4A]">{order.customer_name}</span>
-                          <span className="text-xs text-[#4A4A4A]/50">{order.phone}</span>
+                          <p className="font-bold text-[#4A4A4A] text-sm leading-tight">{order.customer_name}</p>
+                          <p className="text-[11px] text-[#4A4A4A]/40 font-mono mt-0.5 dir-ltr text-right">{order.phone}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="flex items-center gap-2 text-[#4A4A4A]/70 bg-[#F8F5F2] px-3 py-1 rounded-lg w-fit">
-                        <Calendar size={14}/> {order.delivery_date || '-'}
+                      <span className="inline-flex items-center gap-1.5 text-xs text-[#4A4A4A]/60 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">
+                        <Calendar size={12}/> {order.delivery_date || '—'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-bold text-[#4A4A4A]">{order.total_amount} ر.س</td>
                     <td className="px-6 py-4">
-                      <Link to={`/app/orders/${order.id}`} className="px-4 py-2 bg-[#D9A3AA] text-white rounded-xl text-xs font-bold hover:bg-[#C5A059] transition-colors">
-                        معالجة
+                      <span className="font-black text-[#4A4A4A]">{order.total_amount}</span>
+                      <span className="text-[11px] text-[#4A4A4A]/40 mr-1">ر.س</span>
+                    </td>
+                    <td className="px-6 py-4 text-left">
+                      <Link to={`/app/orders/${order.id}`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#D9A3AA] hover:bg-[#C5A059] text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-[#D9A3AA]/30">
+                        معالجة <ChevronRight size={13} className="rotate-180"/>
                       </Link>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          ) : (
-            <div className="p-10 text-center text-[#4A4A4A]/50">لا توجد طلبات جديدة حالياً 🎉</div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="py-16 text-center">
+            <p className="text-5xl mb-3">🎉</p>
+            <p className="text-[#4A4A4A]/40 font-medium">لا توجد طلبات جديدة حالياً</p>
+          </div>
+        )}
       </div>
 
     </div>

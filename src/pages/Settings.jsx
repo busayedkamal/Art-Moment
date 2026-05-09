@@ -124,16 +124,23 @@ export default function Settings() {
     } catch { toast.error('فشل الحذف'); }
   };
 
-  if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline-block"/> جاري التحميل...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32">
+      <Loader2 className="animate-spin text-[#D9A3AA] mb-4" size={36}/>
+      <p className="text-sm text-[#4A4A4A]/50 font-medium">جاري التحميل...</p>
+    </div>
+  );
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-10">
-      
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-[#4A4A4A] text-white rounded-xl"><SettingsIcon size={24}/></div>
+    <div className="w-full space-y-8 pb-10 text-[#4A4A4A]">
+
+      <div className="flex items-center gap-3 pt-1">
+        <div className="p-3 bg-[#4A4A4A] text-white rounded-xl shadow-lg shadow-[#4A4A4A]/20">
+          <SettingsIcon size={22}/>
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-[#4A4A4A]">الإعدادات العامة</h1>
-          <p className="text-sm text-[#4A4A4A]/60">التحكم في الأسعار، المخزون، واتساب، وأكواد الخصم.</p>
+          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">الإعدادات العامة</h1>
+          <p className="text-sm text-[#4A4A4A]/50">التحكم في الأسعار، المخزون، واتساب، وأكواد الخصم</p>
         </div>
       </div>
 

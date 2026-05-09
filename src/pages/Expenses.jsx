@@ -176,16 +176,23 @@ export default function Expenses() {
     return sorted;
   }, [expenses, sortBy]);
 
-  if (loading) return <div className="p-10 text-center">جاري تحميل سجل المصروفات...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32">
+      <div className="w-9 h-9 border-4 border-[#D9A3AA]/20 border-t-[#D9A3AA] rounded-full animate-spin mb-4"></div>
+      <p className="text-sm text-[#4A4A4A]/50 font-medium">جاري تحميل سجل المصروفات...</p>
+    </div>
+  );
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-10">
-      
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-[#4A4A4A] text-white rounded-xl"><Wallet size={24}/></div>
+    <div className="w-full space-y-8 pb-10 text-[#4A4A4A]">
+
+      <div className="flex items-center gap-3 pt-1">
+        <div className="p-3 bg-[#4A4A4A] text-white rounded-xl shadow-lg shadow-[#4A4A4A]/20">
+          <Wallet size={22}/>
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-[#4A4A4A]">سجل المصروفات</h1>
-          <p className="text-sm text-[#4A4A4A]/70">إدارة وتتبع التكاليف التشغيلية للمشروع.</p>
+          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">سجل المصروفات</h1>
+          <p className="text-sm text-[#4A4A4A]/50">إدارة وتتبع التكاليف التشغيلية للمشروع</p>
         </div>
       </div>
 

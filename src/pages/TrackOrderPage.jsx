@@ -327,13 +327,13 @@ export default function TrackOrderPage() {
                   </h3>
                   
                   <div className="grid grid-cols-2 gap-3 text-center mb-1">
-                    <div className="bg-white rounded-lg p-3 border border-violet-200 shadow-sm">
-                      <span className="font-black text-violet-600/60 block mb-1 text-[10px]">رصيد الباقات المتاح</span>
-                      <span className="font-black text-violet-600 dir-ltr text-xl">{customerStats.packages.toFixed(2)}</span>
+                    <div className="bg-white rounded-lg p-3 border border-amber-200 shadow-sm">
+                      <span className="font-black text-amber-600/70 block mb-1 text-[10px]">رصيد الباقات المتاح</span>
+                      <span className="font-black text-amber-600 dir-ltr text-xl">{customerStats.packages.toFixed(2)}</span>
                     </div>
-                    <div className="bg-white rounded-lg p-3 border border-emerald-200 shadow-sm">
-                      <span className="font-black text-emerald-600/60 block mb-1 text-[10px]">رصيد النقاط (كاش باك)</span>
-                      <span className="font-black text-emerald-600 dir-ltr text-xl">{customerStats.points.toFixed(2)}</span>
+                    <div className="bg-white rounded-lg p-3 border border-violet-200 shadow-sm">
+                      <span className="font-black text-violet-600/70 block mb-1 text-[10px]">رصيد النقاط (كاش باك)</span>
+                      <span className="font-black text-violet-600 dir-ltr text-xl">{customerStats.points.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

@@ -31,6 +31,7 @@ export default function AuthProvider({ children }) {
   const value = {
     session,
     user: session?.user,
+    loading,
     signOut: () => supabase.auth.signOut(),
   }
 

@@ -444,31 +444,66 @@ export default function Customers() {
     setIsSavingPkg(true);
     try {
       const customer = editPkgCustomer;
-      const currentBalance = Number(customer.packageBalance || 0);
-      const diff = newBalance - currentBalance;
-      if (Math.abs(diff) < 0.01) { setIsEditPkgModalOpen(false); setIsSavingPkg(false); return; }
 
+      // ✅ جلب أشكال الرقم الممكنة
       const digits = customer.cleanPhone || '';
       const withZero = digits.length === 9 ? '0' + digits : digits;
       const { data: wallets } = await supabase.from('wallets').select('id')
         .in('phone', [withZero, digits, '966' + digits]);
       if (!wallets || wallets.length === 0) throw new Error('لا توجد محفظة لهذا العميل');
 
-      const walletId = wallets[0].id;
+      const walletIds = wallets.map(w => w.id);
+
+      // ✅ جلب الرصيد الحقيقي من قاعدة البيانات مباشرةً (ليس من الحالة المخزنة)
+      // هذا يحمي من حالة التبادل السريع التي تُنشئ حركات مكررة
+      const { data: pkgTx } = await supabase
+        .from('wallet_transactions')
+        .select('type, points, amount_value, wallet_id')
+        .in('wallet_id', walletIds)
+        .in('type', ['package_charge', 'package_redeem']);
+
+      const balanceByWallet = {};
+      wallets.forEach(w => { balanceByWallet[w.id] = 0; });
+      (pkgTx || []).forEach(tx => {
+        if (tx.type === 'package_charge') balanceByWallet[tx.wallet_id] = (balanceByWallet[tx.wallet_id] || 0) + Number(tx.points || 0);
+        if (tx.type === 'package_redeem') balanceByWallet[tx.wallet_id] = (balanceByWallet[tx.wallet_id] || 0) - Number(tx.amount_value || 0);
+      });
+
+      // الرصيد الحقيقي الحالي (قبل أي تعديل)
+      const currentBalanceFromDB = Object.values(balanceByWallet).reduce((sum, v) => sum + v, 0);
+      const diff = newBalance - currentBalanceFromDB;
+
+      // ✅ إذا كان الرصيد الفعلي مطابقاً للمطلوب → لا حاجة لعمل أي شيء
+      if (Math.abs(diff) < 0.01) {
+        setIsEditPkgModalOpen(false);
+        setIsSavingPkg(false);
+        return;
+      }
+
+      // ✅ اختيار المحفظة الأنسب (الأعلى رصيداً من جانب الباقات)
+      const bestWalletId = wallets.reduce((bestId, w) =>
+        (balanceByWallet[w.id] || 0) > (balanceByWallet[bestId] || 0) ? w.id : bestId
+      , wallets[0].id);
+
       if (diff > 0) {
         await supabase.from('wallet_transactions').insert({
-          wallet_id: walletId, type: 'package_charge',
+          wallet_id: bestWalletId, type: 'package_charge',
           amount_value: diff.toFixed(2), points: diff,
           created_at: new Date().toISOString()
         });
         toast.success(`تمت إضافة ${diff.toFixed(2)} ريال لرصيد الباقات ✅`);
       } else {
+        const absAmount = Math.abs(diff);
+        // ✅ منع الخصم إذا كان الرصيد الفعلي لا يكفي (حماية من السالب)
+        if (absAmount > currentBalanceFromDB + 0.01) {
+          throw new Error(`لا يمكن الخصم — الرصيد الفعلي ${currentBalanceFromDB.toFixed(2)} ر.س فقط`);
+        }
         await supabase.from('wallet_transactions').insert({
-          wallet_id: walletId, type: 'package_redeem',
-          amount_value: Math.abs(diff).toFixed(2), points: 0,
+          wallet_id: bestWalletId, type: 'package_redeem',
+          amount_value: absAmount.toFixed(2), points: 0,
           created_at: new Date().toISOString()
         });
-        toast.success(`تم خصم ${Math.abs(diff).toFixed(2)} ريال من رصيد الباقات`);
+        toast.success(`تم خصم ${absAmount.toFixed(2)} ريال من رصيد الباقات`);
       }
 
       setIsEditPkgModalOpen(false);
@@ -503,68 +538,86 @@ export default function Customers() {
   }, [customersData]);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 pb-20 space-y-6">
+    <div className="w-full pb-20 space-y-6 text-[#4A4A4A]">
 
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start pt-1 gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#4A4A4A] flex items-center gap-2">
-            <Users className="text-[#D9A3AA]" /> سجل ولاء العملاء
+          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight flex items-center gap-2">
+            <Users size={22} className="text-[#D9A3AA]" /> سجل ولاء العملاء
           </h1>
-          <p className="text-[#4A4A4A]/70 text-sm">إدارة متقدمة لبيانات ومحافظ العملاء</p>
+          <p className="text-sm text-[#4A4A4A]/50 mt-0.5">إدارة متقدمة لبيانات ومحافظ العملاء</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <button
             onClick={() => setIsNewCustomerModalOpen(true)}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:shadow-amber-500/25 transition-all"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow hover:shadow-amber-500/30 transition-all"
           >
             <Package size={16} /> شحن باقة / عميل جديد
           </button>
-          <Link to="/app/orders" className="text-sm font-bold text-[#4A4A4A]/70 hover:text-[#4A4A4A] flex items-center gap-1">
-            <ArrowLeft size={16} /> العودة للطلبات
+          <Link to="/app/orders" className="inline-flex items-center gap-1.5 text-sm font-bold text-[#4A4A4A]/60 hover:text-[#4A4A4A] bg-white border border-slate-200 px-3 py-2.5 rounded-xl transition-all hover:shadow-sm">
+            <ArrowLeft size={15} /> الطلبات
           </Link>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm">
-          <div className="text-[#4A4A4A]/70 text-xs font-bold">العملاء</div>
-          <div className="text-2xl font-black text-[#4A4A4A] mt-1">{stats.totalCustomers}</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-[#4A4A4A]/50 text-xs font-bold mb-2">
+            <Users size={13} /> إجمالي العملاء
+          </div>
+          <div className="text-3xl font-black text-[#4A4A4A]">{stats.totalCustomers}</div>
         </div>
-        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm">
-          <div className="text-[#4A4A4A]/70 text-xs font-bold flex items-center gap-1"><Crown size={14} className="text-amber-500" /> كبار العملاء VIP</div>
-          <div className="text-2xl font-black text-[#4A4A4A] mt-1">{stats.vipCustomers}</div>
+        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-amber-600/80 text-xs font-bold mb-2">
+            <Crown size={13} /> كبار العملاء VIP
+          </div>
+          <div className="text-3xl font-black text-amber-600">{stats.vipCustomers}</div>
         </div>
-        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm">
-          <div className="text-[#4A4A4A]/70 text-xs font-bold flex items-center gap-1"><Wallet size={14} className="text-violet-600" /> إجمالي المحافظ (صافي)</div>
-          <div className="text-2xl font-black text-[#4A4A4A] mt-1">
-            {customersData.reduce((sum, c) => sum + (Number(c.netBalance || 0)), 0).toFixed(1)} <span className="text-xs">ر.س</span>
+        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-violet-500/80 text-xs font-bold mb-2">
+            <Wallet size={13} /> صافي المحافظ
+          </div>
+          <div className="text-3xl font-black text-[#4A4A4A]">
+            {customersData.reduce((sum, c) => sum + (Number(c.netBalance || 0)), 0).toFixed(1)}
+            <span className="text-sm font-normal text-[#4A4A4A]/40 mr-1">ر.س</span>
           </div>
         </div>
-        {/* بطاقة رصيد الباقات الكلي */}
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/50 rounded-2xl p-4 shadow-sm">
-          <div className="text-amber-700 text-xs font-bold flex items-center gap-1"><Package size={14} /> إجمالي رصيد الباقات</div>
-          <div className="text-2xl font-black text-amber-700 mt-1">
-            {stats.totalPackageBalance.toFixed(1)} <span className="text-xs font-normal">ر.س</span>
+        <div className="bg-gradient-to-br from-amber-500 to-amber-400 rounded-2xl p-5 shadow-lg shadow-amber-500/20">
+          <div className="flex items-center gap-2 text-white/70 text-xs font-bold mb-2">
+            <Package size={13} /> رصيد الباقات الكلي
           </div>
-          <div className="text-[10px] text-amber-600/70 mt-1">ربح مباشر مشحون مسبقاً</div>
+          <div className="text-3xl font-black text-white">
+            {stats.totalPackageBalance.toFixed(1)}
+            <span className="text-sm font-normal text-white/70 mr-1">ر.س</span>
+          </div>
+          <div className="text-[10px] text-white/60 mt-1">ربح مشحون مسبقاً</div>
         </div>
       </div>
 
       {/* Controls */}
       <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           <div className="relative w-full md:w-80">
-            <Search size={16} className="absolute right-3 top-3 text-[#4A4A4A]/50" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالاسم أو الجوال..." className="w-full border border-[#D9A3AA]/20 rounded-xl px-4 py-2 pr-9 outline-none focus:border-[#D9A3AA]" />
+            <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="بحث بالاسم أو الجوال..."
+              className="w-full border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 pr-9 outline-none focus:border-[#D9A3AA] focus:ring-2 focus:ring-[#D9A3AA]/20 text-sm bg-[#F8F5F2]/40"
+            />
           </div>
-          <button onClick={() => setFilter("all")} className={`px-3 py-2 rounded-xl text-sm font-bold border ${filter === "all" ? "bg-[#4A4A4A] text-white border-[#4A4A4A]" : "bg-white text-[#4A4A4A]/80 border-[#D9A3AA]/20"}`}>الكل</button>
-          <button onClick={() => setFilter("vip")} className={`px-3 py-2 rounded-xl text-sm font-bold border flex items-center gap-1 ${filter === "vip" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-[#4A4A4A]/80 border-[#D9A3AA]/20"}`}><Crown size={14} /> VIP</button>
+          <button onClick={() => setFilter("all")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border transition-all ${filter === "all" ? "bg-[#4A4A4A] text-white border-[#4A4A4A]" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-[#4A4A4A]/30"}`}>
+            الكل
+          </button>
+          <button onClick={() => setFilter("vip")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "vip" ? "bg-amber-500 text-white border-amber-500 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-amber-300"}`}>
+            <Crown size={13} /> VIP
+          </button>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-xs text-[#4A4A4A]/70 font-bold">ترتيب حسب:</span>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none">
+          <span className="text-xs text-[#4A4A4A]/50 font-bold shrink-0">ترتيب حسب:</span>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-[#D9A3AA]/20 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#D9A3AA] bg-[#F8F5F2]/40 flex-1 md:flex-none">
             <option value="netBalance">الرصيد الصافي</option>
             <option value="packageBalance">رصيد الباقات</option>
             <option value="totalRequired">أعلى المبيعات</option>

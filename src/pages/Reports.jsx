@@ -30,7 +30,7 @@ export default function Reports() {
         const { data: paymentsData } = await supabase.from('order_payments').select('*');
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
-        const { data: walletsData } = await supabase.from('wallets').select('points_balance');
+        const { data: walletsData } = await supabase.from('wallets').select('phone, points_balance').order('id', { ascending: true });
         // نجلب شحن الباقات واستخدامها
         const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('*').in('type', ['package_charge', 'package_add', 'package_redeem']);
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
@@ -151,6 +151,13 @@ export default function Reports() {
     });
 
     const monthlyData = Object.values(monthlyMap).sort((a, b) => a.date - b.date);
+
+    // حساب دخل الشهر الحالي والشهر الماضي لشريط النمو
+    const currentMonthKey = new Date().toISOString().substring(0, 7);
+    const lastMonthDate = subMonths(new Date(), 1);
+    const lastMonthKey = lastMonthDate.toISOString().substring(0, 7);
+    const currentMonthRevenue = monthlyMap[currentMonthKey]?.revenue || 0;
+    const lastMonthRevenue = monthlyMap[lastMonthKey]?.revenue || 0;
     const expenseData = Object.entries(expenseCategoryMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
     
     const profitabilityData = Object.values(productsStats).sort((a, b) => b.profit - a.profit);
@@ -159,35 +166,70 @@ export default function Reports() {
     const threeMonthsAgo = subMonths(new Date(), 3);
     const churnedList = Object.values(customerLastOrder).filter(c => isBefore(c.date, threeMonthsAgo)).slice(0, 5);
 
-    // حساب أرصدة المحافظ
-    totalPointsBalance = wallets.reduce((acc, wallet) => acc + (Number(wallet.points_balance) || 0), 0);
+    // حساب أرصدة المحافظ — نُطبّع رقم الهاتف ونُزيل التكرار (نفس منطق صفحة العملاء)
+    const normalizePhone = (raw) => {
+      if (!raw) return '';
+      let p = String(raw).replace(/\D/g, '');
+      if (p.startsWith('966')) p = p.slice(3);
+      if (p.startsWith('0')) p = p.slice(1);
+      return p;
+    };
+    const walletByPhone = {};
+    wallets.forEach(w => {
+      const key = normalizePhone(w.phone);
+      if (!key) return; // تجاهل المحافظ بدون رقم هاتف (الإدارية)
+      walletByPhone[key] = Number(w.points_balance || 0); // الأحدث (id أعلى) يفوز
+    });
+    totalPointsBalance = Object.values(walletByPhone).reduce((acc, v) => acc + v, 0);
     
     // إجمالي مبالغ الباقات المشحونة (المبلغ المدفوع الفعلي = ربح مباشر فوري)
     const packagesCharged = packageTransactions
       .filter(pt => pt.type === 'package_charge' || pt.type === 'package_add')
       .reduce((acc, pt) => acc + Number(pt.amount_value || 0), 0);
-    
-    // إجمالي ما تم استخدامه من رصيد الباقات في الطلبات
+
+    // إجمالي الرصيد المُضاف للعملاء (يشمل المكافأة) — يُستخدم لحساب الرصيد المتبقي الصحيح
+    const packagesCreditsAdded = packageTransactions
+      .filter(pt => pt.type === 'package_charge' || pt.type === 'package_add')
+      .reduce((acc, pt) => acc + Number(pt.points || 0), 0);
+
+    // إجمالي ما تم استخدامه من رصيد الباقات في الطلبات أو التعديلات
     const packagesRedeemed = packageTransactions
       .filter(pt => pt.type === 'package_redeem')
       .reduce((acc, pt) => acc + Number(pt.amount_value || 0), 0);
 
-    // الرصيد المتبقي في باقات العملاء (ما لم يُستخدم بعد)
-    const packagesTotal = Math.max(0, packagesCharged - packagesRedeemed);
+    // الرصيد المتبقي في باقات العملاء:
+    // نستخدم points (الرصيد الكامل مع المكافأة) للمقارنة مع ما تم استخدامه
+    const packagesTotal = Math.max(0, packagesCreditsAdded - packagesRedeemed);
     
     const totalWalletBalance = totalPointsBalance;
-    
-    // صافي الربح = (الدفعات النقدية + ما شُحن للباقات فعلاً) - المصروفات
-    // الخصم من الباقات لا يُعاد طرحه من الربح لأنه دُفع مسبقاً
-    const netProfit = (totalRevenue + packagesCharged) - totalExpenses;
-    const profitMargin = (totalRevenue + packagesCharged) > 0 
-      ? ((netProfit / (totalRevenue + packagesCharged)) * 100).toFixed(1) 
+
+    // ✅ نحسب صافي الربح من عمود deposit في الطلبات (متسق مع Dashboard)
+    // جدول order_payments يحتوي دفعات مكررة مما يُشوّه الأرقام
+    const totalDepositReceived = orders.reduce((sum, o) => sum + Number(o.deposit || 0), 0);
+
+    // ✅ الديون المستحقة للطلبات المُسلَّمة فعلاً (نفس منطق Dashboard)
+    const outstandingDeliveredDebts = orders
+      .filter(o => o.status === 'delivered' &&
+        (Number(o.total_amount||0) - Number(o.deposit||0) - Number(o.wallet_used||0)) > 0.5)
+      .reduce((sum, o) => sum + (Number(o.total_amount||0) - Number(o.deposit||0) - Number(o.wallet_used||0)), 0);
+
+    // صافي الربح الفعلي = ما قُبض فعلاً + ما شُحن للباقات - المصروفات
+    const netProfit = (totalDepositReceived + packagesCharged) - totalExpenses;
+
+    // الربح الكامل مع الديون = صافي الربح + الديون المستحقة (لو تم تحصيلها)
+    const netProfitWithDebts = netProfit + outstandingDeliveredDebts;
+
+    const profitMargin = (totalDepositReceived + packagesCharged) > 0
+      ? ((netProfit / (totalDepositReceived + packagesCharged)) * 100).toFixed(1)
       : 0;
-    const avgOrderValue = orders.length > 0 ? (totalRevenue / orders.length).toFixed(0) : 0;
+    const avgOrderValue = orders.length > 0
+      ? (orders.reduce((sum, o) => sum + Number(o.total_amount||0), 0) / orders.length).toFixed(0)
+      : 0;
 
     return {
       monthlyData, expenseData, profitabilityData, geoData, churnedList,
-      totals: { totalRevenue, totalExpenses, totalWalletBalance, totalPointsBalance, packagesTotal, packagesCharged, packagesRedeemed, netProfit, profitMargin, avgOrderValue, totalOrders: orders.length }
+      currentMonthRevenue, lastMonthRevenue,
+      totals: { totalRevenue, totalExpenses, totalWalletBalance, totalPointsBalance, packagesTotal, packagesCharged, packagesCreditsAdded, packagesRedeemed, netProfit, netProfitWithDebts, outstandingDeliveredDebts, profitMargin, avgOrderValue, totalOrders: orders.length }
     };
   }, [payments, expenses, orders, wallets, packageTransactions, settings]);
 
@@ -254,65 +296,111 @@ export default function Reports() {
     { name: 'الألبومات', value: customerInsights.totalAlbums }
   ].filter(d => d.value > 0), [customerInsights]);
 
-  if (loading) return <div className="p-20 text-center"><div className="w-8 h-8 border-4 border-[#D9A3AA]/15 border-t-[#D9A3AA] rounded-full animate-spin mx-auto"></div><p className="mt-4">جاري تحليل البيانات...</p></div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32">
+      <div className="w-10 h-10 border-4 border-[#D9A3AA]/20 border-t-[#D9A3AA] rounded-full animate-spin mb-4"></div>
+      <p className="text-sm text-[#4A4A4A]/50 font-medium">جاري تحليل البيانات...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-8 pb-20 max-w-7xl mx-auto">
-      
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+    <div className="w-full space-y-8 pb-20 text-[#4A4A4A]">
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start gap-4 pt-1">
         <div>
-          <h1 className="text-3xl font-bold text-[#4A4A4A]">التقرير المالي الذكي</h1>
-          <p className="text-[#4A4A4A]/60 mt-1">نظرة شاملة على الأداء المالي مع تحليلات ذكية.</p>
+          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">التقرير المالي الذكي</h1>
+          <p className="text-sm text-[#4A4A4A]/50 mt-0.5">نظرة شاملة على الأداء المالي مع تحليلات ذكية</p>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20">
-          <Download size={18} /> طباعة التقرير
+        <button
+          onClick={() => window.print()}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#4A4A4A] text-white rounded-xl hover:bg-[#333] transition-colors shadow-lg shadow-[#4A4A4A]/20 text-sm font-bold shrink-0"
+        >
+          <Download size={16} /> طباعة التقرير
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">إجمالي الدخل</p><h3 className="text-2xl font-black text-[#4A4A4A]/70">{analytics.totals.totalRevenue.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
-            <div className="p-3 bg-[#D9A3AA]/15 text-[#D9A3AA] rounded-xl"><TrendingUp size={20}/></div>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">إجمالي المصروفات</p><h3 className="text-2xl font-black text-red-500">{analytics.totals.totalExpenses.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl"><TrendingDown size={20}/></div>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد الباقات (متبقي)</p>
-              <h3 className="text-2xl font-black text-amber-600">{(analytics.totals.packagesTotal || 0).toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3>
-              <div className="flex gap-2 mt-1">
-                <span className="text-[10px] text-emerald-600">↑ مشحون: {(analytics.totals.packagesCharged || 0).toFixed(0)}</span>
-                <span className="text-[10px] text-red-500">↓ مُستخدم: {(analytics.totals.packagesRedeemed || 0).toFixed(0)}</span>
-              </div>
+      {/* KPI Cards — 3 across on md, 6 on lg */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+
+        {/* إجمالي الدخل */}
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm col-span-1">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wide">إجمالي الدخل</p>
+            <div className="w-8 h-8 bg-[#D9A3AA]/15 text-[#D9A3AA] rounded-xl flex items-center justify-center shrink-0">
+              <TrendingUp size={15}/>
             </div>
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Wallet size={20}/></div>
+          </div>
+          <h3 className="text-2xl font-black text-[#4A4A4A]">{analytics.totals.totalRevenue.toLocaleString()}</h3>
+          <span className="text-xs text-[#4A4A4A]/40">ريال</span>
+        </div>
+
+        {/* إجمالي المصروفات */}
+        <div className="bg-white p-5 rounded-2xl border border-red-100 shadow-sm col-span-1">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wide">المصروفات</p>
+            <div className="w-8 h-8 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0">
+              <TrendingDown size={15}/>
+            </div>
+          </div>
+          <h3 className="text-2xl font-black text-red-500">{analytics.totals.totalExpenses.toLocaleString()}</h3>
+          <span className="text-xs text-[#4A4A4A]/40">ريال</span>
+        </div>
+
+        {/* رصيد الباقات */}
+        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm col-span-1">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs text-amber-600/70 font-bold uppercase tracking-wide">رصيد الباقات</p>
+            <div className="w-8 h-8 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
+              <Wallet size={15}/>
+            </div>
+          </div>
+          <h3 className="text-2xl font-black text-amber-600">{(analytics.totals.packagesTotal || 0).toLocaleString()}</h3>
+          <div className="flex gap-2 mt-1">
+            <span className="text-[10px] text-emerald-600 font-medium">↑ {(analytics.totals.packagesCreditsAdded || 0).toFixed(0)}</span>
+            <span className="text-[10px] text-red-400 font-medium">↓ {(analytics.totals.packagesRedeemed || 0).toFixed(0)}</span>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">رصيد النقاط (خصم)</p><h3 className="text-2xl font-black text-orange-600">{analytics.totals.totalPointsBalance.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
-            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><Wallet size={20}/></div>
+
+        {/* رصيد النقاط */}
+        <div className="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm col-span-1">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wide">رصيد النقاط</p>
+            <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center shrink-0">
+              <Wallet size={15}/>
+            </div>
+          </div>
+          <h3 className="text-2xl font-black text-orange-500">{analytics.totals.totalPointsBalance.toLocaleString()}</h3>
+          <span className="text-xs text-[#4A4A4A]/40">ريال (خصم مستقبلي)</span>
+        </div>
+
+        {/* الربح الكامل مع الديون */}
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-5 rounded-2xl shadow-lg shadow-emerald-500/20 col-span-1">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs text-white/70 font-bold uppercase tracking-wide">الربح الكامل</p>
+            <div className="w-8 h-8 bg-white/20 text-white rounded-xl flex items-center justify-center shrink-0">
+              <Activity size={15}/>
+            </div>
+          </div>
+          <h3 className={`text-2xl font-black text-white`}>{analytics.totals.netProfitWithDebts.toLocaleString()}</h3>
+          <div className="flex gap-2 mt-1">
+            <span className="text-[10px] text-white/70">✓ {analytics.totals.netProfit.toFixed(0)}</span>
+            <span className="text-[10px] text-white/50">+ ديون {analytics.totals.outstandingDeliveredDebts.toFixed(0)}</span>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">الربح الكامل مع الديون</p><h3 className={`text-2xl font-black ${analytics.totals.netProfit >= 0 ? 'text-emerald-900' : 'text-red-600'}`}>{analytics.totals.netProfit.toLocaleString()} <span className="text-sm font-normal">ر.س</span></h3></div>
-            <div className="p-3 bg-[#D9A3AA]/15 text-[#D9A3AA] rounded-xl"><Activity size={20}/></div>
+
+        {/* هامش الربح */}
+        <div className="bg-white p-5 rounded-2xl border border-[#C5A059]/20 shadow-sm col-span-1">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wide">هامش الربح</p>
+            <div className="w-8 h-8 bg-[#C5A059]/10 text-[#C5A059] rounded-xl flex items-center justify-center shrink-0">
+              <PieIcon size={15}/>
+            </div>
           </div>
+          <h3 className="text-2xl font-black text-[#C5A059]">{analytics.totals.profitMargin}%</h3>
+          <span className="text-xs text-[#4A4A4A]/40">من إجمالي الإيرادات</span>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div><p className="text-sm text-[#4A4A4A]/60 font-medium mb-1">هامش الربح</p><h3 className="text-2xl font-black text-[#C5A059]">{analytics.totals.profitMargin}%</h3></div>
-            <div className="p-3 bg-[#C5A059]/15 text-[#C5A059] rounded-xl"><PieIcon size={20}/></div>
-          </div>
-        </div>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -573,7 +661,7 @@ export default function Reports() {
                     </td>
                     <td className="px-6 py-4 text-emerald-600">{row.revenue.toLocaleString()}</td>
                     <td className="px-6 py-4 text-red-500">{row.expenses.toLocaleString()}</td>
-                    <td className="px-6 py-4 font-bold">{(row.revenue - row.expenses).toLocaleString()}</td>
+                    <td className={`px-6 py-4 font-bold ${(row.profit || 0) >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{(row.profit || 0).toLocaleString()}</td>
                     <td className="px-6 py-4">{row.orders}</td>
                   </tr>
 
