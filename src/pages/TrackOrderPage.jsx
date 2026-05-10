@@ -83,6 +83,7 @@ async function fetchStats(digits) {
 export default function TrackOrderPage() {
   const [mode, setMode]       = useState('order'); // 'order' | 'phone'
   const [input, setInput]     = useState('');
+  const [pin, setPin]         = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
 
@@ -120,23 +121,38 @@ export default function TrackOrderPage() {
     }
   };
 
-  /* ── بحث بـ الجوال ── */
+  /* ── بحث بـ الجوال + كود الاشتراك ── */
   const searchByPhone = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
     const digits = normalizePhone(input.trim());
     if (!digits) { setError('رقم الجوال غير صحيح'); return; }
+    if (!pin.trim() || pin.trim().length !== 4) { setError('رقم الاشتراك يجب أن يكون 4 أرقام'); return; }
 
     setLoading(true); setError(null); setCustomerOrders([]); setCustomerStats(null);
     try {
+      // 1. تحقق من رقم الاشتراك أولاً
       const forms = allPhoneForms(digits);
+      const { data: wallets } = await supabase
+        .from('wallets')
+        .select('subscription_code')
+        .in('phone', forms)
+        .not('subscription_code', 'is', null);
+
+      const matched = (wallets || []).find(w => w.subscription_code === pin.trim());
+      if (!matched) {
+        setError('رقم الجوال أو رقم الاشتراك غير صحيح. تواصل معنا للحصول على رقم اشتراكك.');
+        setLoading(false); return;
+      }
+
+      // 2. جلب الطلبات بعد التحقق
       const { data: orders, error: oErr } = await supabase
         .from('orders').select('*').in('phone', forms)
         .order('created_at', { ascending: false });
 
       if (oErr) throw oErr;
       if (!orders || orders.length === 0) {
-        setError('لا توجد طلبات مسجلة بهذا الرقم. تأكد من الرقم أو تواصل معنا.');
+        setError('لا توجد طلبات مسجلة بهذا الرقم.');
         setLoading(false); return;
       }
 
@@ -153,7 +169,7 @@ export default function TrackOrderPage() {
 
   /* ── مسح النتائج عند تبديل الوضع ── */
   const switchMode = (m) => {
-    setMode(m); setInput(''); setError(null);
+    setMode(m); setInput(''); setPin(''); setError(null);
     setOrder(null); setStats(null);
     setCustomerOrders([]); setCustomerStats(null);
   };
@@ -208,23 +224,60 @@ export default function TrackOrderPage() {
         </div>
 
         {/* حقل البحث */}
-        <form onSubmit={handleSubmit} className="relative mb-6">
-          <input
-            type={mode === 'phone' ? 'tel' : 'text'}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={mode === 'order' ? 'مثال: bf0177...' : '05xxxxxxxx'}
-            className="w-full h-14 pl-14 pr-6 rounded-2xl border-2 border-[#D9A3AA]/20 bg-white shadow-sm focus:border-[#D9A3AA] focus:ring-4 focus:ring-[#D9A3AA]/10 outline-none text-lg text-center font-mono placeholder:font-sans transition-all"
-            dir="ltr"
-          />
-          <button
-            type="submit" disabled={loading}
-            className="absolute left-2 top-2 bottom-2 aspect-square bg-[#D9A3AA] text-white rounded-xl flex items-center justify-center hover:bg-[#C5A059] transition-colors disabled:opacity-70 shadow-md"
-          >
-            {loading
-              ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-              : mode === 'phone' ? <Phone size={22}/> : <Search size={22}/>}
-          </button>
+        <form onSubmit={handleSubmit} className="space-y-3 mb-6">
+          {/* حقل الجوال أو رقم الطلب */}
+          <div className="relative">
+            <input
+              type={mode === 'phone' ? 'tel' : 'text'}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={mode === 'order' ? 'مثال: bf0177...' : '05xxxxxxxx — رقم الجوال'}
+              className="w-full h-14 pl-14 pr-5 rounded-2xl border-2 border-[#D9A3AA]/20 bg-white shadow-sm focus:border-[#D9A3AA] focus:ring-4 focus:ring-[#D9A3AA]/10 outline-none text-lg text-center font-mono placeholder:font-sans transition-all"
+              dir="ltr"
+            />
+            {mode !== 'phone' && (
+              <button
+                type="submit" disabled={loading}
+                className="absolute left-2 top-2 bottom-2 aspect-square bg-[#D9A3AA] text-white rounded-xl flex items-center justify-center hover:bg-[#C5A059] transition-colors disabled:opacity-70 shadow-md"
+              >
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Search size={22}/>}
+              </button>
+            )}
+            {mode === 'phone' && (
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#D9A3AA]">
+                <Phone size={20}/>
+              </div>
+            )}
+          </div>
+
+          {/* حقل رقم الاشتراك (وضع الجوال فقط) */}
+          {mode === 'phone' && (
+            <div className="relative">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="رقم الاشتراك (4 أرقام)"
+                className="w-full h-14 pl-14 pr-5 rounded-2xl border-2 border-[#D9A3AA]/20 bg-white shadow-sm focus:border-[#D9A3AA] focus:ring-4 focus:ring-[#D9A3AA]/10 outline-none text-2xl text-center font-black tracking-[0.5em] placeholder:text-base placeholder:tracking-normal placeholder:font-sans transition-all"
+                dir="ltr"
+              />
+              <button
+                type="submit" disabled={loading}
+                className="absolute left-2 top-2 bottom-2 aspect-square bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] text-white rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-70 shadow-md"
+              >
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Search size={22}/>}
+              </button>
+            </div>
+          )}
+
+          {/* تلميح */}
+          {mode === 'phone' && (
+            <p className="text-center text-[11px] text-[#4A4A4A]/40">
+              رقم الاشتراك يُرسل لك من فريق لحظة فن
+            </p>
+          )}
         </form>
 
         {/* خطأ */}

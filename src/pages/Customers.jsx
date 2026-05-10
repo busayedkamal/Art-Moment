@@ -44,6 +44,8 @@ export default function Customers() {
   const [editPkgAmount, setEditPkgAmount] = useState('');
   const [isSavingPkg, setIsSavingPkg] = useState(false);
 
+  const [generatingCodeFor, setGeneratingCodeFor] = useState(null); // customer id
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -69,8 +71,16 @@ export default function Customers() {
       // 2) المحافظ (رصيد النقاط)
       const { data: walletsData, error: walletsError } = await supabase
         .from('wallets')
-        .select('id, phone, points_balance, address, notes');
+        .select('id, phone, points_balance, address, notes, subscription_code');
       if (walletsError) throw walletsError;
+
+      // توليد كود اشتراك للمحافظ التي ليس لها كود (مرة واحدة تلقائياً)
+      const walletsNeedCode = (walletsData || []).filter(w => w.phone && !w.subscription_code);
+      for (const w of walletsNeedCode) {
+        const code = String(Math.floor(1000 + Math.random() * 9000));
+        await supabase.from('wallets').update({ subscription_code: code }).eq('id', w.id);
+        w.subscription_code = code;
+      }
 
       // 3) حركات الباقات لكل محفظة (package_charge = الشحن، package_redeem = الاستخدام)
       const { data: packageTxData } = await supabase
@@ -100,7 +110,8 @@ export default function Customers() {
           balance: Number(w.points_balance || 0),
           packageBalance: Math.max(0, packageBalanceByWalletId[w.id] || 0),
           address: w.address || '',
-          notes: w.notes || ''
+          notes: w.notes || '',
+          subscriptionCode: w.subscription_code || null
         };
         if (key) walletMap.set(key, entry);
         if (keyWithZero !== key) walletMap.set(keyWithZero, entry);
@@ -187,6 +198,8 @@ export default function Customers() {
         const packageBalance = walletData ? walletData.packageBalance : 0;
         const address = walletData ? walletData.address : '';
         const notes = walletData ? walletData.notes : '';
+        const subscriptionCode = walletData ? walletData.subscriptionCode : null;
+        const walletId = walletData ? walletData.id : null;
         const debt = Number(c.debt || 0);
         const netBalance = walletBalance - debt;
 
@@ -196,6 +209,8 @@ export default function Customers() {
           packageBalance,
           address,
           notes,
+          subscriptionCode,
+          walletId,
           debt,
           netBalance,
           totalOrders: c.orderIds.size,
@@ -515,6 +530,36 @@ export default function Customers() {
     }
   };
 
+  // توليد رقم اشتراك للعميل الذي ليس لديه محفظة أو كود
+  const handleGenerateCode = async (customer, e) => {
+    e.stopPropagation();
+    if (!customer.cleanPhone) { toast.error('لا يوجد رقم هاتف'); return; }
+    setGeneratingCodeFor(customer.id);
+    try {
+      const code = String(Math.floor(1000 + Math.random() * 9000));
+      const withZero = customer.cleanPhone.length === 9 ? '0' + customer.cleanPhone : customer.cleanPhone;
+
+      if (customer.walletId) {
+        // محفظة موجودة → فقط أضف الكود
+        await supabase.from('wallets').update({ subscription_code: code }).eq('id', customer.walletId);
+      } else {
+        // لا توجد محفظة → أنشئ واحدة بالكود
+        await supabase.from('wallets').insert([{
+          phone: withZero,
+          points_balance: 0,
+          subscription_code: code,
+          notes: `اسم العميل: ${customer.name}`
+        }]);
+      }
+      toast.success(`✅ رقم الاشتراك: ${code} — تم الحفظ`);
+      fetchData();
+    } catch (err) {
+      toast.error('فشل في توليد الكود');
+    } finally {
+      setGeneratingCodeFor(null);
+    }
+  };
+
   const filtered = useMemo(() => {
     let data = customersData;
     if (filter === "vip") data = data.filter(c => c.isVip);
@@ -630,9 +675,9 @@ export default function Customers() {
             <tr className="text-sm font-bold text-[#4A4A4A]/70">
               <th className="px-6 py-4">بيانات العميل</th>
               <th className="px-6 py-4 hidden sm:table-cell">رقم الجوال</th>
+              <th className="px-6 py-4 text-center">رقم الاشتراك</th>
               <th className="px-6 py-4 text-center">رصيد الباقات</th>
               <th className="px-6 py-4 text-center">رصيد النقاط</th>
-              <th className="px-6 py-4 text-center">الرصيد الصافي</th>
               <th className="px-6 py-4 text-left">إجراءات</th>
             </tr>
           </thead>
@@ -674,6 +719,29 @@ export default function Customers() {
                         {customer.phone || "-"}
                       </td>
 
+                      {/* عمود رقم الاشتراك */}
+                      <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        {customer.subscriptionCode ? (
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(customer.subscriptionCode); toast.success(`تم نسخ الكود: ${customer.subscriptionCode}`); }}
+                            className="inline-flex items-center gap-1.5 bg-[#4A4A4A] text-white px-3 py-1.5 rounded-xl text-sm font-black tracking-widest hover:bg-[#333] transition-colors shadow-sm font-mono"
+                            title="انقر لنسخ رقم الاشتراك"
+                          >
+                            {customer.subscriptionCode}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => handleGenerateCode(customer, e)}
+                            disabled={generatingCodeFor === customer.id}
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/50 hover:text-[#D9A3AA] border border-dashed border-[#D9A3AA]/30 hover:border-[#D9A3AA] px-2 py-1 rounded-lg transition-all"
+                            title="توليد رقم اشتراك"
+                          >
+                            {generatingCodeFor === customer.id ? <Loader2 size={11} className="animate-spin"/> : <Sparkles size={11}/>}
+                            توليد
+                          </button>
+                        )}
+                      </td>
+
                       {/* عمود رصيد الباقات */}
                       <td className="px-6 py-4 text-center">
                         {customer.packageBalance > 0.5 ? (
@@ -694,20 +762,6 @@ export default function Customers() {
                           </span>
                         ) : (
                           <span className="text-[#4A4A4A]/30 text-xs font-bold">—</span>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-4 text-center">
-                        {customer.netBalance > 0.5 ? (
-                          <span className="bg-violet-50 border border-violet-100 text-violet-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px]">
-                            {customer.netBalance.toFixed(1)} ر.س
-                          </span>
-                        ) : customer.netBalance < -0.5 ? (
-                          <span className="bg-red-50 border border-red-100 text-red-600 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px] dir-ltr">
-                            {Math.abs(customer.netBalance).toFixed(1)}- ر.س
-                          </span>
-                        ) : (
-                          <span className="text-[#4A4A4A]/40 text-xs font-bold">0.00</span>
                         )}
                       </td>
 
