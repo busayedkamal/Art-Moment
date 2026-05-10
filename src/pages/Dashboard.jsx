@@ -326,7 +326,7 @@ export default function Dashboard() {
                       <p className="text-[10px] text-[#4A4A4A]/40 mt-0.5 font-mono">#{order.id.slice(0, 6)}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-red-600 font-black text-sm">{remaining.toFixed(0)} ر.س</span>
+                      <span className="text-red-600 font-black text-sm">{remaining.toFixed(0)} ﷼</span>
                       {order.phone && (
                         <a href={`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer"
                           className="w-7 h-7 bg-white rounded-lg border border-red-100 flex items-center justify-center text-[#D9A3AA] hover:text-emerald-600 hover:border-emerald-200 transition-colors opacity-0 group-hover:opacity-100"
@@ -350,7 +350,7 @@ export default function Dashboard() {
             <div className="px-5 py-3 bg-red-50/50 border-t border-red-100/60 flex justify-between items-center">
               <span className="text-xs text-[#4A4A4A]/50 font-medium">المستحقات المسلّمة</span>
               <span className="font-black text-red-600 text-sm">
-                {unpaidDelivered.reduce((sum, o) => sum + (o.total_amount - (o.deposit||0) - Number(o.wallet_used||0)), 0).toFixed(2)} ر.س
+                {unpaidDelivered.reduce((sum, o) => sum + (o.total_amount - (o.deposit||0) - Number(o.wallet_used||0)), 0).toFixed(2)} ﷼
               </span>
             </div>
           )}
@@ -410,7 +410,7 @@ export default function Dashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="font-black text-[#4A4A4A]">{order.total_amount}</span>
-                      <span className="text-[11px] text-[#4A4A4A]/40 mr-1">ر.س</span>
+                      <span className="text-[11px] text-[#4A4A4A]/40 mr-1">﷼</span>
                     </td>
                     <td className="px-6 py-4 text-left">
                       <Link to={`/app/orders/${order.id}`}

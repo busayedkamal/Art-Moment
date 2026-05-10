@@ -320,7 +320,7 @@ export default function Settings() {
                 value={newCoupon.discount_type}
                 onChange={e => setNewCoupon({...newCoupon, discount_type: e.target.value})}
               >
-                <option value="fixed">مبلغ ثابت (ر.س)</option>
+                <option value="fixed">مبلغ ثابت (﷼)</option>
                 <option value="percent">نسبة مئوية (%)</option>
               </select>
             </div>
@@ -356,7 +356,7 @@ export default function Settings() {
                     </div>
                     <div className="text-sm text-[#4A4A4A]/60 mt-1 flex items-center gap-1">
                       خصم: <span className="font-bold text-[#4A4A4A]/80">{coupon.discount_amount}</span> 
-                      {coupon.discount_type === 'percent' ? <Percent size={12}/> : <span className="text-xs">ر.س</span>}
+                      {coupon.discount_type === 'percent' ? <Percent size={12}/> : <span className="text-xs">﷼</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

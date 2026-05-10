@@ -420,7 +420,7 @@ export default function TrackOrderPage() {
                     </div>
                     <div>
                       <span className="block text-[10px] text-[#4A4A4A]/60 mb-1">سعر الألبوم</span>
-                      <span className="font-bold text-[#4A4A4A]">{order.album_price} ر.س</span>
+                      <span className="font-bold text-[#4A4A4A]">{order.album_price} ﷼</span>
                     </div>
                   </div>
                 )}
@@ -434,12 +434,12 @@ export default function TrackOrderPage() {
                     <div className="bg-white rounded-xl p-3 border border-amber-200 text-center shadow-sm">
                       <span className="text-[10px] text-amber-600/70 block mb-1 font-bold">رصيد الباقات</span>
                       <span className="font-black text-amber-600 text-xl">{stats.packages.toFixed(0)}</span>
-                      <span className="text-[10px] text-amber-500/60 block">ر.س</span>
+                      <span className="text-[10px] text-amber-500/60 block">﷼</span>
                     </div>
                     <div className="bg-white rounded-xl p-3 border border-violet-200 text-center shadow-sm">
                       <span className="text-[10px] text-violet-600/70 block mb-1 font-bold">رصيد النقاط</span>
                       <span className="font-black text-violet-600 text-xl">{stats.points.toFixed(0)}</span>
-                      <span className="text-[10px] text-violet-500/60 block">ر.س</span>
+                      <span className="text-[10px] text-violet-500/60 block">﷼</span>
                     </div>
                   </div>
                 </div>
@@ -477,20 +477,20 @@ export default function TrackOrderPage() {
                 <div className="border-t border-[#D9A3AA]/20 my-4"></div>
                 <div className="flex justify-between items-center mb-4 px-1">
                   <span className="font-bold">الإجمالي</span>
-                  <span className="font-black text-xl">{Number(order.total_amount || 0).toFixed(2)} ر.س</span>
+                  <span className="font-black text-xl">{Number(order.total_amount || 0).toFixed(2)} ﷼</span>
                 </div>
 
                 {payments.length > 0 && (
                   <div className="mb-4 bg-[#F8F5F2] p-3 rounded-xl border border-[#D9A3AA]/10">
                     <p className="text-[10px] text-[#4A4A4A]/50 font-bold mb-2 flex justify-between">
                       <span>سجل الدفعات</span>
-                      <span className="text-[#D9A3AA]">المدفوع: {Number(order.deposit || 0).toFixed(2)} ر.س</span>
+                      <span className="text-[#D9A3AA]">المدفوع: {Number(order.deposit || 0).toFixed(2)} ﷼</span>
                     </p>
                     <div className="space-y-1.5">
                       {payments.map(p => (
                         <div key={p.id} className="flex justify-between text-xs border-b border-white last:border-0 pb-1.5 last:pb-0 pt-1 first:pt-0">
                           <span className="flex items-center gap-1"><Calendar size={10} className="text-[#C5A059]"/> {formatDate(p.payment_date)}</span>
-                          <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">+{Number(p.amount).toFixed(2)} ر.س</span>
+                          <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">+{Number(p.amount).toFixed(2)} ﷼</span>
                         </div>
                       ))}
                     </div>
@@ -499,7 +499,7 @@ export default function TrackOrderPage() {
 
                 <div className={`p-4 rounded-xl flex justify-between items-center ${remaining(order) > 0.5 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-[#D9A3AA] text-white shadow-lg shadow-[#D9A3AA]/30'}`}>
                   <span className="text-xs font-bold flex items-center gap-2"><Wallet size={15}/> {remaining(order) > 0.5 ? 'المبلغ المتبقي' : 'حالة الدفع'}</span>
-                  <span className="text-xl font-black">{remaining(order) > 0.5 ? `${remaining(order).toFixed(2)} ر.س` : 'خالص ✅'}</span>
+                  <span className="text-xl font-black">{remaining(order) > 0.5 ? `${remaining(order).toFixed(2)} ﷼` : 'خالص ✅'}</span>
                 </div>
               </div>
 
@@ -556,7 +556,7 @@ export default function TrackOrderPage() {
                 {customerStats.debt > 0.5 && (
                   <div className="mt-3 bg-red-500/20 border border-red-400/20 rounded-2xl p-3 flex justify-between items-center">
                     <span className="text-xs font-bold text-red-300">مديونية متبقية</span>
-                    <span className="font-black text-red-300">{customerStats.debt.toFixed(2)} ر.س</span>
+                    <span className="font-black text-red-300">{customerStats.debt.toFixed(2)} ﷼</span>
                   </div>
                 )}
               </div>
@@ -587,7 +587,7 @@ export default function TrackOrderPage() {
                   <span className="font-black text-xl text-[#C5A059]">
                     {customerOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0).toFixed(0)}
                   </span>
-                  <span className="text-[10px] text-[#4A4A4A]/40">ر.س</span>
+                  <span className="text-[10px] text-[#4A4A4A]/40">﷼</span>
                 </div>
               </div>
             </div>
@@ -638,9 +638,9 @@ export default function TrackOrderPage() {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="font-black text-[#4A4A4A]">{Number(o.total_amount || 0).toFixed(0)} <span className="text-xs font-normal text-[#4A4A4A]/40">ر.س</span></span>
+                        <span className="font-black text-[#4A4A4A]">{Number(o.total_amount || 0).toFixed(0)} <span className="text-xs font-normal text-[#4A4A4A]/40">﷼</span></span>
                         {rem > 0.5
-                          ? <span className="text-[11px] text-red-500 font-bold">متبقي {rem.toFixed(0)} ر.س</span>
+                          ? <span className="text-[11px] text-red-500 font-bold">متبقي {rem.toFixed(0)} ﷼</span>
                           : <span className="text-[11px] text-emerald-500 font-bold">✓ مدفوع</span>
                         }
                         {isOpen ? <ChevronUp size={14} className="text-[#D9A3AA] mt-1"/> : <ChevronDown size={14} className="text-[#4A4A4A]/30 mt-1"/>}
@@ -686,7 +686,7 @@ export default function TrackOrderPage() {
                           {o.album_qty > 0 && (
                             <div className="bg-white rounded-xl p-2.5 border border-[#C5A059]/20 text-center col-span-2">
                               <span className="text-[#C5A059]/70 block">ألبوم × {o.album_qty}</span>
-                              <span className="font-black text-base text-[#C5A059]">{o.album_price} ر.س</span>
+                              <span className="font-black text-base text-[#C5A059]">{o.album_price} ﷼</span>
                             </div>
                           )}
                         </div>
@@ -700,7 +700,7 @@ export default function TrackOrderPage() {
                         {/* المبلغ المتبقي */}
                         <div className={`p-3 rounded-xl flex justify-between items-center text-sm font-bold ${rem > 0.5 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
                           <span>{rem > 0.5 ? '💳 المتبقي للسداد' : '✅ الطلب مدفوع بالكامل'}</span>
-                          {rem > 0.5 && <span>{rem.toFixed(2)} ر.س</span>}
+                          {rem > 0.5 && <span>{rem.toFixed(2)} ﷼</span>}
                         </div>
                       </div>
                     )}

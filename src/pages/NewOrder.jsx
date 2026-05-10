@@ -592,12 +592,12 @@ export default function NewOrder() {
                         <span className="text-xs font-bold text-amber-800 flex items-center gap-1">
                           <Package size={11} /> خصم من رصيد الباقات
                         </span>
-                        <span className="text-[10px] text-amber-600/70 block">المتاح: {packageBalance.toFixed(2)} ر.س</span>
+                        <span className="text-[10px] text-amber-600/70 block">المتاح: {packageBalance.toFixed(2)} ﷼</span>
                       </div>
                     </div>
                     {usePackage && (
                       <span className="text-amber-700 font-black text-sm bg-amber-100 px-2 py-0.5 rounded-lg">
-                        -{packageDiscountValue.toFixed(2)} ر.س
+                        -{packageDiscountValue.toFixed(2)} ﷼
                       </span>
                     )}
                   </button>
@@ -633,12 +633,12 @@ export default function NewOrder() {
                         <span className="text-xs font-bold text-violet-800 flex items-center gap-1">
                           <Coins size={11} /> خصم من رصيد النقاط
                         </span>
-                        <span className="text-[10px] text-violet-600/70 block">المتاح: {Number(wallet.points_balance).toFixed(2)} ر.س</span>
+                        <span className="text-[10px] text-violet-600/70 block">المتاح: {Number(wallet.points_balance).toFixed(2)} ﷼</span>
                       </div>
                     </div>
                     {usePoints && (
                       <span className="text-violet-700 font-black text-sm bg-violet-100 px-2 py-0.5 rounded-lg">
-                        -{pointsDiscountValue.toFixed(2)} ر.س
+                        -{pointsDiscountValue.toFixed(2)} ﷼
                       </span>
                     )}
                   </button>
@@ -669,7 +669,7 @@ export default function NewOrder() {
               )}
 
               <div className="pt-2 border-t border-[#D9A3AA]/20 flex justify-between text-lg font-bold text-[#4A4A4A]">
-                <span>الإجمالي</span><span>{total.toFixed(2)} ر.س</span>
+                <span>الإجمالي</span><span>{total.toFixed(2)} ﷼</span>
               </div>
             </div>
 

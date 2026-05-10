@@ -219,7 +219,7 @@ export default function Orders() {
                         </div>
                         <div className="flex flex-col items-end shrink-0">
                           <span className="text-sm font-black text-[#4A4A4A]">
-                            {order.total_amount} <span className="text-[10px] font-normal text-[#4A4A4A]/40">ر.س</span>
+                            {order.total_amount} <span className="text-[10px] font-normal text-[#4A4A4A]/40">﷼</span>
                           </span>
                           {!isPaid ? (
                             <span className="text-[10px] text-red-500 font-bold">متبقي {remaining.toFixed(1)}</span>
@@ -285,10 +285,10 @@ export default function Orders() {
                         <td className="px-6 py-5">
                           <div className="flex flex-col">
                             <span className="text-sm font-black text-[#4A4A4A]">
-                              {order.total_amount} <span className="text-[10px] font-normal text-[#4A4A4A]/40">ر.س</span>
+                              {order.total_amount} <span className="text-[10px] font-normal text-[#4A4A4A]/40">﷼</span>
                             </span>
                             {!isPaid ? (
-                              <span className="text-[11px] text-red-500 font-bold mt-0.5">متبقي: {remaining.toFixed(2)} ر.س</span>
+                              <span className="text-[11px] text-red-500 font-bold mt-0.5">متبقي: {remaining.toFixed(2)} ﷼</span>
                             ) : (
                               <span className="text-[11px] text-emerald-500 font-bold mt-0.5">✓ مدفوع بالكامل</span>
                             )}
