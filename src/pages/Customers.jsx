@@ -1,10 +1,9 @@
 // src/pages/Customers.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 import {
-  Search, Users, Wallet, ShoppingBag, Sparkles, Crown, ArrowLeft,
+  Search, Users, Wallet, ShoppingBag, Sparkles, Crown,
   Phone, Calendar, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
   Edit2, Check, Package
 } from "lucide-react";
@@ -555,9 +554,6 @@ export default function Customers() {
           >
             <Package size={16} /> شحن باقة / عميل جديد
           </button>
-          <Link to="/app/orders" className="inline-flex items-center gap-1.5 text-sm font-bold text-[#4A4A4A]/60 hover:text-[#4A4A4A] bg-white border border-slate-200 px-3 py-2.5 rounded-xl transition-all hover:shadow-sm">
-            <ArrowLeft size={15} /> الطلبات
-          </Link>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Plus, Search, Filter, ChevronRight, Loader2, FileText,
-  ArrowUpDown, ArrowUp, ArrowDown, Wallet
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
@@ -128,9 +128,6 @@ export default function Orders() {
             <FileText size={16} className="text-[#4A4A4A]/55"/>
             <span>{filteredOrders.length} طلب</span>
           </div>
-          <Link to="/app/customers" className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-amber-500/25 transition-all">
-            <Wallet size={17} /> شحن باقة / عملاء
-          </Link>
           <Link to="/app/orders/new" className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-[#D9A3AA]/25 transition-all">
             <Plus size={17} /> طلب جديد
           </Link>
