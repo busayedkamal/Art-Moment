@@ -615,7 +615,8 @@ export default function Reports() {
       {/* ✅ جدول التفاصيل الشهرية الديناميكي ✅ */}
       <div className="bg-white rounded-2xl border border-[#D9A3AA]/15 overflow-hidden">
         <div className="p-4 border-b border-[#D9A3AA]/10 bg-[#F8F5F2]/50"><h3 className="font-bold text-[#4A4A4A]/80 text-sm">التفاصيل الشهرية</h3></div>
-        <table className="w-full text-right text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-right text-sm min-w-[500px]">
           <thead className="bg-[#F8F5F2] text-[#4A4A4A]/60">
             <tr>
               <th className="px-6 py-4">الشهر</th>
@@ -719,6 +720,7 @@ export default function Reports() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
     </div>

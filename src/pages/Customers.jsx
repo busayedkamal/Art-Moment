@@ -668,13 +668,146 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl shadow-sm overflow-hidden">
+      {/* ══ بطاقات الجوال (أقل من md) ══ */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="text-center py-12 text-[#4A4A4A]/50">جاري التحميل...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-[#4A4A4A]/50">لا يوجد عملاء</div>
+        ) : filtered.map((customer) => {
+          const isExpanded = expandedCustomerId === customer.id;
+          return (
+            <div key={customer.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isExpanded ? 'border-[#D9A3AA]/40' : 'border-[#D9A3AA]/20'}`}>
+              {/* صف رئيسي */}
+              <div
+                onClick={() => handleExpandRow(customer)}
+                className="flex items-center gap-3 p-4 cursor-pointer active:bg-[#F8F5F2]"
+              >
+                {/* الأفاتار */}
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${isExpanded ? 'bg-[#D9A3AA] text-white' : 'bg-[#D9A3AA]/10 text-[#D9A3AA]'}`}>
+                  {(customer.name || "؟").slice(0, 1)}
+                </div>
+
+                {/* الاسم + الجوال */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-[#4A4A4A] text-sm leading-tight">{customer.name}</span>
+                    {customer.isVip && <Crown size={12} className="text-amber-500 shrink-0"/>}
+                  </div>
+                  <div className="text-xs text-[#4A4A4A]/40 font-mono mt-0.5" dir="ltr">{customer.phone || "—"}</div>
+                  {/* الأرصدة */}
+                  <div className="flex gap-2 mt-1.5 flex-wrap">
+                    {customer.subscriptionCode && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(customer.subscriptionCode); toast.success(`كود: ${customer.subscriptionCode}`); }}
+                        className="text-[10px] font-black bg-[#4A4A4A] text-white px-2 py-0.5 rounded-lg tracking-widest font-mono"
+                      >{customer.subscriptionCode}</button>
+                    )}
+                    {customer.packageBalance > 0.5 && (
+                      <span className="text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-lg">
+                        <Package size={9} className="inline ml-0.5"/> {customer.packageBalance.toFixed(1)} ر.س
+                      </span>
+                    )}
+                    {customer.walletBalance > 0.5 && (
+                      <span className="text-[10px] font-bold bg-violet-50 text-violet-600 border border-violet-100 px-2 py-0.5 rounded-lg">
+                        {customer.walletBalance.toFixed(1)} ر.س
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* أزرار الإجراء السريعة */}
+                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {customer.phone && (
+                    <a href={`https://api.whatsapp.com/send?phone=966${String(customer.phone).startsWith("0") ? String(customer.phone).slice(1) : customer.phone}`}
+                      target="_blank" rel="noreferrer"
+                      className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                      <Phone size={15}/>
+                    </a>
+                  )}
+                  {customer.cleanPhone && (
+                    <button onClick={(e) => openBonusModal(customer, e)}
+                      className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
+                      <Gift size={15}/>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleExpandRow(customer)}
+                    className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-[#D9A3AA]/15 text-[#D9A3AA] rotate-180' : 'text-[#4A4A4A]/40'}`}>
+                    <ChevronDown size={16}/>
+                  </button>
+                </div>
+              </div>
+
+              {/* التفاصيل الموسّعة — جوال */}
+              {isExpanded && (
+                <div className="border-t border-[#D9A3AA]/15 bg-[#F8F5F2]/50 p-4 space-y-4 animate-in slide-in-from-top-1 fade-in duration-200">
+                  {/* رقم الاشتراك إذا لم يكن موجوداً */}
+                  {!customer.subscriptionCode && (
+                    <button onClick={(e) => handleGenerateCode(customer, e)}
+                      disabled={generatingCodeFor === customer.id}
+                      className="w-full flex items-center justify-center gap-2 text-xs font-bold text-[#D9A3AA] border border-dashed border-[#D9A3AA]/40 rounded-xl py-2 hover:bg-[#D9A3AA]/5">
+                      {generatingCodeFor === customer.id ? <Loader2 size={13} className="animate-spin"/> : <Sparkles size={13}/>}
+                      توليد رقم اشتراك
+                    </button>
+                  )}
+                  {/* ملخص النشاط */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
+                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">المشتريات</span>
+                      <span className="font-black text-[#4A4A4A] text-sm">{Number(customer.totalRequired || 0).toFixed(0)}</span>
+                      <span className="text-[9px] text-[#4A4A4A]/40 block">ر.س</span>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
+                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">الطلبات</span>
+                      <span className="font-black text-[#4A4A4A] text-sm">{customer.orderIds.size}</span>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 text-center border border-red-100">
+                      <span className="text-[9px] text-red-400 block mb-1">مديونية</span>
+                      <span className={`font-black text-sm ${customer.debt > 0.5 ? 'text-red-500' : 'text-[#4A4A4A]/30'}`}>{customer.debt > 0.5 ? customer.debt.toFixed(1) : '—'}</span>
+                    </div>
+                  </div>
+                  {/* تعديل الباقة */}
+                  {customer.packageBalance > 0 && (
+                    <button onClick={(e) => openEditPkgModal(customer, e)}
+                      className="w-full flex items-center justify-center gap-2 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl py-2.5 text-xs font-bold">
+                      <Package size={13}/> تعديل رصيد الباقة ({customer.packageBalance.toFixed(1)} ر.س)
+                    </button>
+                  )}
+                  {/* العنوان والملاحظات */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/60 mb-1"><MapPin size={10}/> العنوان</label>
+                      <input type="text" placeholder="العنوان / موقع التوصيل" value={customerDetails.address}
+                        onChange={(e) => setCustomerDetails({ ...customerDetails, address: e.target.value })}
+                        className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"/>
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/60 mb-1"><StickyNote size={10}/> ملاحظات</label>
+                      <textarea placeholder="ملاحظات خاصة بالعميل..." value={customerDetails.notes}
+                        onChange={(e) => setCustomerDetails({ ...customerDetails, notes: e.target.value })}
+                        className="w-full h-16 resize-none bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"/>
+                    </div>
+                    <button onClick={() => handleSaveCustomerDetails(customer)} disabled={isSavingDetails}
+                      className="w-full bg-[#4A4A4A] text-white text-sm font-bold py-2.5 rounded-xl flex items-center justify-center gap-2">
+                      {isSavingDetails ? <Loader2 size={14} className="animate-spin"/> : <Save size={14}/>} حفظ
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ══ جدول الديسكتوب (md فأعلى) ══ */}
+      <div className="hidden md:block bg-white border border-[#D9A3AA]/20 rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="min-w-full text-right">
           <thead className="bg-[#F8F5F2] border-b border-[#D9A3AA]/20">
             <tr className="text-sm font-bold text-[#4A4A4A]/70">
               <th className="px-6 py-4">بيانات العميل</th>
-              <th className="px-6 py-4 hidden sm:table-cell">رقم الجوال</th>
+              <th className="px-6 py-4">رقم الجوال</th>
               <th className="px-6 py-4 text-center">رقم الاشتراك</th>
               <th className="px-6 py-4 text-center">رصيد الباقات</th>
               <th className="px-6 py-4 text-center">رصيد النقاط</th>
@@ -710,12 +843,11 @@ export default function Customers() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-[#4A4A4A]/50 sm:hidden mt-0.5" dir="ltr">{customer.phone || "-"}</div>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 font-mono text-sm text-[#4A4A4A]/80 dir-ltr text-right hidden sm:table-cell">
+                      <td className="px-6 py-4 font-mono text-sm text-[#4A4A4A]/80 dir-ltr text-right">
                         {customer.phone || "-"}
                       </td>
 
@@ -734,7 +866,6 @@ export default function Customers() {
                             onClick={(e) => handleGenerateCode(customer, e)}
                             disabled={generatingCodeFor === customer.id}
                             className="inline-flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/50 hover:text-[#D9A3AA] border border-dashed border-[#D9A3AA]/30 hover:border-[#D9A3AA] px-2 py-1 rounded-lg transition-all"
-                            title="توليد رقم اشتراك"
                           >
                             {generatingCodeFor === customer.id ? <Loader2 size={11} className="animate-spin"/> : <Sparkles size={11}/>}
                             توليد
@@ -773,26 +904,19 @@ export default function Customers() {
                               target="_blank" rel="noreferrer"
                               onClick={(e) => e.stopPropagation()}
                               className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100"
-                              title="مراسلة واتساب"
                             >
                               <Phone size={18} />
                             </a>
                           )}
                           {customer.cleanPhone && (
-                            <button
-                              onClick={(e) => openBonusModal(customer, e)}
-                              className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-colors border border-amber-100"
-                              title="شحن باقة للعميل"
-                            >
+                            <button onClick={(e) => openBonusModal(customer, e)}
+                              className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-colors border border-amber-100">
                               <Gift size={18} />
                             </button>
                           )}
                           {customer.packageBalance > 0 && (
-                            <button
-                              onClick={(e) => openEditPkgModal(customer, e)}
-                              className="p-2 rounded-xl bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors border border-orange-100"
-                              title="تعديل رصيد الباقات"
-                            >
+                            <button onClick={(e) => openEditPkgModal(customer, e)}
+                              className="p-2 rounded-xl bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors border border-orange-100">
                               <Package size={18} />
                             </button>
                           )}
@@ -940,6 +1064,7 @@ export default function Customers() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Modal إضافة رصيد */}
