@@ -295,57 +295,101 @@ export default function TrackOrderPage() {
           <div className="bg-white rounded-[2rem] border border-[#D9A3AA]/20 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             {/* رأس الحالة */}
-            <div className="bg-[#4A4A4A] text-white p-6 text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/20 rounded-full blur-2xl"></div>
-              <div className="relative z-10">
-                <p className="text-[#C5A059] text-xs mb-1 font-bold uppercase tracking-wider">حالة الطلب</p>
-                <h2 className="text-2xl font-black">
-                  {order.status === 'new'       && 'جديد / قيد المراجعة'}
-                  {order.status === 'printing'  && 'جاري الطباعة والتجهيز'}
-                  {order.status === 'done'      && 'جاهز للاستلام 🎉'}
-                  {order.status === 'delivered' && 'تم التسليم بنجاح ✅'}
-                </h2>
-              </div>
-            </div>
-
-            <div className="p-6">
-
-              {/* شريط التقدم */}
-              <div className="relative flex justify-between mb-8 px-2">
-                <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#F8F5F2] -translate-y-1/2 z-0"></div>
-                <div
-                  className="absolute top-1/2 right-0 h-1 bg-[#50C878] -translate-y-1/2 z-0 transition-all duration-1000"
-                  style={{ left: `${100 - ((currentStep - 1) / 3 * 100)}%` }}
-                ></div>
-                {stepsDef.map((step) => (
-                  <div key={step.id} className="relative z-10 flex flex-col items-center gap-1">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${currentStep >= step.id ? 'bg-[#50C878] border-[#50C878] text-white shadow-md scale-110' : 'bg-white border-[#F8F5F2] text-[#4A4A4A]/30'}`}>
-                      <step.icon size={14}/>
-                    </div>
-                    <span className={`text-[10px] font-bold ${currentStep >= step.id ? 'text-[#D9A3AA]' : 'text-[#4A4A4A]/30'}`}>{step.label}</span>
-                    {formatDate(order[`date_${step.key}`]) && (
-                      <span className="text-[9px] text-[#4A4A4A]/60 font-mono bg-[#F8F5F2] px-1.5 py-0.5 rounded border border-[#D9A3AA]/10 mt-1 min-w-[60px] text-center">
-                        {formatDate(order[`date_${step.key}`])}
-                      </span>
-                    )}
+            {(() => {
+              const cfg = {
+                new:       { bg: 'from-slate-600 to-slate-700',   icon: '📋', text: 'جديد — قيد المراجعة',      sub: 'سيبدأ العمل على طلبك قريباً' },
+                printing:  { bg: 'from-amber-500 to-amber-600',   icon: '🖨️', text: 'جاري الطباعة والتجهيز',   sub: 'طلبك في مرحلة الإنتاج الآن' },
+                done:      { bg: 'from-[#D9A3AA] to-[#C5A059]',   icon: '🎉', text: 'جاهز للاستلام!',           sub: 'تفضل بزيارتنا في أقرب وقت' },
+                delivered: { bg: 'from-emerald-500 to-emerald-600', icon: '✅', text: 'تم التسليم بنجاح',       sub: 'شكراً لثقتك في لحظة فن' },
+              }[order.status] || { bg: 'from-slate-600 to-slate-700', icon: '📋', text: order.status, sub: '' };
+              return (
+                <div className={`bg-gradient-to-br ${cfg.bg} text-white px-6 py-7 text-center relative overflow-hidden`}>
+                  <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full blur-2xl"></div>
+                  <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-black/10 rounded-full blur-xl"></div>
+                  <div className="relative z-10">
+                    <div className="text-4xl mb-3 leading-none">{cfg.icon}</div>
+                    <h2 className="text-xl font-black tracking-tight mb-1">{cfg.text}</h2>
+                    <p className="text-white/70 text-xs font-medium">{cfg.sub}</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              );
+            })()}
+
+            <div className="p-5">
 
               {/* بيانات أساسية */}
-              <div className="bg-[#F8F5F2] rounded-2xl p-5 border border-[#D9A3AA]/10 space-y-3 mb-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[#4A4A4A]/60">رقم الطلب</span>
-                  <span className="font-mono font-bold">#{order.id.slice(0, 8)}</span>
+              <div className="flex items-center justify-between bg-[#F8F5F2] rounded-2xl px-5 py-4 mb-5 border border-[#D9A3AA]/10">
+                <div>
+                  <p className="text-[10px] text-[#4A4A4A]/50 font-bold uppercase tracking-wide mb-0.5">العميل</p>
+                  <p className="font-black text-[#4A4A4A] text-base">{order.customer_name}</p>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[#4A4A4A]/60">العميل</span>
-                  <span className="font-bold">{order.customer_name}</span>
+                <div className="text-left">
+                  <p className="text-[10px] text-[#4A4A4A]/50 font-bold uppercase tracking-wide mb-0.5">رقم الطلب</p>
+                  <p className="font-mono font-black text-[#4A4A4A]/70 text-sm">#{order.id.slice(0, 8)}</p>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[#4A4A4A]/60">تاريخ الطلب</span>
-                  <span className="font-bold">{formatDate(order.created_at)}</span>
-                </div>
+              </div>
+
+              {/* تايم لاين عمودي */}
+              <div className="space-y-0 mb-5">
+                {stepsDef.map((step, idx) => {
+                  // الخطوة الأخيرة (تسليم) تُعدّ مكتملة عند الوصول إليها، لا عند تجاوزها
+                  const isLastStep = step.id === stepsDef.length;
+                  const done      = currentStep > step.id || (isLastStep && currentStep === step.id);
+                  const active    = currentStep === step.id && !done;
+                  const pending   = currentStep < step.id;
+                  const isLast    = idx === stepsDef.length - 1;
+                  const stepDate  = order[`date_${step.key}`];
+                  const dateStr   = stepDate
+                    ? new Date(stepDate).toLocaleDateString('ar-SA', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
+                    : null;
+
+                  return (
+                    <div key={step.id} className="flex gap-4">
+                      {/* خط + أيقونة */}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                          done   ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' :
+                          active ? 'bg-white border-2 border-[#D9A3AA] text-[#D9A3AA] shadow-md shadow-[#D9A3AA]/20' :
+                                   'bg-[#F8F5F2] text-[#4A4A4A]/25 border border-slate-200'
+                        }`}>
+                          {done
+                            ? <CheckCircle size={20}/>
+                            : <step.icon size={18}/>
+                          }
+                        </div>
+                        {!isLast && (
+                          <div className={`w-0.5 flex-1 my-1 min-h-[20px] rounded-full transition-colors duration-500 ${done ? 'bg-emerald-300' : 'bg-slate-200'}`}/>
+                        )}
+                      </div>
+
+                      {/* النص */}
+                      <div className={`pb-5 flex-1 flex items-start justify-between ${isLast ? 'pb-1' : ''}`}>
+                        <div>
+                          <p className={`font-black text-sm leading-tight ${
+                            done   ? 'text-emerald-600' :
+                            active ? 'text-[#4A4A4A]' :
+                                     'text-[#4A4A4A]/35'
+                          }`}>{step.label}</p>
+                          {active && !done && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#D9A3AA] bg-[#D9A3AA]/10 px-2 py-0.5 rounded-full mt-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#D9A3AA] animate-pulse inline-block"></span>
+                              الحالة الحالية
+                            </span>
+                          )}
+                        </div>
+                        {dateStr ? (
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-xl shrink-0 ${
+                            done   ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                            active ? 'bg-[#D9A3AA]/10 text-[#D9A3AA] border border-[#D9A3AA]/20' :
+                                     'text-[#4A4A4A]/30'
+                          }`}>{dateStr}</span>
+                        ) : (
+                          <span className="text-[10px] text-[#4A4A4A]/20 font-medium">لم يتم بعد</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {order.notes && (
