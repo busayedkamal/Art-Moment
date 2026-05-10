@@ -7,6 +7,7 @@ import {
   Phone, Calendar, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
   Edit2, Check, Package
 } from "lucide-react";
+import RiyalSign from "../components/RiyalSign";
 
 export default function Customers() {
   const [customersData, setCustomersData] = useState([]);
@@ -510,7 +511,7 @@ export default function Customers() {
         const absAmount = Math.abs(diff);
         // ✅ منع الخصم إذا كان الرصيد الفعلي لا يكفي (حماية من السالب)
         if (absAmount > currentBalanceFromDB + 0.01) {
-          throw new Error(`لا يمكن الخصم — الرصيد الفعلي ${currentBalanceFromDB.toFixed(2)} ﷼ فقط`);
+          throw new Error(`لا يمكن الخصم — الرصيد الفعلي ${currentBalanceFromDB.toFixed(2)} ريال فقط`);
         }
         await supabase.from('wallet_transactions').insert({
           wallet_id: bestWalletId, type: 'package_redeem',
@@ -623,7 +624,7 @@ export default function Customers() {
           </div>
           <div className="text-3xl font-black text-[#4A4A4A]">
             {customersData.reduce((sum, c) => sum + (Number(c.netBalance || 0)), 0).toFixed(1)}
-            <span className="text-sm font-normal text-[#4A4A4A]/40 mr-1">﷼</span>
+            <span className="text-sm font-normal text-[#4A4A4A]/40 mr-1"><RiyalSign /></span>
           </div>
         </div>
         <div className="bg-gradient-to-br from-amber-500 to-amber-400 rounded-2xl p-5 shadow-lg shadow-amber-500/20">
@@ -632,7 +633,7 @@ export default function Customers() {
           </div>
           <div className="text-3xl font-black text-white">
             {stats.totalPackageBalance.toFixed(1)}
-            <span className="text-sm font-normal text-white/70 mr-1">﷼</span>
+            <span className="text-sm font-normal text-white/70 mr-1"><RiyalSign light /></span>
           </div>
           <div className="text-[10px] text-white/60 mt-1">ربح مشحون مسبقاً</div>
         </div>
@@ -706,12 +707,12 @@ export default function Customers() {
                     )}
                     {customer.packageBalance > 0.5 && (
                       <span className="text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-lg">
-                        <Package size={9} className="inline ml-0.5"/> {customer.packageBalance.toFixed(1)} ﷼
+                        <Package size={9} className="inline ml-0.5"/> {customer.packageBalance.toFixed(1)} <RiyalSign size="0.8em" />
                       </span>
                     )}
                     {customer.walletBalance > 0.5 && (
                       <span className="text-[10px] font-bold bg-violet-50 text-violet-600 border border-violet-100 px-2 py-0.5 rounded-lg">
-                        {customer.walletBalance.toFixed(1)} ﷼
+                        {customer.walletBalance.toFixed(1)} <RiyalSign size="0.8em" />
                       </span>
                     )}
                   </div>
@@ -757,7 +758,7 @@ export default function Customers() {
                     <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
                       <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">المشتريات</span>
                       <span className="font-black text-[#4A4A4A] text-sm">{Number(customer.totalRequired || 0).toFixed(0)}</span>
-                      <span className="text-[9px] text-[#4A4A4A]/40 block">﷼</span>
+                      <span className="text-[9px] text-[#4A4A4A]/40 block"><RiyalSign size="0.8em" /></span>
                     </div>
                     <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
                       <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">الطلبات</span>
@@ -772,7 +773,7 @@ export default function Customers() {
                   {customer.packageBalance > 0 && (
                     <button onClick={(e) => openEditPkgModal(customer, e)}
                       className="w-full flex items-center justify-center gap-2 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl py-2.5 text-xs font-bold">
-                      <Package size={13}/> تعديل رصيد الباقة ({customer.packageBalance.toFixed(1)} ﷼)
+                      <Package size={13}/> تعديل رصيد الباقة ({customer.packageBalance.toFixed(1)} <RiyalSign size="0.8em" />)
                     </button>
                   )}
                   {/* العنوان والملاحظات */}
@@ -879,7 +880,7 @@ export default function Customers() {
                         {customer.packageBalance > 0.5 ? (
                           <span className="bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1 min-w-[80px]">
                             <Package size={11} />
-                            {customer.packageBalance.toFixed(1)} ﷼
+                            {customer.packageBalance.toFixed(1)} <RiyalSign />
                           </span>
                         ) : (
                           <span className="text-[#4A4A4A]/30 text-xs font-bold">—</span>
@@ -890,7 +891,7 @@ export default function Customers() {
                       <td className="px-6 py-4 text-center">
                         {customer.walletBalance > 0.5 ? (
                           <span className="bg-violet-50 border border-violet-100 text-violet-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px]">
-                            {customer.walletBalance.toFixed(1)} ﷼
+                            {customer.walletBalance.toFixed(1)} <RiyalSign />
                           </span>
                         ) : (
                           <span className="text-[#4A4A4A]/30 text-xs font-bold">—</span>
@@ -942,7 +943,7 @@ export default function Customers() {
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
                                   <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">إجمالي المشتريات</span>
-                                  <span className="font-black text-[#4A4A4A] text-lg">{Number(customer.totalRequired || 0).toFixed(0)} <span className="text-xs font-normal">﷼</span></span>
+                                  <span className="font-black text-[#4A4A4A] text-lg">{Number(customer.totalRequired || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
                                 </div>
                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
                                   <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">عدد الطلبات</span>
@@ -1008,7 +1009,7 @@ export default function Customers() {
                                       <div className="text-xs text-amber-600/70">يُخصم من الطلبات القادمة</div>
                                     </div>
                                   </div>
-                                  <span className="text-lg font-black text-amber-700">{Number(customer.packageBalance).toFixed(1)} <span className="text-xs font-normal">﷼</span></span>
+                                  <span className="text-lg font-black text-amber-700">{Number(customer.packageBalance).toFixed(1)} <RiyalSign size="0.65em" /></span>
                                 </div>
                               )}
                             </div>
@@ -1090,7 +1091,7 @@ export default function Customers() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (﷼):</label>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (<RiyalSign />):</label>
                 <input
                   type="number" min="1" required
                   value={paidAmount}
@@ -1160,7 +1161,7 @@ export default function Customers() {
                   placeholder="05xxxxxxxx" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (﷼):</label>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (<RiyalSign />):</label>
                 <input type="number" min="1" required value={newCustomerPaid} onChange={e => setNewCustomerPaid(e.target.value)}
                   className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 font-bold text-lg text-amber-600" />
                 {newCustomerPaid && Number(newCustomerPaid) > 0 && (
@@ -1197,10 +1198,10 @@ export default function Customers() {
             <form onSubmit={handleEditPkgBalance} className="p-5 space-y-4">
               <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex justify-between items-center">
                 <span className="text-sm text-orange-700">الرصيد الحالي</span>
-                <span className="font-black text-orange-600">{Number(editPkgCustomer.packageBalance || 0).toFixed(2)} ﷼</span>
+                <span className="font-black text-orange-600">{Number(editPkgCustomer.packageBalance || 0).toFixed(2)} <RiyalSign /></span>
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">الرصيد الجديد (﷼):</label>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">الرصيد الجديد (<RiyalSign />):</label>
                 <input type="number" min="0" step="0.01" required value={editPkgAmount} onChange={e => setEditPkgAmount(e.target.value)}
                   className="w-full border border-orange-200 rounded-xl px-4 py-3 outline-none focus:border-orange-400 font-bold text-lg text-orange-600 text-center" />
               </div>

@@ -9,6 +9,7 @@ import {
   MessageCircle, X, Tag, MapPin, Receipt, StickyNote, Plus, Wallet, Gift, Package
 } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
+import RiyalSign from '../components/RiyalSign';
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -1273,12 +1274,12 @@ export default function OrderDetails() {
                         <span className="text-xs font-bold text-orange-300 flex items-center gap-1">
                           <Package size={11} /> خصم من رصيد الباقات
                         </span>
-                        <span className="text-[10px] text-orange-300/60 block">المتاح: {customerPackageBalance.toFixed(2)} ﷼</span>
+                        <span className="text-[10px] text-orange-300/60 block">المتاح: {customerPackageBalance.toFixed(2)} <RiyalSign light /></span>
                       </div>
                     </div>
                     {discountSource === 'package' && Number(packageDiscountInput) > 0 && (
                       <span className="text-orange-300 font-black text-sm bg-orange-500/20 px-2 py-0.5 rounded-lg">
-                        -{Number(packageDiscountInput).toFixed(2)} ﷼
+                        -{Number(packageDiscountInput).toFixed(2)} <RiyalSign light />
                       </span>
                     )}
                   </button>
@@ -1317,12 +1318,12 @@ export default function OrderDetails() {
                         <span className="text-xs font-bold text-violet-300 flex items-center gap-1">
                           <Wallet size={11} /> خصم من رصيد النقاط
                         </span>
-                        <span className="text-[10px] text-violet-300/60 block">المتاح: {customerPointsBalance.toFixed(2)} ﷼</span>
+                        <span className="text-[10px] text-violet-300/60 block">المتاح: {customerPointsBalance.toFixed(2)} <RiyalSign light /></span>
                       </div>
                     </div>
                     {discountSource === 'wallet' && Number(pointsDiscountInput) > 0 && (
                       <span className="text-violet-300 font-black text-sm bg-violet-500/20 px-2 py-0.5 rounded-lg">
-                        -{Number(pointsDiscountInput).toFixed(2)} ﷼
+                        -{Number(pointsDiscountInput).toFixed(2)} <RiyalSign light />
                       </span>
                     )}
                   </button>
@@ -1353,13 +1354,13 @@ export default function OrderDetails() {
                 {/* ✅ تم إضافة الإجمالي قبل الخصم لتوضيح الحسبة */}
                 <div className="flex justify-between text-white/60 text-xs mb-1">
                   <span>الإجمالي (مع التوصيل)</span>
-                  <span className="line-through">{(Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2)} ﷼</span>
+                  <span className="line-through">{(Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2)} <RiyalSign light /></span>
                 </div>
 
                 <div className="flex justify-between items-center mb-5 px-1">
                   <span className="font-bold text-white">الإجمالي النهائي</span>
                   <span className="font-black text-xl text-white">
-                    {Number(order.total_amount || 0).toFixed(2)} ﷼
+                    {Number(order.total_amount || 0).toFixed(2)} <RiyalSign light />
                   </span>
                 </div>
 
@@ -1588,7 +1589,7 @@ export default function OrderDetails() {
                 })()}
                 <div className="flex justify-between font-black text-lg pt-1">
                   <span>الإجمالي</span>
-                  <span>{Number(order.total_amount || 0).toFixed(2)} ﷼</span>
+                  <span>{Number(order.total_amount || 0).toFixed(2)} <RiyalSign /></span>
                 </div>
                 <div className="flex justify-between text-xs pt-1 text-[#4A4A4A]/70">
                   <span>المدفوع</span>

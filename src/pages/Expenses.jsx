@@ -2,10 +2,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { 
-  TrendingDown, Wallet, Plus, Trash2, 
+import {
+  TrendingDown, Wallet, Plus, Trash2,
   FileText, Calendar, Edit2, Check, X, Filter, ArrowUpDown, PieChart
 } from 'lucide-react';
+import RiyalSign from '../components/RiyalSign';
 
 export default function Expenses() {
   const [loading, setLoading] = useState(true);
@@ -207,7 +208,7 @@ export default function Expenses() {
             <span className="text-xs font-bold bg-red-200 text-red-800 px-2 py-1 rounded-lg">طوال الوقت</span>
           </div>
           <p className="text-red-900/70 text-sm mb-1 font-bold">إجمالي المصروفات التراكمي</p>
-          <h3 className="text-3xl font-black text-red-600">{stats.total.toLocaleString()} <span className="text-sm font-medium opacity-70">﷼</span></h3>
+          <h3 className="text-3xl font-black text-red-600">{stats.total.toLocaleString()} <RiyalSign size="0.7em" /></h3>
         </div>
 
         {/* 2. مصروفات الشهر الحالي */}
@@ -217,7 +218,7 @@ export default function Expenses() {
             <span className="text-xs font-bold bg-[#F8F5F2] text-[#4A4A4A] px-2 py-1 rounded-lg">الشهر الحالي</span>
           </div>
           <p className="text-[#4A4A4A]/70 text-sm mb-1 font-bold">ما تم صرفه هذا الشهر</p>
-          <h3 className="text-3xl font-black text-[#4A4A4A]">{stats.currentMonth.toLocaleString()} <span className="text-sm font-medium opacity-50">﷼</span></h3>
+          <h3 className="text-3xl font-black text-[#4A4A4A]">{stats.currentMonth.toLocaleString()} <RiyalSign size="0.7em" /></h3>
         </div>
 
         {/* 3. أعلى بند مكلف */}
@@ -229,7 +230,7 @@ export default function Expenses() {
           </div>
           <p className="text-white/70 text-sm mb-1 font-bold">أكثر بند يستنزف الميزانية</p>
           <h3 className="text-xl font-black text-white relative z-10 truncate" title={stats.highestTitle}>{stats.highestTitle}</h3>
-          <p className="text-[#D9A3AA] font-bold text-sm mt-1">{stats.highestAmount.toLocaleString()} ﷼</p>
+          <p className="text-[#D9A3AA] font-bold text-sm mt-1">{stats.highestAmount.toLocaleString()} <RiyalSign /></p>
         </div>
       </div>
 
@@ -268,7 +269,7 @@ export default function Expenses() {
                 </datalist>
               </div>
               <div>
-                <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">المبلغ (﷼)</label>
+                <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">المبلغ (<RiyalSign />)</label>
                 <input 
                   type="number" 
                   placeholder="0.00" 

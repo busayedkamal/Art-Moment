@@ -10,6 +10,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, Legend 
 } from 'recharts';
 import { format, isValid, subMonths, isBefore } from 'date-fns';
+import RiyalSign from '../components/RiyalSign';
 import { arSA } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 
@@ -459,13 +460,13 @@ export default function Reports() {
               <div className="p-3 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/10">
                 <p className="text-[10px] text-[#4A4A4A]/60 mb-1">متوسط قيمة الطلب (AOV)</p>
                 <p className="text-lg font-bold text-[#4A4A4A]/80">
-                  {analytics.totals.avgOrderValue} <span className="text-xs font-normal">﷼</span>
+                  {analytics.totals.avgOrderValue} <RiyalSign size="0.65em" />
                 </p>
               </div>
               <div className="p-3 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/10">
                 <p className="text-[10px] text-[#4A4A4A]/60 mb-1">صافي الربح لكل طلب</p>
                 <p className={`text-lg font-bold ${analytics.totals.netProfit > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                  {Math.round(analytics.totals.netProfit / (analytics.totals.totalOrders || 1))} <span className="text-xs font-normal">﷼</span>
+                  {Math.round(analytics.totals.netProfit / (analytics.totals.totalOrders || 1))} <RiyalSign size="0.65em" />
                 </p>
               </div>
             </div>
@@ -557,14 +558,14 @@ export default function Reports() {
                 <div>
                   <div className="flex justify-between text-xs mb-2">
                     <span className="text-[#4A4A4A]/70 font-bold">تخطي مبيعات الشهر الماضي</span>
-                    <span className="font-bold text-[#C5A059]">{target.toLocaleString(undefined, {maximumFractionDigits: 0})} ﷼</span>
+                    <span className="font-bold text-[#C5A059]">{target.toLocaleString(undefined, {maximumFractionDigits: 0})} <RiyalSign /></span>
                   </div>
                   <div className="w-full bg-[#F8F5F2] rounded-full h-3 mb-2 overflow-hidden border border-[#D9A3AA]/10 relative">
                     <div className="bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                   </div>
                   <p className="text-[10px] text-[#4A4A4A]/60 text-center">
                     {remaining > 0 
-                      ? `باقي ${remaining.toLocaleString(undefined, {maximumFractionDigits: 0})} ﷼ لتحطيم الرقم القياسي 💪` 
+                      ? <span>باقي {remaining.toLocaleString(undefined, {maximumFractionDigits: 0})} <RiyalSign /> لتحطيم الرقم القياسي 💪</span>
                       : '🎉 بطل! لقد حققت هدف النمو بنجاح!'}
                   </p>
                 </div>
@@ -581,7 +582,7 @@ export default function Reports() {
                   
                   <div className="mt-3 pt-3 border-t border-amber-200/50 flex justify-between items-center text-xs font-bold text-amber-800">
                     <span>اقترح عليهم ألبوماً واكسب:</span>
-                    <span className="bg-amber-200 px-2 py-1 rounded-md text-amber-900">+{potentialRevenue} ﷼</span>
+                    <span className="bg-amber-200 px-2 py-1 rounded-md text-amber-900">+{potentialRevenue} <RiyalSign /></span>
                   </div>
                 </div>
               </div>
@@ -682,7 +683,7 @@ export default function Reports() {
                                   .map(([name, amount], idx) => (
                                   <li key={idx} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
                                     <span className="text-[#4A4A4A]/80 font-medium">{name}</span>
-                                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{amount.toLocaleString()} ﷼</span>
+                                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{amount.toLocaleString()} <RiyalSign /></span>
                                   </li>
                                 ))}
                               </ul>
@@ -702,7 +703,7 @@ export default function Reports() {
                                   .map(([category, amount], idx) => (
                                   <li key={idx} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
                                     <span className="text-[#4A4A4A]/80 font-medium">{category}</span>
-                                    <span className="font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md">{amount.toLocaleString()} ﷼</span>
+                                    <span className="font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md">{amount.toLocaleString()} <RiyalSign /></span>
                                   </li>
                                 ))}
                               </ul>

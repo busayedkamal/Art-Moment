@@ -2,10 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { 
-  Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle, 
-  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle 
+import {
+  Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle,
+  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle
 } from 'lucide-react';
+import RiyalSign from '../components/RiyalSign';
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -320,7 +321,7 @@ export default function Settings() {
                 value={newCoupon.discount_type}
                 onChange={e => setNewCoupon({...newCoupon, discount_type: e.target.value})}
               >
-                <option value="fixed">مبلغ ثابت (﷼)</option>
+                <option value="fixed">مبلغ ثابت (ريال)</option>
                 <option value="percent">نسبة مئوية (%)</option>
               </select>
             </div>
@@ -356,7 +357,7 @@ export default function Settings() {
                     </div>
                     <div className="text-sm text-[#4A4A4A]/60 mt-1 flex items-center gap-1">
                       خصم: <span className="font-bold text-[#4A4A4A]/80">{coupon.discount_amount}</span> 
-                      {coupon.discount_type === 'percent' ? <Percent size={12}/> : <span className="text-xs">﷼</span>}
+                      {coupon.discount_type === 'percent' ? <Percent size={12}/> : <RiyalSign size="0.8em" />}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

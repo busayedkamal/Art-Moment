@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 // ✅ تصحيح المسار: نقطة واحدة لأن الملف في src مباشرة
 import { supabase } from './lib/supabase';
+import RiyalSign from './components/RiyalSign';
 
 import {
   Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck,
@@ -320,11 +321,11 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة النحاسية</h3>
               <div className="mb-6">
-                <span className="text-3xl font-black text-orange-600">299</span> <span className="text-sm text-[#4A4A4A]/50">﷼</span>
+                <span className="text-3xl font-black text-orange-600">299</span> <RiyalSign size="0.7em" />
               </div>
               <div className="bg-white rounded-xl p-4 mb-6 border border-orange-100">
                 <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-2xl font-black text-[#4A4A4A]">333 ﷼</span>
+                <span className="text-2xl font-black text-[#4A4A4A]">333 <RiyalSign size="0.7em" /></span>
               </div>
               <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
                 المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!
@@ -350,11 +351,11 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الفضية</h3>
               <div className="mb-6">
-                <span className="text-4xl font-black text-slate-600">699</span> <span className="text-sm text-[#4A4A4A]/50">﷼</span>
+                <span className="text-4xl font-black text-slate-600">699</span> <RiyalSign size="0.7em" />
               </div>
               <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
                 <span className="block text-[10px] text-slate-500 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-3xl font-black text-slate-700">808 ﷼</span>
+                <span className="text-3xl font-black text-slate-700">808 <RiyalSign size="0.7em" /></span>
               </div>
               <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
                 المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!
@@ -377,11 +378,11 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الذهبية</h3>
               <div className="mb-6">
-                <span className="text-3xl font-black text-amber-600">999</span> <span className="text-sm text-[#4A4A4A]/50">﷼</span>
+                <span className="text-3xl font-black text-amber-600">999</span> <RiyalSign size="0.7em" />
               </div>
               <div className="bg-white rounded-xl p-4 mb-6 border border-amber-100">
                 <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-2xl font-black text-[#4A4A4A]">1,202 ﷼</span>
+                <span className="text-2xl font-black text-[#4A4A4A]">1,202 <RiyalSign size="0.7em" /></span>
               </div>
               <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
                 رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!
@@ -603,12 +604,12 @@ export default function LandingPage() {
                   <div className="w-full md:w-80 bg-white text-[#4A4A4A] rounded-3xl p-8 shadow-2xl transform md:rotate-2">
                     <div className="text-center pb-6 border-b border-[#F8F5F2] mb-6">
                       <span className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wider block mb-1">سعر الصورة الواحدة</span>
-                      <span className="text-5xl font-black text-[#D9A3AA]">{calcResult.unit} <span className="text-base text-[#4A4A4A]/40 font-medium">﷼</span></span>
+                      <span className="text-5xl font-black text-[#D9A3AA]">{calcResult.unit} <RiyalSign size="0.55em" /></span>
                     </div>
                     <div className="space-y-4 mb-8">
-                      <div className="flex justify-between text-sm font-bold"><span className="text-[#4A4A4A]/60">الإجمالي</span><span>{calcResult.total.toFixed(2)} ﷼</span></div>
+                      <div className="flex justify-between text-sm font-bold"><span className="text-[#4A4A4A]/60">الإجمالي</span><span>{calcResult.total.toFixed(2)} <RiyalSign /></span></div>
                       {calcResult.savings > 0 && (
-                        <div className="flex justify-between text-sm font-bold text-[#C5A059] bg-[#C5A059]/10 px-4 py-2 rounded-xl"><span className="flex items-center gap-1"><Sparkles size={14} /> وفرتي</span><span>{calcResult.savings.toFixed(2)} ﷼</span></div>
+                        <div className="flex justify-between text-sm font-bold text-[#C5A059] bg-[#C5A059]/10 px-4 py-2 rounded-xl"><span className="flex items-center gap-1"><Sparkles size={14} /> وفرتي</span><span>{calcResult.savings.toFixed(2)} <RiyalSign /></span></div>
                       )}
                     </div>
                     <a href={`https://wa.me/966569663697?text=مرحباً، أرغب بطباعة ${calcQty} صورة`} target="_blank" rel="noreferrer" className="block w-full bg-[#4A4A4A] text-white text-center py-4 rounded-xl font-bold hover:bg-[#C5A059] transition-colors shadow-lg">اطلبي بهذا السعر</a>
