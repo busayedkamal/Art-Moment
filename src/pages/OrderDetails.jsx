@@ -979,8 +979,8 @@ export default function OrderDetails() {
                 const dateValue = order[`date_${step.key}`] ? new Date(order[`date_${step.key}`]).toISOString().split('T')[0] : '';
                 return (
                   <div key={step.key} className="flex flex-col items-center gap-3 flex-1 relative group">
-                    <button onClick={() => updateStatus(step.key)} className={`flex flex-col items-center gap-2 ${isActive ? 'text-[#D9A3AA]' : 'text-[#4A4A4A]/55'}`}>
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isActive ? 'bg-[#D9A3AA]/15 shadow-md scale-110' : 'bg-[#D9A3AA]/10'}`}>
+                    <button onClick={() => updateStatus(step.key)} className={`flex flex-col items-center gap-2 transition-colors ${isActive ? 'text-emerald-600' : 'text-[#4A4A4A]/40'}`}>
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-emerald-100 shadow-md shadow-emerald-200/50 scale-110 ring-2 ring-emerald-200' : 'bg-[#F8F5F2]'}`}>
                         <step.icon size={20} />
                       </div>
                       <span className="text-xs font-bold">{step.label}</span>
