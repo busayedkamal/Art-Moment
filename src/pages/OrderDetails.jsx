@@ -950,24 +950,26 @@ export default function OrderDetails() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#F8F5F2] text-[#4A4A4A]">
-        <div className="w-full px-4 sm:px-6 lg:px-8 pb-20 space-y-6 print:hidden">
+      <div className="text-[#4A4A4A]">
+        <div className="w-full pb-20 space-y-6 print:hidden">
 
           {/* Header */}
-          <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-[#D9A3AA]/25 shadow-sm">
-            <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-[#D9A3AA]/10 rounded-xl"><ArrowRight /></button>
-              <div>
-                <h1 className="text-2xl font-bold text-[#4A4A4A] font-mono">الطلب #{order.id.slice(0, 8)}</h1>
+          <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-[#D9A3AA]/25 shadow-sm gap-3">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-[#D9A3AA]/10 rounded-xl shrink-0"><ArrowRight /></button>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-2xl font-bold text-[#4A4A4A] font-mono truncate">الطلب #{order.id.slice(0, 8)}</h1>
                 <p className="text-[#4A4A4A]/70 text-xs">تفاصيل المعالجة</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button onClick={handlePrintLabel} className="bg-[#D9A3AA]/10 text-[#4A4A4A] px-4 py-2 rounded-xl font-bold hover:bg-[#D9A3AA]/15 flex items-center gap-2 transition-colors">
-                <StickyNote size={18} /> ملصق
+            <div className="flex gap-1.5 shrink-0">
+              <button onClick={handlePrintLabel} className="bg-[#D9A3AA]/10 text-[#4A4A4A] px-2 sm:px-4 py-2 rounded-xl font-bold hover:bg-[#D9A3AA]/15 flex items-center gap-1.5 transition-colors text-sm">
+                <StickyNote size={16} /> <span className="hidden sm:inline">ملصق</span>
               </button>
-              <button onClick={handlePrint} className="btn-secondary flex items-center gap-2"><Printer size={16} /> فاتورة</button>
-              <button onClick={handleDelete} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100"><Trash2 size={18} /></button>
+              <button onClick={handlePrint} className="btn-secondary flex items-center gap-1.5 px-2 sm:px-4 text-sm">
+                <Printer size={16} /> <span className="hidden sm:inline">فاتورة</span>
+              </button>
+              <button onClick={handleDelete} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100"><Trash2 size={17} /></button>
             </div>
           </div>
 

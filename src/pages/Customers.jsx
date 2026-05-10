@@ -585,19 +585,20 @@ export default function Customers() {
     <div className="w-full pb-20 space-y-6 text-[#4A4A4A]">
 
       {/* Header */}
-      <div className="flex justify-between items-start pt-1 gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight flex items-center gap-2">
-            <Users size={22} className="text-[#D9A3AA]" /> سجل ولاء العملاء
+      <div className="flex justify-between items-start pt-1 gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-black text-[#4A4A4A] tracking-tight flex items-center gap-2">
+            <Users size={20} className="text-[#D9A3AA] shrink-0" /> سجل ولاء العملاء
           </h1>
-          <p className="text-sm text-[#4A4A4A]/50 mt-0.5">إدارة متقدمة لبيانات ومحافظ العملاء</p>
+          <p className="text-xs sm:text-sm text-[#4A4A4A]/50 mt-0.5">إدارة متقدمة لبيانات ومحافظ العملاء</p>
         </div>
         <div className="flex gap-2 shrink-0">
           <button
             onClick={() => setIsNewCustomerModalOpen(true)}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow hover:shadow-amber-500/30 transition-all"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow hover:shadow-amber-500/30 transition-all whitespace-nowrap"
           >
-            <Package size={16} /> شحن باقة / عميل جديد
+            <Package size={15} />
+            <span className="hidden xs:inline sm:inline">شحن باقة /</span> عميل جديد
           </button>
         </div>
       </div>
