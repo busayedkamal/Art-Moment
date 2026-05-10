@@ -318,7 +318,7 @@ export default function Dashboard() {
               unpaidDelivered.map((order) => {
                 const remaining = order.total_amount - (order.deposit || 0) - Number(order.wallet_used || 0);
                 const phone = order.phone?.replace(/^0/, '966') || '';
-                const msg = `مرحباً ${order.customer_name} 🌸\n\nنود تذكيرك بأن طلبك رقم *#${order.id.slice(0, 6)}* قد تم تسليمه.\n\nالمبلغ المتبقي: *${remaining} ريال*.\n\nنرجو التحويل وشكراً لتعاملك معنا ✨`;
+                const msg = `مرحباً ${order.customer_name}\n\nنود تذكيرك بأن طلبك رقم *#${order.id.slice(0, 6)}* قد تم تسليمه.\n\nالمبلغ المتبقي: *${remaining} ريال*.\n\nنرجو التحويل وشكراً لتعاملك معنا\n\nhttps://www.art-moment.com/track`;
                 return (
                   <div key={order.id} className="flex items-center justify-between p-3 bg-red-50/60 hover:bg-red-50 rounded-xl border border-red-100/80 transition-colors group">
                     <div>
@@ -328,7 +328,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2">
                       <span className="text-red-600 font-black text-sm">{remaining.toFixed(0)} ر.س</span>
                       {order.phone && (
-                        <a href={`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer"
+                        <a href={`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer"
                           className="w-7 h-7 bg-white rounded-lg border border-red-100 flex items-center justify-center text-[#D9A3AA] hover:text-emerald-600 hover:border-emerald-200 transition-colors opacity-0 group-hover:opacity-100"
                           title="مطالبة واتساب">
                           <MessageCircle size={13}/>

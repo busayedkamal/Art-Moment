@@ -769,7 +769,7 @@ export default function Customers() {
                         <div className="flex items-center justify-end gap-2">
                           {customer.phone && (
                             <a
-                              href={`https://wa.me/966${String(customer.phone).startsWith("0") ? String(customer.phone).slice(1) : customer.phone}`}
+                              href={`https://api.whatsapp.com/send?phone=966${String(customer.phone).startsWith("0") ? String(customer.phone).slice(1) : customer.phone}`}
                               target="_blank" rel="noreferrer"
                               onClick={(e) => e.stopPropagation()}
                               className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100"

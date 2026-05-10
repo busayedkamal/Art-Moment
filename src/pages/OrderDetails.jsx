@@ -846,14 +846,40 @@ export default function OrderDetails() {
       ? '966' + cleanPhone.substring(1)
       : (cleanPhone.startsWith('966') ? cleanPhone : '966' + cleanPhone);
 
-    const remaining = (Number(order.total_amount || 0) - Number(order.deposit || 0)).toFixed(2);
+    const remaining = (
+      Number(order.total_amount || 0) -
+      Number(order.deposit || 0) -
+      Number(order.wallet_used || 0)
+    ).toFixed(2);
+
+    const siteLink = 'https://www.art-moment.com/track';
 
     let msg = '';
-    if (type === 'ready') msg = `يا هلا ${order.customer_name} ✨\nطلبك رقم *${order.id.slice(0, 5)}* جاهز! 🎨\nالمتبقي: ${remaining} ر.س`;
-    else if (type === 'invoice') msg = `أهلاً ${order.customer_name} 🌸\nطلب: ${order.id.slice(0, 5)}\nالإجمالي: ${order.total_amount}\nالمدفوع: ${order.deposit}\n*المتبقي: ${remaining}*`;
-    else if (type === 'location') msg = `موقعنا: ...`;
+    if (type === 'ready') {
+      msg =
+        `يا هلا ${order.customer_name} ✨\n` +
+        `طلبك رقم *${order.id.slice(0, 5)}* جاهز للاستلام!\n` +
+        (Number(remaining) > 0 ? `المتبقي: *${remaining} ر.س*\n` : `الحساب: *خالص*\n`) +
+        `\nتابع طلبك وسجل طلباتك من هنا:\n${siteLink}`;
+    } else if (type === 'invoice') {
+      msg =
+        `اهلاً ${order.customer_name}\n` +
+        `رقم الطلب: *${order.id.slice(0, 5)}*\n` +
+        `الاجمالي: *${order.total_amount} ر.س*\n` +
+        `المدفوع: *${order.deposit} ر.س*\n` +
+        `المتبقي: *${remaining} ر.س*\n` +
+        `\nتابع طلبك من هنا:\n${siteLink}`;
+    } else if (type === 'location') {
+      msg =
+        `موقعنا على خرائط جوجل:\nhttps://maps.app.goo.gl/...\n` +
+        `\nاو تابع طلبك اونلاين:\n${siteLink}`;
+    }
 
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    // استخدام api.whatsapp.com بدلاً من wa.me لتجنب مشاكل الترميز على iOS
+    window.open(
+      `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`,
+      '_blank'
+    );
   };
 
   const updateStatus = async (newStatus) => {
@@ -1071,7 +1097,7 @@ export default function OrderDetails() {
                 {!isEditingCustomer && order.phone && (
                   <div className="pt-4 border-t border-[#D9A3AA]/10 space-y-2">
                     <a
-                      href={`https://wa.me/966${String(order.phone).startsWith('0') ? String(order.phone).substring(1) : order.phone}`}
+                      href={`https://api.whatsapp.com/send?phone=966${String(order.phone).startsWith('0') ? String(order.phone).substring(1) : order.phone}`}
                       target="_blank"
                       rel="noreferrer"
                       className="block w-full text-center bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
