@@ -1,17 +1,18 @@
 // src/components/layout/Layout.jsx
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Users, 
-  FileBarChart, 
-  Settings, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Users,
+  FileBarChart,
+  Settings,
+  LogOut,
   Menu,
   X,
   Wallet,
-  Search // 👈 1. تمت إضافة أيقونة البحث (للتتبع)
+  Search,
+  Home
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -83,11 +84,22 @@ export default function Layout() {
             })}
           </nav>
 
-          {/* Logout Button */}
-          <div className="p-4 border-t border-white/10">
+          {/* Bottom Buttons */}
+          <div className="p-4 border-t border-white/10 space-y-1">
+            {/* زر الرجوع للواجهة الرئيسية بدون خروج */}
+            <Link
+              to="/"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <Home size={20} />
+              الصفحة الرئيسية
+            </Link>
+
+            {/* زر تسجيل الخروج */}
             <button
               onClick={handleSignOut}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-400 hover:bg-fuchsia-500/10 transition-colors"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
             >
               <LogOut size={20} />
               تسجيل خروج
