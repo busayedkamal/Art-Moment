@@ -9,6 +9,7 @@ import {
   MessageCircle, X, Tag, MapPin, Receipt, StickyNote, Plus, Wallet, Gift, Package
 } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
+import logoPng from '../assets/logo.png';
 import RiyalSign from '../components/RiyalSign';
 
 export default function OrderDetails() {
@@ -949,6 +950,9 @@ export default function OrderDetails() {
   const handleExportPDF = async () => {
     const toastId = toast.loading('جاري إنشاء الفاتورة PDF...');
     try {
+      // انتظر تحميل كل الخطوط (Cairo وغيرها) قبل الالتقاط
+      await document.fonts.ready;
+
       const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
         import('jspdf'),
         import('html2canvas'),
@@ -957,54 +961,67 @@ export default function OrderDetails() {
       const el = document.getElementById('printable-invoice');
       if (!el) throw new Error('element not found');
 
-      // إظهار الفاتورة مؤقتاً خارج نطاق الرؤية
-      const saved = {
-        display: el.style.display, position: el.style.position,
-        top: el.style.top, left: el.style.left, width: el.style.width,
-        padding: el.style.padding, background: el.style.background, zIndex: el.style.zIndex,
-      };
-      Object.assign(el.style, {
-        display: 'block', position: 'fixed', top: '-9999px', left: '0',
-        width: '556px', padding: '28px', background: '#ffffff', zIndex: '-1',
-      });
-
-      // انتظر الرسم
-      await new Promise(r => setTimeout(r, 200));
-
       const canvas = await html2canvas(el, {
-        scale: 2, useCORS: true, allowTaint: true,
-        backgroundColor: '#ffffff', logging: false,
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 10000,
+        // نعدّل نسخة الكابچر الداخلية دون لمس الـ DOM الأصلي
+        onclone: (clonedDoc) => {
+          // حقن override يضمن الخط العربي والاتجاه في نسخة html2canvas
+          const s = clonedDoc.createElement('style');
+          s.textContent = `
+            #printable-invoice, #printable-invoice * {
+              font-family: 'Cairo', system-ui, -apple-system, "Segoe UI", sans-serif !important;
+              direction: rtl !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          `;
+          clonedDoc.head.appendChild(s);
+
+          const clone = clonedDoc.getElementById('printable-invoice');
+          if (!clone) return;
+          clone.style.display = 'block';
+          clone.style.position = 'static';
+          clone.style.visibility = 'visible';
+          clone.style.width = '556px';
+          clone.style.padding = '28px 32px';
+          clone.style.backgroundColor = '#ffffff';
+          clone.style.color = '#000000';
+        },
       });
 
-      // استعادة الحالة
-      Object.assign(el.style, saved);
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.93);
+      // PNG بدلاً من JPEG → نص حاد بدون ضغط يشوّه الحروف
+      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
 
       const pw = pdf.internal.pageSize.getWidth();   // 148mm
       const ph = pdf.internal.pageSize.getHeight();  // 210mm
-      const margin = 6;
+      const margin = 5;
       const usableW = pw - margin * 2;
       const imgH = (canvas.height * usableW) / canvas.width;
 
       if (imgH <= ph - margin * 2) {
-        // صفحة واحدة
-        pdf.addImage(imgData, 'JPEG', margin, margin, usableW, imgH);
+        pdf.addImage(imgData, 'PNG', margin, margin, usableW, imgH);
       } else {
-        // صفحات متعددة
+        // صفحات متعددة إن طالت الفاتورة
         const pxPerMm = canvas.width / usableW;
         const pageHpx = (ph - margin * 2) * pxPerMm;
         let srcY = 0, page = 0;
         while (srcY < canvas.height) {
           const sliceH = Math.min(pageHpx, canvas.height - srcY);
           const tmp = document.createElement('canvas');
-          tmp.width = canvas.width; tmp.height = sliceH;
+          tmp.width = canvas.width;
+          tmp.height = Math.ceil(sliceH);
           tmp.getContext('2d').drawImage(canvas, 0, -srcY);
-          const sliceMmH = (sliceH * usableW) / canvas.width;
+          const sliceMmH = (tmp.height * usableW) / canvas.width;
           if (page > 0) pdf.addPage();
-          pdf.addImage(tmp.toDataURL('image/jpeg', 0.93), 'JPEG', margin, margin, usableW, sliceMmH);
-          srcY += sliceH; page++;
+          pdf.addImage(tmp.toDataURL('image/png'), 'PNG', margin, margin, usableW, sliceMmH);
+          srcY += sliceH;
+          page++;
         }
       }
 
@@ -1579,7 +1596,7 @@ export default function OrderDetails() {
             <div className="no-break flex justify-between items-start border-b-2 border-[#4A4A4A]/35 pb-4 mb-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <img src={logo} alt="Art Moment" className="w-12 h-12 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                  <img src={logoPng} alt="Art Moment" className="w-12 h-12 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
                   <h1 className="text-2xl font-black text-[#4A4A4A]">Art Moment</h1>
                 </div>
                 <p className="text-xs text-[#4A4A4A]/70">لحظة فن للطباعة</p>
