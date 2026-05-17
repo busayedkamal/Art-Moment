@@ -1,6 +1,7 @@
 // src/LandingPage.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 
 // ✅ تصحيح المسار: نقطة واحدة لأن الملف في src مباشرة
 import { supabase } from './lib/supabase';
@@ -26,6 +27,15 @@ import printedPhotos from './assets/printed-photos.png';
 // النصوص (فاحم): #4A4A4A
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const { session } = useAuth();
+
+  // إذا كانت الجلسة نشطة → لوحة التحكم مباشرة، وإلا → صفحة تسجيل الدخول
+  const handleAdminClick = (e) => {
+    e.preventDefault();
+    navigate(session ? '/app/dashboard' : '/admin/login');
+  };
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [activePackage, setActivePackage] = useState(0);
@@ -214,9 +224,9 @@ export default function LandingPage() {
                 <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
               </button>
             )}
-            <Link to="/admin/login" className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
+            <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
               <Lock size={16} />
-            </Link>
+            </button>
             <button className="md:hidden p-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? <X /> : <Menu />}
             </button>
@@ -236,9 +246,9 @@ export default function LandingPage() {
             </Link>
 
             {/* زر دخول المسؤول في القائمة */}
-            <Link to="/admin/login" className="block w-full text-center py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-white hover:text-[#D9A3AA] transition-all flex items-center justify-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+            <button onClick={(e) => { setIsMobileMenuOpen(false); handleAdminClick(e); }} className="block w-full text-center py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-white hover:text-[#D9A3AA] transition-all flex items-center justify-center gap-2">
               <Lock size={16} /> دخول المسؤول
-            </Link>
+            </button>
           </div>
         )}
       </header>
