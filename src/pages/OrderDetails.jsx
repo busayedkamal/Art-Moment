@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import {
   ArrowRight, Printer, CheckCircle, Truck, Trash2,
-  Banknote, FileText, User,
+  Banknote, FileText, User, Download,
   MessageCircle, X, Tag, MapPin, Receipt, StickyNote, Plus, Wallet, Gift, Package
 } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
@@ -813,11 +813,11 @@ export default function OrderDetails() {
 
       await supabase
         .from('orders')
-        .update({ deposit: Number(order.total_amount || 0) + remaining, payment_status: 'paid' })
+        .update({ deposit: Number(order.deposit || 0) + remaining, payment_status: 'paid' })
         .eq('id', id);
 
       setPayments(prev => [...prev, payData]);
-      setOrder(prev => ({ ...prev, deposit: Number(order.total_amount || 0) + remaining, payment_status: 'paid' }));
+      setOrder(prev => ({ ...prev, deposit: Number(order.deposit || 0) + remaining, payment_status: 'paid' }));
       toast.success('تم السداد بالكامل');
     } catch {
       toast.error('فشل العملية');
@@ -945,6 +945,80 @@ export default function OrderDetails() {
   const handlePrint = () => { setTimeout(() => window.print(), 100); };
   const handlePrintLabel = () => { };
 
+  // ✅ تصدير الفاتورة PDF بحجم A5
+  const handleExportPDF = async () => {
+    const toastId = toast.loading('جاري إنشاء الفاتورة PDF...');
+    try {
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+      ]);
+
+      const el = document.getElementById('printable-invoice');
+      if (!el) throw new Error('element not found');
+
+      // إظهار الفاتورة مؤقتاً خارج نطاق الرؤية
+      const saved = {
+        display: el.style.display, position: el.style.position,
+        top: el.style.top, left: el.style.left, width: el.style.width,
+        padding: el.style.padding, background: el.style.background, zIndex: el.style.zIndex,
+      };
+      Object.assign(el.style, {
+        display: 'block', position: 'fixed', top: '-9999px', left: '0',
+        width: '556px', padding: '28px', background: '#ffffff', zIndex: '-1',
+      });
+
+      // انتظر الرسم
+      await new Promise(r => setTimeout(r, 200));
+
+      const canvas = await html2canvas(el, {
+        scale: 2, useCORS: true, allowTaint: true,
+        backgroundColor: '#ffffff', logging: false,
+      });
+
+      // استعادة الحالة
+      Object.assign(el.style, saved);
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.93);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+
+      const pw = pdf.internal.pageSize.getWidth();   // 148mm
+      const ph = pdf.internal.pageSize.getHeight();  // 210mm
+      const margin = 6;
+      const usableW = pw - margin * 2;
+      const imgH = (canvas.height * usableW) / canvas.width;
+
+      if (imgH <= ph - margin * 2) {
+        // صفحة واحدة
+        pdf.addImage(imgData, 'JPEG', margin, margin, usableW, imgH);
+      } else {
+        // صفحات متعددة
+        const pxPerMm = canvas.width / usableW;
+        const pageHpx = (ph - margin * 2) * pxPerMm;
+        let srcY = 0, page = 0;
+        while (srcY < canvas.height) {
+          const sliceH = Math.min(pageHpx, canvas.height - srcY);
+          const tmp = document.createElement('canvas');
+          tmp.width = canvas.width; tmp.height = sliceH;
+          tmp.getContext('2d').drawImage(canvas, 0, -srcY);
+          const sliceMmH = (sliceH * usableW) / canvas.width;
+          if (page > 0) pdf.addPage();
+          pdf.addImage(tmp.toDataURL('image/jpeg', 0.93), 'JPEG', margin, margin, usableW, sliceMmH);
+          srcY += sliceH; page++;
+        }
+      }
+
+      const name = (order.customer_name || 'عميل').replace(/\s+/g, '-');
+      pdf.save(`فاتورة-${name}-${order.id.slice(0, 6)}.pdf`);
+      toast.dismiss(toastId);
+      toast.success('تم تحميل الفاتورة PDF ✅');
+    } catch (err) {
+      console.error('PDF Error:', err);
+      toast.dismiss(toastId);
+      toast.error('فشل إنشاء الفاتورة');
+    }
+  };
+
   const steps = [
     { key: 'new', label: 'جديد', icon: FileText },
     { key: 'printing', label: 'طباعة', icon: Printer },
@@ -977,8 +1051,11 @@ export default function OrderDetails() {
               <button onClick={handlePrintLabel} className="bg-[#D9A3AA]/10 text-[#4A4A4A] px-2 sm:px-4 py-2 rounded-xl font-bold hover:bg-[#D9A3AA]/15 flex items-center gap-1.5 transition-colors text-sm">
                 <StickyNote size={16} /> <span className="hidden sm:inline">ملصق</span>
               </button>
-              <button onClick={handlePrint} className="btn-secondary flex items-center gap-1.5 px-2 sm:px-4 text-sm">
-                <Printer size={16} /> <span className="hidden sm:inline">فاتورة</span>
+              <button onClick={handleExportPDF} className="btn-secondary flex items-center gap-1.5 px-2 sm:px-4 text-sm">
+                <Download size={16} /> <span className="hidden sm:inline">PDF</span>
+              </button>
+              <button onClick={handlePrint} title="طباعة مباشرة" className="bg-[#D9A3AA]/10 text-[#4A4A4A] px-2.5 py-2 rounded-xl hover:bg-[#D9A3AA]/20 transition-colors">
+                <Printer size={16} />
               </button>
               <button onClick={handleDelete} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100"><Trash2 size={17} /></button>
             </div>
