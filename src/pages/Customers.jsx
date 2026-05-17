@@ -114,8 +114,14 @@ export default function Customers() {
           notes: w.notes || '',
           subscriptionCode: w.subscription_code || null
         };
-        if (key) walletMap.set(key, entry);
-        if (keyWithZero !== key) walletMap.set(keyWithZero, entry);
+        // إذا وُجدت محفظتان بنفس الرقم، احتفظ بالتي تحتوي أعلى رصيد
+        const setIfBetter = (mapKey) => {
+          if (!mapKey) return;
+          const existing = walletMap.get(mapKey);
+          if (!existing || entry.balance > existing.balance) walletMap.set(mapKey, entry);
+        };
+        setIfBetter(key);
+        if (keyWithZero !== key) setIfBetter(keyWithZero);
       });
 
       const map = {};
@@ -275,11 +281,16 @@ export default function Customers() {
       const allFormats = [withZero, digits, '966' + digits, '+966' + digits];
 
       const { data: walletsFound } = await supabase
-        .from('wallets').select('id').in('phone', allFormats);
+        .from('wallets').select('id, points_balance').in('phone', allFormats);
 
       let walletId;
       if (walletsFound && walletsFound.length > 0) {
-        walletId = walletsFound[0].id;
+        // اختر المحفظة ذات أعلى رصيد (توافقاً مع ما يُعرض للمستخدم)
+        const bestWallet = walletsFound.reduce((best, w) =>
+          Number(w.points_balance || 0) > Number(best.points_balance || 0) ? w : best,
+          walletsFound[0]
+        );
+        walletId = bestWallet.id;
         await supabase.from('wallets').update({ points_balance: newBalance }).eq('id', walletId);
       } else {
         const { data: newW } = await supabase.from('wallets')
