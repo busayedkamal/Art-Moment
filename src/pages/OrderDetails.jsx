@@ -209,9 +209,10 @@ export default function OrderDetails() {
 
   // ✅ مزامنة خصم المحفظة (wallet_spend) مع رصيد العميل — فرق التغيير فقط
   const syncWalletSpend = async (desiredAmount) => {
-    const wallet = await findWalletByPhone(order?.phone);
-    if (!wallet) throw new Error('لا توجد محفظة لهذا العميل');
+    const allWallets = await findAllWalletsByPhone(order?.phone);
+    if (allWallets.length === 0) throw new Error('لا توجد محفظة لهذا العميل');
 
+    // نجلب المعاملة الموجودة أولاً لمعرفة المحفظة المستخدمة سابقاً
     const { data: existingSpend, error: spendError } = await supabase
       .from('wallet_transactions')
       .select('*')
@@ -221,9 +222,18 @@ export default function OrderDetails() {
 
     if (spendError) throw spendError;
 
+    // اختر المحفظة: إن وجدت معاملة سابقة استخدم نفس المحفظة، وإلا اختر صاحبة أعلى رصيد نقاط
+    let wallet;
+    if (existingSpend) {
+      wallet = allWallets.find(w => w.id === existingSpend.wallet_id)
+        || allWallets.reduce((best, w) => Number(w.points_balance || 0) > Number(best.points_balance || 0) ? w : best, allWallets[0]);
+    } else {
+      wallet = allWallets.reduce((best, w) => Number(w.points_balance || 0) > Number(best.points_balance || 0) ? w : best, allWallets[0]);
+    }
+
     const prevAmount = existingSpend ? Number(existingSpend.amount_value || 0) : 0;
     const desired = Math.max(0, Number(desiredAmount || 0));
-    const delta = desired - prevAmount; 
+    const delta = desired - prevAmount;
 
     const currentBalance = Number(wallet.points_balance || 0);
 
