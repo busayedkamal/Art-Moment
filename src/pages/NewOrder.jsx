@@ -428,18 +428,22 @@ export default function NewOrder() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2" ref={suggestionsRef}>
-              <div className="space-y-1 relative">
-                <label className="text-sm font-medium">اسم العميل <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <input
-                    {...register('customerName', { required: 'مطلوب' })}
-                    className="input-field" placeholder="الاسم" autoComplete="off"
-                    onFocus={() => setShowSuggestions('name')}
-                    onClick={(e) => { e.stopPropagation(); setShowSuggestions('name'); }}
-                  />
-                  <User size={16} className="absolute left-3 top-3 text-slate-400 pointer-events-none" />
+              {/* ── اسم العميل ── */}
+              <div className="relative">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#D9A3AA]/15 rounded-xl flex items-center justify-center pointer-events-none">
+                  <User size={16} className="text-[#D9A3AA]" />
                 </div>
-                {errors.customerName && <p className="text-xs text-red-500">{errors.customerName.message}</p>}
+                <input
+                  {...register('customerName', { required: 'مطلوب' })}
+                  className="w-full pr-14 pl-4 py-3.5 bg-[#F8F5F2] border-2 border-transparent rounded-2xl text-sm font-bold placeholder-slate-300 outline-none focus:border-[#D9A3AA] focus:bg-white transition-all"
+                  placeholder="اسم العميل *"
+                  autoComplete="off"
+                  onFocus={() => setShowSuggestions('name')}
+                  onClick={(e) => { e.stopPropagation(); setShowSuggestions('name'); }}
+                />
+                {errors.customerName && (
+                  <p className="text-xs text-red-500 mt-1 pr-1">{errors.customerName.message}</p>
+                )}
                 {showSuggestions === 'name' && filteredSuggestions.length > 0 && (
                   <div className="absolute z-50 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2">
                     {filteredSuggestions.map((c, idx) => (
@@ -453,21 +457,21 @@ export default function NewOrder() {
                 )}
               </div>
 
-              <div className="space-y-1 relative">
-                <label className="text-sm font-medium">الجوال</label>
-                <div className="relative">
-                  <input
-                    {...register('phone')}
-                    className="input-field dir-ltr text-right" placeholder="05xxxxxxxx" autoComplete="off"
-                    onFocus={() => setShowSuggestions('phone')}
-                    onClick={(e) => { e.stopPropagation(); setShowSuggestions('phone'); }}
-                  />
-                  {checkingLoyalty ? (
-                    <div className="absolute left-3 top-3"><Loader2 size={16} className="animate-spin text-slate-400" /></div>
-                  ) : (
-                    <Phone size={16} className="absolute left-3 top-3 text-slate-400 pointer-events-none" />
-                  )}
+              {/* ── رقم الجوال ── */}
+              <div className="relative">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center pointer-events-none">
+                  {checkingLoyalty
+                    ? <Loader2 size={16} className="animate-spin text-slate-400" />
+                    : <Phone size={16} className="text-slate-400" />}
                 </div>
+                <input
+                  {...register('phone')}
+                  className="w-full pr-14 pl-4 py-3.5 bg-[#F8F5F2] border-2 border-transparent rounded-2xl text-sm font-mono dir-ltr text-right placeholder-slate-300 outline-none focus:border-[#D9A3AA] focus:bg-white transition-all"
+                  placeholder="05xxxxxxxx"
+                  autoComplete="off"
+                  onFocus={() => setShowSuggestions('phone')}
+                  onClick={(e) => { e.stopPropagation(); setShowSuggestions('phone'); }}
+                />
                 {showSuggestions === 'phone' && filteredSuggestions.length > 0 && (
                   <div className="absolute z-50 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2">
                     {filteredSuggestions.map((c, idx) => (
@@ -480,28 +484,6 @@ export default function NewOrder() {
                   </div>
                 )}
               </div>
-
-              <div className="space-y-1">
-                <label className="text-sm font-medium">تاريخ التسليم</label>
-                <input type="date" {...register('deliveryDate')} className="input-field" />
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                <MapPin size={16} className="text-red-500" /> المنطقة / المدينة
-              </label>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {CITIES.map((city) => (
-                  <button key={city} type="button" onClick={() => setValue('source', city)}
-                    className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${currentCity === city ? 'bg-red-50 border-red-500 text-red-700 font-bold' : 'bg-white text-slate-600'}`}>
-                    {city}
-                  </button>
-                ))}
-              </div>
-              {currentCity === 'أخرى' && (
-                <input {...register('sourceOther')} className="input-field mt-2" placeholder="اكتب اسم المنطقة..." />
-              )}
             </div>
           </div>
 
