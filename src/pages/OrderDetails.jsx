@@ -23,9 +23,9 @@ export default function OrderDetails() {
 
   // --- إعدادات نقاط الولاء ---
   const LOYALTY_RATES = {
-    photo4x6: 0.05,
-    a4: 1.00,
-    album: 1.00
+    photo4x6: 0.03,
+    a4: 0.75,
+    album: 0.75
   };
 
   const CITIES = ['الرميلة', 'المبرز', 'الهفوف', 'الدمام', 'الخبر', 'العمران', 'أخرى'];
