@@ -1633,7 +1633,7 @@ export default function OrderDetails() {
             <div className="no-break flex justify-between items-start border-b-2 border-[#4A4A4A]/35 pb-4 mb-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <img src={logoPng} alt="Art Moment" className="w-12 h-12 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                  <img src={logoPng} alt="Art Moment" className="h-12 w-auto object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
                   <h1 className="text-2xl font-black text-[#4A4A4A]">Art Moment</h1>
                 </div>
                 <p className="text-xs text-[#4A4A4A]/70">لحظة فن للطباعة</p>
@@ -1646,13 +1646,13 @@ export default function OrderDetails() {
 
             <div className="no-break grid grid-cols-2 gap-6 mb-4">
               <div>
-                <h3 className="font-bold text-[10px] text-[#4A4A4A]/55 mb-1 uppercase tracking-wider">العميل</h3>
+                <h3 className="font-bold text-[10px] text-[#4A4A4A]/55 mb-1">بيانات العميل</h3>
                 <p className="text-lg font-bold text-[#4A4A4A] leading-tight">{order.customer_name}</p>
                 <p className="text-xs text-[#4A4A4A] dir-ltr text-right font-mono">{order.phone}</p>
                 {order.source && <p className="text-xs text-[#4A4A4A]/70 mt-1">{order.source}</p>}
               </div>
               <div className="text-left">
-                <h3 className="font-bold text-[10px] text-[#4A4A4A]/55 mb-1 uppercase tracking-wider">التسليم</h3>
+                <h3 className="font-bold text-[10px] text-[#4A4A4A]/55 mb-1">تاريخ التسليم</h3>
                 <p className="font-bold text-sm text-[#4A4A4A]">{order.delivery_date || 'غير محدد'}</p>
                 {order.status === 'delivered' && (
                   <span className="inline-block bg-[#D9A3AA]/10 px-2 py-1 rounded text-[10px] mt-2 font-bold">تم التسليم</span>
