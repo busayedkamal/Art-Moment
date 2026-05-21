@@ -461,10 +461,16 @@ export default function TrackOrderPage() {
                       <span className="font-bold">{Number(order.delivery_fee).toFixed(2)}</span>
                     </div>
                   )}
-                  {Number(order.discount || 0) > 0 && (
+                  {Number(order.manual_discount || 0) > 0 && Number(order.wallet_used || 0) === 0 && (
                     <div className="flex justify-between text-sm text-red-500 px-2 bg-red-50 py-1.5 rounded-lg border border-red-100/50">
-                      <span className="font-bold">الخصم</span>
-                      <span className="font-bold">-{Number(order.discount).toFixed(2)}</span>
+                      <span className="font-bold">خصم الكوبون</span>
+                      <span className="font-bold">-{Number(order.manual_discount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {Number(order.manual_discount || 0) > 0 && Number(order.wallet_used || 0) > 0 && (
+                    <div className="flex justify-between text-sm text-violet-600 px-2 bg-violet-50 py-1.5 rounded-lg border border-violet-100/50">
+                      <span className="font-bold">خصم رصيد النقاط</span>
+                      <span className="font-bold">-{Number(order.manual_discount).toFixed(2)}</span>
                     </div>
                   )}
                   {Number(order.wallet_used || 0) > 0 && (

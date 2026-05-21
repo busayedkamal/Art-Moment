@@ -725,7 +725,11 @@ export default function OrderDetails() {
       await syncPackageSpend(0);
       const success = await recalculateAndSaveTotal({ manual_discount: discountValue, wallet_used: discountValue });
       toast.dismiss(toastId);
-      if (success) { toast.success('تم خصم من رصيد النقاط ✅'); setDiscountSource('wallet'); }
+      if (success) {
+        toast.success('تم خصم من رصيد النقاط ✅');
+        setDiscountSource('wallet');
+        setCustomerPointsBalance(prev => Math.max(0, prev - discountValue));
+      }
     } catch (e) {
       toast.dismiss(toastId);
       toast.error(e?.message || 'فشل التحديث');
@@ -1460,6 +1464,22 @@ export default function OrderDetails() {
                   <span>الإجمالي (مع التوصيل)</span>
                   <span className="line-through">{(Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2)} <RiyalSign light /></span>
                 </div>
+
+                {/* ── خصم الكوبون ── */}
+                {Number(order.manual_discount || 0) > 0 && Number(order.wallet_used || 0) === 0 && (
+                  <div className="flex justify-between text-xs text-pink-300 bg-pink-500/10 border border-pink-400/20 rounded-lg px-2 py-1.5 mb-1">
+                    <span className="flex items-center gap-1"><Tag size={11} /> خصم الكوبون</span>
+                    <span className="font-bold">-{Number(order.manual_discount).toFixed(2)} <RiyalSign light /></span>
+                  </div>
+                )}
+
+                {/* ── خصم النقاط ── */}
+                {Number(order.wallet_used || 0) > 0 && (
+                  <div className="flex justify-between text-xs text-violet-300 bg-violet-500/10 border border-violet-400/20 rounded-lg px-2 py-1.5 mb-1">
+                    <span className="flex items-center gap-1"><Wallet size={11} /> خصم رصيد النقاط</span>
+                    <span className="font-bold">-{Number(order.wallet_used).toFixed(2)} <RiyalSign light /></span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center mb-5 px-1">
                   <span className="font-bold text-white">الإجمالي النهائي</span>
