@@ -631,10 +631,10 @@ export default function Customers() {
         </div>
         <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 text-violet-500/80 text-xs font-bold mb-2">
-            <Wallet size={13} /> صافي المحافظ
+            <Wallet size={13} /> رصيد النقاط
           </div>
           <div className="text-3xl font-black text-[#4A4A4A]">
-            {customersData.reduce((sum, c) => sum + (Number(c.netBalance || 0)), 0).toFixed(1)}
+            {customersData.reduce((sum, c) => sum + (Number(c.walletBalance || 0)), 0).toFixed(1)}
             <span className="text-sm font-normal text-[#4A4A4A]/40 mr-1"><RiyalSign /></span>
           </div>
         </div>
