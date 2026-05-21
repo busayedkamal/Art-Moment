@@ -175,11 +175,15 @@ export default function Reports() {
       if (p.startsWith('0')) p = p.slice(1);
       return p;
     };
+    // إذا وُجدت محفظتان لنفس الرقم، نختار صاحبة أعلى رصيد (نفس منطق صفحة العملاء)
     const walletByPhone = {};
     wallets.forEach(w => {
       const key = normalizePhone(w.phone);
-      if (!key) return; // تجاهل المحافظ بدون رقم هاتف (الإدارية)
-      walletByPhone[key] = Number(w.points_balance || 0); // الأحدث (id أعلى) يفوز
+      if (!key) return;
+      const bal = Number(w.points_balance || 0);
+      if (walletByPhone[key] === undefined || bal > walletByPhone[key]) {
+        walletByPhone[key] = bal;
+      }
     });
     totalPointsBalance = Object.values(walletByPhone).reduce((acc, v) => acc + v, 0);
     
