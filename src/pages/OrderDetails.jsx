@@ -719,11 +719,15 @@ export default function OrderDetails() {
     const theoreticalTotal = Number(order.subtotal || 0) + Number(deliveryFee || 0);
     const discountValue = Math.min(inputVal, theoreticalTotal);
 
+    // الحفاظ على خصم الكوبون القائم + إضافة خصم النقاط
+    const existingCouponDiscount = Math.max(0, manualDiscount - walletUsed);
+    const totalDiscount = existingCouponDiscount + discountValue;
+
     const toastId = toast.loading('تحديث الخصم...');
     try {
       await syncWalletSpend(discountValue);
       await syncPackageSpend(0);
-      const success = await recalculateAndSaveTotal({ manual_discount: discountValue, wallet_used: discountValue });
+      const success = await recalculateAndSaveTotal({ manual_discount: totalDiscount, wallet_used: discountValue });
       toast.dismiss(toastId);
       if (success) {
         toast.success('تم خصم من رصيد النقاط ✅');
@@ -1465,16 +1469,16 @@ export default function OrderDetails() {
                   <span className="line-through">{(Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2)} <RiyalSign light /></span>
                 </div>
 
-                {/* ── خصم الكوبون ── */}
-                {Number(order.manual_discount || 0) > 0 && Number(order.wallet_used || 0) === 0 && (
+                {/* ── خصم الكوبون: الفرق بين manual_discount و wallet_used ── */}
+                {(Number(order.manual_discount || 0) - Number(order.wallet_used || 0)) > 0.01 && (
                   <div className="flex justify-between text-xs text-pink-300 bg-pink-500/10 border border-pink-400/20 rounded-lg px-2 py-1.5 mb-1">
                     <span className="flex items-center gap-1"><Tag size={11} /> خصم الكوبون</span>
-                    <span className="font-bold">-{Number(order.manual_discount).toFixed(2)} <RiyalSign light /></span>
+                    <span className="font-bold">-{(Number(order.manual_discount) - Number(order.wallet_used || 0)).toFixed(2)} <RiyalSign light /></span>
                   </div>
                 )}
 
-                {/* ── خصم النقاط ── */}
-                {Number(order.wallet_used || 0) > 0 && (
+                {/* ── خصم رصيد النقاط ── */}
+                {Number(order.wallet_used || 0) > 0.01 && (
                   <div className="flex justify-between text-xs text-violet-300 bg-violet-500/10 border border-violet-400/20 rounded-lg px-2 py-1.5 mb-1">
                     <span className="flex items-center gap-1"><Wallet size={11} /> خصم رصيد النقاط</span>
                     <span className="font-bold">-{Number(order.wallet_used).toFixed(2)} <RiyalSign light /></span>
