@@ -125,7 +125,7 @@ export default function OrderDetails() {
       setTransactions(transData || []);
 
       // تحديد مصدر الخصم الحالي
-      const hasWalletSpend = (transData || []).some(t => t.type === 'wallet_spend');
+      const hasWalletSpend = (transData || []).some(t => t.type === 'redeem');
       const hasPkgRedeem = (transData || []).some(t => t.type === 'package_redeem');
       setDiscountSource(hasPkgRedeem ? 'package' : hasWalletSpend ? 'wallet' : 'discount');
 
@@ -155,7 +155,7 @@ export default function OrderDetails() {
 
           // تعيين المبالغ الأولية من الحركات الموجودة على هذا الطلب
           const existPkg = (transData || []).find(t => t.type === 'package_redeem');
-          const existPts = (transData || []).find(t => t.type === 'wallet_spend');
+          const existPts = (transData || []).find(t => t.type === 'redeem');
           if (existPkg) setPackageDiscountInput(existPkg.amount_value?.toString() || '');
           if (existPts) setPointsDiscountInput(existPts.amount_value?.toString() || '');
       }
@@ -208,7 +208,7 @@ export default function OrderDetails() {
 
   const isLoyaltyAdded = transactions.some(t => t.type === 'loyalty_earn');
 
-  // ✅ مزامنة خصم المحفظة (wallet_spend) مع رصيد العميل — فرق التغيير فقط
+  // ✅ مزامنة خصم المحفظة (redeem) مع رصيد العميل — فرق التغيير فقط
   const syncWalletSpend = async (desiredAmount) => {
     const allWallets = await findAllWalletsByPhone(order?.phone);
     if (allWallets.length === 0) throw new Error('لا توجد محفظة لهذا العميل');
@@ -218,7 +218,7 @@ export default function OrderDetails() {
       .from('wallet_transactions')
       .select('*')
       .eq('order_id', id)
-      .eq('type', 'wallet_spend')
+      .eq('type', 'redeem')
       .maybeSingle();
 
     if (spendError) throw spendError;
@@ -282,7 +282,7 @@ export default function OrderDetails() {
       .insert({
         wallet_id: wallet.id,
         order_id: id,
-        type: 'wallet_spend',
+        type: 'redeem',
         points: 0,
         amount_value: desired,
         created_at: new Date().toISOString()
