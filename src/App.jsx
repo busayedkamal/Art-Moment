@@ -7,6 +7,7 @@ import AuthProvider, { useAuth } from './contexts/AuthContext'
 // الصفحات العامة
 import LandingPage from './LandingPage.jsx'
 import TrackOrderPage from './pages/TrackOrderPage.jsx'
+import PrivacyPage from './pages/PrivacyPage.jsx'
 
 // صفحات لوحة التحكم
 import AdminLoginPage from './pages/AdminLoginPage.jsx'
@@ -41,6 +42,7 @@ function AppRoutes() {
       {/* 1. المسارات العامة */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/track" element={<TrackOrderPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       
       {/* 2. صفحة دخول الأدمن */}
       <Route path="/admin/login" element={<AdminLoginPage />} />

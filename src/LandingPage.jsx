@@ -748,6 +748,7 @@ export default function LandingPage() {
 
           <div className="flex justify-center gap-6 text-sm font-bold mb-8">
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
+            <Link to="/privacy" className="hover:text-[#D9A3AA] transition-colors">الخصوصية والشروط</Link>
             <Link to="/admin/login" className="hover:text-[#D9A3AA] transition-colors">دخول الموظفين</Link>
           </div>
 
@@ -769,9 +770,13 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <p className="text-xs text-white/30 border-t border-white/10 pt-8">
-            © 2026 Art Moment. جميع الحقوق محفوظة.
-          </p>
+          <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-white/30">
+            <p>© 2026 Art Moment. جميع الحقوق محفوظة.</p>
+            <span className="hidden sm:inline text-white/15">·</span>
+            <Link to="/privacy" className="hover:text-[#D9A3AA] transition-colors font-semibold">
+              سياسة الخصوصية وشروط الاستخدام
+            </Link>
+          </div>
         </div>
       </footer>
 
