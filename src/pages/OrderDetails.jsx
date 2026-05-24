@@ -1080,8 +1080,29 @@ export default function OrderDetails() {
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-[#D9A3AA]/10 rounded-xl shrink-0"><ArrowRight /></button>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-2xl font-bold text-[#4A4A4A] font-mono truncate">الطلب #{order.id.slice(0, 8)}</h1>
-                <p className="text-[#4A4A4A]/70 text-xs">تفاصيل المعالجة</p>
+                {/* اسم العميل */}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h1 className="text-base sm:text-lg font-black text-[#4A4A4A] truncate leading-tight">
+                    {order.customer_name || 'عميل'}
+                  </h1>
+                  {order.status && (
+                    <span className={`hidden sm:inline-flex shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' :
+                      order.status === 'done'      ? 'bg-[#D9A3AA]/20 text-[#C48A92]' :
+                      order.status === 'printing'  ? 'bg-amber-100 text-amber-700' :
+                                                     'bg-blue-100 text-blue-700'
+                    }`}>
+                      { order.status === 'new'       ? 'جديد'      :
+                        order.status === 'printing'  ? 'طباعة'     :
+                        order.status === 'done'      ? 'جاهز'      :
+                        order.status === 'delivered' ? 'تم التسليم': order.status }
+                    </span>
+                  )}
+                </div>
+                {/* رقم الطلب */}
+                <p className="text-[10px] sm:text-xs text-[#4A4A4A]/45 font-mono tracking-wide">
+                  # {order.id.slice(0, 8)}
+                </p>
               </div>
             </div>
             <div className="flex gap-1.5 shrink-0">
