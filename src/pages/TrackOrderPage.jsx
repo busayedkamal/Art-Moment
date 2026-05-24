@@ -461,30 +461,13 @@ export default function TrackOrderPage() {
                       <span className="font-bold">{Number(order.delivery_fee).toFixed(2)}</span>
                     </div>
                   )}
-                  {/* حساب الخصوم من الفرق الفعلي */}
-                  {(() => {
-                    const totalDisc = Math.max(0,
-                      (Number(order.subtotal || 0) + Number(order.delivery_fee || 0)) - Number(order.total_amount || 0)
-                    );
-                    const walletPart = Number(order.wallet_used || 0);
-                    const couponPart = Math.max(0, totalDisc - walletPart);
-                    return (
-                      <>
-                        {couponPart > 0.01 && (
-                          <div className="flex justify-between text-sm text-red-500 px-2 bg-red-50 py-1.5 rounded-lg border border-red-100/50">
-                            <span className="font-bold">خصم الكوبون</span>
-                            <span className="font-bold">-{couponPart.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {walletPart > 0.01 && (
-                          <div className="flex justify-between text-sm text-violet-600 px-2 bg-violet-50 py-1.5 rounded-lg border border-violet-100/50">
-                            <span className="font-bold">خصم رصيد النقاط</span>
-                            <span className="font-bold">-{walletPart.toFixed(2)}</span>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
+                  {/* خصم الكوبون فقط (إن وجد) */}
+                  {Number(order.manual_discount || 0) > 0.01 && (
+                    <div className="flex justify-between text-sm text-red-500 px-2 bg-red-50 py-1.5 rounded-lg border border-red-100/50">
+                      <span className="font-bold">خصم الكوبون</span>
+                      <span className="font-bold">-{Number(order.manual_discount || 0).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-[#D9A3AA]/20 my-4"></div>
@@ -493,11 +476,11 @@ export default function TrackOrderPage() {
                   <span className="font-black text-xl">{Number(order.total_amount || 0).toFixed(2)} <RiyalSign /></span>
                 </div>
 
-                {payments.length > 0 && (
+                {(payments.length > 0 || Number(order.wallet_used || 0) > 0.01) && (
                   <div className="mb-4 bg-[#F8F5F2] p-3 rounded-xl border border-[#D9A3AA]/10">
                     <p className="text-[10px] text-[#4A4A4A]/50 font-bold mb-2 flex justify-between">
                       <span>سجل الدفعات</span>
-                      <span className="text-[#D9A3AA]">المدفوع: {Number(order.deposit || 0).toFixed(2)} <RiyalSign /></span>
+                      <span className="text-[#D9A3AA]">المدفوع: {(Number(order.deposit || 0) + Number(order.wallet_used || 0)).toFixed(2)} <RiyalSign /></span>
                     </p>
                     <div className="space-y-1.5">
                       {payments.map(p => (
@@ -506,6 +489,12 @@ export default function TrackOrderPage() {
                           <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">+{Number(p.amount).toFixed(2)} <RiyalSign /></span>
                         </div>
                       ))}
+                      {Number(order.wallet_used || 0) > 0.01 && (
+                        <div className="flex justify-between text-xs border-t border-white pt-1.5">
+                          <span className="flex items-center gap-1 text-violet-600 font-bold">رصيد النقاط</span>
+                          <span className="font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded">-{Number(order.wallet_used || 0).toFixed(2)} <RiyalSign /></span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

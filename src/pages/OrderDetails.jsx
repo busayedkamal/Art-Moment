@@ -719,24 +719,32 @@ export default function OrderDetails() {
     const theoreticalTotal = Number(order.subtotal || 0) + Number(deliveryFee || 0);
     const discountValue = Math.min(inputVal, theoreticalTotal);
 
-    // احسب خصم الكوبون القائم من الفرق الفعلي (subtotal+delivery - total_amount)
-    // ثم اطرح منه wallet_used الحالي للحصول على الجزء الخاص بالكوبون فقط
-    const existingTotalDiscount = Math.max(0,
-      (Number(order.subtotal || 0) + Number(order.delivery_fee || 0)) - Number(order.total_amount || 0)
+    // النقاط تُعامَل كدفعة مالية (مثل الكاش)، لا تُقلّل total_amount
+    // manual_discount = خصم الكوبون القائم فقط (لا يتغير)
+    // wallet_used = المبلغ المدفوع من النقاط (يُطرح من المتبقي فقط)
+    const existingCouponDiscount = Number(order.manual_discount || 0);
+    // نستخدم order.wallet_used لا walletUsed (لأن الحالة المحلية قد لا تكون محدثة)
+    const existingWalletUsed = Number(order.wallet_used || 0);
+
+    // الحد الأقصى للدفع من النقاط = المتبقي الفعلي (total - deposit - wallet_used الحالي)
+    const currentRemaining = Math.max(0,
+      Number(order.total_amount || 0) - Number(order.deposit || 0) - existingWalletUsed
     );
-    const existingCouponDiscount = Math.max(0, existingTotalDiscount - walletUsed);
-    const totalDiscount = existingCouponDiscount + discountValue;
+    const safeDiscount = Math.min(discountValue, currentRemaining);
+    // إجمالي النقاط المستخدمة الجديد (مجموع، ليس إضافة)
+    const newWalletTotal = existingWalletUsed + safeDiscount;
 
     const toastId = toast.loading('تحديث الخصم...');
     try {
-      await syncWalletSpend(discountValue);
+      await syncWalletSpend(newWalletTotal);   // syncWalletSpend تستقبل الإجمالي المطلوب
       await syncPackageSpend(0);
-      const success = await recalculateAndSaveTotal({ manual_discount: totalDiscount, wallet_used: discountValue });
+      const success = await recalculateAndSaveTotal({ manual_discount: existingCouponDiscount, wallet_used: newWalletTotal });
       toast.dismiss(toastId);
       if (success) {
         toast.success('تم خصم من رصيد النقاط ✅');
         setDiscountSource('wallet');
-        setCustomerPointsBalance(prev => Math.max(0, prev - discountValue));
+        setWalletUsed(newWalletTotal);
+        setCustomerPointsBalance(prev => Math.max(0, prev - safeDiscount));
       }
     } catch (e) {
       toast.dismiss(toastId);
@@ -1453,7 +1461,10 @@ export default function OrderDetails() {
                         className="flex-1 text-center border border-violet-400/40 rounded-lg px-2 py-1.5 text-sm font-bold text-violet-200 bg-[#3b3b3b] outline-none focus:ring-2 ring-violet-400/30"
                       />
                       <button type="button"
-                        onClick={() => setPointsDiscountInput(Math.min(customerPointsBalance, Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2))}
+                        onClick={() => {
+                          const remaining = Math.max(0, Number(order.total_amount || 0) - Number(order.deposit || 0) - Number(order.wallet_used || 0));
+                          setPointsDiscountInput(Math.min(customerPointsBalance, remaining).toFixed(2));
+                        }}
                         className="text-[10px] text-violet-300 bg-violet-500/20 hover:bg-violet-500/30 px-2 py-1 rounded-lg shrink-0 transition-colors">
                         الكل
                       </button>
@@ -1467,43 +1478,47 @@ export default function OrderDetails() {
 
                 <div className="border-t border-white/10 my-2"></div>
 
-                {/* ✅ تم إضافة الإجمالي قبل الخصم لتوضيح الحسبة */}
-                <div className="flex justify-between text-white/60 text-xs mb-1">
-                  <span>الإجمالي (مع التوصيل)</span>
-                  <span className="line-through">{(Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2)} <RiyalSign light /></span>
-                </div>
-
-                {/* ── حساب الخصوم من الفرق الفعلي (subtotal+delivery - total_amount) ── */}
+                {/* ── الإجمالي مع التوصيل (مشطوب فقط إن وجد خصم كوبون) ── */}
                 {(() => {
-                  const totalDisc = Math.max(0,
-                    (Number(order.subtotal || 0) + Number(order.delivery_fee || 0)) - Number(order.total_amount || 0)
-                  );
-                  const walletPart = Number(order.wallet_used || 0);
-                  const couponPart = Math.max(0, totalDisc - walletPart);
+                  const withDelivery = Number(order.subtotal || 0) + Number(deliveryFee || 0);
+                  const couponDiscount = Number(order.manual_discount || 0);
+                  const walletPayment = Number(order.wallet_used || 0);
                   return (
                     <>
-                      {couponPart > 0.01 && (
-                        <div className="flex justify-between text-xs text-pink-300 bg-pink-500/10 border border-pink-400/20 rounded-lg px-2 py-1.5 mb-1">
-                          <span className="flex items-center gap-1"><Tag size={11} /> خصم الكوبون</span>
-                          <span className="font-bold">-{couponPart.toFixed(2)} <RiyalSign light /></span>
+                      {couponDiscount > 0.01 ? (
+                        <>
+                          <div className="flex justify-between text-white/60 text-xs mb-1">
+                            <span>الإجمالي (مع التوصيل)</span>
+                            <span className="line-through">{withDelivery.toFixed(2)} <RiyalSign light /></span>
+                          </div>
+                          <div className="flex justify-between text-xs text-pink-300 bg-pink-500/10 border border-pink-400/20 rounded-lg px-2 py-1.5 mb-1">
+                            <span className="flex items-center gap-1"><Tag size={11} /> خصم الكوبون</span>
+                            <span className="font-bold">-{couponDiscount.toFixed(2)} <RiyalSign light /></span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex justify-between text-white/60 text-xs mb-1">
+                          <span>الإجمالي (مع التوصيل)</span>
+                          <span>{withDelivery.toFixed(2)} <RiyalSign light /></span>
                         </div>
                       )}
-                      {walletPart > 0.01 && (
+
+                      <div className="flex justify-between items-center mb-3 px-1">
+                        <span className="font-bold text-white">الإجمالي النهائي</span>
+                        <span className="font-black text-xl text-white">
+                          {Number(order.total_amount || 0).toFixed(2)} <RiyalSign light />
+                        </span>
+                      </div>
+
+                      {walletPayment > 0.01 && (
                         <div className="flex justify-between text-xs text-violet-300 bg-violet-500/10 border border-violet-400/20 rounded-lg px-2 py-1.5 mb-1">
-                          <span className="flex items-center gap-1"><Wallet size={11} /> خصم رصيد النقاط</span>
-                          <span className="font-bold">-{walletPart.toFixed(2)} <RiyalSign light /></span>
+                          <span className="flex items-center gap-1"><Wallet size={11} /> مدفوع من رصيد النقاط</span>
+                          <span className="font-bold">-{walletPayment.toFixed(2)} <RiyalSign light /></span>
                         </div>
                       )}
                     </>
                   );
                 })()}
-
-                <div className="flex justify-between items-center mb-5 px-1">
-                  <span className="font-bold text-white">الإجمالي النهائي</span>
-                  <span className="font-black text-xl text-white">
-                    {Number(order.total_amount || 0).toFixed(2)} <RiyalSign light />
-                  </span>
-                </div>
 
                 <div className="bg-white/10 rounded-xl p-3">
                   <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
@@ -1558,10 +1573,28 @@ export default function OrderDetails() {
                     )}
                   </div>
 
-                  <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
-                    <span className="text-xs text-[#4A4A4A]/55">إجمالي المدفوع</span>
-                    <span className="font-bold text-[#D9A3AA]">{Number(order.deposit || 0).toFixed(2)}</span>
-                  </div>
+                  {/* إجمالي المدفوع = الدفعات النقدية + النقاط */}
+                  {Number(order.wallet_used || 0) > 0.01 ? (
+                    <>
+                      <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
+                        <span className="text-xs text-[#4A4A4A]/55">مدفوع نقداً</span>
+                        <span className="font-bold text-[#D9A3AA]">{Number(order.deposit || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-xs text-violet-300/70">مدفوع من النقاط</span>
+                        <span className="font-bold text-violet-300">{Number(order.wallet_used || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between mt-1 border-t border-white/10 pt-1">
+                        <span className="text-xs text-white/70">إجمالي المدفوع</span>
+                        <span className="font-bold text-white">{(Number(order.deposit || 0) + Number(order.wallet_used || 0)).toFixed(2)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
+                      <span className="text-xs text-[#4A4A4A]/55">إجمالي المدفوع</span>
+                      <span className="font-bold text-[#D9A3AA]">{Number(order.deposit || 0).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2 items-center">
@@ -1718,36 +1751,29 @@ export default function OrderDetails() {
                     <span className="font-bold">{Number(order.delivery_fee || 0).toFixed(2)}</span>
                   </div>
                 )}
-                {(() => {
-                  const theoreticalTotal = Number(order.subtotal || 0) + Number(order.delivery_fee || 0);
-                  const totalDisc = Math.max(0, theoreticalTotal - Number(order.total_amount || 0));
-                  const walletPart = Number(order.wallet_used || 0);
-                  const couponPart = Math.max(0, totalDisc - walletPart);
-                  return (
-                    <>
-                      {couponPart > 0.01 && (
-                        <div className="flex justify-between text-xs text-red-600 border-b border-[#D9A3AA]/15 pb-1">
-                          <span>خصم الكوبون</span>
-                          <span>-{couponPart.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {walletPart > 0.01 && (
-                        <div className="flex justify-between text-xs text-violet-600 border-b border-[#D9A3AA]/15 pb-1">
-                          <span>خصم رصيد النقاط</span>
-                          <span>-{walletPart.toFixed(2)}</span>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                {/* خصم الكوبون فقط (إن وجد) */}
+                {Number(order.manual_discount || 0) > 0.01 && (
+                  <div className="flex justify-between text-xs text-red-600 border-b border-[#D9A3AA]/15 pb-1">
+                    <span>خصم الكوبون</span>
+                    <span>-{Number(order.manual_discount || 0).toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-black text-lg pt-1">
                   <span>الإجمالي</span>
                   <span>{Number(order.total_amount || 0).toFixed(2)} <RiyalSign /></span>
                 </div>
+                {/* المدفوع نقداً */}
                 <div className="flex justify-between text-xs pt-1 text-[#4A4A4A]/70">
                   <span>المدفوع</span>
                   <span className="font-bold">{Number(order.deposit || 0).toFixed(2)}</span>
                 </div>
+                {/* مدفوع من النقاط */}
+                {Number(order.wallet_used || 0) > 0.01 && (
+                  <div className="flex justify-between text-xs pt-1 text-violet-600">
+                    <span>مدفوع من النقاط</span>
+                    <span className="font-bold">-{Number(order.wallet_used || 0).toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs pt-1 border-t-2 border-[#4A4A4A]/35 mt-2">
                   <span className="font-bold text-[#4A4A4A] mt-1">المتبقي</span>
                   <span className={`font-black text-base mt-1 ${remaining > 0 ? 'text-red-600' : 'text-[#4A4A4A]'}`}>
