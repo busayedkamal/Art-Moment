@@ -44,11 +44,11 @@ export default function Layout() {
       
       {/* Sidebar - Desktop & Mobile */}
       <aside className={`
-        fixed inset-y-0 right-0 z-50 w-64 bg-[#4A4A4A] text-white transition-transform duration-300 ease-in-out
-        md:relative md:translate-x-0
+        fixed inset-y-0 right-0 z-50 w-64 h-screen bg-[#4A4A4A] text-white transition-transform duration-300 ease-in-out
+        md:sticky md:top-0 md:translate-x-0 md:shrink-0
         ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
-        <div className="flex h-full flex-col">
+        <div className="flex h-screen flex-col overflow-hidden">
           {/* Logo Area */}
           <div className="flex h-16 items-center justify-between px-6 border-b border-white/10">
             <span className="text-lg font-bold tracking-wider">Art Moment</span>
@@ -61,7 +61,7 @@ export default function Layout() {
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+          <nav className="flex-1 min-h-0 space-y-1 px-3 py-4 overflow-y-auto">
             {navItems.map((item) => {
               // التحقق من المسار النشط
               const isActive = location.pathname.startsWith(item.path);
