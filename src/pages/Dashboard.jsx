@@ -79,7 +79,17 @@ export default function Dashboard() {
         // --- الحسابات العامة ---
         const totalOrders = orders.length;
         const totalRevenue = orders.reduce((acc, order) => acc + (order.total_amount || 0), 0);
-        const totalCashReceived = orders.reduce((acc, order) => acc + (order.deposit || 0), 0);
+
+        // ✅ النقد الفعلي = deposit مسقوف بـ (total - wallet_used)
+        // يمنع احتساب مبالغ النقاط ضمن الإيرادات النقدية في حال سُجّل الدفع قبل تطبيق النقاط
+        const totalCashReceived = orders.reduce((acc, order) => {
+          const dep    = Number(order.deposit     || 0);
+          const wallet = Number(order.wallet_used || 0);
+          const total  = Number(order.total_amount|| 0);
+          // أقصى نقد ممكن = total − wallet (ما تبقى بعد حسم النقاط)
+          const realCash = Math.min(dep, Math.max(0, total - wallet));
+          return acc + realCash;
+        }, 0);
         // ✅ المديونيات الفعلية: المتبقي الإيجابي فقط (لا نطرح الحالات السالبة "الدفع الزائد")
         const totalDebt = orders
           .filter(o => ((o.total_amount || 0) - (o.deposit || 0) - Number(o.wallet_used || 0)) > 0.5)

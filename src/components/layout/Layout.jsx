@@ -44,15 +44,16 @@ export default function Layout() {
       
       {/* Sidebar - Desktop & Mobile */}
       <aside className={`
-        fixed inset-y-0 right-0 z-50 w-64 h-screen bg-[#4A4A4A] text-white transition-transform duration-300 ease-in-out
-        md:sticky md:top-0 md:translate-x-0 md:shrink-0
+        fixed inset-y-0 right-0 z-50 w-64 shrink-0 bg-[#4A4A4A] text-white transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0
         ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
-        <div className="flex h-screen flex-col overflow-hidden">
+        {/* الحاوية الداخلية: flex column بارتفاع الشاشة الكاملة */}
+        <div className="flex flex-col" style={{ height: '100dvh' }}>
           {/* Logo Area */}
-          <div className="flex h-16 items-center justify-between px-6 border-b border-white/10">
+          <div className="flex-none flex h-16 items-center justify-between px-6 border-b border-white/10">
             <span className="text-lg font-bold tracking-wider">Art Moment</span>
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="md:hidden text-white/70 hover:text-white"
             >
@@ -60,10 +61,9 @@ export default function Layout() {
             </button>
           </div>
 
-          {/* Navigation Links */}
+          {/* Navigation Links — تأخذ المساحة المتبقية وتتمرر داخلها */}
           <nav className="flex-1 min-h-0 space-y-1 px-3 py-4 overflow-y-auto">
             {navItems.map((item) => {
-              // التحقق من المسار النشط
               const isActive = location.pathname.startsWith(item.path);
               return (
                 <Link
@@ -72,8 +72,8 @@ export default function Layout() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`
                     flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-                    ${isActive 
-                      ? 'bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white shadow-lg shadow-fuchsia-900/20' 
+                    ${isActive
+                      ? 'bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white shadow-lg shadow-[#D9A3AA]/25'
                       : 'text-white/70 hover:bg-white/10 hover:text-white'}
                   `}
                 >
@@ -84,9 +84,8 @@ export default function Layout() {
             })}
           </nav>
 
-          {/* Bottom Buttons */}
-          <div className="p-4 border-t border-white/10 space-y-1">
-            {/* زر الرجوع للواجهة الرئيسية بدون خروج */}
+          {/* Bottom Buttons — ثابتة دائماً أسفل الشاشة */}
+          <div className="flex-none p-4 border-t border-white/10 space-y-1">
             <Link
               to="/"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -95,8 +94,6 @@ export default function Layout() {
               <Home size={20} />
               الصفحة الرئيسية
             </Link>
-
-            {/* زر تسجيل الخروج */}
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"

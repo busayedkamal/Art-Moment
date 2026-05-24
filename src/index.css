@@ -7,49 +7,132 @@ html {
   direction: rtl;
 }
 
-/* تنسيق أساسي للصفحة */
+/* ═══════════════════════════════════════════════════
+   تنسيق أساسي — هوية لحظة فن
+   60% Off-white · 30% Pink/Charcoal · 10% Gold
+═══════════════════════════════════════════════════ */
 body {
   margin: 0;
   font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #f7f7f7;
-  color: #0f172a;
+  background: #F8F5F2;   /* Off-white — خلفية التطبيق الأساسية */
+  color: #4A4A4A;         /* Charcoal Grey — النص الأساسي */
 }
 
-/* مكوّنات عامة لهوية لحظة فن */
+/* ─── متغيرات CSS للهوية البصرية ──────────────── */
+:root {
+  --color-pink:        #D9A3AA;
+  --color-pink-light:  #EDD4D7;
+  --color-pink-dark:   #C48A92;
+  --color-gold:        #C5A059;
+  --color-gold-light:  #DFC08A;
+  --color-gold-dark:   #A8893C;
+  --color-charcoal:    #4A4A4A;
+  --color-bg:          #F8F5F2;
+  --color-card:        #FFFFFF;
+  --shadow-card:       0 2px 12px rgba(74,74,74,0.06);
+  --shadow-card-md:    0 4px 20px rgba(74,74,74,0.10);
+  --shadow-pink:       0 4px 14px rgba(217,163,170,0.35);
+  --shadow-gold:       0 4px 14px rgba(197,160,89,0.35);
+}
+
+/* ─── مكوّنات عامة — هوية لحظة فن ─────────────── */
 @layer components {
-  /* أزرار عامة لهوية لحظة فن */
+
+  /* ── زر رئيسي (CTA) — وردي ناعم ────────────── */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1
-      px-3 py-2 md:px-4 md:py-2
-      rounded-xl text-xs md:text-sm font-medium
-      bg-fuchsia-500 text-white
-      hover:bg-gradient-to-b from-fuchsia-600 to-purple-600
-      disabled:bg-fuchsia-300 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-1.5
+      px-4 py-2.5
+      rounded-xl text-sm font-bold
+      bg-[#D9A3AA] text-white
+      hover:bg-[#C48A92]
+      active:scale-95
+      shadow-[0_4px_14px_rgba(217,163,170,0.35)]
+      transition-all duration-200
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
   }
 
+  /* ── زر ذهبي — باقات VIP وشحن المحفظة ──────── */
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-1.5
+      px-4 py-2.5
+      rounded-xl text-sm font-bold
+      bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white
+      hover:from-[#C48A92] hover:to-[#A8893C]
+      active:scale-95
+      shadow-[0_4px_14px_rgba(197,160,89,0.35)]
+      transition-all duration-200
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* ── زر ثانوي — إطار شفاف ───────────────────── */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1
-      px-3 py-2 md:px-4 md:py-2
-      rounded-xl text-xs md:text-sm font-medium
-      border border-slate-300 text-slate-700
-      hover:bg-slate-50;
+    @apply inline-flex items-center justify-center gap-1.5
+      px-4 py-2.5
+      rounded-xl text-sm font-bold
+      border-2 border-[#D9A3AA]/50 text-[#4A4A4A]
+      hover:bg-[#D9A3AA]/10 hover:border-[#D9A3AA]
+      active:scale-95
+      transition-all duration-200;
   }
 
+  /* ── زر شبح (Ghost) — خفيف جداً ─────────────── */
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-1
       px-2.5 py-1.5
-      rounded-xl text-[11px] md:text-xs font-medium
-      text-slate-600 hover:bg-slate-100;
+      rounded-xl text-xs font-medium
+      text-[#4A4A4A]/70 hover:bg-[#4A4A4A]/08 hover:text-[#4A4A4A]
+      transition-colors duration-150;
   }
 
-  .heading-main {
-    @apply text-lg md:text-2xl font-bold text-slate-900;
-  }
-
+  /* ── بطاقة (Card) ────────────────────────────── */
   .card {
-    @apply bg-white rounded-2xl shadow-sm border border-slate-200
-      p-4 md:p-5;
+    @apply bg-white rounded-2xl p-4 md:p-5
+      border border-[#4A4A4A]/[0.08]
+      shadow-[0_2px_12px_rgba(74,74,74,0.06)];
   }
+
+  /* ── بطاقة مرتفعة (Elevated) ─────────────────── */
+  .card-elevated {
+    @apply bg-white rounded-2xl p-4 md:p-5
+      shadow-[0_4px_20px_rgba(74,74,74,0.10)];
+  }
+
+  /* ── عنوان رئيسي ─────────────────────────────── */
+  .heading-main {
+    @apply text-lg md:text-2xl font-bold text-[#4A4A4A];
+  }
+
+  /* ── خط فاصل ناعم ───────────────────────────── */
+  .divider {
+    @apply border-t border-[#4A4A4A]/[0.12];
+  }
+
+  /* ── شارة (Badge) — وردية ──────────────────── */
+  .badge-pink {
+    @apply inline-flex items-center gap-1
+      px-2 py-0.5 rounded-full
+      text-xs font-bold
+      bg-[#D9A3AA]/15 text-[#C48A92];
+  }
+
+  /* ── شارة — ذهبية ──────────────────────────── */
+  .badge-gold {
+    @apply inline-flex items-center gap-1
+      px-2 py-0.5 rounded-full
+      text-xs font-bold
+      bg-[#C5A059]/15 text-[#A8893C];
+  }
+
+  /* ── ترويسة جدول ────────────────────────────── */
+  .table-header {
+    @apply bg-[#D9A3AA]/10 text-[#4A4A4A] font-bold text-xs;
+  }
+
+  /* ── صف جدول — hover ناعم ──────────────────── */
+  .table-row-hover {
+    @apply hover:bg-[#F8F5F2] transition-colors duration-100;
+  }
+
 }
 
 /* الفاتورة لا تظهر في الوضع العادي */

@@ -208,9 +208,15 @@ export default function Reports() {
     
     const totalWalletBalance = totalPointsBalance;
 
-    // ✅ نحسب صافي الربح من عمود deposit في الطلبات (متسق مع Dashboard)
-    // جدول order_payments يحتوي دفعات مكررة مما يُشوّه الأرقام
-    const totalDepositReceived = orders.reduce((sum, o) => sum + Number(o.deposit || 0), 0);
+    // ✅ النقد الفعلي = deposit مسقوف بـ (total - wallet_used)
+    // يمنع احتساب مبالغ النقاط ضمن الإيرادات النقدية في حال سُجّل الدفع قبل تطبيق النقاط
+    const totalDepositReceived = orders.reduce((sum, o) => {
+      const dep    = Number(o.deposit     || 0);
+      const wallet = Number(o.wallet_used || 0);
+      const total  = Number(o.total_amount|| 0);
+      const realCash = Math.min(dep, Math.max(0, total - wallet));
+      return sum + realCash;
+    }, 0);
 
     // ✅ الديون المستحقة للطلبات المُسلَّمة فعلاً (نفس منطق Dashboard)
     const outstandingDeliveredDebts = orders
@@ -238,7 +244,8 @@ export default function Reports() {
     };
   }, [payments, expenses, orders, wallets, packageTransactions, settings]);
 
-  const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+  // ألوان الرسوم البيانية — متوافقة مع هوية لحظة فن
+  const CHART_COLORS = ['#D9A3AA', '#C5A059', '#4A4A4A', '#ef4444', '#C48A92'];
 
   const generateReturnOfferMsg = () => {
     const customersMap = {};
@@ -415,15 +422,23 @@ export default function Reports() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={analytics.monthlyData}>
                 <defs>
-                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
-                  <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
+                  {/* تدرج الوردي للإيرادات */}
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#D9A3AA" stopOpacity={0.18}/>
+                    <stop offset="95%" stopColor="#D9A3AA" stopOpacity={0}/>
+                  </linearGradient>
+                  {/* تدرج الأحمر للمصروفات */}
+                  <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.12}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
-                <XAxis dataKey="name" tick={{fontSize: 12}} axisLine={false} tickLine={false}/>
-                <YAxis tick={{fontSize: 12}} axisLine={false} tickLine={false}/>
-                <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}/>
-                <Area type="monotone" dataKey="revenue" name="الدخل" stroke="#10b981" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2} />
-                <Area type="monotone" dataKey="expenses" name="المصروفات" stroke="#ef4444" fillOpacity={1} fill="url(#colorExp)" strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(74,74,74,0.08)"/>
+                <XAxis dataKey="name" tick={{fontSize: 11, fill: 'rgba(74,74,74,0.60)'}} axisLine={false} tickLine={false}/>
+                <YAxis tick={{fontSize: 11, fill: 'rgba(74,74,74,0.60)'}} axisLine={false} tickLine={false}/>
+                <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(74,74,74,0.12)', fontFamily: 'Cairo, sans-serif'}}/>
+                <Area type="monotone" dataKey="revenue"  name="الدخل"       stroke="#D9A3AA" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2.5} dot={false}/>
+                <Area type="monotone" dataKey="expenses" name="المصروفات"   stroke="#ef4444" fillOpacity={1} fill="url(#colorExp)" strokeWidth={2}   dot={false}/>
               </AreaChart>
             </ResponsiveContainer>
           </div>
