@@ -323,13 +323,13 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
 
-            {/* الباقة النحاسية */}
+            {/* الباقة البرونزية */}
             <div className="bg-[#F8F5F2] rounded-[2rem] p-8 border border-orange-200/50 hover:shadow-xl hover:shadow-orange-900/5 transition-all flex flex-col relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-orange-400 to-orange-200"></div>
               <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:scale-110 transition-transform">
                 <CreditCard size={28} />
               </div>
-              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة النحاسية</h3>
+              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة البرونزية</h3>
               <div className="mb-6">
                 <span className="text-3xl font-black text-orange-600">299</span> <RiyalSign size="0.7em" />
               </div>
@@ -341,7 +341,7 @@ export default function LandingPage() {
                 المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!
               </p>
               <a
-                href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة النحاسية بـ 299 ريال"
+                href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة البرونزية بـ 299 ريال"
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-3 rounded-xl bg-orange-100 text-orange-700 font-bold hover:bg-orange-600 hover:text-white transition-colors flex justify-center items-center gap-2"
