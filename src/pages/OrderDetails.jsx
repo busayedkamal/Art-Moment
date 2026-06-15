@@ -139,8 +139,8 @@ export default function OrderDetails() {
         const totalPoints = allWallets.reduce((sum, w) => sum + Number(w.points_balance || 0), 0);
         setCustomerPointsBalance(totalPoints);
 
-        // رقم الاشتراك = أول 8 أحرف من id المحفظة الأولى
-        if (allWallets.length > 0) setWalletSubscriptionId(String(allWallets[0].id).slice(0, 8).toUpperCase());
+        // رقم الاشتراك من حقل subscription_code في جدول wallets
+        if (allWallets.length > 0) setWalletSubscriptionId(allWallets[0].subscription_code || '');
 
         // رصيد الباقات = من wallet_transactions لكل المحافظ
         if (allWalletIds.length > 0) {
