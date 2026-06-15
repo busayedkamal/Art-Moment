@@ -1407,10 +1407,11 @@ export default function OrderDetails() {
                 </div>
 
                 {/* ── خصم من رصيد الباقات ── */}
-                <div className={`rounded-xl border overflow-hidden transition-all ${discountSource === 'package' ? 'border-orange-400/50' : 'border-white/10'}`}>
+                <div className={`rounded-xl border overflow-hidden transition-all ${customerPackageBalance <= 0 ? 'opacity-50' : ''} ${discountSource === 'package' ? 'border-orange-400/50' : 'border-white/10'}`}>
                   <button type="button"
-                    onClick={() => setDiscountSource(discountSource === 'package' ? 'discount' : 'package')}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${discountSource === 'package' ? 'bg-orange-500/20' : 'bg-white/5 hover:bg-orange-500/10'}`}>
+                    disabled={customerPackageBalance <= 0}
+                    onClick={() => customerPackageBalance > 0 && setDiscountSource(discountSource === 'package' ? 'discount' : 'package')}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${customerPackageBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'package' ? 'bg-orange-500/20' : 'bg-white/5 hover:bg-orange-500/10'}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'package' ? 'bg-orange-400 border-orange-400' : 'border-orange-400/40'}`}>
                         {discountSource === 'package' && <div className="w-2 h-2 bg-white rounded-full" />}
@@ -1451,10 +1452,11 @@ export default function OrderDetails() {
                 </div>
 
                 {/* ── خصم من رصيد النقاط ── */}
-                <div className={`rounded-xl border overflow-hidden transition-all ${discountSource === 'wallet' ? 'border-violet-400/50' : 'border-white/10'}`}>
+                <div className={`rounded-xl border overflow-hidden transition-all ${customerPointsBalance <= 0 ? 'opacity-50' : ''} ${discountSource === 'wallet' ? 'border-violet-400/50' : 'border-white/10'}`}>
                   <button type="button"
-                    onClick={() => setDiscountSource(discountSource === 'wallet' ? 'discount' : 'wallet')}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${discountSource === 'wallet' ? 'bg-violet-500/20' : 'bg-white/5 hover:bg-violet-500/10'}`}>
+                    disabled={customerPointsBalance <= 0}
+                    onClick={() => customerPointsBalance > 0 && setDiscountSource(discountSource === 'wallet' ? 'discount' : 'wallet')}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${customerPointsBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'wallet' ? 'bg-violet-500/20' : 'bg-white/5 hover:bg-violet-500/10'}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'wallet' ? 'bg-violet-400 border-violet-400' : 'border-violet-400/40'}`}>
                         {discountSource === 'wallet' && <div className="w-2 h-2 bg-white rounded-full" />}
