@@ -1151,7 +1151,7 @@ export default function OrderDetails() {
           </div>
 
           {/* ══ بطاقتا العميل والإنتاج ══════════════════════════════════════ */}
-          <div className="grid md:grid-cols-2 gap-6 pb-[260px] md:pb-[200px]">
+          <div className="grid md:grid-cols-2 gap-6">
             {/* بطاقة العميل */}
             <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/25 shadow-sm h-full">
               <div className="flex justify-between items-center mb-4">
@@ -1323,28 +1323,19 @@ export default function OrderDetails() {
 
           </div>
 
-          {/* ══ بطاقة الحسابات — ثابتة أسفل الشاشة (POS Style) ═══════════════ */}
-          <div className="fixed bottom-0 left-0 right-0 md:right-64 z-40 bg-[#4A4A4A] text-white shadow-[0_-8px_32px_rgba(0,0,0,0.35)] border-t border-[#D9A3AA]/20">
+          {/* ══ بطاقة الحسابات ══════════════════════════════════════════════ */}
+          <div className="bg-[#4A4A4A] text-white p-6 rounded-2xl shadow-lg w-full flex flex-col mt-6">
 
-            {/* ── شريط العنوان ── */}
-            <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-white/10">
-              <h3 className="font-bold text-sm flex items-center gap-2">
-                <Banknote size={16} className="text-[#D9A3AA]" /> الحسابات
-              </h3>
-              {/* الإجمالي النهائي — مرئي دائماً */}
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] text-white/50">الإجمالي النهائي</span>
-                <span className="font-black text-lg text-white leading-none">
-                  {Number(order.total_amount || 0).toFixed(2)} <RiyalSign light />
-                </span>
-              </div>
-            </div>
+            {/* ── عنوان البطاقة ── */}
+            <h3 className="font-bold mb-5 flex items-center gap-2">
+              <Banknote size={18} className="text-[#D9A3AA]" /> الحسابات
+            </h3>
 
             {/* ── المحتوى في عمودين ── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 px-4 py-3 overflow-y-auto max-h-[55vh] md:max-h-none">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6 items-start">
 
               {/* ════ العمود الأيمن: المدخلات والخصومات ════════════════════════ */}
-              <div className="space-y-2 text-sm border-b border-white/10 pb-3 md:border-b-0 md:pb-0 md:border-l md:border-white/10 md:pl-6">
+              <div className="space-y-2 text-sm border-b border-white/10 pb-6 lg:border-b-0 lg:pb-0 lg:border-l lg:border-white/10 lg:pl-6">
 
                 {/* الإجمالي قبل الخصم */}
                 <div className="flex justify-between text-[#4A4A4A]/55 text-xs">
@@ -1492,7 +1483,7 @@ export default function OrderDetails() {
               </div>
 
               {/* ════ العمود الأيسر: الإجماليات والدفع والإجراءات ══════════════ */}
-              <div className="space-y-2 text-sm pt-3 md:pt-0">
+              <div className="space-y-2 text-sm">
 
                 {/* الإجماليات */}
                 {(() => {
