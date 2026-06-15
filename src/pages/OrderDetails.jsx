@@ -43,9 +43,10 @@ export default function OrderDetails() {
   // مصدر الخصم ومبالغ منفصلة لكل نظام
   const [discountSource, setDiscountSource] = useState('discount'); // 'discount' | 'wallet' | 'package'
   const [customerPackageBalance, setCustomerPackageBalance] = useState(0);
-  const [packageDiscountInput, setPackageDiscountInput] = useState('');   // مبلغ الخصم من الباقات
-  const [pointsDiscountInput, setPointsDiscountInput] = useState('');     // مبلغ الخصم من النقاط
-  const [customerPointsBalance, setCustomerPointsBalance] = useState(0); // رصيد نقاط العميل
+  const [packageDiscountInput, setPackageDiscountInput] = useState('');
+  const [pointsDiscountInput, setPointsDiscountInput] = useState('');
+  const [customerPointsBalance, setCustomerPointsBalance] = useState(0);
+  const [walletSubscriptionId, setWalletSubscriptionId] = useState(''); // رقم الاشتراك (wallet id)
 
   const [notes, setNotes] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -137,6 +138,9 @@ export default function OrderDetails() {
         // رصيد النقاط = مجموع points_balance من كل المحافظ
         const totalPoints = allWallets.reduce((sum, w) => sum + Number(w.points_balance || 0), 0);
         setCustomerPointsBalance(totalPoints);
+
+        // رقم الاشتراك = أول 8 أحرف من id المحفظة الأولى
+        if (allWallets.length > 0) setWalletSubscriptionId(allWallets[0].id.slice(0, 8).toUpperCase());
 
         // رصيد الباقات = من wallet_transactions لكل المحافظ
         if (allWalletIds.length > 0) {
@@ -894,13 +898,26 @@ export default function OrderDetails() {
         (Number(remaining) > 0 ? `المتبقي: *${remaining} ريال*\n` : `الحساب: *خالص*\n`) +
         `\nتابع طلبك وسجل طلباتك من هنا:\n${siteLink}`;
     } else if (type === 'invoice') {
+      // المدفوع: "كامل" إذا المتبقي = 0، وإلا مجموع الدفعات النقدية
+      const totalPaidCash = Number(order.deposit || 0);
+      const totalPaidWallet = Number(order.wallet_used || 0);
+      const remainingNum = Number(order.total_amount || 0) - totalPaidCash - totalPaidWallet;
+      const paidDisplay = remainingNum <= 0.01
+        ? 'كامل'
+        : `${totalPaidCash.toFixed(2)} ريال`;
+
       msg =
-        `اهلاً ${order.customer_name}\n` +
-        `رقم الطلب: *${order.id.slice(0, 5)}*\n` +
-        `الاجمالي: *${order.total_amount} ريال*\n` +
-        `المدفوع: *${order.deposit} ريال*\n` +
-        `المتبقي: *${remaining} ريال*\n` +
-        `\nتابع طلبك من هنا:\n${siteLink}`;
+        `اهلاً بكِ *${order.customer_name}* 🌸\n` +
+        `رقم الطلب: *${order.id.slice(0, 8)}*\n\n` +
+        `🧾 *تفاصيل الفاتورة:*\n` +
+        `الاجمالي: *${Number(order.total_amount || 0).toFixed(2)}* ريال\n` +
+        `المدفوع: *${paidDisplay}*\n` +
+        `المتبقي: *${Math.max(0, remainingNum).toFixed(2)}* ريال\n\n` +
+        `🎁 *تفاصيل حسابك:*\n` +
+        `رقم الاشتراك: *${walletSubscriptionId || 'غير مسجل'}*\n` +
+        `رصيد النقاط: *${customerPointsBalance.toFixed(2)}* نقطة\n` +
+        `رصيد الباقات: *${customerPackageBalance.toFixed(2)}* ريال\n\n` +
+        `تابع طلبكِ من هنا:\n${siteLink}`;
     } else if (type === 'location') {
       msg =
         `موقعنا على خرائط جوجل:\nhttps://maps.app.goo.gl/...\n` +
