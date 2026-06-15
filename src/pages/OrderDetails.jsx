@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
   ArrowRight, Printer, CheckCircle, Truck, Trash2,
   Banknote, FileText, User, Download,
-  MessageCircle, X, Tag, MapPin, Receipt, StickyNote, Plus, Wallet, Gift, Package
+  MessageCircle, X, Tag, Receipt, StickyNote, Plus, Wallet, Gift, Package
 } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
 import logoPng from '../assets/logo.png';
@@ -1206,41 +1206,6 @@ export default function OrderDetails() {
                   )}
                 </div>
 
-                <div>
-                  <span className="text-[#4A4A4A]/70 text-xs">تاريخ التسليم</span>
-                  {isEditingCustomer ? (
-                    <input
-                      type="date"
-                      value={customerData.delivery_date}
-                      onChange={e => setCustomerData({ ...customerData, delivery_date: e.target.value })}
-                      className="w-full border rounded px-2 py-1"
-                    />
-                  ) : (
-                    <div className="text-red-600 font-bold">{order.delivery_date}</div>
-                  )}
-                </div>
-
-                <div className="border-t border-[#D9A3AA]/15 pt-3">
-                  <span className="text-[#4A4A4A]/70 text-xs block mb-1">المنطقة / المدينة</span>
-                  {isEditingCustomer ? (
-                    <div className="flex flex-wrap gap-2">
-                      {CITIES.map(city => (
-                        <button
-                          key={city}
-                          onClick={() => setCustomerData({ ...customerData, source: city })}
-                          className={`px-2 py-1 text-xs border rounded ${customerData.source === city ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white'}`}
-                          type="button"
-                        >
-                          {city}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-[#4A4A4A] font-bold">
-                      <MapPin size={14} className="text-red-500" /> {order.source || 'غير محدد'}
-                    </div>
-                  )}
-                </div>
 
                 {!isEditingCustomer && order.phone && (
                   <div className="pt-4 border-t border-[#D9A3AA]/10 space-y-2">
@@ -1253,7 +1218,7 @@ export default function OrderDetails() {
                       <MessageCircle size={18} /> محادثة واتساب
                     </a>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => sendWhatsApp('ready')}
                         className="bg-[#D9A3AA]/10 text-[#C5A059] text-xs py-2 rounded-lg font-bold hover:bg-[#D9A3AA]/15 border border-emerald-100 flex flex-col items-center gap-1"
@@ -1265,12 +1230,6 @@ export default function OrderDetails() {
                         className="bg-blue-50 text-blue-700 text-xs py-2 rounded-lg font-bold hover:bg-blue-100 border border-blue-100 flex flex-col items-center gap-1"
                       >
                         <Receipt size={14} /> الفاتورة
-                      </button>
-                      <button
-                        onClick={() => sendWhatsApp('location')}
-                        className="bg-[#F8F5F2] text-[#4A4A4A] text-xs py-2 rounded-lg font-bold hover:bg-[#D9A3AA]/10 border border-[#D9A3AA]/25 flex flex-col items-center gap-1"
-                      >
-                        <MapPin size={14} /> الموقع
                       </button>
                     </div>
                   </div>
@@ -1700,20 +1659,10 @@ export default function OrderDetails() {
               </div>
             </div>
 
-            <div className="no-break grid grid-cols-2 gap-6 mb-4">
-              <div>
-                <h3 className="font-bold text-[10px] text-[#4A4A4A]/55 mb-1">بيانات العميل</h3>
-                <p className="text-lg font-bold text-[#4A4A4A] leading-tight">{order.customer_name}</p>
-                <p className="text-xs text-[#4A4A4A] dir-ltr text-right font-mono">{order.phone}</p>
-                {order.source && <p className="text-xs text-[#4A4A4A]/70 mt-1">{order.source}</p>}
-              </div>
-              <div className="text-left">
-                <h3 className="font-bold text-[10px] text-[#4A4A4A]/55 mb-1">تاريخ التسليم</h3>
-                <p className="font-bold text-sm text-[#4A4A4A]">{order.delivery_date || 'غير محدد'}</p>
-                {order.status === 'delivered' && (
-                  <span className="inline-block bg-[#D9A3AA]/10 px-2 py-1 rounded text-[10px] mt-2 font-bold">تم التسليم</span>
-                )}
-              </div>
+            <div className="no-break mb-4">
+              <h3 className="font-bold text-[10px] text-[#4A4A4A]/55 mb-1">بيانات العميل</h3>
+              <p className="text-lg font-bold text-[#4A4A4A] leading-tight">{order.customer_name}</p>
+              <p className="text-xs text-[#4A4A4A] dir-ltr text-right font-mono">{order.phone}</p>
             </div>
 
             <table className="w-full mb-4">
