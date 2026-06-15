@@ -62,7 +62,7 @@ export default function Dashboard() {
         const { data: packageTransactions, error: transactionsError } = await supabase
           .from('wallet_transactions')
           .select('*')
-          .eq('type', 'package_charge');
+          .in('type', ['package_charge', 'package_add', 'package_redeem']);
 
         if (walletsError) throw walletsError;
         if (transactionsError) throw transactionsError;
@@ -105,7 +105,13 @@ export default function Dashboard() {
           walletByPhone[key] = Number(w.points_balance || 0);
         });
         const totalPointsBalance = Object.values(walletByPhone).reduce((acc, v) => acc + v, 0);
-        const packagesTotal = packageTransactions ? packageTransactions.reduce((sum, pt) => sum + Number(pt.amount_value || 0), 0) : 0;
+        const packagesCreditsAdded = (packageTransactions || [])
+          .filter(pt => pt.type === 'package_charge' || pt.type === 'package_add')
+          .reduce((acc, pt) => acc + Number(pt.points || 0), 0);
+        const packagesRedeemed = (packageTransactions || [])
+          .filter(pt => pt.type === 'package_redeem')
+          .reduce((acc, pt) => acc + Number(pt.amount_value || 0), 0);
+        const packagesTotal = Math.max(0, packagesCreditsAdded - packagesRedeemed);
         const totalPackageBalance = packagesTotal;
         const totalWalletBalance = totalPointsBalance;
         
