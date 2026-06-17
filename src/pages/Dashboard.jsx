@@ -49,8 +49,13 @@ export default function Dashboard() {
         const { data: expenses, error: expensesError } = await supabase
           .from('expenses')
           .select('*');
-        
+
         if (expensesError) throw expensesError;
+
+        // 2b. جلب المدفوعات لحساب الإيرادات اليومية في الرسم البياني
+        const { data: payments } = await supabase
+          .from('order_payments')
+          .select('payment_date, amount');
 
         // 3. جلب رصيد المحافظ
         const { data: wallets, error: walletsError } = await supabase
@@ -147,22 +152,22 @@ export default function Dashboard() {
         }).reverse();
 
         const combinedChartData = last7Days.map(date => {
-          const dayRevenue = orders
-            .filter(o => o.created_at.startsWith(date))
-            .reduce((acc, o) => acc + o.total_amount, 0);
+          const dayRevenue = (payments || [])
+            .filter(p => p.payment_date && p.payment_date.startsWith(date))
+            .reduce((acc, p) => acc + Number(p.amount || 0), 0);
 
-          const dayExpenses = expenses
+          const dayExpenses = (expenses || [])
             .filter(e => {
               const expDate = e.date || e.created_at;
               return expDate && expDate.startsWith(date);
             })
-            .reduce((acc, e) => acc + e.amount, 0);
+            .reduce((acc, e) => acc + Number(e.amount || 0), 0);
 
-          return { 
-            name: date.slice(5), 
-            sales: dayRevenue, 
-            expenses: dayExpenses 
-          }; 
+          return {
+            name: date.slice(5),
+            sales: dayRevenue,
+            expenses: dayExpenses
+          };
         });
         setChartData(combinedChartData);
 
