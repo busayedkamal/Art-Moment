@@ -27,6 +27,7 @@ export default function NewOrder() {
 
   const [couponCode, setCouponCode] = useState('');
   const [couponData, setCouponData] = useState(null);
+  const [activeCoupons, setActiveCoupons] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
 
@@ -78,6 +79,9 @@ export default function NewOrder() {
 
         const { data: invData } = await supabase.from('inventory').select('*');
         if (invData) { setInventory(invData); setLowStockItems(invData.filter(item => item.quantity <= item.threshold)); }
+
+        const { data: couponsData } = await supabase.from('coupons').select('*').eq('is_active', true);
+        if (couponsData) setActiveCoupons(couponsData);
 
         const { data: customersData } = await supabase.from('orders').select('customer_name, phone').order('created_at', { ascending: false });
         if (customersData) {
@@ -555,8 +559,18 @@ export default function NewOrder() {
                   <Tag size={14} className="text-[#D9A3AA]" /> <span className="text-xs text-[#4A4A4A]/60">كود خصم</span>
                 </div>
                 <div className="flex gap-2">
-                  <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="CODE"
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-lg px-3 py-1.5 text-[#4A4A4A] uppercase text-sm outline-none focus:border-[#D9A3AA]" />
+                  <select
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-lg px-3 py-1.5 text-[#4A4A4A] text-sm outline-none focus:border-[#D9A3AA] appearance-none"
+                  >
+                    <option value="">اختر كود الخصم...</option>
+                    {activeCoupons.map((coupon) => (
+                      <option key={coupon.id} value={coupon.code}>
+                        {coupon.code} - (خصم: {coupon.discount_amount}{coupon.discount_type === 'percent' ? '%' : ' ر.س'})
+                      </option>
+                    ))}
+                  </select>
                   <button type="button" onClick={checkCoupon} className="bg-[#D9A3AA] hover:bg-[#C5A059] text-white px-3 py-1 rounded-lg text-sm">تحقق</button>
                 </div>
               </div>

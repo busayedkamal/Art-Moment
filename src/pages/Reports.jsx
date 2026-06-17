@@ -422,10 +422,10 @@ export default function Reports() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={analytics.monthlyData}>
                 <defs>
-                  {/* تدرج الوردي للإيرادات */}
+                  {/* تدرج الأخضر للإيرادات */}
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#D9A3AA" stopOpacity={0.18}/>
-                    <stop offset="95%" stopColor="#D9A3AA" stopOpacity={0}/>
+                    <stop offset="5%"  stopColor="#10b981" stopOpacity={0.18}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                   </linearGradient>
                   {/* تدرج الأحمر للمصروفات */}
                   <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
@@ -437,7 +437,7 @@ export default function Reports() {
                 <XAxis dataKey="name" tick={{fontSize: 11, fill: 'rgba(74,74,74,0.60)'}} axisLine={false} tickLine={false}/>
                 <YAxis tick={{fontSize: 11, fill: 'rgba(74,74,74,0.60)'}} axisLine={false} tickLine={false}/>
                 <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(74,74,74,0.12)', fontFamily: 'Cairo, sans-serif'}}/>
-                <Area type="monotone" dataKey="revenue"  name="الدخل"       stroke="#D9A3AA" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2.5} dot={false}/>
+                <Area type="monotone" dataKey="revenue"  name="الدخل"       stroke="#10b981" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2.5} dot={false}/>
                 <Area type="monotone" dataKey="expenses" name="المصروفات"   stroke="#ef4444" fillOpacity={1} fill="url(#colorExp)" strokeWidth={2}   dot={false}/>
               </AreaChart>
             </ResponsiveContainer>
@@ -450,7 +450,12 @@ export default function Reports() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={analytics.expenseData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {analytics.expenseData.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+                    {(() => {
+                      const maxVal = Math.max(...analytics.expenseData.map(d => d.value));
+                      return analytics.expenseData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.value === maxVal ? '#ef4444' : CHART_COLORS[index % CHART_COLORS.length]} />
+                      ));
+                    })()}
                   </Pie>
                   <Tooltip />
                   <Legend verticalAlign="bottom" height={36} iconType="circle"/>

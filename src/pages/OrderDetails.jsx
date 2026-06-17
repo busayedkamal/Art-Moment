@@ -50,6 +50,7 @@ export default function OrderDetails() {
 
   const [notes, setNotes] = useState('');
   const [couponCode, setCouponCode] = useState('');
+  const [activeCoupons, setActiveCoupons] = useState([]);
 
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [customerData, setCustomerData] = useState({
@@ -120,6 +121,9 @@ export default function OrderDetails() {
         .select('*')
         .eq('id', 1)
         .single();
+
+      const { data: couponsData } = await supabase.from('coupons').select('*').eq('is_active', true);
+      if (couponsData) setActiveCoupons(couponsData);
 
       setOrder(orderData);
       setPayments(paymentsData || []);
@@ -1483,16 +1487,18 @@ export default function OrderDetails() {
 
                 {/* كود خصم */}
                 <div className="flex gap-2 items-center">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder="كود خصم"
-                      className="w-full bg-[#3b3b3b] border border-white/15 rounded px-2 py-1 text-white text-xs outline-none pl-6"
-                    />
-                    <Tag size={10} className="absolute left-2 top-2 text-[#4A4A4A]/55" />
-                  </div>
+                  <select
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    className="flex-1 bg-[#3b3b3b] border border-white/15 rounded px-2 py-1 text-white text-xs outline-none appearance-none"
+                  >
+                    <option value="">كود خصم</option>
+                    {activeCoupons.map((coupon) => (
+                      <option key={coupon.id} value={coupon.code}>
+                        {coupon.code} - (خصم: {coupon.discount_amount}{coupon.discount_type === 'percent' ? '%' : ' ر.س'})
+                      </option>
+                    ))}
+                  </select>
                   <button onClick={applyCoupon} className="bg-[#4A4A4A]/70 hover:bg-[#4A4A4A]/85 px-2 py-1 rounded text-xs text-white">
                     تطبيق
                   </button>

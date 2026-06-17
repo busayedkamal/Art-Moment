@@ -397,54 +397,96 @@ export default function Dashboard() {
         </div>
 
         {recentNewOrders.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-sm">
-              <thead>
-                <tr className="bg-slate-50/60 text-[#4A4A4A]/40 text-xs font-bold uppercase tracking-wide">
-                  <th className="px-6 py-3.5">رقم الطلب</th>
-                  <th className="px-6 py-3.5">العميل</th>
-                  <th className="px-6 py-3.5">موعد التسليم</th>
-                  <th className="px-6 py-3.5">الإجمالي</th>
-                  <th className="px-6 py-3.5"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {recentNewOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-xs font-bold text-[#4A4A4A]/50 bg-slate-100 px-2 py-1 rounded-md">#{order.id.slice(0, 6)}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#D9A3AA]/20 to-[#C5A059]/20 flex items-center justify-center text-[#C5A059] font-black text-base shrink-0">
-                          {order.customer_name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-[#4A4A4A] text-sm leading-tight">{order.customer_name}</p>
-                          <p className="text-[11px] text-[#4A4A4A]/40 font-mono mt-0.5 dir-ltr text-right">{order.phone}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-xs text-[#4A4A4A]/60 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">
-                        <Calendar size={12}/> {order.delivery_date || '—'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-black text-[#4A4A4A]">{order.total_amount}</span>
-                      <span className="text-[11px] text-[#4A4A4A]/40 mr-1"><RiyalSign /></span>
-                    </td>
-                    <td className="px-6 py-4 text-left">
-                      <Link to={`/app/orders/${order.id}`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#D9A3AA] hover:bg-[#C5A059] text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-[#D9A3AA]/30">
-                        معالجة <ChevronRight size={13} className="rotate-180"/>
-                      </Link>
-                    </td>
+          <>
+            {/* Desktop table */}
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-right text-sm">
+                <thead>
+                  <tr className="bg-slate-50/60 text-[#4A4A4A]/40 text-xs font-bold uppercase tracking-wide">
+                    <th className="px-6 py-3.5">رقم الطلب</th>
+                    <th className="px-6 py-3.5">العميل</th>
+                    <th className="px-6 py-3.5">موعد التسليم</th>
+                    <th className="px-6 py-3.5">الإجمالي</th>
+                    <th className="px-6 py-3.5"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {recentNewOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-xs font-bold text-[#4A4A4A]/50 bg-slate-100 px-2 py-1 rounded-md">#{order.id.slice(0, 6)}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#D9A3AA]/20 to-[#C5A059]/20 flex items-center justify-center text-[#C5A059] font-black text-base shrink-0">
+                            {order.customer_name?.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#4A4A4A] text-sm leading-tight">{order.customer_name}</p>
+                            <p className="text-[11px] text-[#4A4A4A]/40 font-mono mt-0.5 dir-ltr text-right">{order.phone}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-[#4A4A4A]/60 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">
+                          <Calendar size={12}/> {order.delivery_date || '—'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-black text-[#4A4A4A]">{order.total_amount}</span>
+                        <span className="text-[11px] text-[#4A4A4A]/40 mr-1"><RiyalSign /></span>
+                      </td>
+                      <td className="px-6 py-4 text-left">
+                        <Link to={`/app/orders/${order.id}`}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#D9A3AA] hover:bg-[#C5A059] text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-[#D9A3AA]/30">
+                          معالجة <ChevronRight size={13} className="rotate-180"/>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden flex flex-col gap-3 p-4 border-t border-[#D9A3AA]/10">
+              {recentNewOrders.map((order) => (
+                <div key={order.id} className="bg-[#F8F5F2]/50 p-4 rounded-2xl border border-[#D9A3AA]/20 flex flex-col gap-3">
+                  {/* Top row: ID & Price */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-[#4A4A4A]">
+                      {order.total_amount} <RiyalSign />
+                    </span>
+                    <span className="font-mono text-xs bg-white px-2 py-1 rounded-md text-[#4A4A4A]/60 border border-[#D9A3AA]/20">
+                      #{order.id.slice(0, 6)}
+                    </span>
+                  </div>
+
+                  {/* Middle row: Customer */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#D9A3AA]/15 flex items-center justify-center text-[#C5A059] font-black text-base shrink-0">
+                      {order.customer_name?.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#4A4A4A] text-sm leading-tight">{order.customer_name}</p>
+                      <p className="text-[11px] text-[#4A4A4A]/40 font-mono mt-0.5 dir-ltr">{order.phone}</p>
+                    </div>
+                  </div>
+
+                  {/* Bottom row: Date & Action */}
+                  <div className="flex items-center justify-between border-t border-[#D9A3AA]/10 pt-3">
+                    <Link to={`/app/orders/${order.id}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#D9A3AA] hover:bg-[#C5A059] text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-[#D9A3AA]/30">
+                      معالجة <ChevronRight size={13} className="rotate-180"/>
+                    </Link>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[#4A4A4A]/60 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">
+                      <Calendar size={12}/> {order.delivery_date || '—'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="py-16 text-center">
             <p className="text-5xl mb-3">🎉</p>
