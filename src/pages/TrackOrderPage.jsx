@@ -215,7 +215,7 @@ export default function TrackOrderPage() {
         </p>
       </div>
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-xl relative z-10">
 
         {/* تبويبات الوضع */}
         <div className="flex bg-white rounded-2xl border border-[#D9A3AA]/20 p-1 mb-6 shadow-sm gap-1">
@@ -724,7 +724,7 @@ export default function TrackOrderPage() {
         )}
 
         {/* ── أقسام دائمة الظهور ── */}
-        <div className="w-full max-w-md mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
+        <div className="w-full max-w-xl mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
 
           {/* 1. الخصوصية */}
           <div className="bg-white rounded-2xl p-5 border border-[#D9A3AA]/30 shadow-sm relative overflow-hidden">

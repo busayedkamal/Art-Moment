@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import {
   Search, Users, Wallet, ShoppingBag, Sparkles, Crown,
   Phone, Calendar, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
-  Edit2, Check, Package
+  Edit2, Check, Package, Trash2
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
 
@@ -20,6 +20,7 @@ export default function Customers() {
   const [expandedCustomerId, setExpandedCustomerId] = useState(null);
   const [customerDetails, setCustomerDetails] = useState({ address: '', notes: '' });
   const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
 
   const [editingBalanceId, setEditingBalanceId] = useState(null);
   const [editWalletBalance, setEditWalletBalance] = useState('');
@@ -262,6 +263,45 @@ export default function Customers() {
       toast.error("حدث خطأ أثناء الحفظ");
     } finally {
       setIsSavingDetails(false);
+    }
+  };
+
+  const handleDeleteCustomer = async (customer) => {
+    if (Number(customer.debt || 0) > 0.5) {
+      return toast.error("لا يمكن حذف عميل عليه مديونية قائمة. قم بتسوية المديونية أولاً.");
+    }
+
+    const confirmMsg = "⚠️ تحذير خطير جداً:\n\nحذف هذا العميل سيؤدي إلى مسح جميع طلباته، مدفوعاته، وحركات محفظته السابقة نهائياً من قاعدة البيانات. هذا سيؤدي إلى اختفاء هذه المبالغ من (التقارير وصافي الربح).\n\nهذا الزر مخصص للعملاء الوهميين أو أخطاء الإدخال فقط.\n\nهل أنت متأكد تماماً من رغبتك في الحذف؟";
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsDeletingCustomer(true);
+    const toastId = toast.loading('جاري مسح بيانات العميل نهائياً...');
+
+    try {
+      const orderIds = Array.from(customer.orderIds || []);
+
+      if (orderIds.length > 0) {
+        await supabase.from('order_payments').delete().in('order_id', orderIds);
+        await supabase.from('wallet_transactions').delete().in('order_id', orderIds);
+        await supabase.from('orders').delete().in('id', orderIds);
+      }
+
+      if (customer.cleanPhone) {
+        const { data: walletData } = await supabase.from('wallets').select('id').eq('phone', customer.cleanPhone).maybeSingle();
+        if (walletData) {
+          await supabase.from('wallet_transactions').delete().eq('wallet_id', walletData.id);
+          await supabase.from('wallets').delete().eq('id', walletData.id);
+        }
+      }
+
+      toast.success('تم حذف العميل وجميع سجلاته بنجاح', { id: toastId });
+      setExpandedCustomerId(null);
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      toast.error('حدث خطأ أثناء حذف العميل', { id: toastId });
+    } finally {
+      setIsDeletingCustomer(false);
     }
   };
 
@@ -1055,7 +1095,16 @@ export default function Customers() {
                                   ></textarea>
                                 </div>
                               </div>
-                              <div className="mt-4 pt-4 border-t border-[#F8F5F2] flex justify-end">
+                              <div className="mt-4 pt-4 border-t border-[#F8F5F2] flex justify-between items-center">
+                                <button
+                                  onClick={() => handleDeleteCustomer(customer)}
+                                  disabled={isDeletingCustomer || Number(customer.debt || 0) > 0.5}
+                                  title={Number(customer.debt || 0) > 0.5 ? "لا يمكن حذف عميل عليه مديونية" : "حذف نهائي"}
+                                  className="bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold py-2 px-4 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border border-red-200"
+                                >
+                                  {isDeletingCustomer ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                  حذف العميل نهائياً
+                                </button>
                                 <button
                                   onClick={() => handleSaveCustomerDetails(customer)}
                                   disabled={isSavingDetails}
