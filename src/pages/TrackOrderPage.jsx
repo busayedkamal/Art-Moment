@@ -723,53 +723,53 @@ export default function TrackOrderPage() {
           </div>
         )}
 
-        {/* ── أقسام إضافية تظهر بعد بطاقة الطلب ── */}
-        {mode === 'order' && order && (
-          <div className="w-full max-w-md mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
+        {/* ── أقسام دائمة الظهور ── */}
+        <div className="w-full max-w-md mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
 
-            {/* 1. الخصوصية */}
-            <div className="bg-white rounded-2xl p-5 border border-[#D9A3AA]/30 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-[#D9A3AA]/10 rounded-full blur-xl -mr-4 -mt-4"></div>
-              <h3 className="text-sm font-black text-[#4A4A4A] mb-2 flex items-center gap-2">
-                <ShieldCheck size={18} className="text-[#D9A3AA]" /> خصوصيتك في أيدٍ أمينة 🌸
-              </h3>
-              <p className="text-xs text-[#4A4A4A]/80 leading-relaxed mb-4">
-                جميع طلباتكم تُعالج وتُطبع وتُغلف بأيدي <span className="font-bold text-[#D9A3AA]">كادر نسائي 100%</span> لضمان السرية التامة لصوركم وذكرياتكم.
-              </p>
-              <Link to="/privacy" className="inline-flex items-center gap-1 text-[11px] font-bold text-[#C5A059] bg-[#C5A059]/10 px-3 py-1.5 rounded-lg hover:bg-[#C5A059]/20 transition-colors">
-                <FileText size={12} /> اقرأ سياسة الخصوصية
-              </Link>
-            </div>
-
-            {/* 2. برنامج الإحالة */}
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200/50 shadow-sm">
-              <h3 className="text-sm font-black text-amber-800 mb-2 flex items-center gap-2">
-                <Gift size={18} className="text-amber-500" /> شارك الفن واكسب! 🎁
-              </h3>
-              <p className="text-xs text-amber-700/80 leading-relaxed mb-4">
-                عجبتك خدمتنا؟ شارك (لحظة فن) مع أصدقائك وعائلتك، وعند طلبهم عن طريقك، تستحق خصم خاص في محفظتك!
-              </p>
-              <button
-                onClick={handleCopyLink}
-                className="w-full flex items-center justify-center gap-2 bg-white border border-amber-200 text-amber-700 text-xs font-bold py-2.5 rounded-xl hover:bg-amber-100 transition-colors shadow-sm"
-              >
-                {isCopied ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Copy size={16} />}
-                {isCopied ? 'تم نسخ الرابط بنجاح!' : 'انسخ رابط المتجر للمشاركة'}
-              </button>
-            </div>
-
-            {/* 3. الدعم الفني */}
-            <a
-              href={`https://api.whatsapp.com/send?phone=966569663697&text=${encodeURIComponent(`مرحباً لحظة فن، لدي استفسار بخصوص طلبي رقم #${order.id.slice(0, 8)}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-[#F8F5F2] border border-[#D9A3AA]/20 text-[#4A4A4A] text-sm font-bold py-3.5 rounded-2xl hover:bg-[#D9A3AA]/10 hover:border-[#D9A3AA]/30 transition-all shadow-sm"
-            >
-              <MessageCircle size={18} className="text-emerald-500" /> هل تحتاج إلى مساعدة؟ تواصل معنا
-            </a>
-
+          {/* 1. الخصوصية */}
+          <div className="bg-white rounded-2xl p-5 border border-[#D9A3AA]/30 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-[#D9A3AA]/10 rounded-full blur-xl -mr-4 -mt-4"></div>
+            <h3 className="text-sm font-black text-[#4A4A4A] mb-2 flex items-center gap-2">
+              <ShieldCheck size={18} className="text-[#D9A3AA]" /> خصوصيتك في أيدٍ أمينة 🌸
+            </h3>
+            <p className="text-xs text-[#4A4A4A]/80 leading-relaxed mb-4">
+              جميع طلباتكم تُعالج وتُطبع وتُغلف بأيدي <span className="font-bold text-[#D9A3AA]">كادر نسائي 100%</span> لضمان السرية التامة لصوركم وذكرياتكم.
+            </p>
+            <Link to="/privacy" className="inline-flex items-center gap-1 text-[11px] font-bold text-[#C5A059] bg-[#C5A059]/10 px-3 py-1.5 rounded-lg hover:bg-[#C5A059]/20 transition-colors">
+              <FileText size={12} /> اقرأ سياسة الخصوصية
+            </Link>
           </div>
-        )}
+
+          {/* 2. برنامج الإحالة */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200/50 shadow-sm">
+            <h3 className="text-sm font-black text-amber-800 mb-2 flex items-center gap-2">
+              <Gift size={18} className="text-amber-500" /> شارك الفن واكسب! 🎁
+            </h3>
+            <p className="text-xs text-amber-700/80 leading-relaxed mb-4">
+              عجبتك خدمتنا؟ شارك (لحظة فن) مع أصدقائك وعائلتك، وعند طلبهم عن طريقك، تستحق خصم خاص في محفظتك!
+            </p>
+            <button
+              onClick={handleCopyLink}
+              className="w-full flex items-center justify-center gap-2 bg-white border border-amber-200 text-amber-700 text-xs font-bold py-2.5 rounded-xl hover:bg-amber-100 transition-colors shadow-sm"
+            >
+              {isCopied ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Copy size={16} />}
+              {isCopied ? 'تم نسخ الرابط بنجاح!' : 'انسخ رابط المتجر للمشاركة'}
+            </button>
+          </div>
+
+          {/* 3. الدعم الفني */}
+          <a
+            href={`https://api.whatsapp.com/send?phone=966569663697&text=${encodeURIComponent(
+              order ? `مرحباً لحظة فن، لدي استفسار بخصوص طلبي رقم #${order.id.slice(0, 8)}` : `مرحباً لحظة فن، لدي استفسار`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 bg-[#F8F5F2] border border-[#D9A3AA]/20 text-[#4A4A4A] text-sm font-bold py-3.5 rounded-2xl hover:bg-[#D9A3AA]/10 hover:border-[#D9A3AA]/30 transition-all shadow-sm"
+          >
+            <MessageCircle size={18} className="text-emerald-500" /> هل تحتاج إلى مساعدة؟ تواصل معنا
+          </a>
+
+        </div>
 
       </div>
 
