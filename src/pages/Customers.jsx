@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import {
   Search, Users, Wallet, ShoppingBag, Sparkles, Crown,
   Phone, Calendar, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
-  Edit2, Check, Package, Trash2
+  Edit2, Check, Package, Trash2, ArrowUpDown
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
 
@@ -16,6 +16,7 @@ export default function Customers() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("netBalance");
+  const [sortDesc, setSortDesc] = useState(true);
 
   const [expandedCustomerId, setExpandedCustomerId] = useState(null);
   const [customerDetails, setCustomerDetails] = useState({ address: '', notes: '' });
@@ -612,6 +613,15 @@ export default function Customers() {
     }
   };
 
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortDesc(!sortDesc);
+    } else {
+      setSortBy(column);
+      setSortDesc(true);
+    }
+  };
+
   const filtered = useMemo(() => {
     let data = customersData;
     if (filter === "vip") data = data.filter(c => c.isVip);
@@ -620,11 +630,20 @@ export default function Customers() {
       data = data.filter(c => (c.name || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q));
     }
     data = [...data].sort((a, b) => {
-      if (sortBy === "lastOrderDate") return (b.lastOrderDate?.getTime() || 0) - (a.lastOrderDate?.getTime() || 0);
-      return (Number(b[sortBy] || 0) - Number(a[sortBy] || 0));
+      let valA = a[sortBy];
+      let valB = b[sortBy];
+      let comparison = 0;
+      if (sortBy === "lastOrderDate") {
+        comparison = (valA?.getTime() || 0) - (valB?.getTime() || 0);
+      } else if (sortBy === 'name' || sortBy === 'phone' || sortBy === 'subscriptionCode') {
+        comparison = String(valA || "").localeCompare(String(valB || ""), 'ar');
+      } else {
+        comparison = Number(valA || 0) - Number(valB || 0);
+      }
+      return sortDesc ? -comparison : comparison;
     });
     return data;
-  }, [customersData, search, filter, sortBy]);
+  }, [customersData, search, filter, sortBy, sortDesc]);
 
   const stats = useMemo(() => {
     const totalCustomers = customersData.length;
@@ -694,7 +713,11 @@ export default function Customers() {
       <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           <div className="relative w-full md:w-80">
-            <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
+            {search ? (
+              <X size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/60 cursor-pointer hover:text-red-500 transition-colors" onClick={() => setSearch("")} />
+            ) : (
+              <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
+            )}
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -858,12 +881,22 @@ export default function Customers() {
         <div className="overflow-x-auto">
         <table className="min-w-full text-right">
           <thead className="bg-[#F8F5F2] border-b border-[#D9A3AA]/20">
-            <tr className="text-sm font-bold text-[#4A4A4A]/70">
-              <th className="px-6 py-4">بيانات العميل</th>
-              <th className="px-6 py-4">رقم الجوال</th>
-              <th className="px-6 py-4 text-center">رقم الاشتراك</th>
-              <th className="px-6 py-4 text-center">رصيد الباقات</th>
-              <th className="px-6 py-4 text-center">رصيد النقاط</th>
+            <tr className="text-sm font-bold text-[#4A4A4A]/70 select-none">
+              <th className="px-6 py-4 cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('name')}>
+                <div className="flex items-center gap-2">بيانات العميل <ArrowUpDown size={12} className={sortBy === 'name' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('phone')}>
+                <div className="flex items-center justify-end gap-2">رقم الجوال <ArrowUpDown size={12} className={sortBy === 'phone' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              </th>
+              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('subscriptionCode')}>
+                <div className="flex items-center justify-center gap-2">رقم الاشتراك <ArrowUpDown size={12} className={sortBy === 'subscriptionCode' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              </th>
+              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('packageBalance')}>
+                <div className="flex items-center justify-center gap-2">رصيد الباقات <ArrowUpDown size={12} className={sortBy === 'packageBalance' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              </th>
+              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('walletBalance')}>
+                <div className="flex items-center justify-center gap-2">رصيد النقاط <ArrowUpDown size={12} className={sortBy === 'walletBalance' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              </th>
               <th className="px-6 py-4 text-left">إجراءات</th>
             </tr>
           </thead>
