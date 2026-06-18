@@ -764,9 +764,9 @@ export default function LandingPage() {
             {[
               { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966569663697',                alt: 'WhatsApp' },
               { id: 'telegram',  icon: telegramIcon,  url: 'https://t.me/+966569663697',                alt: 'Telegram' },
-              { id: 'instagram', icon: instagramIcon, url: 'https://www.instagram.com/art.moment__/',   alt: 'Instagram' },
+              { id: 'instagram', icon: instagramIcon, url: 'https://www.instagram.com/art.moment26/',   alt: 'Instagram' },
               { id: 'snapchat',  icon: snapchatIcon,  url: 'https://www.snapchat.com/add/omsayedkamal', alt: 'Snapchat' },
-              { id: 'tiktok',    icon: tiktokIcon,    url: 'https://www.tiktok.com/@ayatalshaqaq',      alt: 'TikTok' },
+              { id: 'tiktok',    icon: tiktokIcon,    url: 'https://www.tiktok.com/@art.moment26',      alt: 'TikTok' },
               { id: 'linktree',  icon: linktreeIcon,  url: 'https://linktr.ee/Art_Moment',              alt: 'Linktree' },
               { id: 'gmail',     icon: gmailIcon,     url: 'mailto:art.moment26@gmail.com',             alt: 'Gmail' },
             ].map((social) => (

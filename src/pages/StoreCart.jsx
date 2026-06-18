@@ -1,0 +1,219 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, Send, AlertCircle, Image as ImageIcon } from 'lucide-react';
+
+export default function StoreCart() {
+  const [cart, setCart] = useState([]);
+  const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [notes, setNotes] = useState('');
+  const [phoneError, setPhoneError] = useState(false);
+
+  useEffect(() => {
+    const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
+    setCart(savedCart);
+  }, []);
+
+  const saveCart = (newCart) => {
+    setCart(newCart);
+    localStorage.setItem('art_moment_cart', JSON.stringify(newCart));
+  };
+
+  const updateQty = (id, delta) => {
+    const updated = cart.map(item => {
+      if (item.id === id) {
+        const newQty = item.qty + delta;
+        return newQty > 0 ? { ...item, qty: newQty } : item;
+      }
+      return item;
+    });
+    saveCart(updated);
+  };
+
+  const removeItem = (id) => saveCart(cart.filter(item => item.id !== id));
+
+  const clearCart = () => {
+    if (window.confirm('هل أنت متأكدة من مسح جميع المنتجات؟')) saveCart([]);
+  };
+
+  const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
+
+  const handleCheckout = () => {
+    const isValidPhone = /^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim());
+    if (!isValidPhone) { setPhoneError(true); return; }
+    setPhoneError(false);
+
+    let message = `🛒 *طلب جديد من متجر لحظة فن*\n`;
+    message += `━━━━━━━━━━━━━━━\n\n`;
+    message += `👤 *الاسم:* ${name || 'لم يُحدد'}\n`;
+    message += `📱 *الجوال:* ${phone}\n\n`;
+    message += `📦 *المنتجات:*\n`;
+    cart.forEach(item => {
+      message += `- ${item.name} (الكمية: ${item.qty}) = ${item.price * item.qty} ريال\n`;
+    });
+    message += `\n━━━━━━━━━━━━━━━\n`;
+    message += `💰 *المجموع:* ${subtotal} ريال (غير شامل الشحن)\n`;
+    if (notes) message += `📝 *ملاحظات:* ${notes}\n`;
+
+    window.open(`https://wa.me/966569663697?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  if (cart.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#F8F5F2] font-sans flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
+        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-[#D9A3AA]/30">
+          <ShoppingBag size={40} />
+        </div>
+        <h2 className="text-2xl font-black mb-2">سلة المشتريات فارغة</h2>
+        <p className="text-[#4A4A4A]/50 text-sm mb-8">لم تقومي بإضافة أي منتجات للسلة بعد.</p>
+        <Link to="/store" className="bg-[#4A4A4A] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#D9A3AA] transition-colors">
+          تصفحي المتجر
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A] pb-24" dir="rtl">
+      {/* Header */}
+      <header className="bg-white sticky top-0 z-40 border-b border-[#D9A3AA]/20 shadow-sm px-4 h-16 flex items-center justify-between">
+        <Link to="/store" className="flex items-center gap-2 text-[#4A4A4A]/60 hover:text-[#D9A3AA] text-sm font-bold transition-colors">
+          <ArrowRight size={18} /> متابعة التسوق
+        </Link>
+        <h1 className="text-lg font-black">سلة المشتريات</h1>
+        <span className="bg-[#D9A3AA] text-white text-xs font-bold px-2 py-0.5 rounded-full">{cart.length}</span>
+      </header>
+
+      <main className="max-w-3xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
+
+        {/* قائمة المنتجات */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-black text-[#4A4A4A]">منتجاتك</h2>
+            <button onClick={clearCart} className="text-xs text-red-400 font-bold hover:text-red-500 transition-colors">
+              مسح السلة
+            </button>
+          </div>
+
+          {cart.map(item => (
+            <div key={item.id} className="bg-white p-4 rounded-3xl border border-[#D9A3AA]/15 flex items-center gap-4 shadow-sm">
+              <div className="w-16 h-16 bg-[#F8F5F2] rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
+                {item.image
+                  ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  : <ImageIcon size={20} className="text-[#D9A3AA]/30" />
+                }
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-sm line-clamp-1">{item.name}</h3>
+                <p className="text-[10px] text-[#4A4A4A]/50 mt-1">{item.price} ر.س × {item.qty}</p>
+                <div className="font-black text-[#C5A059] text-sm mt-1">{item.price * item.qty} ر.س</div>
+              </div>
+
+              <div className="flex flex-col items-center gap-2 shrink-0">
+                <button
+                  onClick={() => removeItem(item.id)}
+                  className="text-red-300 hover:text-red-500 bg-red-50 p-1.5 rounded-lg transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+                <div className="flex items-center gap-2 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/20 p-1">
+                  <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#4A4A4A]">
+                    <Plus size={12} />
+                  </button>
+                  <span className="text-xs font-bold w-4 text-center">{item.qty}</span>
+                  <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#4A4A4A]">
+                    <Minus size={12} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ملخص الطلب وبيانات العميل */}
+        <div className="space-y-6">
+          {/* ملخص */}
+          <div className="bg-white p-6 rounded-3xl border border-[#D9A3AA]/20 shadow-sm">
+            <h2 className="font-black text-[#4A4A4A] mb-4">ملخص الطلب</h2>
+            <div className="space-y-3 mb-6 border-b border-[#F8F5F2] pb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#4A4A4A]/60">المجموع الفرعي</span>
+                <span className="font-bold">{subtotal} ر.س</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#4A4A4A]/60">تكلفة الشحن</span>
+                <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded font-bold">تُحدد عبر واتساب</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-black text-lg">الإجمالي</span>
+              <span className="font-black text-2xl text-[#D9A3AA]">{subtotal} <span className="text-sm">ر.س</span></span>
+            </div>
+          </div>
+
+          {/* بيانات التواصل */}
+          <div className="bg-white p-6 rounded-3xl border border-[#D9A3AA]/20 shadow-sm">
+            <h2 className="font-black text-[#4A4A4A] mb-4">بيانات التواصل</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
+                  رقم الجوال <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  dir="ltr"
+                  value={phone}
+                  onChange={e => { setPhone(e.target.value); setPhoneError(false); }}
+                  placeholder="05XXXXXXXX"
+                  className={`w-full bg-[#F8F5F2] border rounded-xl px-4 py-2.5 outline-none text-right transition-colors ${
+                    phoneError
+                      ? 'border-red-400 focus:border-red-500 bg-red-50'
+                      : 'border-[#D9A3AA]/20 focus:border-[#D9A3AA]'
+                  }`}
+                />
+                {phoneError && (
+                  <span className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle size={10} /> يرجى إدخال رقم جوال سعودي صحيح
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]/70">الاسم (اختياري)</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]/70">ملاحظات الطلب (اختياري)</label>
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="مثال: طريقة التوصيل المرتجاة..."
+                  className="w-full h-20 resize-none bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2 outline-none focus:border-[#D9A3AA]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleCheckout}
+            disabled={!phone}
+            className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg ${
+              phone
+                ? 'bg-[#25D366] text-white hover:bg-[#128C7E] hover:-translate-y-1'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
+            }`}
+          >
+            <Send size={18} /> إرسال الطلب عبر واتساب
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
