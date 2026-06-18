@@ -13,7 +13,8 @@ import {
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
   Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram,
   Ghost, Music, Link2, Plane, Gift, Smartphone, LayoutDashboard,
-  MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet // 👈 أضفنا أيقونات الباقات هنا
+  MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet,
+  ShoppingBag, ArrowLeft
 } from 'lucide-react';
 
 // ✅ تصحيح مسار الصور
@@ -305,6 +306,49 @@ export default function LandingPage() {
               <div className="w-10 h-10 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA]"><Printer size={20} /></div>
               <div><p className="font-bold text-[#4A4A4A] text-sm">طباعة فورية</p><p className="text-[10px] text-[#C5A059]">جودة 100%</p></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- 2. بانر متجر لحظة فن الجديد --- */}
+      <section className="py-12 bg-transparent relative z-20 -mt-10 mb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group border-4 border-white/50">
+
+            {/* خلفية زخرفية */}
+            <div className="absolute top-0 right-0 w-full h-full pointer-events-none overflow-hidden">
+              <div className="absolute -top-24 -right-10 w-72 h-72 bg-white/20 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
+              <div className="absolute -bottom-24 -left-10 w-72 h-72 bg-white/20 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-50"></div>
+            </div>
+
+            {/* النص */}
+            <div className="relative z-10 text-center md:text-right flex-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold border border-white/30 mb-4 backdrop-blur-md shadow-sm">
+                <Sparkles size={14} className="text-white animate-pulse" /> جديد لحظة فن
+              </div>
+              <h2 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-tight">
+                متجر منتجات لحظة فن 🛍️
+              </h2>
+              <p className="text-white/90 text-sm md:text-base max-w-xl leading-relaxed mx-auto md:mx-0">
+                تسوّقي الآن أجمل الألبومات، الإطارات الفاخرة، والملصقات الفنية. اكتشفي كل ما تحتاجينه لإكمال أناقة صورك المطبوعة في مكان واحد!
+              </p>
+            </div>
+
+            {/* الزر */}
+            <div className="relative z-10 shrink-0 w-full md:w-auto">
+              <Link
+                to="/store"
+                className="bg-white text-[#4A4A4A] w-full md:w-auto px-8 py-4 rounded-2xl md:rounded-full font-black flex items-center justify-center gap-3 hover:bg-[#F8F5F2] hover:scale-105 transition-all duration-300 shadow-xl group/btn"
+              >
+                <ShoppingBag size={20} className="text-[#D9A3AA]" />
+                <span className="text-base">تسوقي الآن</span>
+                <div className="bg-[#F8F5F2] p-1.5 rounded-full group-hover/btn:-translate-x-2 transition-transform duration-300">
+                  <ArrowLeft size={16} className="text-[#C5A059]" />
+                </div>
+              </Link>
+            </div>
+
           </div>
         </div>
       </section>
