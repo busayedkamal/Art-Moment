@@ -20,26 +20,26 @@ function Section({ id, icon: Icon, title, number, accent = 'pink', children }) {
       {/* رأس القسم */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-4 p-6 md:p-8 text-right hover:bg-[#F8F5F2]/60 transition-colors"
+        className="w-full flex items-start md:items-center gap-3 p-4 md:p-6 text-right hover:bg-[#F8F5F2]/60 transition-colors"
       >
         {/* رقم القسم */}
         <span
-          className="shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-white text-sm font-black shadow-sm"
+          className="shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center text-white text-sm font-black shadow-sm mt-0.5 md:mt-0"
           style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
         >
           {number}
         </span>
 
-        {/* أيقونة + عنوان */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border ${accentBg}`}>
-            <Icon size={18} style={{ color: accentColor }} />
-          </div>
-          <h2 className="text-lg md:text-xl font-black text-[#4A4A4A] text-right leading-tight">{title}</h2>
+        {/* أيقونة */}
+        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border ${accentBg} mt-0.5 md:mt-0`}>
+          <Icon size={18} style={{ color: accentColor }} />
         </div>
 
+        {/* عنوان */}
+        <h2 className="flex-1 min-w-0 text-base md:text-lg font-black text-[#4A4A4A] text-right leading-snug">{title}</h2>
+
         {/* مؤشر الفتح/الإغلاق */}
-        <span className="shrink-0 text-[#4A4A4A]/30">
+        <span className="shrink-0 text-[#4A4A4A]/30 mt-1 md:mt-0">
           {open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </span>
       </button>
@@ -322,10 +322,14 @@ export default function PrivacyPage() {
 
         {/* 10. إخلاء المسؤولية */}
         <Section id="disclaimer" icon={AlertCircle} title="إخلاء المسؤولية" number="10" accent="gold">
-          <ul className="mt-4 space-y-2.5">
-            <ListItem accent="gold">نحرص على طباعة الصور بأعلى جودة ممكنة، ولكن قد تختلف دقة الألوان قليلاً بين شاشات الأجهزة والورق المطبوع بسبب اختلافات تدرجات الألوان، <strong className="text-[#4A4A4A]">ولا يُعتبر ذلك عيباً مصنعياً.</strong></ListItem>
-            <ListItem accent="gold">المنصة غير مسؤولة عن ضعف جودة الطباعة إذا كانت الصور المرسلة من قِبل العميل ذات دقة أو جودة منخفضة أساساً.</ListItem>
-          </ul>
+          <div className="mt-4 space-y-3 text-sm md:text-base text-[#4A4A4A]/80 leading-relaxed">
+            <p>نحرص في (لحظة فن) على استخدام أحدث تقنيات الطباعة وأجود أنواع الورق لضمان أفضل نتيجة لصوركم. ومع ذلك، نود التنويه إلى أنه من الطبيعي جداً وجود اختلاف طفيف في درجات الألوان بين ما تراه على شاشة جوالك، وبين الصورة المطبوعة على الورق.</p>
+            <p className="font-bold text-[#4A4A4A]">السبب العلمي والتقني لهذا الاختلاف:</p>
+            <p>📱 <strong className="text-[#4A4A4A]">شاشات الأجهزة (نظام RGB):</strong> تعتمد شاشات الجوالات والكمبيوترات على (الضوء المنبعث) وتستخدم نظام الألوان (الأحمر، الأخضر، الأزرق - RGB)، مما يجعل الألوان تبدو مضيئة ومشرقة جداً.</p>
+            <p>🖨️ <strong className="text-[#4A4A4A]">الطباعة على الورق (نظام CMYK):</strong> تعتمد الطابعات على الحبر (الضوء المنعكس) وتستخدم نظام (السماوي، الأرجواني، الأصفر، الأسود - CMYK). ونظراً لطبيعة الورق وامتصاصه للحبر، قد تبدو الألوان أهدأ قليلاً أو أغمق بنسبة بسيطة مقارنة بتوهج الشاشة.</p>
+            <p>لذلك، هذا الاختلاف التقني هو معيار طبيعي وعالمي في مجال الطباعة، ولا يُعد عيباً مصنعياً أو خطأً في جودة الطباعة من طرف المنصة.</p>
+            <p>المنصة غير مسؤولة نهائياً عن ضعف جودة الطباعة أو البكسلة (Pixilation) إذا كانت الصور المرسلة من قِبل العميل ذات دقة أو جودة منخفضة أساساً.</p>
+          </div>
         </Section>
 
         {/* ── فاصل: أحكام عامة ───────────────────────────────────────── */}

@@ -46,7 +46,7 @@ export default function Layout() {
       ══════════════════════════════════════════════ */}
       <aside className={`
         fixed top-0 right-0 z-50
-        w-64 h-screen
+        w-64 h-[100dvh]
         bg-[#4A4A4A] text-white
         flex flex-col
         transition-transform duration-300 ease-in-out
