@@ -193,7 +193,20 @@ export default function StoreIndex() {
               >
                 <div className="aspect-square bg-[#F8F5F2] rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
                   {product.image ? (
-                    <img src={product.image} alt={product.name} className="object-cover w-full h-full" />
+                    <>
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${product.hoverImage ? 'group-hover:opacity-0' : ''}`}
+                      />
+                      {product.hoverImage && (
+                        <img
+                          src={product.hoverImage}
+                          alt={`${product.name} hover`}
+                          className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        />
+                      )}
+                    </>
                   ) : (
                     <ImageIcon size={40} className="text-[#D9A3AA]/30" />
                   )}
