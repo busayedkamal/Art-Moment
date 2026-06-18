@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Shield, FileText, ChevronDown, ChevronUp,
+  Shield, FileText, ChevronDown,
   Lock, Trash2, Eye, Edit3, HelpCircle,
   AlertCircle, ShoppingBag, Scale, Phone, Mail, MapPin,
   ArrowRight, Users, CreditCard, CheckCircle, Star
@@ -20,28 +20,31 @@ function Section({ id, icon: Icon, title, number, accent = 'pink', children }) {
       {/* رأس القسم */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-start md:items-center gap-3 p-4 md:p-6 text-right hover:bg-[#F8F5F2]/60 transition-colors"
+        className="flex flex-col w-full p-4 gap-3 text-right hover:bg-[#F8F5F2]/60 transition-colors"
       >
-        {/* رقم القسم */}
-        <span
-          className="shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center text-white text-sm font-black shadow-sm mt-0.5 md:mt-0"
-          style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
-        >
-          {number}
-        </span>
+        {/* الصف الأول: العنوان كامل العرض */}
+        <h2 className="w-full text-base md:text-lg font-black text-[#4A4A4A] leading-snug">{title}</h2>
 
-        {/* أيقونة */}
-        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border ${accentBg} mt-0.5 md:mt-0`}>
-          <Icon size={18} style={{ color: accentColor }} />
+        {/* الصف الثاني: الأيقونات موزعة */}
+        <div className="flex w-full items-center justify-between border-t border-[#D9A3AA]/10 pt-3 mt-1">
+          {/* رقم القسم — يمين */}
+          <div
+            className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shadow-sm"
+            style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
+          >
+            {number}
+          </div>
+
+          {/* أيقونة القسم — وسط */}
+          <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border ${accentBg}`}>
+            <Icon size={16} style={{ color: accentColor }} />
+          </div>
+
+          {/* مؤشر الفتح/الإغلاق — يسار */}
+          <div className="shrink-0 text-[#D9A3AA]">
+            <ChevronDown size={20} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+          </div>
         </div>
-
-        {/* عنوان */}
-        <h2 className="flex-1 min-w-0 text-base md:text-lg font-black text-[#4A4A4A] text-right leading-snug">{title}</h2>
-
-        {/* مؤشر الفتح/الإغلاق */}
-        <span className="shrink-0 text-[#4A4A4A]/30 mt-1 md:mt-0">
-          {open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </span>
       </button>
 
       {/* المحتوى */}
