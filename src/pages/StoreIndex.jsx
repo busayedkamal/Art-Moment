@@ -53,11 +53,7 @@ export default function StoreIndex() {
         setProducts((data || []).map(fromDb));
       } catch (err) {
         console.error('Error fetching products:', err);
-        setProducts([
-          { id: 1, name: 'ألبوم كلاسيك جلدي', description: 'ألبوم فاخر يتسع لـ 200 صورة 4x6', price: 120, category: 'albums', inStock: true },
-          { id: 2, name: 'إطار خشبي A4', description: 'إطار خشبي طبيعي مع زجاج حماية', price: 45, category: 'frames', inStock: true },
-          { id: 3, name: 'ملصقات ذكريات', description: 'مجموعة ملصقات لتزيين الألبومات', price: 15, category: 'stickers', inStock: true },
-        ]);
+        setProducts([]);
       }
     };
 
