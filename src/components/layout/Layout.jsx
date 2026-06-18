@@ -12,7 +12,8 @@ import {
   X,
   Wallet,
   Search,
-  Home
+  Home,
+  Package
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -28,6 +29,7 @@ export default function Layout() {
     { path: '/app/customers', label: 'العملاء',    icon: <Users size={20} /> },
     { path: '/app/reports',   label: 'التقارير',   icon: <FileBarChart size={20} /> },
     { path: '/app/expenses',  label: 'المصروفات',  icon: <Wallet size={20} /> },
+    { path: '/app/products',  label: 'المتجر',      icon: <Package size={20} /> },
     { path: '/track',         label: 'تتبع الطلب', icon: <Search size={20} /> },
     { path: '/app/settings',  label: 'الإعدادات',  icon: <Settings size={20} /> },
   ];
