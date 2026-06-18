@@ -4,19 +4,39 @@ import {
   Check, X, Loader2, Package, Frame, StickyNote, UploadCloud
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 
+// ─── إعدادات الفئات ──────────────────────────────────────────────
 const CAT_CONFIG = {
-  albums:   { label: 'ألبومات', color: '#D9A3AA', bg: 'bg-[#D9A3AA]', text: 'text-[#D9A3AA]', icon: Package },
-  frames:   { label: 'إطارات', color: '#C5A059', bg: 'bg-[#C5A059]', text: 'text-[#C5A059]', icon: Frame },
-  stickers: { label: 'ملصقات', color: '#4A4A4A', bg: 'bg-[#4A4A4A]', text: 'text-[#4A4A4A]', icon: StickyNote },
+  albums:   { label: 'ألبومات', bg: 'bg-[#D9A3AA]', text: 'text-[#D9A3AA]', icon: Package },
+  frames:   { label: 'إطارات', bg: 'bg-[#C5A059]', text: 'text-[#C5A059]', icon: Frame },
+  stickers: { label: 'ملصقات', bg: 'bg-[#4A4A4A]', text: 'text-[#4A4A4A]', icon: StickyNote },
 };
 
-const BASE_URL = 'https://art-moment-backend.onrender.com';
+// تحويل صف قاعدة البيانات (snake_case) → حالة React (camelCase)
+const fromDb = (p) => ({
+  id:          p.id,
+  name:        p.name,
+  description: p.description  || '',
+  price:       p.price,
+  category:    p.category,
+  image:       p.image        || null,
+  hoverImage:  p.hover_image  || null,
+  sortOrder:   p.sort_order   ?? 0,
+  inStock:     p.in_stock     ?? true,
+});
 
-const FALLBACK_PRODUCTS = [
-  { id: 1, name: 'ألبوم كلاسيك جلدي فاخر', description: 'يتسع لـ 200 صورة مقاس 4x6', price: 120, category: 'albums', inStock: true,  sortOrder: 1, image: '' },
-  { id: 2, name: 'إطار خشبي جداري A4',       description: 'خشب طبيعي مع زجاج مقاوم',    price: 45,  category: 'frames',  inStock: false, sortOrder: 2, image: '' },
-];
+// تحويل حالة React (camelCase) → صف قاعدة البيانات (snake_case)
+const toDb = (f) => ({
+  name:        f.name,
+  description: f.description,
+  price:       Number(f.price),
+  category:    f.category,
+  image:       f.image,
+  hover_image: f.hoverImage,
+  sort_order:  Number(f.sortOrder),
+  in_stock:    f.inStock,
+});
 
 const initialForm = {
   name: '', description: '', price: '', category: 'albums',
@@ -40,19 +60,20 @@ export default function ProductManagement() {
   const fileRef  = useRef(null);
   const hoverRef = useRef(null);
 
-  const getToken = () => localStorage.getItem('jwt_token') || '';
-
-  /* ── جلب المنتجات ── */
+  /* ── جلب المنتجات من Supabase ── */
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/v1/products`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (!res.ok) throw new Error();
-      setProducts(await res.json());
-    } catch {
-      setProducts(FALLBACK_PRODUCTS);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      setProducts((data || []).map(fromDb));
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل في تحميل المنتجات');
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +81,7 @@ export default function ProductManagement() {
 
   useEffect(() => { fetchProducts(); }, []);
 
-  /* ── ضغط الصورة ── */
+  /* ── ضغط الصورة (Base64) ── */
   const compressImage = (file) =>
     new Promise((resolve) => {
       const reader = new FileReader();
@@ -101,17 +122,24 @@ export default function ProductManagement() {
     if (!form.name || !form.price) return toast.error('يرجى تعبئة الحقول المطلوبة');
     setIsSaving(true);
     try {
-      const method = isEdit ? 'PATCH' : 'POST';
-      const url    = isEdit ? `${BASE_URL}/v1/products/${editId}` : `${BASE_URL}/v1/products`;
-      await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(form),
-      });
-      toast.success(isEdit ? 'تم التعديل بنجاح' : 'تم إضافة المنتج بنجاح');
+      if (isEdit) {
+        const { error } = await supabase
+          .from('products')
+          .update(toDb(form))
+          .eq('id', editId);
+        if (error) throw error;
+        toast.success('تم التعديل بنجاح');
+      } else {
+        const { error } = await supabase
+          .from('products')
+          .insert(toDb(form));
+        if (error) throw error;
+        toast.success('تم إضافة المنتج بنجاح');
+      }
       setIsModalOpen(false);
       fetchProducts();
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error('حدث خطأ أثناء الحفظ');
     } finally {
       setIsSaving(false);
@@ -119,15 +147,19 @@ export default function ProductManagement() {
   };
 
   const toggleStock = async (product) => {
-    setProducts(ps => ps.map(p => p.id === product.id ? { ...p, inStock: !p.inStock } : p));
-    toast.success(product.inStock ? 'تم تغيير الحالة إلى نفد' : 'تم إعادة إتاحة المنتج');
-    try {
-      await fetch(`${BASE_URL}/v1/products/${product.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ inStock: !product.inStock }),
-      });
-    } catch { toast.error('فشل في مزامنة المخزون'); }
+    const newStock = !product.inStock;
+    // تحديث محلي فوري
+    setProducts(ps => ps.map(p => p.id === product.id ? { ...p, inStock: newStock } : p));
+    const { error } = await supabase
+      .from('products')
+      .update({ in_stock: newStock })
+      .eq('id', product.id);
+    if (error) {
+      toast.error('فشل في مزامنة المخزون');
+      setProducts(ps => ps.map(p => p.id === product.id ? { ...p, inStock: product.inStock } : p));
+    } else {
+      toast.success(newStock ? 'تم إعادة إتاحة المنتج' : 'تم تغيير الحالة إلى نفد');
+    }
   };
 
   const confirmDelete = (product) => { setDeleteTarget(product); setIsDeleteModal(true); };
@@ -135,14 +167,16 @@ export default function ProductManagement() {
   const deleteProduct = async () => {
     setIsSaving(true);
     try {
-      await fetch(`${BASE_URL}/v1/products/${deleteTarget.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', deleteTarget.id);
+      if (error) throw error;
       toast.success('تم حذف المنتج نهائياً');
       setIsDeleteModal(false);
       fetchProducts();
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error('حدث خطأ أثناء الحذف');
     } finally {
       setIsSaving(false);
@@ -203,7 +237,9 @@ export default function ProductManagement() {
           <p className="font-bold text-[#4A4A4A]/70">جاري تحميل المنتجات...</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-[#4A4A4A]/40 font-bold">لا توجد منتجات في هذه الفئة</div>
+        <div className="text-center py-20 text-[#4A4A4A]/40 font-bold">
+          {products.length === 0 ? 'لا توجد منتجات بعد — ابدأ بإضافة أول منتج' : 'لا توجد منتجات في هذه الفئة'}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map(product => {
@@ -327,7 +363,7 @@ export default function ProductManagement() {
                 </div>
               </div>
 
-              {/* الصورة الأساسية */}
+              {/* الصورة الرئيسية */}
               <div>
                 <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">الصورة الرئيسية</label>
                 <input type="file" accept="image/*" ref={fileRef} className="hidden" onChange={e => handleImageUpload(e, 'main')} />
@@ -340,18 +376,8 @@ export default function ProductManagement() {
                   ) : form.image ? (
                     <>
                       <img src={form.image} alt="معاينة" className="h-full w-full object-contain p-2" />
-                      <button
-                        onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, image: null })); }}
-                        className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 shadow-md"
-                      >
-                        إزالة
-                      </button>
-                      <button
-                        onClick={e => { e.stopPropagation(); fileRef.current.click(); }}
-                        className="absolute bottom-2 right-2 bg-[#4A4A4A] text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-[#D9A3AA] shadow-md"
-                      >
-                        تغيير
-                      </button>
+                      <button onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, image: null })); }} className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 shadow-md">إزالة</button>
+                      <button onClick={e => { e.stopPropagation(); fileRef.current.click(); }} className="absolute bottom-2 right-2 bg-[#4A4A4A] text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-[#D9A3AA] shadow-md">تغيير</button>
                     </>
                   ) : (
                     <div className="text-center">
@@ -376,12 +402,7 @@ export default function ProductManagement() {
                   ) : form.hoverImage ? (
                     <>
                       <img src={form.hoverImage} alt="Hover" className="h-full w-full object-contain p-2" />
-                      <button
-                        onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, hoverImage: null })); }}
-                        className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 shadow-md"
-                      >
-                        إزالة
-                      </button>
+                      <button onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, hoverImage: null })); }} className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 shadow-md">إزالة</button>
                     </>
                   ) : (
                     <div className="text-center">
