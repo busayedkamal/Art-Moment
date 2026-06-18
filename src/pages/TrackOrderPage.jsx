@@ -12,6 +12,13 @@ import {
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo-art-moment.svg';
 import RiyalSign from '../components/RiyalSign';
+import instagramIcon from '../assets/instagram icon.svg';
+import snapchatIcon from '../assets/SnapChat icon.svg';
+import tiktokIcon from '../assets/tiktok icon.svg';
+import linktreeIcon from '../assets/linktree_icon.svg';
+import whatsappIcon from '../assets/whatsapp icon.svg';
+import telegramIcon from '../assets/telegram icon.svg';
+import gmailIcon from '../assets/gmail icon.svg';
 
 /* ─── مساعدات ─────────────────────────────────────── */
 const normalizePhone = (raw) => {
@@ -192,7 +199,7 @@ export default function TrackOrderPage() {
 
   /* ═══ JSX ═════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-[#F8F5F2] flex flex-col items-center py-10 px-4 relative font-sans text-[#4A4A4A]" dir="rtl">
+    <div className="min-h-screen bg-[#F8F5F2] flex flex-col relative font-sans text-[#4A4A4A]" dir="rtl">
 
       {/* خلفية ضبابية */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -203,6 +210,9 @@ export default function TrackOrderPage() {
       <Link to="/" className="absolute top-6 right-6 flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-[#D9A3AA]/20 shadow-sm text-[#4A4A4A] hover:text-[#D9A3AA] transition-colors font-bold text-sm z-10">
         <Home size={16} /> الرئيسية
       </Link>
+
+      {/* ── محتوى الصفحة المركزي ── */}
+      <div className="flex flex-col items-center w-full px-4 pt-10 pb-20 flex-1">
 
       {/* شعار + عنوان */}
       <div className="text-center mb-8 mt-8 relative z-10">
@@ -773,9 +783,72 @@ export default function TrackOrderPage() {
 
       </div>
 
-      <Link to="/admin/login" className="mt-auto pt-10 text-[#4A4A4A]/20 text-xs hover:text-[#D9A3AA] transition-colors font-mono">
-        Art Moment Admin
-      </Link>
+      </div>{/* end centering wrapper */}
+
+      {/* ── فوتر كامل ── */}
+      <footer className="w-full mt-auto bg-[#4A4A4A] text-white py-16 text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <div className="absolute -top-1/2 -right-1/2 w-[100rem] h-[100rem] bg-[#D9A3AA] rounded-full blur-3xl"></div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 relative z-10">
+
+          <div className="bg-white/80 backdrop-blur-sm w-fit mx-auto p-3 rounded-2xl mb-6 border border-white/20">
+            <img src={logo} alt="Art Moment" className="h-16 w-auto object-contain" />
+          </div>
+
+          <p className="mb-8 max-w-md mx-auto text-white/60">
+            خدمة طباعة منظمة من أول رسالة حتى الاستلام. هدفنا أن تكون تجربتك بسيطة وواضحة، ونجهز لك صورك بأفضل جودة.
+          </p>
+
+          <div className="flex justify-center gap-6 text-sm font-bold mb-8">
+            <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
+            <Link to="/privacy" className="hover:text-[#D9A3AA] transition-colors">الخصوصية والشروط</Link>
+            <Link to="/admin/login" className="hover:text-[#D9A3AA] transition-colors">دخول الموظفين</Link>
+          </div>
+
+          <div className="flex items-center justify-center gap-4 flex-wrap mb-8">
+            {[
+              { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966569663697',                alt: 'WhatsApp' },
+              { id: 'telegram',  icon: telegramIcon,  url: 'https://t.me/+966569663697',                alt: 'Telegram' },
+              { id: 'instagram', icon: instagramIcon, url: 'https://www.instagram.com/art.moment__/',   alt: 'Instagram' },
+              { id: 'snapchat',  icon: snapchatIcon,  url: 'https://www.snapchat.com/add/omsayedkamal', alt: 'Snapchat' },
+              { id: 'tiktok',    icon: tiktokIcon,    url: 'https://www.tiktok.com/@ayatalshaqaq',      alt: 'TikTok' },
+              { id: 'linktree',  icon: linktreeIcon,  url: 'https://linktr.ee/Art_Moment',              alt: 'Linktree' },
+              { id: 'gmail',     icon: gmailIcon,     url: 'mailto:art.moment26@gmail.com',             alt: 'Gmail' },
+            ].map((social) => (
+              <a
+                key={social.id}
+                href={social.url}
+                target={social.url.startsWith('mailto') ? '_self' : '_blank'}
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full bg-white/5 border border-[#D9A3AA]/20 flex items-center justify-center hover:bg-white/10 hover:-translate-y-1 hover:border-[#D9A3AA]/50 transition-all duration-300"
+              >
+                <img src={social.icon} alt={social.alt} className="w-5 h-5 object-contain" />
+              </a>
+            ))}
+          </div>
+
+          <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-white/30">
+            <p>© 2026 Art Moment. جميع الحقوق محفوظة.</p>
+            <span className="hidden sm:inline text-white/15">·</span>
+            <Link to="/privacy" className="hover:text-[#D9A3AA] transition-colors font-semibold">
+              سياسة الخصوصية وشروط الاستخدام
+            </Link>
+          </div>
+        </div>
+      </footer>
+
+      {/* زر واتساب العائم */}
+      <a
+        href="https://wa.me/966569663697"
+        target="_blank"
+        rel="noreferrer"
+        className="fixed bottom-6 left-6 z-40 bg-[#25D366] hover:bg-[#128C7E] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group border-4 border-white"
+      >
+        <MessageCircle size={28} />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-bold">تواصل معنا</span>
+      </a>
+
     </div>
   );
 }

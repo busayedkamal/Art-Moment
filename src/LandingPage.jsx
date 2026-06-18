@@ -245,9 +245,8 @@ export default function LandingPage() {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-4 shadow-xl absolute w-full z-50">
-            <a href="#wallet-packages" className="block py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}>💳 شحن المحفظة</a>
-            <a href="#ai-check" className="block py-2 text-[#D9A3AA] font-bold" onClick={() => setIsMobileMenuOpen(false)}>✨ فحص جودة الصورة</a>
-            <a href="#packages" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
+            <a href="#wallet-packages" className="block py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}>💳 نظام الباقات</a>
+            <a href="#packages" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>الخدمات</a>
             <a href="#sizes" className="block py-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
 
             <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>

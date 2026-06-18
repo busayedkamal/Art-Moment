@@ -424,7 +424,9 @@ export default function PrivacyPage() {
       {/* ═══ تذييل الصفحة ══════════════════════════════════════════════════════ */}
       <footer className="bg-[#4A4A4A] text-white py-10 text-center mt-10">
         <div className="max-w-5xl mx-auto px-4">
-          <img src={logo} alt="Art Moment" className="h-10 w-auto mx-auto mb-4 brightness-0 invert opacity-70" />
+          <div className="bg-white/80 backdrop-blur-sm w-fit mx-auto p-3 rounded-2xl mb-6 border border-white/20 shadow-sm">
+            <img src={logo} alt="Art Moment" className="h-12 w-auto object-contain" />
+          </div>
           <p className="text-xs text-white/40 mb-4">
             © 2026 Art Moment — لحظة فن. جميع الحقوق محفوظة.
           </p>
