@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ShoppingCart, X, Plus, Star, ChevronDown, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
+import { supabase } from '../lib/supabase';
+
+const fromDb = (p) => ({
+  id:          p.id,
+  name:        p.name,
+  description: p.description || '',
+  price:       p.price,
+  category:    p.category,
+  image:       p.image       || null,
+  hoverImage:  p.hover_image || null,
+  sortOrder:   p.sort_order  ?? 0,
+  inStock:     p.in_stock    ?? true,
+});
 
 const CATEGORIES = [
   { id: 'all', name: 'الكل' },
@@ -30,16 +43,25 @@ export default function StoreIndex() {
   const [openFaq, setOpenFaq] = useState(null);
 
   useEffect(() => {
-    fetch('https://art-moment-backend.onrender.com/v1/public/products')
-      .then(res => res.json())
-      .then(data => setProducts(data))
-      .catch(() => {
+    const fetchProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        if (error) throw error;
+        setProducts((data || []).map(fromDb));
+      } catch (err) {
+        console.error('Error fetching products:', err);
         setProducts([
           { id: 1, name: 'ألبوم كلاسيك جلدي', description: 'ألبوم فاخر يتسع لـ 200 صورة 4x6', price: 120, category: 'albums', inStock: true },
           { id: 2, name: 'إطار خشبي A4', description: 'إطار خشبي طبيعي مع زجاج حماية', price: 45, category: 'frames', inStock: true },
           { id: 3, name: 'ملصقات ذكريات', description: 'مجموعة ملصقات لتزيين الألبومات', price: 15, category: 'stickers', inStock: true },
         ]);
-      });
+      }
+    };
+
+    fetchProducts();
 
     const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
     setCart(savedCart);
