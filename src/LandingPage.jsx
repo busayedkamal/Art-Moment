@@ -18,6 +18,15 @@ import {
 
 // ✅ تصحيح مسار الصور
 import logo from './assets/logo-art-moment.svg';
+
+// أيقونات السوشيال ميديا
+import instagramIcon from './assets/instagram icon.svg';
+import snapchatIcon from './assets/SnapChat icon.svg';
+import tiktokIcon from './assets/tiktok icon.svg';
+import linktreeIcon from './assets/linktree_icon.svg';
+import whatsappIcon from './assets/whatsapp icon.svg';
+import telegramIcon from './assets/telegram icon.svg';
+import gmailIcon from './assets/gmail icon.svg';
 import printedPhotos from './assets/printed-photos.png';
 
 // --- لوحة الألوان المستخدمة ---
@@ -738,8 +747,8 @@ export default function LandingPage() {
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none"><div className="absolute -top-1/2 -right-1/2 w-[100rem] h-[100rem] bg-[#D9A3AA] rounded-full blur-3xl"></div></div>
         <div className="max-w-7xl mx-auto px-4 relative z-10">
 
-          <div className="bg-white/10 w-fit mx-auto p-4 rounded-2xl mb-6 backdrop-blur-sm border border-white/10">
-            <img src={logo} alt="Art Moment" className="h-16 w-auto brightness-0 invert" />
+          <div className="bg-white/80 backdrop-blur-sm w-fit mx-auto p-3 rounded-2xl mb-6 border border-white/20">
+            <img src={logo} alt="Art Moment" className="h-16 w-auto object-contain" />
           </div>
 
           <p className="mb-8 max-w-md mx-auto text-white/60">
@@ -752,22 +761,26 @@ export default function LandingPage() {
             <Link to="/admin/login" className="hover:text-[#D9A3AA] transition-colors">دخول الموظفين</Link>
           </div>
 
-          <div className="flex justify-center flex-wrap gap-4 mb-8">
-            <a href="https://www.instagram.com/art.moment__/" target="_blank" rel="noreferrer" title="Instagram" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-gradient-to-tr hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
-              <Instagram size={22} />
-            </a>
-            <a href="https://www.snapchat.com/add/omsayedkamal" target="_blank" rel="noreferrer" title="Snapchat" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-yellow-400 hover:text-black transition-all border border-white/10 hover:border-transparent">
-              <Ghost size={22} />
-            </a>
-            <a href="https://www.tiktok.com/@ayatalshaqaq" target="_blank" rel="noreferrer" title="TikTok" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-black hover:text-white transition-all border border-white/10 hover:border-transparent">
-              <Music size={22} />
-            </a>
-            <a href="https://linktr.ee/Art_Moment" target="_blank" rel="noreferrer" title="Linktree" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-[#43E660] hover:text-white transition-all border border-white/10 hover:border-transparent">
-              <Link2 size={22} />
-            </a>
-            <a href="mailto:art.moment26@gmail.com" title="Email" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-red-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
-              <Mail size={22} />
-            </a>
+          <div className="flex items-center justify-center gap-4 flex-wrap mb-8">
+            {[
+              { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966569663697',                alt: 'WhatsApp' },
+              { id: 'telegram',  icon: telegramIcon,  url: 'https://t.me/+966569663697',                alt: 'Telegram' },
+              { id: 'instagram', icon: instagramIcon, url: 'https://www.instagram.com/art.moment__/',   alt: 'Instagram' },
+              { id: 'snapchat',  icon: snapchatIcon,  url: 'https://www.snapchat.com/add/omsayedkamal', alt: 'Snapchat' },
+              { id: 'tiktok',    icon: tiktokIcon,    url: 'https://www.tiktok.com/@ayatalshaqaq',      alt: 'TikTok' },
+              { id: 'linktree',  icon: linktreeIcon,  url: 'https://linktr.ee/Art_Moment',              alt: 'Linktree' },
+              { id: 'gmail',     icon: gmailIcon,     url: 'mailto:art.moment26@gmail.com',             alt: 'Gmail' },
+            ].map((social) => (
+              <a
+                key={social.id}
+                href={social.url}
+                target={social.url.startsWith('mailto') ? '_self' : '_blank'}
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full bg-white/5 border border-[#D9A3AA]/20 flex items-center justify-center hover:bg-white/10 hover:-translate-y-1 hover:border-[#D9A3AA]/50 transition-all duration-300"
+              >
+                <img src={social.icon} alt={social.alt} className="w-5 h-5 object-contain" />
+              </a>
+            ))}
           </div>
 
           <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-white/30">

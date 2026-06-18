@@ -168,7 +168,7 @@ export default function PrivacyPage() {
 
           {/* شريط فاصل بمعلومات مختصرة */}
           <div className="flex flex-wrap gap-4 text-xs font-bold text-white/50">
-            <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#C5A059]" /> يسري اعتباراً من: مايو 2026</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#C5A059]" /> يسري اعتباراً من: يناير 2026</span>
             <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#C5A059]" /> الاختصاص: المحاكم السعودية — الأحساء</span>
             <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#D9A3AA]" /> كادر نسائي كامل 100%</span>
           </div>
@@ -216,7 +216,7 @@ export default function PrivacyPage() {
         </Section>
 
         {/* 2. الغرض من جمع البيانات */}
-        <Section id="data-purpose" icon={HelpCircle} title="الغرض من جمع البيانات (المسوّغ النظامي)" number="2" accent="pink">
+        <Section id="data-purpose" icon={HelpCircle} title="الغرض من جمع البيانات)" number="2" accent="pink">
           <p className="mt-4 text-sm md:text-base text-[#4A4A4A]/70 leading-relaxed">
             تُجمع البيانات وفقاً للمسوّغ النظامي <em>(التعاقد لتقديم الخدمة)</em>، وتُستخدم في:
           </p>
@@ -229,7 +229,7 @@ export default function PrivacyPage() {
         </Section>
 
         {/* 3. أمن البيانات وتخزينها */}
-        <Section id="data-security" icon={Lock} title="أمن البيانات وتخزينها (الاحتفاظ والإتلاف)" number="3" accent="pink">
+        <Section id="data-security" icon={Lock} title="أمن البيانات وتخزينها)" number="3" accent="pink">
 
           <AlertCard color="#D9A3AA" bg="bg-[#D9A3AA]/8 border-[#D9A3AA]/25" icon={Shield}>
             <strong>سرية الصور — كادر نسائي 100%:</strong> لزيادة مستوى الطمأنينة والراحة التامة لعملائنا، نؤكد أن استقبال، ومعالجة، وطباعة، وتغليف كافة الصور والمواد البصرية يتم حصرياً بأيدي <strong>كادر نسائي كامل 100%</strong>. تُعامل جميع الصور المرفوعة بسرية مطلقة، ولا يُسمح بالاطلاع عليها أو التعامل معها إلا من قِبل الموظفات المختصات بتنفيذ الطباعة فقط.
@@ -294,7 +294,7 @@ export default function PrivacyPage() {
         </Section>
 
         {/* 7. نظام المحفظة والباقات */}
-        <Section id="wallet-terms" icon={CreditCard} title="نظام المحفظة والباقات (الرصيد المدفوع مقدماً والكاش باك)" number="7" accent="gold">
+        <Section id="wallet-terms" icon={CreditCard} title="نظام المحفظة والباقات" number="7" accent="gold">
           <ul className="mt-4 space-y-2.5">
             <ListItem accent="gold">الرصيد المضاف إلى المحفظة — سواء من الشحن المسبق للباقات (البرونزية / الفضية / الذهبية)، أو من رصيد الولاء/الكاش باك — مخصص للاستخدام حصرياً داخل منصة "لحظة فن".</ListItem>
             <ListItem accent="gold">رصيد الباقات والمكافآت الإضافية الممنوحة <strong className="text-[#4A4A4A]">غير قابل للاسترداد النقدي (Cash Refund)</strong> أو التحويل لحسابات بنكية، ويُستخدم فقط لخصم قيمة المشتريات والخدمات من الموقع.</ListItem>
