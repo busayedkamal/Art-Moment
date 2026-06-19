@@ -262,7 +262,7 @@ export default function StoreOrdersManagement() {
                 {filteredOrders.map(order => (
                   <tr key={order.id} className="hover:bg-[#F8F5F2]/60 transition-colors">
                     <td className="py-3.5 px-5 font-mono text-xs text-[#4A4A4A]/50">
-                      #{order.id.slice(0, 8)}
+                      #{order.id.toString().slice(0, 8)}
                     </td>
                     <td className="py-3.5 px-4 font-bold">{order.customer_name}</td>
                     <td className="py-3.5 px-4 font-mono text-sm text-[#4A4A4A]/70">{order.phone}</td>
@@ -336,7 +336,7 @@ export default function StoreOrdersManagement() {
                 </button>
                 <div>
                   <h2 className="font-black text-base">تفاصيل الطلب</h2>
-                  <p className="text-xs font-mono text-[#4A4A4A]/40">#{selectedOrder.id.slice(0, 8)}</p>
+                  <p className="text-xs font-mono text-[#4A4A4A]/40">#{selectedOrder.id.toString().slice(0, 8)}</p>
                 </div>
               </div>
               <StatusBadge status={selectedOrder.status} />
