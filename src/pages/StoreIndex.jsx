@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShoppingCart, X, Plus, Star, ChevronDown, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import { Search, ShoppingCart, X, Plus, Star, ChevronDown, CheckCircle, Image as ImageIcon, ShieldCheck, Scale, Truck, FileText } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
 import { supabase } from '../lib/supabase';
 
@@ -41,6 +41,7 @@ export default function StoreIndex() {
   const [cart, setCart] = useState([]);
   const [toastMsg, setToastMsg] = useState('');
   const [openFaq, setOpenFaq] = useState(null);
+  const [openPolicyModal, setOpenPolicyModal] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -289,6 +290,134 @@ export default function StoreIndex() {
           ))}
         </div>
       </section>
+
+      {/* Trust & Compliance Section */}
+      <section className="bg-[#4A4A4A] text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div className="flex flex-col items-center">
+            <ShieldCheck size={40} className="text-[#D9A3AA] mb-4" />
+            <h3 className="font-black text-lg mb-2">تسوق آمن وموثق</h3>
+            <p className="text-sm text-white/70">متجر موثق في المركز السعودي للأعمال، لضمان حقوقك وتجربة تسوق موثوقة.</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <Scale size={40} className="text-[#C5A059] mb-4" />
+            <h3 className="font-black text-lg mb-2">سياسة استرجاع عادلة</h3>
+            <p className="text-sm text-white/70">حق الاسترجاع مكفول خلال 7 أيام للمنتجات الجاهزة بحالتها الأصلية.</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <Truck size={40} className="text-[#D9A3AA] mb-4" />
+            <h3 className="font-black text-lg mb-2">ضمان التوصيل</h3>
+            <p className="text-sm text-white/70">نلتزم بتوصيل طلباتك بأسرع وقت، مع ضمان التسليم خلال المدة النظامية.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-[#D9A3AA]/20 pt-16 pb-8">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <img src={logo} alt="لحظة فن" className="w-10 h-10 object-contain grayscale opacity-80" />
+              <h2 className="text-xl font-black text-[#4A4A4A]">لحظة فن</h2>
+            </div>
+            <p className="text-sm text-[#4A4A4A]/70 leading-relaxed mb-6">
+              نوثق أجمل لحظاتك بأعلى جودة. تشكيلة من الألبومات والإطارات الفاخرة التي تليق بذكرياتك.
+            </p>
+            <div className="flex items-center gap-2 bg-[#F8F5F2] w-max px-4 py-2 rounded-xl border border-[#D9A3AA]/20">
+              <ShieldCheck size={18} className="text-emerald-500" />
+              <div className="text-right">
+                <p className="text-[10px] text-[#4A4A4A]/60 font-bold">موثق في</p>
+                <p className="text-xs font-black text-[#4A4A4A]">المركز السعودي للأعمال</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-black text-[#4A4A4A] mb-4">روابط هامة</h3>
+            <ul className="space-y-3">
+              <li>
+                <button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">
+                  سياسة الاسترجاع والاستبدال
+                </button>
+              </li>
+              <li>
+                <button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">
+                  الشروط والأحكام
+                </button>
+              </li>
+              <li>
+                <Link to="/track" className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">
+                  تتبع الطلب
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-black text-[#4A4A4A] mb-4">طرق الدفع المدعومة</h3>
+            <div className="flex gap-2 mb-6">
+              <div className="w-12 h-8 bg-[#F8F5F2] rounded border border-[#D9A3AA]/20 flex items-center justify-center text-[10px] font-black text-[#4A4A4A]/50">Mada</div>
+              <div className="w-12 h-8 bg-[#F8F5F2] rounded border border-[#D9A3AA]/20 flex items-center justify-center text-[10px] font-black text-[#4A4A4A]/50">Visa</div>
+              <div className="w-12 h-8 bg-[#F8F5F2] rounded border border-[#D9A3AA]/20 flex items-center justify-center text-[10px] font-black text-[#4A4A4A]/50">Apple</div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 text-center border-t border-[#F8F5F2] pt-8">
+          <p className="text-xs font-bold text-[#4A4A4A]/50">
+            جميع الحقوق محفوظة لمتجر لحظة فن © {new Date().getFullYear()}
+          </p>
+        </div>
+      </footer>
+
+      {/* Legal Policies Modal */}
+      {openPolicyModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && setOpenPolicyModal(false)}
+        >
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-[#F8F5F2] flex justify-between items-center bg-[#F8F5F2]/50">
+              <h2 className="text-xl font-black text-[#4A4A4A] flex items-center gap-2">
+                <FileText size={20} className="text-[#D9A3AA]" /> السياسات والأحكام
+              </h2>
+              <button onClick={() => setOpenPolicyModal(false)} className="p-2 hover:bg-white rounded-full transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-6 text-sm text-[#4A4A4A]/80 leading-relaxed custom-scrollbar">
+              <div>
+                <h3 className="font-black text-[#4A4A4A] text-base mb-2">1. سياسة الاسترجاع والاستبدال للمنتجات الجاهزة</h3>
+                <p>نلتزم في "لحظة فن" بنظام التجارة الإلكترونية السعودي. يحق للعميل استرجاع أو استبدال المنتجات الجاهزة (مثل الألبومات الفارغة والإطارات) خلال <strong>7 أيام</strong> من تاريخ الاستلام، بشرط أن يكون المنتج بحالته الأصلية غير مستخدم وفي تغليفه الأصلي. يتحمل العميل تكاليف الشحن المترتبة على الاسترجاع ما لم يكن المنتج معيباً.</p>
+              </div>
+
+              <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                <h3 className="font-black text-red-700 text-base mb-2">2. استثناء المنتجات المخصصة (طباعة الصور)</h3>
+                <p className="text-red-600/80">استناداً إلى اللوائح المنظمة، <strong>يُستثنى حق الاسترجاع أو الفسخ</strong> للطلبات التي تُصنع خصيصاً للعميل (مثل طباعة الصور الشخصية). بمجرد تأكيد طلب الطباعة وبدء التنفيذ، لا يمكن إلغاء الطلب أو استرجاع المبلغ، نظراً لخصوصية المنتج وعدم إمكانية إعادة بيعه.</p>
+              </div>
+
+              <div>
+                <h3 className="font-black text-[#4A4A4A] text-base mb-2">3. ضمان التوصيل (شرط الـ 15 يوماً)</h3>
+                <p>نسعى دائماً لتوصيل طلباتكم في أسرع وقت ممكن (عادة خلال 24-48 ساعة داخل الأحساء). ونلتزم قانونياً بتسليم الطلب في مدة لا تتجاوز 15 يوماً من تاريخ التأكيد. في حال تجاوز هذه المدة (لا سمح الله)، يحق للعميل إلغاء الطلب واسترداد كامل المبلغ.</p>
+              </div>
+
+              <div>
+                <h3 className="font-black text-[#4A4A4A] text-base mb-2">4. الخصوصية وسرية البيانات</h3>
+                <p>نولي في "لحظة فن" خصوصية صوركم وبياناتكم الشخصية أولوية قصوى. تُعالج الصور المرفوعة بسرية تامة لغرض الطباعة فقط، ولا تُشارك مع أي طرف ثالث وتُحذف من خوادمنا بشكل دوري بعد تسليم الطلب.</p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-[#F8F5F2] bg-[#F8F5F2]/30">
+              <button
+                onClick={() => setOpenPolicyModal(false)}
+                className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#D9A3AA] transition-colors"
+              >
+                قرأت وموافق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
