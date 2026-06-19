@@ -6,11 +6,42 @@ import toast from 'react-hot-toast';
 import {
   ArrowRight, Printer, CheckCircle, Truck, Trash2,
   Banknote, FileText, User, Download,
-  MessageCircle, X, Tag, Receipt, StickyNote, Plus, Wallet, Gift, Package
+  MessageCircle, X, Tag, Receipt, StickyNote, Plus, Wallet, Gift, Package,
+  Clock, RotateCcw, AlertCircle
 } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
 import logoPng from '../assets/logo.png';
 import RiyalSign from '../components/RiyalSign';
+
+const STATUS_CONFIG = {
+  pending_verification: { label: 'انتظار التحقق', bgClass: 'bg-blue-100',    textClass: 'text-blue-700',    btnClass: 'bg-blue-600 hover:bg-blue-500 text-white',     icon: Clock },
+  confirmed:            { label: 'مؤكد',          bgClass: 'bg-indigo-100',  textClass: 'text-indigo-700',  btnClass: 'bg-indigo-600 hover:bg-indigo-500 text-white',  icon: CheckCircle },
+  processing:           { label: 'قيد الإنتاج',   bgClass: 'bg-amber-100',   textClass: 'text-amber-700',   btnClass: 'bg-amber-500 hover:bg-amber-400 text-white',    icon: Printer },
+  ready_for_delivery:   { label: 'جاهز للتسليم',  bgClass: 'bg-teal-100',    textClass: 'text-teal-700',    btnClass: 'bg-teal-600 hover:bg-teal-500 text-white',      icon: Package },
+  shipped:              { label: 'تم الشحن',       bgClass: 'bg-cyan-100',    textClass: 'text-cyan-700',    btnClass: 'bg-cyan-600 hover:bg-cyan-500 text-white',      icon: Truck },
+  delivered:            { label: 'تم الاستلام',    bgClass: 'bg-emerald-100', textClass: 'text-emerald-700', btnClass: 'bg-emerald-600 hover:bg-emerald-500 text-white', icon: CheckCircle },
+  cancelled:            { label: 'ملغي',           bgClass: 'bg-red-100',     textClass: 'text-red-700',     btnClass: 'bg-red-600 hover:bg-red-500 text-white',        icon: X },
+  returned:             { label: 'مرتجع',          bgClass: 'bg-orange-100',  textClass: 'text-orange-700',  btnClass: 'bg-orange-500 hover:bg-orange-400 text-white',  icon: RotateCcw },
+  // حالات النظام القديم
+  new:      { label: 'جديد',   bgClass: 'bg-blue-100',  textClass: 'text-blue-700',  btnClass: 'bg-blue-600 hover:bg-blue-500 text-white',   icon: FileText },
+  printing: { label: 'طباعة',  bgClass: 'bg-amber-100', textClass: 'text-amber-700', btnClass: 'bg-amber-500 hover:bg-amber-400 text-white',  icon: Printer },
+  done:     { label: 'جاهز',   bgClass: 'bg-pink-100',  textClass: 'text-pink-700',  btnClass: 'bg-pink-500 hover:bg-pink-400 text-white',    icon: CheckCircle },
+};
+
+const VALID_TRANSITIONS = {
+  pending_verification: ['confirmed', 'cancelled'],
+  confirmed:            ['processing', 'cancelled'],
+  processing:           ['ready_for_delivery', 'cancelled'],
+  ready_for_delivery:   ['shipped', 'delivered', 'cancelled'],
+  shipped:              ['delivered', 'returned'],
+  delivered:            ['returned'],
+  cancelled:            ['confirmed'],
+  returned:             [],
+  // حالات النظام القديم
+  new:      ['printing', 'done', 'delivered', 'confirmed', 'processing'],
+  printing: ['done', 'ready_for_delivery', 'delivered'],
+  done:     ['delivered', 'ready_for_delivery'],
+};
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -64,6 +95,8 @@ export default function OrderDetails() {
 
   // لمنع تكرار ضغط زر التحويل
   const [isConvertingExcess, setIsConvertingExcess] = useState(false);
+
+  const [statusHistory, setStatusHistory] = useState([]);
 
   useEffect(() => {
     fetchOrderAndSettings();
@@ -124,6 +157,13 @@ export default function OrderDetails() {
 
       const { data: couponsData } = await supabase.from('coupons').select('*').eq('is_active', true);
       if (couponsData) setActiveCoupons(couponsData);
+
+      const { data: historyData } = await supabase
+        .from('order_status_history')
+        .select('*')
+        .eq('order_id', id)
+        .order('created_at', { ascending: false });
+      setStatusHistory(historyData || []);
 
       setOrder(orderData);
       setPayments(paymentsData || []);
@@ -953,6 +993,44 @@ export default function OrderDetails() {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    const oldStatus = order.status;
+    const toastId = toast.loading('جاري تحديث الحالة...');
+    try {
+      const now = new Date().toISOString();
+      const dateField = `date_${newStatus}`;
+
+      await supabase
+        .from('orders')
+        .update({ status: newStatus, [dateField]: now })
+        .eq('id', id);
+
+      await supabase
+        .from('order_status_history')
+        .insert({ order_id: id, old_status: oldStatus, new_status: newStatus, created_at: now });
+
+      setOrder(prev => {
+        const updated = { ...prev, status: newStatus, [dateField]: now };
+        if (newStatus === 'delivered') sendAutoWhatsAppMessage(updated);
+        return updated;
+      });
+
+      const { data: historyData } = await supabase
+        .from('order_status_history')
+        .select('*')
+        .eq('order_id', id)
+        .order('created_at', { ascending: false });
+      setStatusHistory(historyData || []);
+
+      toast.dismiss(toastId);
+      toast.success(`تم تغيير الحالة إلى: ${STATUS_CONFIG[newStatus]?.label || newStatus}`);
+    } catch (err) {
+      toast.dismiss(toastId);
+      toast.error('فشل تحديث الحالة');
+      console.error(err);
+    }
+  };
+
   const handleDateChange = async (statusKey, newDateVal) => {
     if (!newDateVal) return;
     const dateField = `date_${statusKey}`;
@@ -1140,35 +1218,70 @@ export default function OrderDetails() {
             </div>
           </div>
 
-          {/* شريط الحالات */}
-          <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/25 shadow-sm overflow-x-auto">
-            <div className="flex justify-between min-w-[500px]">
-              {steps.map((step, index) => {
-                const isActive = index <= currentStepIndex;
-                const dateValue = order[`date_${step.key}`] ? new Date(order[`date_${step.key}`]).toISOString().split('T')[0] : '';
+          {/* شريط الحالة — FSM */}
+          <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/25 shadow-sm">
+            {/* الحالة الحالية */}
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-sm text-[#4A4A4A]/55 flex items-center gap-2">
+                <AlertCircle size={16} className="text-[#D9A3AA]" /> حالة الطلب
+              </h3>
+              {(() => {
+                const cfg = STATUS_CONFIG[order.status] || { label: order.status, bgClass: 'bg-gray-100', textClass: 'text-gray-600' };
+                const Icon = cfg.icon;
                 return (
-                  <div key={step.key} className="flex flex-col items-center gap-3 flex-1 relative group">
-                    <button onClick={() => updateStatus(step.key)} className={`flex flex-col items-center gap-2 transition-colors ${isActive ? 'text-emerald-600' : 'text-[#4A4A4A]/40'}`}>
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-emerald-100 shadow-md shadow-emerald-200/50 scale-110 ring-2 ring-emerald-200' : 'bg-[#F8F5F2]'}`}>
-                        <step.icon size={20} />
-                      </div>
-                      <span className="text-xs font-bold">{step.label}</span>
-                    </button>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        value={dateValue}
-                        onChange={(e) => handleDateChange(step.key, e.target.value)}
-                        className={`text-[10px] bg-[#F8F5F2] border border-[#D9A3AA]/25 rounded px-1 py-0.5 text-center w-24 focus:border-[#D9A3AA] outline-none transition-opacity ${!dateValue && !isActive ? 'opacity-0 group-hover:opacity-50' : 'opacity-100'}`}
-                      />
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div className={`absolute top-5 right-[50%] left-[-50%] h-0.5 -z-10 ${index < currentStepIndex ? 'bg-[#C5A059]' : 'bg-[#D9A3AA]/10'}`}></div>
-                    )}
-                  </div>
+                  <span className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-bold text-sm border ${cfg.bgClass} ${cfg.textClass}`}>
+                    {Icon && <Icon size={14} />} {cfg.label}
+                  </span>
                 );
-              })}
+              })()}
             </div>
+
+            {/* أزرار الانتقال المسموحة */}
+            {(VALID_TRANSITIONS[order.status] || []).length > 0 && (
+              <div className="mb-5">
+                <p className="text-[11px] text-[#4A4A4A]/40 mb-3 font-medium">الانتقال إلى:</p>
+                <div className="flex flex-wrap gap-2">
+                  {(VALID_TRANSITIONS[order.status] || []).map(nextStatus => {
+                    const cfg = STATUS_CONFIG[nextStatus] || { label: nextStatus, btnClass: 'bg-gray-500 text-white' };
+                    const Icon = cfg.icon;
+                    return (
+                      <button
+                        key={nextStatus}
+                        onClick={() => handleStatusChange(nextStatus)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-sm ${cfg.btnClass}`}
+                      >
+                        {Icon && <Icon size={14} />} {cfg.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* سجل التدقيق */}
+            {statusHistory.length > 0 && (
+              <div className="pt-4 border-t border-[#D9A3AA]/15">
+                <p className="text-[11px] font-bold text-[#4A4A4A]/40 mb-3">سجل التغييرات</p>
+                <div className="space-y-2 max-h-44 overflow-y-auto custom-scrollbar">
+                  {statusHistory.map((entry, idx) => {
+                    const newCfg = STATUS_CONFIG[entry.new_status] || { label: entry.new_status, textClass: 'text-gray-600' };
+                    const oldCfg = STATUS_CONFIG[entry.old_status] || { label: entry.old_status, textClass: 'text-gray-400' };
+                    return (
+                      <div key={entry.id || idx} className="flex items-center gap-2 text-xs">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#D9A3AA] shrink-0" />
+                        <span className={`font-bold ${newCfg.textClass}`}>{newCfg.label}</span>
+                        <span className="text-[#4A4A4A]/30 text-[10px]">←</span>
+                        <span className={`${oldCfg.textClass} opacity-60 text-[11px]`}>{oldCfg.label}</span>
+                        <span className="text-[#4A4A4A]/35 mr-auto font-mono text-[10px] shrink-0">
+                          {new Date(entry.created_at).toLocaleDateString('en-GB')}{' '}
+                          {new Date(entry.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ══ بطاقتا العميل والإنتاج ══════════════════════════════════════ */}
