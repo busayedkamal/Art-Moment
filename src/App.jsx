@@ -11,6 +11,7 @@ import PrivacyPage from './pages/PrivacyPage.jsx'
 import StoreIndex from './pages/StoreIndex.jsx'
 import StoreCart from './pages/StoreCart.jsx'
 import ProductManagement from './pages/ProductManagement.jsx'
+import StoreOrdersManagement from './pages/StoreOrdersManagement.jsx'
 
 // صفحات لوحة التحكم
 import AdminLoginPage from './pages/AdminLoginPage.jsx'
@@ -72,6 +73,7 @@ function AppRoutes() {
         <Route path="expenses" element={<Expenses />} /> {/* 👈 2. هذا السطر كان ناقصاً (تفعيل الرابط) */}
         <Route path="settings" element={<Settings />} />
         <Route path="products" element={<ProductManagement />} />
+        <Route path="store-orders" element={<StoreOrdersManagement />} />
       </Route>
 
       <Route path="*" element={<div className="min-h-screen flex items-center justify-center text-xl font-bold text-slate-400">الصفحة غير موجودة 404</div>} />

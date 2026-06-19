@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, Send, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 
 export default function StoreCart() {
   const [cart, setCart] = useState([]);
@@ -8,6 +10,8 @@ export default function StoreCart() {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [phoneError, setPhoneError] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
@@ -38,25 +42,73 @@ export default function StoreCart() {
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     const isValidPhone = /^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim());
     if (!isValidPhone) { setPhoneError(true); return; }
     setPhoneError(false);
 
-    let message = `🛒 *طلب جديد من متجر لحظة فن*\n`;
-    message += `━━━━━━━━━━━━━━━\n\n`;
-    message += `👤 *الاسم:* ${name || 'لم يُحدد'}\n`;
-    message += `📱 *الجوال:* ${phone}\n\n`;
-    message += `📦 *المنتجات:*\n`;
-    cart.forEach(item => {
-      message += `- ${item.name} (الكمية: ${item.qty}) = ${item.price * item.qty} ريال\n`;
-    });
-    message += `\n━━━━━━━━━━━━━━━\n`;
-    message += `💰 *المجموع:* ${subtotal} ريال (غير شامل الشحن)\n`;
-    if (notes) message += `📝 *ملاحظات:* ${notes}\n`;
+    setIsSubmitting(true);
+    const toastId = toast.loading('جاري إرسال الطلب...');
 
-    window.open(`https://wa.me/966569663697?text=${encodeURIComponent(message)}`, '_blank');
+    try {
+      const { data: orderData, error: orderError } = await supabase
+        .from('store_orders')
+        .insert({
+          customer_name: name || 'عميل المتجر',
+          phone: phone,
+          total_amount: subtotal,
+          delivery_fee: 0,
+          notes: notes || null
+        })
+        .select('id')
+        .single();
+
+      if (orderError) throw orderError;
+
+      const orderItems = cart.map(item => ({
+        store_order_id: orderData.id,
+        product_id: item.id,
+        quantity: item.qty,
+        price_at_time: item.price
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('store_order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      saveCart([]);
+      toast.success('تم استلام طلبك بنجاح!', { id: toastId });
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Checkout Error:', error);
+      toast.error('حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.', { id: toastId });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen bg-[#F8F5F2] font-sans flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
+        <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center shadow-sm mb-6 animate-in zoom-in duration-500">
+          <CheckCircle size={40} />
+        </div>
+        <h2 className="text-2xl md:text-3xl font-black mb-3 text-center">تم استلام طلبك بنجاح! 🎉</h2>
+        <p className="text-[#4A4A4A]/60 text-sm md:text-base mb-8 text-center max-w-md leading-relaxed">
+          طلبك الآن في حالة <strong className="text-[#D9A3AA]">"بانتظار التأكيد"</strong>.<br />
+          ستصلك رسالة عبر الواتساب قريباً تحتوي على تفاصيل فاتورتك.
+        </p>
+        <Link
+          to="/store"
+          className="bg-[#4A4A4A] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#D9A3AA] transition-all hover:-translate-y-1"
+        >
+          العودة للمتجر
+        </Link>
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (
@@ -203,14 +255,17 @@ export default function StoreCart() {
 
           <button
             onClick={handleCheckout}
-            disabled={!phone}
+            disabled={!phone || isSubmitting}
             className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg ${
-              phone
-                ? 'bg-[#25D366] text-white hover:bg-[#128C7E] hover:-translate-y-1'
+              phone && !isSubmitting
+                ? 'bg-[#4A4A4A] text-white hover:bg-[#D9A3AA] hover:-translate-y-1'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
             }`}
           >
-            <Send size={18} /> إرسال الطلب عبر واتساب
+            {isSubmitting
+              ? <><Loader2 size={18} className="animate-spin" /> جاري تسجيل الطلب...</>
+              : <><ShoppingBag size={18} /> إتمام الطلب الآن</>
+            }
           </button>
         </div>
       </main>
