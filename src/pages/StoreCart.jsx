@@ -10,6 +10,9 @@ export default function StoreCart() {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [phoneError, setPhoneError] = useState(false);
+  const [city, setCity] = useState('');
+  const [district, setDistrict] = useState('');
+  const [street, setStreet] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,6 +45,33 @@ export default function StoreCart() {
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
+  const sendAutoConfirmationWhatsApp = async (orderId, customerName, customerPhone, totalAmount) => {
+    try {
+      const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
+      if (!settings || !settings.whatsapp_enabled || !settings.whatsapp_instance_id || !settings.whatsapp_token) return;
+
+      let formattedPhone = String(customerPhone).replace(/\D/g, '');
+      if (formattedPhone.startsWith('0')) formattedPhone = '966' + formattedPhone.substring(1);
+
+      const msg =
+        `مرحباً *${customerName || 'عميلنا العزيز'}* 🌸\n\n` +
+        `تم استلام طلبك من متجر لحظة فن بنجاح! 🎉\n` +
+        `رقم الطلب: *#${String(orderId).slice(0, 8)}*\n` +
+        `الإجمالي: *${totalAmount} ريال*\n\n` +
+        `طلبك الآن (بانتظار التأكيد) ⏳.\n` +
+        `لتأكيد الطلب والبدء بتجهيزه، يرجى الرد على هذه الرسالة بكلمة *"تأكيد"*. وفي حال الرغبة بالإلغاء يرجى الرد بكلمة *"إلغاء"*.\n\n` +
+        `شكراً لاختيارك لحظة فن ✨`;
+
+      await fetch(`https://api.ultramsg.com/${settings.whatsapp_instance_id}/messages/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: settings.whatsapp_token, to: formattedPhone, body: msg })
+      });
+    } catch (error) {
+      console.error('WhatsApp Auto-Message Error:', error);
+    }
+  };
+
   const handleCheckout = async () => {
     const isValidPhone = /^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim());
     if (!isValidPhone) { setPhoneError(true); return; }
@@ -58,7 +88,10 @@ export default function StoreCart() {
           phone: phone,
           total_amount: subtotal,
           delivery_fee: 0,
-          notes: notes || null
+          notes: notes || null,
+          city: city,
+          district: district,
+          street: street
         })
         .select('id')
         .single();
@@ -79,6 +112,7 @@ export default function StoreCart() {
       if (itemsError) throw itemsError;
 
       saveCart([]);
+      await sendAutoConfirmationWhatsApp(orderData.id, name, phone, subtotal);
       toast.success('تم استلام طلبك بنجاح!', { id: toastId });
       setIsSubmitted(true);
     } catch (error) {
@@ -204,9 +238,9 @@ export default function StoreCart() {
             </div>
           </div>
 
-          {/* بيانات التواصل */}
+          {/* بيانات التواصل والشحن */}
           <div className="bg-white p-6 rounded-3xl border border-[#D9A3AA]/20 shadow-sm">
-            <h2 className="font-black text-[#4A4A4A] mb-4">بيانات التواصل</h2>
+            <h2 className="font-black text-[#4A4A4A] mb-4">بيانات التواصل والشحن</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
@@ -241,6 +275,53 @@ export default function StoreCart() {
                 />
               </div>
 
+              {/* حقول الشحن */}
+              <div className="pt-4 mt-2 border-t border-[#D9A3AA]/20 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
+                    المدينة <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA] appearance-none"
+                  >
+                    <option value="">اختر المدينة...</option>
+                    <option value="الأحساء">الأحساء</option>
+                    <option value="الدمام">الدمام</option>
+                    <option value="الخبر">الخبر</option>
+                    <option value="الرياض">الرياض</option>
+                    <option value="جدة">جدة</option>
+                    <option value="مكة المكرمة">مكة المكرمة</option>
+                    <option value="أخرى">مدينة أخرى (سيتم التواصل معك)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
+                    الحي <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={district}
+                    onChange={e => setDistrict(e.target.value)}
+                    placeholder="اسم الحي"
+                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
+                    الشارع / وصف البيت <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={street}
+                    onChange={e => setStreet(e.target.value)}
+                    placeholder="اسم الشارع أو رقم المبنى"
+                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA]"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]/70">ملاحظات الطلب (اختياري)</label>
                 <textarea
@@ -255,9 +336,9 @@ export default function StoreCart() {
 
           <button
             onClick={handleCheckout}
-            disabled={!phone || isSubmitting}
+            disabled={!phone || !city || !district || !street || isSubmitting}
             className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg ${
-              phone && !isSubmitting
+              phone && city && district && street && !isSubmitting
                 ? 'bg-[#4A4A4A] text-white hover:bg-[#D9A3AA] hover:-translate-y-1'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
             }`}

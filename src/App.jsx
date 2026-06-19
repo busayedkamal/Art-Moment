@@ -5,10 +5,9 @@ import { Toaster } from 'react-hot-toast'
 import AuthProvider, { useAuth } from './contexts/AuthContext'
 
 // الصفحات العامة
-import LandingPage from './LandingPage.jsx'
+import StoreIndex from './pages/StoreIndex.jsx'
 import TrackOrderPage from './pages/TrackOrderPage.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
-import StoreIndex from './pages/StoreIndex.jsx'
 import StoreCart from './pages/StoreCart.jsx'
 import ProductManagement from './pages/ProductManagement.jsx'
 import StoreOrdersManagement from './pages/StoreOrdersManagement.jsx'
@@ -44,10 +43,10 @@ function AppRoutes() {
   return (
     <Routes>
       {/* 1. المسارات العامة */}
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<StoreIndex />} />
+      <Route path="/store" element={<Navigate to="/" replace />} />
       <Route path="/track" element={<TrackOrderPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/store" element={<StoreIndex />} />
       <Route path="/store/cart" element={<StoreCart />} />
       
       {/* 2. صفحة دخول الأدمن */}

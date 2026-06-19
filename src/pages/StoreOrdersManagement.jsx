@@ -95,6 +95,8 @@ export default function StoreOrdersManagement() {
   const [orderItems, setOrderItems] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [courierName, setCourierName] = useState('سمسا');
 
   // ── Fetch orders list ──────────────────────────────────────────────────────
 
@@ -141,24 +143,76 @@ export default function StoreOrdersManagement() {
   const closeModal = () => {
     setSelectedOrder(null);
     setOrderItems([]);
+    setTrackingNumber('');
+    setCourierName('سمسا');
+  };
+
+  // ── WhatsApp tracking notification ────────────────────────────────────────
+
+  const sendTrackingWhatsApp = async (order, tracking, courier) => {
+    try {
+      const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
+      if (!settings || !settings.whatsapp_enabled || !settings.whatsapp_instance_id || !settings.whatsapp_token) return;
+
+      let formattedPhone = String(order.phone).replace(/\D/g, '');
+      if (formattedPhone.startsWith('0')) formattedPhone = '966' + formattedPhone.substring(1);
+
+      const trackingUrl = courier === 'سمسا'
+        ? `https://www.smsaexpress.com/sa/ar/trackingdetails?tracknumbers=${tracking}`
+        : courier === 'أرامكس'
+        ? `https://www.aramex.com/sa/ar/track/results?mode=0&ShipmentNumber=${tracking}`
+        : null;
+
+      const msg =
+        `مرحباً *${order.customer_name}* 📦\n\n` +
+        `تم شحن طلبك رقم *#${String(order.id).slice(0, 8)}* بنجاح!\n\n` +
+        `شركة الشحن: *${courier}*\n` +
+        `رقم التتبع: *${tracking}*\n` +
+        (trackingUrl ? `\nيمكنك تتبع مسار شحنتك لحظة بلحظة عبر الرابط التالي:\n${trackingUrl}\n` : '') +
+        `\nنسعد بخدمتكم في لحظة فن ✨`;
+
+      await fetch(`https://api.ultramsg.com/${settings.whatsapp_instance_id}/messages/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: settings.whatsapp_token, to: formattedPhone, body: msg })
+      });
+    } catch (error) {
+      console.error('Tracking WhatsApp Error:', error);
+    }
   };
 
   // ── FSM status update ──────────────────────────────────────────────────────
 
   const handleStatusChange = async (newStatus) => {
     if (!selectedOrder || statusUpdating) return;
+
+    if (newStatus === 'shipped' && !selectedOrder.tracking_number && !trackingNumber.trim()) {
+      toast.error('يرجى إدخال رقم التتبع قبل تحويل الحالة إلى "تم الشحن"');
+      return;
+    }
+
     setStatusUpdating(true);
     const toastId = toast.loading('جاري تحديث الحالة...');
     try {
+      const updatePayload = { status: newStatus };
+      if (newStatus === 'shipped' && trackingNumber.trim()) {
+        updatePayload.tracking_number = trackingNumber.trim();
+        updatePayload.courier_name = courierName;
+      }
+
       const { error } = await supabase
         .from('store_orders')
-        .update({ status: newStatus })
+        .update(updatePayload)
         .eq('id', selectedOrder.id);
       if (error) throw error;
 
-      const updated = { ...selectedOrder, status: newStatus };
+      const updated = { ...selectedOrder, ...updatePayload };
       setSelectedOrder(updated);
       setOrders(prev => prev.map(o => o.id === selectedOrder.id ? updated : o));
+
+      if (newStatus === 'shipped' && trackingNumber.trim()) {
+        await sendTrackingWhatsApp(updated, trackingNumber.trim(), courierName);
+      }
 
       toast.success(`تم تغيير الحالة إلى: ${STATUS_CONFIG[newStatus]?.label || newStatus}`, { id: toastId });
     } catch (err) {
@@ -375,12 +429,69 @@ export default function StoreOrdersManagement() {
                       </span>
                     </div>
                   </div>
+                  {(selectedOrder.city || selectedOrder.district || selectedOrder.street) && (
+                    <div className="pt-3 mt-1 border-t border-[#D9A3AA]/15">
+                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 flex items-center gap-1">
+                        <Truck size={10} /> عنوان التوصيل
+                      </span>
+                      <p className="text-sm font-bold text-[#4A4A4A]">
+                        {selectedOrder.city} — حي {selectedOrder.district}
+                        {selectedOrder.street && (
+                          <span className="text-[#4A4A4A]/70 font-normal">، {selectedOrder.street}</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
                   {selectedOrder.notes && (
                     <div className="pt-3 border-t border-[#D9A3AA]/15">
                       <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 flex items-center gap-1">
                         <StickyNote size={10} /> ملاحظات
                       </span>
                       <p className="text-sm text-[#4A4A4A]/80 leading-relaxed">{selectedOrder.notes}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Shipping & Tracking ── */}
+                <div className="bg-[#F8F5F2] rounded-2xl p-4">
+                  <h3 className="font-bold text-sm text-[#4A4A4A]/60 mb-3 flex items-center gap-1.5">
+                    <Truck size={14} className="text-[#D9A3AA]" /> معلومات الشحن والتتبع
+                  </h3>
+                  {selectedOrder.tracking_number ? (
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-[#D9A3AA]/20">
+                      <div>
+                        <p className="text-[10px] text-[#4A4A4A]/50 mb-0.5">شركة الشحن</p>
+                        <p className="font-bold text-sm">{selectedOrder.courier_name}</p>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[10px] text-[#4A4A4A]/50 mb-0.5">رقم التتبع</p>
+                        <p className="font-mono font-bold text-[#D9A3AA]">{selectedOrder.tracking_number}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-2 items-end">
+                      <div className="w-full sm:w-36">
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">شركة الشحن</label>
+                        <select
+                          value={courierName}
+                          onChange={e => setCourierName(e.target.value)}
+                          className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"
+                        >
+                          <option value="سمسا">سمسا (SMSA)</option>
+                          <option value="أرامكس">أرامكس (Aramex)</option>
+                          <option value="ساعي">مندوب خاص</option>
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">رقم التتبع</label>
+                        <input
+                          type="text"
+                          value={trackingNumber}
+                          onChange={e => setTrackingNumber(e.target.value)}
+                          placeholder="أدخل رقم البوليصة..."
+                          className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none font-mono focus:border-[#D9A3AA]"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
