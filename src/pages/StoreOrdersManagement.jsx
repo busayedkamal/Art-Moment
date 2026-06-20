@@ -4,7 +4,7 @@ import {
   Eye, Clock, CheckCircle, Package, Truck, X,
   ArrowLeft, RotateCcw, Printer, FileText, AlertCircle,
   ShoppingBag, Phone, User, StickyNote, Image as ImageIcon,
-  RefreshCw
+  RefreshCw, Trash2, Edit3, Save, XCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -97,6 +97,9 @@ export default function StoreOrdersManagement() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState('');
   const [courierName, setCourierName] = useState('سمسا');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
 
   // ── Fetch orders list ──────────────────────────────────────────────────────
 
@@ -145,6 +148,8 @@ export default function StoreOrdersManagement() {
     setOrderItems([]);
     setTrackingNumber('');
     setCourierName('سمسا');
+    setIsEditing(false);
+    setEditForm({});
   };
 
   // ── WhatsApp tracking notification ────────────────────────────────────────
@@ -178,6 +183,60 @@ export default function StoreOrdersManagement() {
       });
     } catch (error) {
       console.error('Tracking WhatsApp Error:', error);
+    }
+  };
+
+  // ── Delete Order ──────────────────────────────────────────────────────────
+
+  const handleDeleteOrder = async () => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الطلب نهائياً؟ لا يمكن التراجع عن هذه الخطوة.')) return;
+    setIsDeleting(true);
+    const toastId = toast.loading('جاري حذف الطلب...');
+    try {
+      const { error } = await supabase.from('store_orders').delete().eq('id', selectedOrder.id);
+      if (error) throw error;
+      setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+      toast.success('تم حذف الطلب بنجاح', { id: toastId });
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      toast.error('حدث خطأ أثناء الحذف', { id: toastId });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // ── Edit Order ────────────────────────────────────────────────────────────
+
+  const startEditing = () => {
+    setEditForm({
+      customer_name: selectedOrder.customer_name || '',
+      phone:         selectedOrder.phone || '',
+      total_amount:  selectedOrder.total_amount || 0,
+      city:          selectedOrder.city || '',
+      district:      selectedOrder.district || '',
+      street:        selectedOrder.street || '',
+      notes:         selectedOrder.notes || '',
+    });
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    const toastId = toast.loading('جاري حفظ التعديلات...');
+    try {
+      const { error } = await supabase
+        .from('store_orders')
+        .update(editForm)
+        .eq('id', selectedOrder.id);
+      if (error) throw error;
+      const updatedOrder = { ...selectedOrder, ...editForm };
+      setSelectedOrder(updatedOrder);
+      setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+      setIsEditing(false);
+      toast.success('تم حفظ التعديلات بنجاح', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('حدث خطأ أثناء الحفظ', { id: toastId });
     }
   };
 
@@ -383,72 +442,132 @@ export default function StoreOrdersManagement() {
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden" dir="rtl">
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#D9A3AA]/15 shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#D9A3AA]/15 shrink-0 bg-[#F8F5F2]/50">
               <div className="flex items-center gap-3">
-                <button onClick={closeModal} className="p-2 hover:bg-[#F8F5F2] rounded-xl transition-colors">
+                <button onClick={closeModal} className="p-2 hover:bg-white rounded-xl transition-colors shadow-sm bg-[#F8F5F2]">
                   <ArrowLeft size={18} />
                 </button>
                 <div>
-                  <h2 className="font-black text-base">تفاصيل الطلب</h2>
-                  <p className="text-xs font-mono text-[#4A4A4A]/40">#{selectedOrder.id.toString().slice(0, 8)}</p>
+                  <h2 className="font-black text-base flex items-center gap-2">تفاصيل الطلب</h2>
+                  <p className="text-xs font-mono text-[#4A4A4A]/50">#{selectedOrder.id.toString().slice(0, 8)}</p>
                 </div>
               </div>
-              <StatusBadge status={selectedOrder.status} />
+              <div className="flex items-center gap-3">
+                {!isEditing && (
+                  <>
+                    <button onClick={startEditing} className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors" title="تعديل الطلب">
+                      <Edit3 size={18} />
+                    </button>
+                    <button onClick={handleDeleteOrder} disabled={isDeleting} className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50" title="حذف الطلب">
+                      <Trash2 size={18} />
+                    </button>
+                  </>
+                )}
+                <StatusBadge status={selectedOrder.status} />
+              </div>
             </div>
 
             {/* Modal Body — scrollable */}
             <div className="overflow-y-auto flex-1 custom-scrollbar">
               <div className="p-6 space-y-6">
 
-                {/* ── Customer Info ── */}
-                <div className="bg-[#F8F5F2] rounded-2xl p-4 space-y-3">
-                  <h3 className="font-bold text-sm text-[#4A4A4A]/60 mb-2 flex items-center gap-1.5">
-                    <User size={14} /> بيانات العميل
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">الاسم</span>
-                      <span className="font-bold text-sm">{selectedOrder.customer_name}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5 flex items-center gap-1">
-                        <Phone size={10} /> الجوال
-                      </span>
-                      <span className="font-mono text-sm">{selectedOrder.phone}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">الإجمالي</span>
-                      <span className="font-black text-[#C5A059]">
-                        {Number(selectedOrder.total_amount || 0).toFixed(2)} ر.س
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">تاريخ الطلب</span>
-                      <span className="font-mono text-xs">
-                        {new Date(selectedOrder.created_at).toLocaleDateString('en-GB')}
-                      </span>
-                    </div>
+                {/* ── Customer Info (View / Edit Mode) ── */}
+                <div className="bg-[#F8F5F2] rounded-2xl p-4 space-y-4 shadow-sm border border-[#D9A3AA]/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-sm text-[#4A4A4A]/60 flex items-center gap-1.5">
+                      <User size={14} className="text-[#D9A3AA]" /> بيانات العميل
+                    </h3>
+                    {isEditing && (
+                      <div className="flex gap-2">
+                        <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg">
+                          <XCircle size={12} /> إلغاء
+                        </button>
+                        <button onClick={handleSaveEdit} className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
+                          <Save size={12} /> حفظ
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  {(selectedOrder.city || selectedOrder.district || selectedOrder.street) && (
-                    <div className="pt-3 mt-1 border-t border-[#D9A3AA]/15">
-                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 flex items-center gap-1">
-                        <Truck size={10} /> عنوان التوصيل
-                      </span>
-                      <p className="text-sm font-bold text-[#4A4A4A]">
-                        {selectedOrder.city} — حي {selectedOrder.district}
-                        {selectedOrder.street && (
-                          <span className="text-[#4A4A4A]/70 font-normal">، {selectedOrder.street}</span>
-                        )}
-                      </p>
+
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الاسم</label>
+                        <input type="text" value={editForm.customer_name} onChange={e => setEditForm({...editForm, customer_name: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الجوال</label>
+                        <input type="text" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none font-mono focus:border-[#D9A3AA]" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الإجمالي (ر.س)</label>
+                        <input type="number" value={editForm.total_amount} onChange={e => setEditForm({...editForm, total_amount: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">المدينة</label>
+                        <input type="text" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الحي</label>
+                        <input type="text" value={editForm.district} onChange={e => setEditForm({...editForm, district: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الشارع</label>
+                        <input type="text" value={editForm.street} onChange={e => setEditForm({...editForm, street: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">ملاحظات</label>
+                        <textarea value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] min-h-[60px] resize-none" />
+                      </div>
                     </div>
-                  )}
-                  {selectedOrder.notes && (
-                    <div className="pt-3 border-t border-[#D9A3AA]/15">
-                      <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 flex items-center gap-1">
-                        <StickyNote size={10} /> ملاحظات
-                      </span>
-                      <p className="text-sm text-[#4A4A4A]/80 leading-relaxed">{selectedOrder.notes}</p>
-                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">الاسم</span>
+                          <span className="font-bold text-sm">{selectedOrder.customer_name}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5 flex items-center gap-1">
+                            <Phone size={10} /> الجوال
+                          </span>
+                          <span className="font-mono text-sm">{selectedOrder.phone}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">الإجمالي</span>
+                          <span className="font-black text-[#C5A059]">
+                            {Number(selectedOrder.total_amount || 0).toFixed(2)} ر.س
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">تاريخ الطلب</span>
+                          <span className="font-mono text-xs">
+                            {new Date(selectedOrder.created_at).toLocaleDateString('en-GB')}
+                          </span>
+                        </div>
+                      </div>
+                      {(selectedOrder.city || selectedOrder.district || selectedOrder.street) && (
+                        <div className="pt-3 mt-1 border-t border-[#D9A3AA]/15">
+                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 flex items-center gap-1">
+                            <Truck size={10} /> عنوان التوصيل
+                          </span>
+                          <p className="text-sm font-bold text-[#4A4A4A]">
+                            {selectedOrder.city} — حي {selectedOrder.district}
+                            {selectedOrder.street && (
+                              <span className="text-[#4A4A4A]/70 font-normal">، {selectedOrder.street}</span>
+                            )}
+                          </p>
+                        </div>
+                      )}
+                      {selectedOrder.notes && (
+                        <div className="pt-3 border-t border-[#D9A3AA]/15">
+                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 flex items-center gap-1">
+                            <StickyNote size={10} /> ملاحظات
+                          </span>
+                          <p className="text-sm text-[#4A4A4A]/80 leading-relaxed">{selectedOrder.notes}</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 

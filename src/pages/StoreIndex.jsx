@@ -94,6 +94,10 @@ export default function StoreIndex() {
   const [feedbackType, setFeedbackType] = useState('تقييم ⭐️');
   const [feedbackText, setFeedbackText] = useState('');
 
+  // --- Accordion state ---
+  const [activeExpandable, setActiveExpandable] = useState(null);
+  const toggleExpandable = (section) => setActiveExpandable(prev => prev === section ? null : section);
+
   // ─── Effects ───────────────────────────────────────────────
   useEffect(() => {
     const fetchProducts = async () => {
@@ -300,9 +304,9 @@ export default function StoreIndex() {
             <a href="#products" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1.5">
               <ShoppingBag size={15} className="text-[#D9A3AA]" /> المتجر
             </a>
-            <a href="#packages" className="hover:text-[#D9A3AA] transition-colors">الباقات</a>
-            <a href="#print"    className="hover:text-[#D9A3AA] transition-colors">الطباعة</a>
-            <a href="#wallet"   className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1.5">
+            <a href="#services" className="hover:text-[#D9A3AA] transition-colors">الباقات</a>
+            <a href="#services" className="hover:text-[#D9A3AA] transition-colors">الطباعة</a>
+            <a href="#services" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1.5">
               <Wallet size={15} className="text-[#C5A059]" /> شحن المحفظة
             </a>
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
@@ -338,9 +342,9 @@ export default function StoreIndex() {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
             <a href="#products" className="flex items-center gap-2 py-2 text-[#D9A3AA] font-bold" onClick={() => setIsMobileMenuOpen(false)}><ShoppingBag size={16} /> المتجر</a>
-            <a href="#packages" className="block py-2 text-[#4A4A4A] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
-            <a href="#print"    className="block py-2 text-[#4A4A4A]"           onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
-            <a href="#wallet"   className="flex items-center gap-2 py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}><Wallet size={16} /> شحن المحفظة</a>
+            <a href="#services" className="block py-2 text-[#4A4A4A] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
+            <a href="#services" className="block py-2 text-[#4A4A4A]"           onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
+            <a href="#services" className="flex items-center gap-2 py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}><Wallet size={16} /> شحن المحفظة</a>
             <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
             <button onClick={(e) => { setIsMobileMenuOpen(false); handleAdminClick(e); }}
               className="w-full text-center py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-white hover:text-[#D9A3AA] transition-all flex items-center justify-center gap-2">
@@ -507,323 +511,339 @@ export default function StoreIndex() {
       </main>
 
       {/* ══════════════════════════════════
-          3. MEMORY PACKAGES
+          3. EXPANDABLE SERVICES ACCORDION
       ══════════════════════════════════ */}
-      <section id="packages" className="py-20 bg-[#4A4A4A] text-white overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-64 h-64 bg-[#D9A3AA]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#C5A059]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
+      <section id="services" className="max-w-3xl mx-auto px-4 py-12">
+        <h2 className="text-xl font-black text-center mb-6 text-[#4A4A4A]">اكتشف خدماتنا</h2>
+        <div className="space-y-3">
 
-        <div className="max-w-6xl mx-auto px-4 relative z-10">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/20 text-[#C5A059] font-bold text-xs mb-4 border border-[#C5A059]/30">
-              <Sparkles size={14} /> حلك الجاهز عندنا
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black leading-tight mb-4">
-              محتار وش تطبع؟ <br /><span className="text-[#C5A059]">اختر المناسبة وخلي الباقي علينا!</span>
-            </h2>
-            <p className="text-white/70 text-lg max-w-2xl mx-auto">صممنا لك باقات ذكية ومدروسة توفر عليك التفكير، وتضمن لك توثيق ذكرياتك بأفضل شكل وبأنسب سعر.</p>
+          {/* WALLET PACKAGES */}
+          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('wallet')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#C5A059]/10 rounded-xl flex items-center justify-center text-[#C5A059]"><Wallet size={20} /></div>
+                <div>
+                  <div className="font-black text-[#4A4A4A]">شحن المحفظة</div>
+                  <div className="text-xs text-[#4A4A4A]/50">باقات برونزية وفضية وذهبية</div>
+                </div>
+              </div>
+              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'wallet' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeExpandable === 'wallet' && (
+              <div className="bg-[#F8F5F2] border-t border-[#D9A3AA]/10">
+                <div className="py-10 px-4">
+                  <div className="text-center mb-10 max-w-2xl mx-auto">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-bold text-xs mb-4 border border-[#C5A059]/20">
+                      <Wallet size={16} /> رصيد ذكرياتك.. يعطيك أكثر!
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-black text-[#4A4A4A] mb-3 leading-tight">اشحن محفظتك، <span className="text-[#C5A059]">واطبع براحتك</span></h3>
+                    <p className="text-[#4A4A4A]/70 text-sm leading-relaxed mb-4">بدل ما تنتظر العروض، اشحن محفظتك في <span className="font-bold text-[#D9A3AA]">لحظة فن</span> واحصل على رصيد إضافي تستخدمه بكل حرية.</p>
+                    <div className="flex flex-wrap justify-center gap-3 text-xs font-bold text-[#4A4A4A]/80">
+                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> الرصيد لا ينتهي صلاحيته</span>
+                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> تقسم طلباتك براحتك</span>
+                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> هدايا وميزات حصرية</span>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                    <div className="bg-white rounded-[2rem] p-8 border border-orange-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-orange-400 to-orange-200"></div>
+                      <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:scale-110 transition-transform"><CreditCard size={28} /></div>
+                      <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة البرونزية</h3>
+                      <div className="mb-6"><span className="text-3xl font-black text-orange-600">299</span> <RiyalSign size="0.7em" /></div>
+                      <div className="bg-orange-50 rounded-xl p-4 mb-6 border border-orange-100">
+                        <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
+                        <span className="text-2xl font-black text-[#4A4A4A]">333 <RiyalSign size="0.7em" /></span>
+                      </div>
+                      <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!</p>
+                      <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة البرونزية بـ 299 ريال" target="_blank" rel="noreferrer"
+                        className="w-full py-3 rounded-xl bg-orange-100 text-orange-700 font-bold hover:bg-orange-600 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
+                    </div>
+                    <div className="bg-white rounded-[2rem] p-8 border-2 border-slate-300 shadow-xl flex flex-col relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-l from-slate-400 to-slate-200"></div>
+                      <div className="absolute top-4 left-4 bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full border border-slate-200">الأكثر طلباً</div>
+                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 mb-6 group-hover:scale-110 transition-transform"><Award size={28} /></div>
+                      <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الفضية</h3>
+                      <div className="mb-6"><span className="text-4xl font-black text-slate-600">699</span> <RiyalSign size="0.7em" /></div>
+                      <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
+                        <span className="block text-[10px] text-slate-500 font-bold mb-1">يصير رصيدك في المحفظة:</span>
+                        <span className="text-3xl font-black text-slate-700">808 <RiyalSign size="0.7em" /></span>
+                      </div>
+                      <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!</p>
+                      <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة الفضية بـ 699 ريال" target="_blank" rel="noreferrer"
+                        className="w-full py-4 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-md">اشحن الآن</a>
+                    </div>
+                    <div className="bg-white rounded-[2rem] p-8 border border-amber-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-amber-400 to-amber-200"></div>
+                      <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform"><Gem size={28} /></div>
+                      <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الذهبية</h3>
+                      <div className="mb-6"><span className="text-3xl font-black text-amber-600">999</span> <RiyalSign size="0.7em" /></div>
+                      <div className="bg-amber-50 rounded-xl p-4 mb-6 border border-amber-100">
+                        <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
+                        <span className="text-2xl font-black text-[#4A4A4A]">1,202 <RiyalSign size="0.7em" /></span>
+                      </div>
+                      <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!</p>
+                      <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة الذهبية بـ 999 ريال" target="_blank" rel="noreferrer"
+                        className="w-full py-3 rounded-xl bg-amber-100 text-amber-700 font-bold hover:bg-amber-500 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="grid md:grid-cols-12 gap-8 items-start">
-            {/* Selector buttons */}
-            <div className="md:col-span-4 space-y-3">
-              {packages.map((pkg) => (
-                <button
-                  key={pkg.id}
-                  onClick={() => setActivePackage(pkg.id)}
-                  className={`w-full text-right p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 border ${activePackage === pkg.id ? 'bg-white text-[#4A4A4A] border-white shadow-xl scale-105' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
-                >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${pkg.color} shadow-md`}>
-                    <pkg.icon size={24} />
+          {/* MEMORY PACKAGES */}
+          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('packages')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#D9A3AA]/10 rounded-xl flex items-center justify-center text-[#D9A3AA]"><Gift size={20} /></div>
+                <div>
+                  <div className="font-black text-[#4A4A4A]">باقات الذكريات</div>
+                  <div className="text-xs text-[#4A4A4A]/50">رحلة، هدية، صور هاتف، معرض جداري</div>
+                </div>
+              </div>
+              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'packages' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeExpandable === 'packages' && (
+              <div className="bg-[#4A4A4A] text-white border-t border-white/10 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-64 h-64 bg-[#D9A3AA]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#C5A059]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
+                <div className="max-w-6xl mx-auto px-4 py-10 relative z-10">
+                  <div className="text-center mb-10">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/20 text-[#C5A059] font-bold text-xs mb-3 border border-[#C5A059]/30">
+                      <Sparkles size={14} /> حلك الجاهز عندنا
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-black leading-tight mb-3">
+                      محتار وش تطبع؟ <br /><span className="text-[#C5A059]">اختر المناسبة وخلي الباقي علينا!</span>
+                    </h3>
+                    <p className="text-white/70 max-w-xl mx-auto text-sm">صممنا لك باقات ذكية ومدروسة توفر عليك التفكير، وتضمن لك توثيق ذكرياتك بأفضل شكل وبأنسب سعر.</p>
                   </div>
-                  <h4 className={`font-black ${activePackage === pkg.id ? 'text-[#4A4A4A]' : 'text-white'}`}>{pkg.title}</h4>
-                </button>
-              ))}
-            </div>
+                  <div className="grid md:grid-cols-12 gap-8 items-start">
+                    <div className="md:col-span-4 space-y-3">
+                      {packages.map((pkg) => (
+                        <button key={pkg.id} onClick={() => setActivePackage(pkg.id)}
+                          className={`w-full text-right p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 border ${activePackage === pkg.id ? 'bg-white text-[#4A4A4A] border-white shadow-xl scale-105' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
+                        >
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${pkg.color} shadow-md`}>
+                            <pkg.icon size={24} />
+                          </div>
+                          <h4 className={`font-black ${activePackage === pkg.id ? 'text-[#4A4A4A]' : 'text-white'}`}>{pkg.title}</h4>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="md:col-span-8">
+                      <div className="bg-white/5 backdrop-blur-md rounded-[2rem] p-8 border border-white/10 shadow-2xl relative overflow-hidden" key={activePkg.id}>
+                        <div className={`absolute top-0 right-0 w-2 h-full bg-gradient-to-b ${activePkg.color}`}></div>
+                        <h3 className="text-3xl font-black text-white mb-4">{activePkg.title}</h3>
+                        <p className="text-white/70 leading-relaxed mb-8">{activePkg.desc}</p>
+                        <div className="bg-[#F8F5F2]/10 rounded-2xl p-6 mb-8 border border-white/5">
+                          <h4 className="font-bold text-[#C5A059] mb-4 text-sm uppercase tracking-wider">محتويات الباقة الافتراضية:</h4>
+                          <ul className="space-y-3">
+                            {activePkg.contents.map((item, idx) => (
+                              <li key={idx} className="flex items-center gap-3 text-white/90">
+                                <CheckCircle size={18} className="text-[#D9A3AA]" />
+                                <span className="font-medium">{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <a href={`https://wa.me/966569663697?text=${encodeURIComponent(activePkg.msg)}`}
+                          target="_blank" rel="noreferrer"
+                          className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-[#4A4A4A] font-black hover:bg-[#F8F5F2] hover:scale-105 transition-all shadow-xl">
+                          <MessageCircle size={20} /> اطلب هذه الباقة الآن
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
-            {/* Active package detail */}
-            <div className="md:col-span-8">
-              <div className="bg-white/5 backdrop-blur-md rounded-[2rem] p-8 md:p-10 border border-white/10 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-500" key={activePkg.id}>
-                <div className={`absolute top-0 right-0 w-2 h-full bg-gradient-to-b ${activePkg.color}`}></div>
-                <h3 className="text-3xl font-black text-white mb-4">{activePkg.title}</h3>
-                <p className="text-white/70 leading-relaxed mb-8 text-lg">{activePkg.desc}</p>
-                <div className="bg-[#F8F5F2]/10 rounded-2xl p-6 mb-8 border border-white/5">
-                  <h4 className="font-bold text-[#C5A059] mb-4 text-sm uppercase tracking-wider">محتويات الباقة الافتراضية:</h4>
-                  <ul className="space-y-3">
-                    {activePkg.contents.map((item, idx) => (
-                      <li key={idx} className="flex items-center gap-3 text-white/90">
-                        <CheckCircle size={18} className="text-[#D9A3AA]" />
-                        <span className="font-medium">{item}</span>
-                      </li>
+          {/* PRINT SERVICES */}
+          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('print')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#4A4A4A]/10 rounded-xl flex items-center justify-center text-[#4A4A4A]"><Printer size={20} /></div>
+                <div>
+                  <div className="font-black text-[#4A4A4A]">خدمات الطباعة</div>
+                  <div className="text-xs text-[#4A4A4A]/50">صور 4×6، A4، ألبومات — مع حاسبة السعر</div>
+                </div>
+              </div>
+              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'print' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeExpandable === 'print' && (
+              <div className="bg-white border-t border-[#D9A3AA]/10">
+                <div className="py-10 px-4 max-w-7xl mx-auto">
+                  <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
+                    {[
+                      { icon: ImageIcon, title: 'صور 4×6', desc: 'المقاس الأشهر والأكثر طلباً. مثالي لحفظ يومياتك وتوثيق اللحظات العفوية والرحلات.', features: ['ورق تصوير فاخر مقاوم للبهتان', 'ألوان زاهية وواقعية تدوم طويلاً', 'المقاس المثالي للألبومات الكلاسيكية'], color: 'text-[#D9A3AA]', bg: 'bg-[#D9A3AA]/10' },
+                      { icon: FileText, title: 'صور A4', desc: 'لصورك الاحترافية واللوحات الفنية. المقاس الأفضل لإبراز أدق التفاصيل وتزيين المكان.', features: ['دقة طباعة استثنائية للتفاصيل', 'حجم كبير مناسب للبراويز الجدارية', 'مثالية لصور التخرج والمناسبات الكبرى'], color: 'text-[#C5A059]', bg: 'bg-[#C5A059]/10' },
+                      { icon: BookOpen, title: 'الألبومات', desc: 'لا تترك صورك متناثرة. اختر من تشكيلتنا الأنيقة لحفظ ذكرياتك بطريقة فخمة ومرتبة.', features: ['تصاميم عصرية وأغلفة متينة', 'سعات مختلفة تناسب كمية صورك', 'حماية تامة للصور من الغبار والتلف'], color: 'text-[#4A4A4A]', bg: 'bg-[#4A4A4A]/10' },
+                    ].map((service, i) => (
+                      <div key={i} className="bg-[#F8F5F2] rounded-3xl p-8 hover:shadow-xl hover:shadow-[#D9A3AA]/10 transition-all border border-transparent hover:border-[#D9A3AA]/30 group flex flex-col">
+                        <div className={`w-14 h-14 ${service.bg} rounded-2xl flex items-center justify-center ${service.color} mb-6 group-hover:scale-110 transition-transform`}>
+                          <service.icon size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-[#4A4A4A] mb-3">{service.title}</h3>
+                        <p className="text-[#4A4A4A]/60 text-sm leading-relaxed mb-6 flex-1">{service.desc}</p>
+                        <ul className="space-y-3 pt-4 border-t border-[#D9A3AA]/10">
+                          {service.features.map((f, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm text-[#4A4A4A]/80 font-medium">
+                              <CheckCircle size={16} className={`shrink-0 mt-0.5 ${service.color}`} />
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     ))}
-                  </ul>
-                </div>
-                <a
-                  href={`https://wa.me/966569663697?text=${encodeURIComponent(activePkg.msg)}`}
-                  target="_blank" rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-[#4A4A4A] font-black hover:bg-[#F8F5F2] hover:scale-105 transition-all shadow-xl"
-                >
-                  <MessageCircle size={20} /> اطلب هذه الباقة الآن
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          4. PRINT SERVICES & CALCULATOR
-      ══════════════════════════════════ */}
-      <section id="print" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-[#4A4A4A] mb-4">خدمات الطباعة <span className="text-[#D9A3AA]">والألبومات</span></h2>
-            <p className="text-[#4A4A4A]/70 max-w-2xl mx-auto">اختار المقاس المناسب لصورك، واحصل على جودة تدوم.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-            {[
-              {
-                icon: ImageIcon, title: 'صور 4×6',
-                desc: 'المقاس الأشهر والأكثر طلباً. مثالي لحفظ يومياتك وتوثيق اللحظات العفوية والرحلات.',
-                features: ['ورق تصوير فاخر مقاوم للبهتان', 'ألوان زاهية وواقعية تدوم طويلاً', 'المقاس المثالي للألبومات الكلاسيكية'],
-                color: 'text-[#D9A3AA]', bg: 'bg-[#D9A3AA]/10',
-              },
-              {
-                icon: FileText, title: 'صور A4',
-                desc: 'لصورك الاحترافية واللوحات الفنية. المقاس الأفضل لإبراز أدق التفاصيل وتزيين المكان.',
-                features: ['دقة طباعة استثنائية للتفاصيل', 'حجم كبير مناسب للبراويز الجدارية', 'مثالية لصور التخرج والمناسبات الكبرى'],
-                color: 'text-[#C5A059]', bg: 'bg-[#C5A059]/10',
-              },
-              {
-                icon: BookOpen, title: 'الألبومات',
-                desc: 'لا تترك صورك متناثرة. اختر من تشكيلتنا الأنيقة لحفظ ذكرياتك بطريقة فخمة ومرتبة.',
-                features: ['تصاميم عصرية وأغلفة متينة', 'سعات مختلفة تناسب كمية صورك', 'حماية تامة للصور من الغبار والتلف'],
-                color: 'text-[#4A4A4A]', bg: 'bg-[#4A4A4A]/10',
-              },
-            ].map((service, i) => (
-              <div key={i} className="bg-[#F8F5F2] rounded-3xl p-8 hover:shadow-xl hover:shadow-[#D9A3AA]/10 transition-all border border-transparent hover:border-[#D9A3AA]/30 group flex flex-col">
-                <div className={`w-14 h-14 ${service.bg} rounded-2xl flex items-center justify-center ${service.color} mb-6 group-hover:scale-110 transition-transform`}>
-                  <service.icon size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-[#4A4A4A] mb-3">{service.title}</h3>
-                <p className="text-[#4A4A4A]/60 text-sm leading-relaxed mb-6 flex-1">{service.desc}</p>
-                <ul className="space-y-3 pt-4 border-t border-[#D9A3AA]/10">
-                  {service.features.map((f, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-[#4A4A4A]/80 font-medium">
-                      <CheckCircle size={16} className={`shrink-0 mt-0.5 ${service.color}`} />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          {/* Dynamic pricing calculator */}
-          {pricingSettings?.is_dynamic_pricing_enabled && (
-            <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom duration-700">
-              <div className="bg-[#4A4A4A] rounded-[3rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
-                <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                  <div className="flex-1 text-center md:text-right">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] font-bold text-xs mb-3 border border-[#D9A3AA]/30">
-                      <Sparkles size={14} className="animate-pulse" /> وفر أكثر
-                    </div>
-                    <h3 className="text-3xl font-black mb-4">كل ما طبعت أكثر، <span className="text-[#C5A059]">وفرت أكثر!</span></h3>
-                    <p className="text-white/70 text-sm mb-8">حرك المؤشر وشوف السعر يتغير تلقائياً.</p>
-                    <div className="space-y-6">
-                      <input type="range" min="1" max="100" value={calcQty} onChange={e => setCalcQty(Number(e.target.value))}
-                        className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#D9A3AA]" />
-                      <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10">
-                        <span className="text-sm font-bold text-white/80">العدد المختار:</span>
-                        <div className="flex items-center gap-3">
-                          <button onClick={() => setCalcQty(Math.max(1, calcQty - 1))} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center font-bold">-</button>
-                          <span className="text-2xl font-black w-12 text-center text-[#C5A059]">{calcQty}</span>
-                          <button onClick={() => setCalcQty(calcQty + 1)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center font-bold">+</button>
+                  </div>
+                  {pricingSettings?.is_dynamic_pricing_enabled && (
+                    <div className="max-w-4xl mx-auto">
+                      <div className="bg-[#4A4A4A] rounded-[3rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+                          <div className="flex-1 text-center md:text-right">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] font-bold text-xs mb-3 border border-[#D9A3AA]/30">
+                              <Sparkles size={14} className="animate-pulse" /> وفر أكثر
+                            </div>
+                            <h3 className="text-3xl font-black mb-4">كل ما طبعت أكثر، <span className="text-[#C5A059]">وفرت أكثر!</span></h3>
+                            <p className="text-white/70 text-sm mb-8">حرك المؤشر وشوف السعر يتغير تلقائياً.</p>
+                            <div className="space-y-6">
+                              <input type="range" min="1" max="100" value={calcQty} onChange={e => setCalcQty(Number(e.target.value))}
+                                className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#D9A3AA]" />
+                              <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10">
+                                <span className="text-sm font-bold text-white/80">العدد المختار:</span>
+                                <div className="flex items-center gap-3">
+                                  <button onClick={() => setCalcQty(Math.max(1, calcQty - 1))} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center font-bold">-</button>
+                                  <span className="text-2xl font-black w-12 text-center text-[#C5A059]">{calcQty}</span>
+                                  <button onClick={() => setCalcQty(calcQty + 1)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center font-bold">+</button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="w-full md:w-80 bg-white text-[#4A4A4A] rounded-3xl p-8 shadow-2xl transform md:rotate-2">
+                            <div className="text-center pb-6 border-b border-[#F8F5F2] mb-6">
+                              <span className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wider block mb-1">سعر الصورة الواحدة</span>
+                              <span className="text-5xl font-black text-[#D9A3AA]">{calcResult.unit} <RiyalSign size="0.55em" /></span>
+                            </div>
+                            <div className="space-y-4 mb-8">
+                              <div className="flex justify-between text-sm font-bold">
+                                <span className="text-[#4A4A4A]/60">الإجمالي</span>
+                                <span>{calcResult.total.toFixed(2)} <RiyalSign /></span>
+                              </div>
+                              {calcResult.savings > 0 && (
+                                <div className="flex justify-between text-sm font-bold text-[#C5A059] bg-[#C5A059]/10 px-4 py-2 rounded-xl">
+                                  <span className="flex items-center gap-1"><Sparkles size={14} /> وفرتي</span>
+                                  <span>{calcResult.savings.toFixed(2)} <RiyalSign /></span>
+                                </div>
+                              )}
+                            </div>
+                            <a href={`https://wa.me/966569663697?text=${encodeURIComponent(`مرحباً، أرغب بطباعة ${calcQty} صورة`)}`}
+                              target="_blank" rel="noreferrer"
+                              className="block w-full bg-[#4A4A4A] text-white text-center py-4 rounded-xl font-bold hover:bg-[#C5A059] transition-colors shadow-lg">اطلبي بهذا السعر</a>
+                          </div>
                         </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* REVIEWS + FEEDBACK */}
+          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('reviews')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#C5A059]/10 rounded-xl flex items-center justify-center text-[#C5A059]"><Star size={20} /></div>
+                <div>
+                  <div className="font-black text-[#4A4A4A]">آراء العملاء وتواصل معنا</div>
+                  <div className="text-xs text-[#4A4A4A]/50">تقييمات حقيقية + أرسل ملاحظاتك للإدارة</div>
+                </div>
+              </div>
+              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'reviews' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeExpandable === 'reviews' && (
+              <div className="bg-[#F8F5F2] border-t border-[#D9A3AA]/10">
+                <div className="py-10 px-4 max-w-7xl mx-auto">
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-black text-[#4A4A4A] mb-3">ماذا يقول <span className="text-[#D9A3AA]">عملاؤنا؟</span></h3>
+                    <div className="flex justify-center gap-1 mb-8 text-[#C5A059]">
+                      {[...Array(5)].map((_, i) => <Star key={i} size={20} fill="currentColor" />)}
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-6 mb-10">
+                      {REVIEWS.map(review => (
+                        <div key={review.id} className="bg-white p-8 rounded-[2rem] border border-[#D9A3AA]/10 relative hover:-translate-y-2 transition-transform duration-300 shadow-sm">
+                          <Quote className="absolute top-6 left-6 text-[#F8F5F2]" size={40} />
+                          <p className="text-[#4A4A4A]/80 font-medium leading-relaxed mb-6 relative z-10">"{review.comment}"</p>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-white font-bold">{review.name.charAt(0)}</div>
+                            <div className="text-right">
+                              <div className="font-bold text-[#4A4A4A]">{review.name}</div>
+                              <div className="text-xs text-[#D9A3AA]">عميل موثوق ✅</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="max-w-2xl mx-auto bg-white rounded-[2rem] p-8 shadow-xl border border-[#D9A3AA]/20 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-[#D9A3AA] to-[#C5A059]"></div>
+                      <h3 className="text-xl font-black text-[#4A4A4A] flex items-center justify-center gap-2 mb-2"><MessageSquarePlus className="text-[#C5A059]" /> الإدارة في خدمتك دائماً</h3>
+                      <p className="text-[#4A4A4A]/60 text-sm mb-6 text-center">نستقبل تقييماتك، مقترحاتك، أو حتى شكواك بصدر رحب.</p>
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap gap-3 justify-center">
+                          {['تقييم ⭐️', 'اقتراح 💡', 'شكوى ⚠️'].map(type => (
+                            <button key={type} onClick={() => setFeedbackType(type)}
+                              className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${feedbackType === type ? 'bg-[#4A4A4A] text-white border-[#4A4A4A] shadow-md scale-105' : 'bg-white text-[#4A4A4A]/60 border-[#D9A3AA]/30 hover:border-[#4A4A4A]/50 hover:bg-[#F8F5F2]'}`}
+                            >{type}</button>
+                          ))}
+                        </div>
+                        <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)}
+                          placeholder="اكتب رسالتك هنا بكل شفافية وسرية تامة..."
+                          className="w-full h-32 bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl p-4 text-[#4A4A4A] outline-none focus:border-[#D9A3AA] focus:ring-4 focus:ring-[#D9A3AA]/10 resize-none transition-all" />
+                        <button onClick={handleSendFeedback} disabled={!feedbackText.trim()}
+                          className="w-full bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white py-4 rounded-xl font-bold hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                          <Send size={18} /> إرسال الرسالة للإدارة
+                        </button>
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
 
-                  <div className="w-full md:w-80 bg-white text-[#4A4A4A] rounded-3xl p-8 shadow-2xl transform md:rotate-2">
-                    <div className="text-center pb-6 border-b border-[#F8F5F2] mb-6">
-                      <span className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wider block mb-1">سعر الصورة الواحدة</span>
-                      <span className="text-5xl font-black text-[#D9A3AA]">{calcResult.unit} <RiyalSign size="0.55em" /></span>
-                    </div>
-                    <div className="space-y-4 mb-8">
-                      <div className="flex justify-between text-sm font-bold">
-                        <span className="text-[#4A4A4A]/60">الإجمالي</span>
-                        <span>{calcResult.total.toFixed(2)} <RiyalSign /></span>
-                      </div>
-                      {calcResult.savings > 0 && (
-                        <div className="flex justify-between text-sm font-bold text-[#C5A059] bg-[#C5A059]/10 px-4 py-2 rounded-xl">
-                          <span className="flex items-center gap-1"><Sparkles size={14} /> وفرتي</span>
-                          <span>{calcResult.savings.toFixed(2)} <RiyalSign /></span>
-                        </div>
+          {/* FAQ */}
+          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('faq')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#D9A3AA]/10 rounded-xl flex items-center justify-center text-[#D9A3AA]"><MessageCircle size={20} /></div>
+                <div>
+                  <div className="font-black text-[#4A4A4A]">الأسئلة الشائعة</div>
+                  <div className="text-xs text-[#4A4A4A]/50">إجابات على أكثر الأسئلة المطروحة</div>
+                </div>
+              </div>
+              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'faq' ? 'rotate-180' : ''}`} />
+            </button>
+            {activeExpandable === 'faq' && (
+              <div className="bg-[#F8F5F2] border-t border-[#D9A3AA]/10">
+                <div className="py-8 px-4 max-w-2xl mx-auto space-y-3">
+                  {FAQS.map((faq, idx) => (
+                    <div key={idx} className="bg-white rounded-2xl border border-[#D9A3AA]/15 overflow-hidden">
+                      <button onClick={() => setOpenFaq(openFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-5 text-right">
+                        <span className="font-bold text-[#4A4A4A] text-sm">{faq.q}</span>
+                        <ChevronDown size={18} className={`text-[#D9A3AA] transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
+                      </button>
+                      {openFaq === idx && (
+                        <div className="p-5 pt-0 text-sm text-[#4A4A4A]/70 leading-relaxed border-t border-[#F8F5F2]">{faq.a}</div>
                       )}
                     </div>
-                    <a href={`https://wa.me/966569663697?text=${encodeURIComponent(`مرحباً، أرغب بطباعة ${calcQty} صورة`)}`}
-                      target="_blank" rel="noreferrer"
-                      className="block w-full bg-[#4A4A4A] text-white text-center py-4 rounded-xl font-bold hover:bg-[#C5A059] transition-colors shadow-lg">
-                      اطلبي بهذا السعر
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          5. WALLET PACKAGES
-      ══════════════════════════════════ */}
-      <section id="wallet" className="py-20 bg-[#F8F5F2] relative">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16 max-w-2xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-bold text-xs mb-6 border border-[#C5A059]/20">
-              <Wallet size={16} /> رصيد ذكرياتك.. يعطيك أكثر!
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black text-[#4A4A4A] mb-4 leading-tight">
-              اشحن محفظتك، <span className="text-[#C5A059]">واطبع براحتك</span>
-            </h2>
-            <p className="text-[#4A4A4A]/70 text-lg leading-relaxed mb-6">
-              بدل ما تنتظر العروض، اشحن محفظتك في <span className="font-bold text-[#D9A3AA]">لحظة فن</span> واحصل على رصيد إضافي تستخدمه بكل حرية.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 text-xs font-bold text-[#4A4A4A]/80">
-              <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> الرصيد لا ينتهي صلاحيته</span>
-              <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> تقسم طلباتك براحتك</span>
-              <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> هدايا وميزات حصرية</span>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Bronze */}
-            <div className="bg-white rounded-[2rem] p-8 border border-orange-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-orange-400 to-orange-200"></div>
-              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:scale-110 transition-transform"><CreditCard size={28} /></div>
-              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة البرونزية</h3>
-              <div className="mb-6"><span className="text-3xl font-black text-orange-600">299</span> <RiyalSign size="0.7em" /></div>
-              <div className="bg-orange-50 rounded-xl p-4 mb-6 border border-orange-100">
-                <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-2xl font-black text-[#4A4A4A]">333 <RiyalSign size="0.7em" /></span>
-              </div>
-              <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!</p>
-              <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة البرونزية بـ 299 ريال" target="_blank" rel="noreferrer"
-                className="w-full py-3 rounded-xl bg-orange-100 text-orange-700 font-bold hover:bg-orange-600 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
-            </div>
-
-            {/* Silver — most popular */}
-            <div className="bg-white rounded-[2rem] p-8 border-2 border-slate-300 shadow-xl transform md:-translate-y-4 flex flex-col relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-l from-slate-400 to-slate-200"></div>
-              <div className="absolute top-4 left-4 bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full border border-slate-200">الأكثر طلباً</div>
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 mb-6 group-hover:scale-110 transition-transform"><Award size={28} /></div>
-              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الفضية</h3>
-              <div className="mb-6"><span className="text-4xl font-black text-slate-600">699</span> <RiyalSign size="0.7em" /></div>
-              <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
-                <span className="block text-[10px] text-slate-500 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-3xl font-black text-slate-700">808 <RiyalSign size="0.7em" /></span>
-              </div>
-              <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!</p>
-              <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة الفضية بـ 699 ريال" target="_blank" rel="noreferrer"
-                className="w-full py-4 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-md">اشحن الآن</a>
-            </div>
-
-            {/* Gold */}
-            <div className="bg-white rounded-[2rem] p-8 border border-amber-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-amber-400 to-amber-200"></div>
-              <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform"><Gem size={28} /></div>
-              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الذهبية</h3>
-              <div className="mb-6"><span className="text-3xl font-black text-amber-600">999</span> <RiyalSign size="0.7em" /></div>
-              <div className="bg-amber-50 rounded-xl p-4 mb-6 border border-amber-100">
-                <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-2xl font-black text-[#4A4A4A]">1,202 <RiyalSign size="0.7em" /></span>
-              </div>
-              <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!</p>
-              <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة الذهبية بـ 999 ريال" target="_blank" rel="noreferrer"
-                className="w-full py-3 rounded-xl bg-amber-100 text-amber-700 font-bold hover:bg-amber-500 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          6. REVIEWS + FEEDBACK BOX
-      ══════════════════════════════════ */}
-      <section id="reviews" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-[#4A4A4A] mb-4">ماذا يقول <span className="text-[#D9A3AA]">عملاؤنا؟</span></h2>
-            <div className="flex justify-center gap-1 mb-12 text-[#C5A059]">
-              {[...Array(5)].map((_, i) => <Star key={i} size={24} fill="currentColor" />)}
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8 mb-20">
-              {REVIEWS.map(review => (
-                <div key={review.id} className="bg-[#F8F5F2] p-8 rounded-[2rem] border border-[#D9A3AA]/10 relative hover:-translate-y-2 transition-transform duration-300 shadow-sm">
-                  <Quote className="absolute top-6 left-6 text-[#F8F5F2]" size={40} />
-                  <p className="text-[#4A4A4A]/80 font-medium leading-relaxed mb-6 relative z-10">"{review.comment}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-white font-bold">{review.name.charAt(0)}</div>
-                    <div className="text-right">
-                      <div className="font-bold text-[#4A4A4A]">{review.name}</div>
-                      <div className="text-xs text-[#D9A3AA]">عميل موثوق ✅</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Direct feedback channel */}
-            <div className="max-w-3xl mx-auto bg-white rounded-[2rem] p-8 shadow-xl border border-[#D9A3AA]/20 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-[#D9A3AA] to-[#C5A059]"></div>
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-black text-[#4A4A4A] flex items-center justify-center gap-2 mb-2">
-                  <MessageSquarePlus className="text-[#C5A059]" /> الإدارة في خدمتك دائماً
-                </h3>
-                <p className="text-[#4A4A4A]/60 text-sm">نستقبل تقييماتك، مقترحاتك التطويرية، أو حتى شكواك بصدر رحب لخدمتك بشكل أفضل.</p>
-              </div>
-              <div className="space-y-6">
-                <div className="flex flex-wrap gap-3 justify-center">
-                  {['تقييم ⭐️', 'اقتراح 💡', 'شكوى ⚠️'].map(type => (
-                    <button key={type} onClick={() => setFeedbackType(type)}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${feedbackType === type ? 'bg-[#4A4A4A] text-white border-[#4A4A4A] shadow-md scale-105' : 'bg-white text-[#4A4A4A]/60 border-[#D9A3AA]/30 hover:border-[#4A4A4A]/50 hover:bg-[#F8F5F2]'}`}
-                    >{type}</button>
                   ))}
                 </div>
-                <textarea
-                  value={feedbackText} onChange={e => setFeedbackText(e.target.value)}
-                  placeholder="اكتب رسالتك هنا بكل شفافية وسرية تامة..."
-                  className="w-full h-32 bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl p-4 text-[#4A4A4A] outline-none focus:border-[#D9A3AA] focus:ring-4 focus:ring-[#D9A3AA]/10 resize-none transition-all"
-                />
-                <button onClick={handleSendFeedback} disabled={!feedbackText.trim()}
-                  className="w-full bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white py-4 rounded-xl font-bold hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-                  <Send size={18} /> إرسال الرسالة للإدارة
-                </button>
               </div>
-            </div>
+            )}
           </div>
-        </div>
-      </section>
 
-      {/* ══════════════════════════════════
-          7. FAQ
-      ══════════════════════════════════ */}
-      <section className="max-w-3xl mx-auto px-4 py-16">
-        <h2 className="text-2xl font-black text-center mb-8 text-[#4A4A4A]">الأسئلة الشائعة</h2>
-        <div className="space-y-4">
-          {FAQS.map((faq, idx) => (
-            <div key={idx} className="bg-white rounded-2xl border border-[#D9A3AA]/15 overflow-hidden">
-              <button onClick={() => setOpenFaq(openFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-5 text-right">
-                <span className="font-bold text-[#4A4A4A] text-sm">{faq.q}</span>
-                <ChevronDown size={18} className={`text-[#D9A3AA] transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
-              </button>
-              {openFaq === idx && (
-                <div className="p-5 pt-0 text-sm text-[#4A4A4A]/70 leading-relaxed border-t border-[#F8F5F2]">{faq.a}</div>
-              )}
-            </div>
-          ))}
         </div>
       </section>
 
@@ -864,7 +884,7 @@ export default function StoreIndex() {
             <div className="flex items-center gap-2 bg-[#F8F5F2] w-max px-4 py-2 rounded-xl border border-[#D9A3AA]/20">
               <ShieldCheck size={18} className="text-emerald-500" />
               <div className="text-right">
-                <p className="text-[10px] text-[#4A4A4A]/60 font-bold">موثق في</p>
+                <p className="text-[10px] text-[#4A4A4A]/60 font-bold">سيوثق في</p>
                 <p className="text-xs font-black text-[#4A4A4A]">المركز السعودي للأعمال</p>
               </div>
             </div>
