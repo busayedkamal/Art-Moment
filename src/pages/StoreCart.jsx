@@ -45,7 +45,7 @@ export default function StoreCart() {
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
-  const sendAutoConfirmationWhatsApp = async (orderId, customerName, customerPhone, totalAmount) => {
+  const sendAutoConfirmationWhatsApp = async (orderId, customerName, customerPhone, totalAmount, customerPin) => {
     try {
       const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
       if (!settings || !settings.whatsapp_enabled || !settings.whatsapp_instance_id || !settings.whatsapp_token) return;
@@ -58,6 +58,8 @@ export default function StoreCart() {
         `تم استلام طلبك من متجر لحظة فن بنجاح! 🎉\n` +
         `رقم الطلب: *#${String(orderId).slice(0, 8)}*\n` +
         `الإجمالي: *${totalAmount} ريال*\n\n` +
+        `رقم جوالك المسجل: *${formattedPhone}*\n` +
+        `رمز التتبع (PIN): *${customerPin}*\n\n` +
         `طلبك الآن (بانتظار التأكيد) ⏳.\n` +
         `لتأكيد الطلب والبدء بتجهيزه، يرجى الرد على هذه الرسالة بكلمة *"تأكيد"*. وفي حال الرغبة بالإلغاء يرجى الرد بكلمة *"إلغاء"*.\n\n` +
         `شكراً لاختيارك لحظة فن ✨`;
@@ -81,17 +83,38 @@ export default function StoreCart() {
     const toastId = toast.loading('جاري إرسال الطلب...');
 
     try {
+      const formattedPhone = String(phone).replace(/\D/g, '');
+
+      // CRM: lookup or create wallet entry
+      let customerPin;
+      const { data: existingWallet } = await supabase
+        .from('wallets')
+        .select('subscription_code')
+        .eq('phone', formattedPhone)
+        .maybeSingle();
+
+      if (existingWallet) {
+        customerPin = existingWallet.subscription_code;
+      } else {
+        customerPin = String(Math.floor(1000 + Math.random() * 9000));
+        await supabase.from('wallets').insert({
+          phone: formattedPhone,
+          subscription_code: customerPin,
+          points_balance: 0,
+          total_spent: 0,
+        });
+      }
+
       const { data: orderData, error: orderError } = await supabase
         .from('store_orders')
         .insert({
           customer_name: name || 'عميل المتجر',
-          phone: phone,
+          phone: formattedPhone,
           total_amount: subtotal,
+          amount_paid: 0,
           delivery_fee: 0,
           notes: notes || null,
-          city: city,
-          district: district,
-          street: street
+          city, district, street
         })
         .select('id')
         .single();
@@ -112,7 +135,7 @@ export default function StoreCart() {
       if (itemsError) throw itemsError;
 
       saveCart([]);
-      await sendAutoConfirmationWhatsApp(orderData.id, name, phone, subtotal);
+      await sendAutoConfirmationWhatsApp(orderData.id, name, formattedPhone, subtotal, customerPin);
       toast.success('تم استلام طلبك بنجاح!', { id: toastId });
       setIsSubmitted(true);
     } catch (error) {

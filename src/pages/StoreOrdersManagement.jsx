@@ -213,6 +213,7 @@ export default function StoreOrdersManagement() {
       customer_name: selectedOrder.customer_name || '',
       phone:         selectedOrder.phone || '',
       total_amount:  selectedOrder.total_amount || 0,
+      amount_paid:   selectedOrder.amount_paid || 0,
       city:          selectedOrder.city || '',
       district:      selectedOrder.district || '',
       street:        selectedOrder.street || '',
@@ -283,6 +284,14 @@ export default function StoreOrdersManagement() {
   };
 
   // ── Derived data ───────────────────────────────────────────────────────────
+
+  const getPaymentBadge = (total, paid) => {
+    const t = Number(total || 0);
+    const p = Number(paid || 0);
+    if (p >= t && t > 0) return { label: 'مدفوع بالكامل', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    if (p > 0) return { label: `مدفوع ${p.toFixed(0)} ر.س`, bg: 'bg-amber-100', text: 'text-amber-700' };
+    return { label: 'غير مدفوع', bg: 'bg-red-50', text: 'text-red-500' };
+  };
 
   const filteredOrders = filterStatus === 'all'
     ? orders
@@ -379,8 +388,18 @@ export default function StoreOrdersManagement() {
                     </td>
                     <td className="py-3.5 px-4 font-bold">{order.customer_name}</td>
                     <td className="py-3.5 px-4 font-mono text-sm text-[#4A4A4A]/70">{order.phone}</td>
-                    <td className="py-3.5 px-4 font-black text-[#C5A059]">
-                      {Number(order.total_amount || 0).toFixed(2)} <span className="text-[10px] font-normal">ر.س</span>
+                    <td className="py-3.5 px-4">
+                      <div className="font-black text-[#C5A059] text-sm leading-tight">
+                        {Number(order.total_amount || 0).toFixed(2)} <span className="text-[10px] font-normal">ر.س</span>
+                      </div>
+                      {(() => {
+                        const badge = getPaymentBadge(order.total_amount, order.amount_paid);
+                        return (
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-3.5 px-4 text-xs text-[#4A4A4A]/50 font-mono">
                       {new Date(order.created_at).toLocaleDateString('en-GB')}
@@ -412,10 +431,18 @@ export default function StoreOrdersManagement() {
                     <StatusBadge status={order.status} />
                   </div>
                   <p className="font-mono text-xs text-[#4A4A4A]/50">{order.phone}</p>
-                  <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                     <span className="font-black text-[#C5A059] text-sm">
                       {Number(order.total_amount || 0).toFixed(2)} ر.س
                     </span>
+                    {(() => {
+                      const badge = getPaymentBadge(order.total_amount, order.amount_paid);
+                      return (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
                     <span className="text-[10px] text-[#4A4A4A]/40 font-mono">
                       {new Date(order.created_at).toLocaleDateString('en-GB')}
                     </span>
@@ -504,6 +531,10 @@ export default function StoreOrdersManagement() {
                         <input type="number" value={editForm.total_amount} onChange={e => setEditForm({...editForm, total_amount: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
                       </div>
                       <div>
+                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">المبلغ المدفوع (ر.س)</label>
+                        <input type="number" value={editForm.amount_paid} onChange={e => setEditForm({...editForm, amount_paid: e.target.value})} className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-400" />
+                      </div>
+                      <div>
                         <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">المدينة</label>
                         <input type="text" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
                       </div>
@@ -538,6 +569,14 @@ export default function StoreOrdersManagement() {
                           <span className="font-black text-[#C5A059]">
                             {Number(selectedOrder.total_amount || 0).toFixed(2)} ر.س
                           </span>
+                          {(() => {
+                            const badge = getPaymentBadge(selectedOrder.total_amount, selectedOrder.amount_paid);
+                            return (
+                              <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
+                                {badge.label}
+                              </span>
+                            );
+                          })()}
                         </div>
                         <div>
                           <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">تاريخ الطلب</span>
