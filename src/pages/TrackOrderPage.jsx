@@ -44,6 +44,17 @@ const statusMap = {
   delivered: { label: 'تم التسليم',      color: 'bg-slate-100 text-slate-600 border-slate-200' },
 };
 
+const storeStatusMap = {
+  pending_verification: { label: 'بانتظار التأكيد', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  confirmed:            { label: 'مؤكد',            color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+  processing:           { label: 'قيد التجهيز',     color: 'bg-amber-100 text-amber-700 border-amber-200' },
+  ready_for_delivery:   { label: 'جاهز للتسليم',   color: 'bg-teal-100 text-teal-700 border-teal-200' },
+  shipped:              { label: 'تم الشحن',        color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
+  delivered:            { label: 'تم الاستلام',     color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  cancelled:            { label: 'ملغي',            color: 'bg-red-100 text-red-700 border-red-200' },
+  returned:             { label: 'مرتجع',           color: 'bg-orange-100 text-orange-700 border-orange-200' },
+};
+
 const stepsDef = [
   { id: 1, key: 'new',       icon: Package,     label: 'جديد' },
   { id: 2, key: 'printing',  icon: Clock,       label: 'طباعة' },
@@ -162,18 +173,24 @@ export default function TrackOrderPage() {
         setLoading(false); return;
       }
 
-      // 2. جلب الطلبات بعد التحقق
-      const { data: orders, error: oErr } = await supabase
-        .from('orders').select('*').in('phone', forms)
-        .order('created_at', { ascending: false });
+      // 2. جلب الطلبات من الجدولين بعد التحقق
+      const [printRes, storeRes] = await Promise.all([
+        supabase.from('orders').select('*').in('phone', forms),
+        supabase.from('store_orders').select('*').in('phone', forms),
+      ]);
 
-      if (oErr) throw oErr;
-      if (!orders || orders.length === 0) {
+      const printOrders = (printRes.data || []).map(o => ({ ...o, order_type: 'print' }));
+      const storeOrders = (storeRes.data || []).map(o => ({ ...o, order_type: 'store' }));
+      const allOrders = [...printOrders, ...storeOrders].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+
+      if (allOrders.length === 0) {
         setError('لا توجد طلبات مسجلة بهذا الرقم.');
         setLoading(false); return;
       }
 
-      setCustomerOrders(orders);
+      setCustomerOrders(allOrders);
       setCustomerStats(await fetchStats(digits));
     } catch {
       setError('حدث خطأ، يرجى المحاولة مرة أخرى.');
@@ -192,8 +209,11 @@ export default function TrackOrderPage() {
   };
 
   /* ── حساب المتبقي لطلب ── */
-  const remaining = (o) =>
-    Number(o.total_amount || 0) - Number(o.deposit || 0) - Number(o.wallet_used || 0);
+  const remaining = (o) => {
+    if (o.order_type === 'store')
+      return Number(o.total_amount || 0) - Number(o.amount_paid || 0);
+    return Number(o.total_amount || 0) - Number(o.deposit || 0) - Number(o.wallet_used || 0);
+  };
 
   const currentStep = order ? ({ new: 1, printing: 2, done: 3, delivered: 4 }[order.status] || 1) : 0;
 
@@ -590,18 +610,18 @@ export default function TrackOrderPage() {
               </h3>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
-                  <span className="text-[10px] text-[#4A4A4A]/50 block mb-1">صور 4×6</span>
+                  <span className="text-[10px] text-[#4A4A4A]/50 block mb-1">طلبات طباعة</span>
                   <span className="font-black text-xl text-[#D9A3AA]">
-                    {customerOrders.reduce((s, o) => s + Number(o.photo_4x6_qty || 0), 0)}
+                    {customerOrders.filter(o => o.order_type === 'print').length}
                   </span>
-                  <span className="text-[10px] text-[#4A4A4A]/40">صورة</span>
+                  <span className="text-[10px] text-[#4A4A4A]/40">طلب</span>
                 </div>
                 <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
-                  <span className="text-[10px] text-[#4A4A4A]/50 block mb-1">صور A4</span>
+                  <span className="text-[10px] text-[#4A4A4A]/50 block mb-1">طلبات المتجر</span>
                   <span className="font-black text-xl text-[#4A4A4A]">
-                    {customerOrders.reduce((s, o) => s + Number(o.a4_qty || 0), 0)}
+                    {customerOrders.filter(o => o.order_type === 'store').length}
                   </span>
-                  <span className="text-[10px] text-[#4A4A4A]/40">صورة</span>
+                  <span className="text-[10px] text-[#4A4A4A]/40">طلب</span>
                 </div>
                 <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
                   <span className="text-[10px] text-[#4A4A4A]/50 block mb-1">إجمالي الإنفاق</span>
@@ -621,9 +641,12 @@ export default function TrackOrderPage() {
 
               {customerOrders.map((o, idx) => {
                 const rem = remaining(o);
-                const st = statusMap[o.status] || statusMap.new;
+                const st = o.order_type === 'store'
+                  ? (storeStatusMap[o.status] || { label: o.status, color: 'bg-gray-100 text-gray-600 border-gray-200' })
+                  : (statusMap[o.status] || statusMap.new);
                 const isOpen = expandedId === o.id;
                 const isLatest = idx === 0;
+                const orderId = o.order_type === 'store' ? `#${o.id}` : `#${o.id.slice(0, 6)}`;
 
                 return (
                   <div key={o.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isLatest ? 'border-[#D9A3AA]/40 ring-2 ring-[#D9A3AA]/10' : 'border-[#D9A3AA]/20'}`}>
@@ -643,17 +666,25 @@ export default function TrackOrderPage() {
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${st.color}`}>
                             {st.label}
                           </span>
-                          <span className="text-[11px] text-[#4A4A4A]/40 font-mono">#{o.id.slice(0, 6)}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${o.order_type === 'store' ? 'bg-[#C5A059]/10 text-[#C5A059]' : 'bg-[#D9A3AA]/10 text-[#D9A3AA]'}`}>
+                            {o.order_type === 'store' ? 'متجر' : 'طباعة'}
+                          </span>
+                          <span className="text-[11px] text-[#4A4A4A]/40 font-mono">{orderId}</span>
                         </div>
                         <div className="flex items-center gap-3 text-sm flex-wrap">
                           <span className="flex items-center gap-1 text-[#4A4A4A]/50 text-xs">
                             <Calendar size={11}/> {formatDate(o.created_at)}
                           </span>
-                          {(o.photo_4x6_qty > 0 || o.a4_qty > 0) && (
+                          {o.order_type === 'print' && (o.photo_4x6_qty > 0 || o.a4_qty > 0) && (
                             <span className="text-[#4A4A4A]/40 text-xs">
                               {o.photo_4x6_qty > 0 && `${o.photo_4x6_qty} صورة 4×6`}
                               {o.photo_4x6_qty > 0 && o.a4_qty > 0 && ' · '}
                               {o.a4_qty > 0 && `${o.a4_qty} صورة A4`}
+                            </span>
+                          )}
+                          {o.order_type === 'store' && o.city && (
+                            <span className="text-[#4A4A4A]/40 text-xs flex items-center gap-1">
+                              <MapPin size={10}/> {o.city}
                             </span>
                           )}
                         </div>
@@ -672,57 +703,152 @@ export default function TrackOrderPage() {
                     {isOpen && (
                       <div className="border-t border-[#D9A3AA]/10 p-4 space-y-3 bg-[#F8F5F2]/40 animate-in slide-in-from-top-2 fade-in duration-200">
 
-                        {/* شريط التقدم مصغّر */}
-                        <div className="flex items-center gap-1">
-                          {stepsDef.map((step, i) => {
-                            const active = ({ new: 1, printing: 2, done: 3, delivered: 4 }[o.status] || 1) >= step.id;
-                            return (
-                              <React.Fragment key={step.id}>
-                                <div className={`flex flex-col items-center gap-0.5 flex-1`}>
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border ${active ? 'bg-[#50C878] border-[#50C878] text-white' : 'bg-white border-slate-200 text-[#4A4A4A]/30'}`}>
-                                    <step.icon size={11}/>
-                                  </div>
-                                  <span className={`text-[9px] font-bold ${active ? 'text-[#D9A3AA]' : 'text-[#4A4A4A]/25'}`}>{step.label}</span>
+                        {o.order_type === 'store' ? (
+                          /* ── تفاصيل طلب المتجر ── */
+                          <>
+                            {/* شريط تقدم طلب المتجر */}
+                            {(() => {
+                              const storeSteps = [
+                                { label: 'انتظار', keys: ['pending_verification'] },
+                                { label: 'مؤكد',  keys: ['confirmed'] },
+                                { label: 'تجهيز', keys: ['processing'] },
+                                { label: 'شحن',   keys: ['ready_for_delivery', 'shipped', 'delivered'] },
+                              ];
+                              const storeOrder = ['pending_verification','confirmed','processing','ready_for_delivery','shipped','delivered'];
+                              const curIdx = storeOrder.indexOf(o.status);
+                              return (
+                                <div className="flex items-center gap-1">
+                                  {storeSteps.map((step, i) => {
+                                    const stepMax = Math.max(...step.keys.map(k => storeOrder.indexOf(k)));
+                                    const active = curIdx >= 0 && curIdx >= storeOrder.indexOf(step.keys[0]);
+                                    return (
+                                      <React.Fragment key={i}>
+                                        <div className="flex flex-col items-center gap-0.5 flex-1">
+                                          <div className={`w-6 h-6 rounded-full flex items-center justify-center border text-[10px] font-bold ${active ? 'bg-[#50C878] border-[#50C878] text-white' : 'bg-white border-slate-200 text-[#4A4A4A]/30'}`}>
+                                            {active ? <CheckCircle size={11}/> : <Package size={11}/>}
+                                          </div>
+                                          <span className={`text-[9px] font-bold ${active ? 'text-[#D9A3AA]' : 'text-[#4A4A4A]/25'}`}>{step.label}</span>
+                                        </div>
+                                        {i < storeSteps.length - 1 && (
+                                          <div className={`flex-1 h-0.5 mb-4 rounded ${active && curIdx > storeOrder.indexOf(step.keys[0]) ? 'bg-[#50C878]' : 'bg-slate-200'}`}/>
+                                        )}
+                                      </React.Fragment>
+                                    );
+                                  })}
                                 </div>
-                                {i < 3 && <div className={`flex-1 h-0.5 mb-4 rounded ${active && ({ new: 1, printing: 2, done: 3, delivered: 4 }[o.status] || 1) > step.id ? 'bg-[#50C878]' : 'bg-slate-200'}`}></div>}
-                              </React.Fragment>
-                            );
-                          })}
-                        </div>
+                              );
+                            })()}
 
-                        {/* تفاصيل */}
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          {o.photo_4x6_qty > 0 && (
-                            <div className="bg-white rounded-xl p-2.5 border border-[#D9A3AA]/15 text-center">
-                              <span className="text-[#4A4A4A]/50 block">صور 4×6</span>
-                              <span className="font-black text-base text-[#4A4A4A]">{o.photo_4x6_qty}</span>
-                            </div>
-                          )}
-                          {o.a4_qty > 0 && (
-                            <div className="bg-white rounded-xl p-2.5 border border-[#D9A3AA]/15 text-center">
-                              <span className="text-[#4A4A4A]/50 block">صور A4</span>
-                              <span className="font-black text-base text-[#4A4A4A]">{o.a4_qty}</span>
-                            </div>
-                          )}
-                          {o.album_qty > 0 && (
-                            <div className="bg-white rounded-xl p-2.5 border border-[#C5A059]/20 text-center col-span-2">
-                              <span className="text-[#C5A059]/70 block">ألبوم × {o.album_qty}</span>
-                              <span className="font-black text-base text-[#C5A059]">{o.album_price} <RiyalSign /></span>
-                            </div>
-                          )}
-                        </div>
+                            {/* عنوان التوصيل */}
+                            {(o.city || o.district) && (
+                              <div className="bg-white rounded-xl p-3 border border-[#D9A3AA]/15 text-xs">
+                                <span className="text-[#4A4A4A]/50 font-bold flex items-center gap-1 mb-1">
+                                  <MapPin size={10}/> عنوان التوصيل
+                                </span>
+                                <p className="font-bold text-[#4A4A4A]">{o.city}{o.district ? ` — حي ${o.district}` : ''}</p>
+                                {o.street && <p className="text-[#4A4A4A]/60 mt-0.5">{o.street}</p>}
+                              </div>
+                            )}
 
-                        {o.notes && (
-                          <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 text-xs text-amber-800">
-                            <span className="font-bold">📝 ملاحظات: </span>{o.notes}
-                          </div>
+                            {/* معلومات الشحن والتتبع */}
+                            {o.tracking_number && (
+                              <div className="bg-white rounded-xl p-3 border border-[#D9A3AA]/20 space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-[#4A4A4A]/50 font-bold">شركة الشحن</span>
+                                  <span className="font-bold">{o.courier_name}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-[#4A4A4A]/50 font-bold">رقم التتبع</span>
+                                  <span className="font-mono font-bold text-[#D9A3AA]">{o.tracking_number}</span>
+                                </div>
+                                {o.courier_name === 'سمسا' && (
+                                  <a
+                                    href={`https://www.smsaexpress.com/sa/ar/trackingdetails?tracknumbers=${o.tracking_number}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="w-full flex items-center justify-center gap-2 bg-[#4A4A4A] text-white text-xs font-bold py-2 rounded-xl hover:bg-[#D9A3AA] transition-colors"
+                                  >
+                                    <Truck size={14}/> تتبع الشحنة (سمسا)
+                                  </a>
+                                )}
+                                {o.courier_name === 'أرامكس' && (
+                                  <a
+                                    href={`https://www.aramex.com/sa/ar/track/results?mode=0&ShipmentNumber=${o.tracking_number}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="w-full flex items-center justify-center gap-2 bg-[#4A4A4A] text-white text-xs font-bold py-2 rounded-xl hover:bg-[#D9A3AA] transition-colors"
+                                  >
+                                    <Truck size={14}/> تتبع الشحنة (أرامكس)
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
+                            {o.notes && (
+                              <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 text-xs text-amber-800">
+                                <span className="font-bold">📝 ملاحظات: </span>{o.notes}
+                              </div>
+                            )}
+
+                            <div className={`p-3 rounded-xl flex justify-between items-center text-sm font-bold ${rem > 0.5 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
+                              <span>{rem > 0.5 ? '💳 المتبقي للسداد' : '✅ الطلب مدفوع بالكامل'}</span>
+                              {rem > 0.5 && <span>{rem.toFixed(2)} <RiyalSign /></span>}
+                            </div>
+                          </>
+                        ) : (
+                          /* ── تفاصيل طلب الطباعة ── */
+                          <>
+                            {/* شريط التقدم مصغّر */}
+                            <div className="flex items-center gap-1">
+                              {stepsDef.map((step, i) => {
+                                const active = ({ new: 1, printing: 2, done: 3, delivered: 4 }[o.status] || 1) >= step.id;
+                                return (
+                                  <React.Fragment key={step.id}>
+                                    <div className={`flex flex-col items-center gap-0.5 flex-1`}>
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border ${active ? 'bg-[#50C878] border-[#50C878] text-white' : 'bg-white border-slate-200 text-[#4A4A4A]/30'}`}>
+                                        <step.icon size={11}/>
+                                      </div>
+                                      <span className={`text-[9px] font-bold ${active ? 'text-[#D9A3AA]' : 'text-[#4A4A4A]/25'}`}>{step.label}</span>
+                                    </div>
+                                    {i < 3 && <div className={`flex-1 h-0.5 mb-4 rounded ${active && ({ new: 1, printing: 2, done: 3, delivered: 4 }[o.status] || 1) > step.id ? 'bg-[#50C878]' : 'bg-slate-200'}`}></div>}
+                                  </React.Fragment>
+                                );
+                              })}
+                            </div>
+
+                            {/* تفاصيل المنتجات */}
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              {o.photo_4x6_qty > 0 && (
+                                <div className="bg-white rounded-xl p-2.5 border border-[#D9A3AA]/15 text-center">
+                                  <span className="text-[#4A4A4A]/50 block">صور 4×6</span>
+                                  <span className="font-black text-base text-[#4A4A4A]">{o.photo_4x6_qty}</span>
+                                </div>
+                              )}
+                              {o.a4_qty > 0 && (
+                                <div className="bg-white rounded-xl p-2.5 border border-[#D9A3AA]/15 text-center">
+                                  <span className="text-[#4A4A4A]/50 block">صور A4</span>
+                                  <span className="font-black text-base text-[#4A4A4A]">{o.a4_qty}</span>
+                                </div>
+                              )}
+                              {o.album_qty > 0 && (
+                                <div className="bg-white rounded-xl p-2.5 border border-[#C5A059]/20 text-center col-span-2">
+                                  <span className="text-[#C5A059]/70 block">ألبوم × {o.album_qty}</span>
+                                  <span className="font-black text-base text-[#C5A059]">{o.album_price} <RiyalSign /></span>
+                                </div>
+                              )}
+                            </div>
+
+                            {o.notes && (
+                              <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 text-xs text-amber-800">
+                                <span className="font-bold">📝 ملاحظات: </span>{o.notes}
+                              </div>
+                            )}
+
+                            {/* المبلغ المتبقي */}
+                            <div className={`p-3 rounded-xl flex justify-between items-center text-sm font-bold ${rem > 0.5 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
+                              <span>{rem > 0.5 ? '💳 المتبقي للسداد' : '✅ الطلب مدفوع بالكامل'}</span>
+                              {rem > 0.5 && <span>{rem.toFixed(2)} <RiyalSign /></span>}
+                            </div>
+                          </>
                         )}
-
-                        {/* المبلغ المتبقي */}
-                        <div className={`p-3 rounded-xl flex justify-between items-center text-sm font-bold ${rem > 0.5 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
-                          <span>{rem > 0.5 ? '💳 المتبقي للسداد' : '✅ الطلب مدفوع بالكامل'}</span>
-                          {rem > 0.5 && <span>{rem.toFixed(2)} <RiyalSign /></span>}
-                        </div>
                       </div>
                     )}
                   </div>
