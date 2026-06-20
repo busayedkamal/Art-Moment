@@ -15,32 +15,34 @@ const CAT_CONFIG = {
 
 // تحويل صف قاعدة البيانات (snake_case) → حالة React (camelCase)
 const fromDb = (p) => ({
-  id:          p.id,
-  name:        p.name,
-  description: p.description  || '',
-  price:       p.price,
-  category:    p.category,
-  image:       p.image        || null,
-  hoverImage:  p.hover_image  || null,
-  sortOrder:   p.sort_order   ?? 0,
-  inStock:     p.in_stock     ?? true,
+  id:            p.id,
+  name:          p.name,
+  description:   p.description  || '',
+  price:         p.price,
+  category:      p.category,
+  image:         p.image        || null,
+  hoverImage:    p.hover_image  || null,
+  sortOrder:     p.sort_order   ?? 0,
+  inStock:       p.in_stock     ?? true,
+  stockQuantity: p.stock_quantity ?? 0,
 });
 
 // تحويل حالة React (camelCase) → صف قاعدة البيانات (snake_case)
 const toDb = (f) => ({
-  name:        f.name,
-  description: f.description,
-  price:       Number(f.price),
-  category:    f.category,
-  image:       f.image,
-  hover_image: f.hoverImage,
-  sort_order:  Number(f.sortOrder),
-  in_stock:    f.inStock,
+  name:           f.name,
+  description:    f.description,
+  price:          Number(f.price),
+  category:       f.category,
+  image:          f.image,
+  hover_image:    f.hoverImage,
+  sort_order:     Number(f.sortOrder),
+  in_stock:       f.inStock,
+  stock_quantity: Number(f.stockQuantity) || 0,
 });
 
 const initialForm = {
   name: '', description: '', price: '', category: 'albums',
-  image: null, hoverImage: null, sortOrder: 0, inStock: true,
+  image: null, hoverImage: null, sortOrder: 0, inStock: true, stockQuantity: 0,
 };
 
 export default function ProductManagement() {
@@ -272,7 +274,16 @@ export default function ProductManagement() {
 
                   <div className="flex items-end justify-between mb-4">
                     <span className="font-black text-2xl text-[#D9A3AA] leading-none">{product.price} <span className="text-xs">ر.س</span></span>
-                    <span className="text-[10px] text-[#4A4A4A]/40 font-bold">#{product.sortOrder}</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                        product.stockQuantity === 0 ? 'bg-red-100 text-red-600' :
+                        product.stockQuantity <= 5  ? 'bg-amber-100 text-amber-700' :
+                                                      'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        {product.stockQuantity === 0 ? 'نفد' : `${product.stockQuantity} قطعة`}
+                      </span>
+                      <span className="text-[10px] text-[#4A4A4A]/40 font-bold">#{product.sortOrder}</span>
+                    </div>
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t border-[#F8F5F2]">
@@ -413,14 +424,22 @@ export default function ProductManagement() {
                 </div>
               </div>
 
-              {/* الترتيب + المخزون */}
-              <div className="grid grid-cols-2 gap-4 border-t border-[#F8F5F2] pt-4">
+              {/* الترتيب + الكمية + المخزون */}
+              <div className="grid grid-cols-3 gap-4 border-t border-[#F8F5F2] pt-4">
                 <div>
                   <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">ترتيب العرض</label>
                   <input
                     type="number" min="0" dir="ltr" value={form.sortOrder}
                     onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value }))}
                     className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA] text-center font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">الكمية المتوفرة <span className="text-red-500">*</span></label>
+                  <input
+                    type="number" min="0" dir="ltr" value={form.stockQuantity}
+                    onChange={e => setForm(f => ({ ...f, stockQuantity: parseInt(e.target.value) || 0 }))}
+                    className="w-full bg-[#F8F5F2] border border-[#C5A059]/40 rounded-xl px-4 py-2.5 outline-none focus:border-[#C5A059] text-center font-black text-[#C5A059] text-lg"
                   />
                 </div>
                 <div>
@@ -433,7 +452,7 @@ export default function ProductManagement() {
                       {form.inStock ? <Check size={16} /> : <X size={16} />}
                     </div>
                     <span className={`text-xs font-black ${form.inStock ? 'text-emerald-700' : 'text-gray-500'}`}>
-                      {form.inStock ? 'متاح للبيع' : 'نفد المخزون'}
+                      {form.inStock ? 'متاح' : 'نفد'}
                     </span>
                   </div>
                 </div>
