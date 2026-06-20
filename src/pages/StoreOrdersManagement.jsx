@@ -170,7 +170,7 @@ export default function StoreOrdersManagement() {
 
       const msg =
         `مرحباً *${order.customer_name}* 📦\n\n` +
-        `تم شحن طلبك رقم *#${String(order.id).slice(0, 8)}* بنجاح!\n\n` +
+        `تم شحن طلبك رقم *#${String(order.id).slice(0, 6)}* بنجاح!\n\n` +
         `شركة الشحن: *${courier}*\n` +
         `رقم التتبع: *${tracking}*\n` +
         (trackingUrl ? `\nيمكنك تتبع مسار شحنتك لحظة بلحظة عبر الرابط التالي:\n${trackingUrl}\n` : '') +
@@ -384,7 +384,7 @@ export default function StoreOrdersManagement() {
                 {filteredOrders.map(order => (
                   <tr key={order.id} className="hover:bg-[#F8F5F2]/60 transition-colors">
                     <td className="py-3.5 px-5 font-mono text-xs text-[#4A4A4A]/50">
-                      #{order.id.toString().slice(0, 8)}
+                      #{order.id.toString().slice(0, 6)}
                     </td>
                     <td className="py-3.5 px-4 font-bold">{order.customer_name}</td>
                     <td className="py-3.5 px-4 font-mono text-sm text-[#4A4A4A]/70">{order.phone}</td>
@@ -476,7 +476,7 @@ export default function StoreOrdersManagement() {
                 </button>
                 <div>
                   <h2 className="font-black text-base flex items-center gap-2">تفاصيل الطلب</h2>
-                  <p className="text-xs font-mono text-[#4A4A4A]/50">#{selectedOrder.id.toString().slice(0, 8)}</p>
+                  <p className="text-xs font-mono text-[#4A4A4A]/50">#{selectedOrder.id.toString().slice(0, 6)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

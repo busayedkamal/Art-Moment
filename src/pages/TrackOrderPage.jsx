@@ -365,7 +365,7 @@ export default function TrackOrderPage() {
                 </div>
                 <div className="text-left">
                   <p className="text-[10px] text-[#4A4A4A]/50 font-bold uppercase tracking-wide mb-0.5">رقم الطلب</p>
-                  <p className="font-mono font-black text-[#4A4A4A]/70 text-sm">#{order.id.slice(0, 8)}</p>
+                  <p className="font-mono font-black text-[#4A4A4A]/70 text-sm">#{order.id.slice(0, 6)}</p>
                 </div>
               </div>
 
@@ -896,7 +896,7 @@ export default function TrackOrderPage() {
           {/* 3. الدعم الفني */}
           <a
             href={`https://api.whatsapp.com/send?phone=966569663697&text=${encodeURIComponent(
-              order ? `مرحباً لحظة فن، لدي استفسار بخصوص طلبي رقم #${order.id.slice(0, 8)}` : `مرحباً لحظة فن، لدي استفسار`
+              order ? `مرحباً لحظة فن، لدي استفسار بخصوص طلبي رقم #${order.id.slice(0, 6)}` : `مرحباً لحظة فن، لدي استفسار`
             )}`}
             target="_blank"
             rel="noopener noreferrer"

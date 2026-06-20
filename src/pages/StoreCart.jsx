@@ -56,7 +56,7 @@ export default function StoreCart() {
       const msg =
         `مرحباً *${customerName || 'عميلنا العزيز'}* 🌸\n\n` +
         `تم استلام طلبك من متجر لحظة فن بنجاح! 🎉\n` +
-        `رقم الطلب: *#${String(orderId).slice(0, 8)}*\n` +
+        `رقم الطلب: *#${String(orderId).slice(0, 6)}*\n` +
         `الإجمالي: *${totalAmount} ريال*\n\n` +
         `رقم جوالك المسجل: *${formattedPhone}*\n` +
         `رمز التتبع (PIN): *${customerPin}*\n\n` +
