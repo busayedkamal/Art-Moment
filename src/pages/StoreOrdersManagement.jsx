@@ -463,10 +463,10 @@ export default function StoreOrdersManagement() {
       {/* ── Order Details Modal ── */}
       {selectedOrder && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          className="fixed top-0 left-0 w-full h-[100dvh] z-[60] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/40 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && closeModal()}
         >
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden" dir="rtl">
+          <div className="bg-white w-full max-w-2xl rounded-t-[2rem] md:rounded-3xl shadow-2xl max-h-[85dvh] md:max-h-[90dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 md:slide-in-from-bottom-0 md:zoom-in-95 duration-200" dir="rtl">
 
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#D9A3AA]/15 shrink-0 bg-[#F8F5F2]/50">
@@ -730,7 +730,7 @@ export default function StoreOrdersManagement() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-[#D9A3AA]/15 shrink-0">
+            <div className="px-6 pt-4 pb-8 md:pb-4 border-t border-[#D9A3AA]/15 shrink-0 bg-white">
               <button
                 onClick={closeModal}
                 className="w-full py-2.5 rounded-xl bg-[#F8F5F2] text-[#4A4A4A] font-bold text-sm hover:bg-[#D9A3AA]/10 transition-colors"
