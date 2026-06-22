@@ -1,11 +1,9 @@
 // src/LandingPage.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 // ✅ تصحيح المسار: نقطة واحدة لأن الملف في src مباشرة
 import { supabase } from './lib/supabase';
-import RiyalSign from './components/RiyalSign';
 
 import {
   Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck,
@@ -13,22 +11,11 @@ import {
   Upload, AlertTriangle, Loader2, ScanFace, Frame, Eye, Download,
   Share, PlusSquare, Calculator, Sparkles, FileText, MapPin, Phone, Mail, Instagram,
   Ghost, Music, Link2, Plane, Gift, Smartphone, LayoutDashboard,
-  MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet,
-  ShoppingBag, ArrowLeft
+  MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet // 👈 أضفنا أيقونات الباقات هنا
 } from 'lucide-react';
 
 // ✅ تصحيح مسار الصور
 import logo from './assets/logo-art-moment.svg';
-
-// أيقونات السوشيال ميديا
-import instagramIcon from './assets/instagram icon.svg';
-import snapchatIcon from './assets/SnapChat icon.svg';
-import tiktokIcon from './assets/tiktok icon.svg';
-import linktreeIcon from './assets/linktree_icon.svg';
-import whatsappIcon from './assets/whatsapp icon.svg';
-import telegramIcon from './assets/telegram icon.svg';
-import gmailIcon from './assets/gmail icon.svg';
-import printedPhotos from './assets/printed-photos.png';
 
 // --- لوحة الألوان المستخدمة ---
 // الأساسي (وردي): #D9A3AA
@@ -37,15 +24,6 @@ import printedPhotos from './assets/printed-photos.png';
 // النصوص (فاحم): #4A4A4A
 
 export default function LandingPage() {
-  const navigate = useNavigate();
-  const { session } = useAuth();
-
-  // إذا كانت الجلسة نشطة → لوحة التحكم مباشرة، وإلا → صفحة تسجيل الدخول
-  const handleAdminClick = (e) => {
-    e.preventDefault();
-    navigate(session ? '/app/dashboard' : '/admin/login');
-  };
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [activePackage, setActivePackage] = useState(0);
@@ -222,9 +200,9 @@ export default function LandingPage() {
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-[#4A4A4A]/80">
-            <a href="#wallet-packages" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1"><Wallet size={16} className="text-[#C5A059]" /> شحن المحفظة</a>
-            <a href="#packages" className="hover:text-[#D9A3AA] transition-colors">الباقات</a>
-            <a href="#sizes" className="hover:text-[#D9A3AA] transition-colors">الخدمات</a>
+            <a href="#wallet-packages" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1"><Wallet size={16} className="text-[#C5A059]" /> نظام الباقات</a>
+            <a href="#packages" className="hover:text-[#D9A3AA] transition-colors">الخدمات</a>
+            <a href="#sizes" className="hover:text-[#D9A3AA] transition-colors">خدماتنا</a>
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
           </nav>
 
@@ -234,9 +212,9 @@ export default function LandingPage() {
                 <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
               </button>
             )}
-            <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
+            <Link to="/admin/login" className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
               <Lock size={16} />
-            </button>
+            </Link>
             <button className="md:hidden p-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? <X /> : <Menu />}
             </button>
@@ -255,100 +233,45 @@ export default function LandingPage() {
             </Link>
 
             {/* زر دخول المسؤول في القائمة */}
-            <button onClick={(e) => { setIsMobileMenuOpen(false); handleAdminClick(e); }} className="block w-full text-center py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-white hover:text-[#D9A3AA] transition-all flex items-center justify-center gap-2">
+            <Link to="/admin/login" className="block w-full text-center py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-white hover:text-[#D9A3AA] transition-all flex items-center justify-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
               <Lock size={16} /> دخول المسؤول
-            </button>
+            </Link>
           </div>
         )}
       </header>
 
-      {/* --- 1. Hero Section --- */}
-      <section className="relative py-16 md:py-24 overflow-hidden bg-[#4A4A4A] text-white">
+      {/* --- 1. Hero Section (Compact) --- */}
+      <section className="relative pt-12 pb-20 md:pt-16 md:pb-24 overflow-hidden bg-[#4A4A4A] text-white flex justify-center text-center">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D9A3AA]/10 blur-3xl rounded-full translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-1/3 h-full bg-[#C5A059]/10 blur-3xl rounded-full -translate-x-1/2"></div>
 
-        <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
-          <div className="text-center md:text-right space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-xs font-bold border border-[#D9A3AA]/30">
-              <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
-            </div>
-
-            <h1 className="text-4xl md:text-6xl font-black text-white leading-normal md:leading-[1.4]">
-              اطبع أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span><br /> لتبقى للأبد.
-            </h1>
-
-            <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto md:mx-0">
-              حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية.
-              أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر يليق بذكرياتك.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
-              <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
-                <MessageCircle size={20} /> اطلب عبر واتساب
-              </a>
-              <Link to="/track" className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
-                <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
-              </Link>
-            </div>
-
-            <div className="pt-4 flex flex-wrap gap-6 justify-center md:justify-start text-xs font-bold text-white/60">
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> ورق فاخر</span>
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دقة عالية</span>
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دفع عند الاستلام</span>
-            </div>
+        <div className="max-w-3xl mx-auto px-4 relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-xs font-bold border border-[#D9A3AA]/30 mx-auto">
+            <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
           </div>
 
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#D9A3AA]/20 to-[#C5A059]/20 rounded-[2.5rem] rotate-3 transition-transform group-hover:rotate-6 duration-500"></div>
-            <img src={printedPhotos} alt="صور مطبوعة" className="relative z-10 w-full rounded-[2.5rem] shadow-2xl shadow-[#D9A3AA]/10 border-4 border-white/20 transform transition-transform group-hover:-rotate-2 duration-500 object-cover h-[500px]" />
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
+            اطبع أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span> لتبقى للأبد.
+          </h1>
 
-            <div className="absolute bottom-10 -right-6 bg-white p-4 rounded-2xl shadow-xl shadow-[#C5A059]/10 border border-[#F8F5F2] flex items-center gap-3 z-20 animate-bounce-slow">
-              <div className="w-10 h-10 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA]"><Printer size={20} /></div>
-              <div><p className="font-bold text-[#4A4A4A] text-sm">طباعة فورية</p><p className="text-[10px] text-[#C5A059]">جودة 100%</p></div>
-            </div>
+          <p className="text-base md:text-lg text-white/70 leading-relaxed mx-auto max-w-2xl">
+            حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية.
+            أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center pt-2">
+            <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
+              <MessageCircle size={20} /> اطلب عبر واتساب
+            </a>
+            <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
+              <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
+            </Link>
           </div>
-        </div>
-      </section>
 
-      {/* --- 2. بانر متجر لحظة فن الجديد --- */}
-      <section className="py-12 bg-transparent relative z-20 -mt-10 mb-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group border-4 border-white/50">
-
-            {/* خلفية زخرفية */}
-            <div className="absolute top-0 right-0 w-full h-full pointer-events-none overflow-hidden">
-              <div className="absolute -top-24 -right-10 w-72 h-72 bg-white/20 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
-              <div className="absolute -bottom-24 -left-10 w-72 h-72 bg-white/20 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-50"></div>
-            </div>
-
-            {/* النص */}
-            <div className="relative z-10 text-center md:text-right flex-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold border border-white/30 mb-4 backdrop-blur-md shadow-sm">
-                <Sparkles size={14} className="text-white animate-pulse" /> جديد لحظة فن
-              </div>
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-tight">
-                متجر منتجات لحظة فن 🛍️
-              </h2>
-              <p className="text-white/90 text-sm md:text-base max-w-xl leading-relaxed mx-auto md:mx-0">
-                تسوّقي الآن أجمل الألبومات، الإطارات الفاخرة، والملصقات الفنية. اكتشفي كل ما تحتاجينه لإكمال أناقة صورك المطبوعة في مكان واحد!
-              </p>
-            </div>
-
-            {/* الزر */}
-            <div className="relative z-10 shrink-0 w-full md:w-auto">
-              <Link
-                to="/store"
-                className="bg-white text-[#4A4A4A] w-full md:w-auto px-8 py-4 rounded-2xl md:rounded-full font-black flex items-center justify-center gap-3 hover:bg-[#F8F5F2] hover:scale-105 transition-all duration-300 shadow-xl group/btn"
-              >
-                <ShoppingBag size={20} className="text-[#D9A3AA]" />
-                <span className="text-base">تسوقي الآن</span>
-                <div className="bg-[#F8F5F2] p-1.5 rounded-full group-hover/btn:-translate-x-2 transition-transform duration-300">
-                  <ArrowLeft size={16} className="text-[#C5A059]" />
-                </div>
-              </Link>
-            </div>
-
+          <div className="pt-2 flex flex-wrap gap-6 justify-center text-xs font-bold text-white/60">
+            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> ورق فاخر</span>
+            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دقة عالية</span>
+            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دفع عند الاستلام</span>
           </div>
         </div>
       </section>
@@ -383,11 +306,11 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة البرونزية</h3>
               <div className="mb-6">
-                <span className="text-3xl font-black text-orange-600">299</span> <RiyalSign size="0.7em" />
+                <span className="text-3xl font-black text-orange-600">299</span> <span className="text-sm text-[#4A4A4A]/50">ر.س</span>
               </div>
               <div className="bg-white rounded-xl p-4 mb-6 border border-orange-100">
                 <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-2xl font-black text-[#4A4A4A]">333 <RiyalSign size="0.7em" /></span>
+                <span className="text-2xl font-black text-[#4A4A4A]">333 ر.س</span>
               </div>
               <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
                 المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!
@@ -413,11 +336,11 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الفضية</h3>
               <div className="mb-6">
-                <span className="text-4xl font-black text-slate-600">699</span> <RiyalSign size="0.7em" />
+                <span className="text-4xl font-black text-slate-600">699</span> <span className="text-sm text-[#4A4A4A]/50">ر.س</span>
               </div>
               <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
                 <span className="block text-[10px] text-slate-500 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-3xl font-black text-slate-700">808 <RiyalSign size="0.7em" /></span>
+                <span className="text-3xl font-black text-slate-700">808 ر.س</span>
               </div>
               <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
                 المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!
@@ -440,11 +363,11 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الذهبية</h3>
               <div className="mb-6">
-                <span className="text-3xl font-black text-amber-600">999</span> <RiyalSign size="0.7em" />
+                <span className="text-3xl font-black text-amber-600">999</span> <span className="text-sm text-[#4A4A4A]/50">ر.س</span>
               </div>
               <div className="bg-white rounded-xl p-4 mb-6 border border-amber-100">
                 <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                <span className="text-2xl font-black text-[#4A4A4A]">1,202 <RiyalSign size="0.7em" /></span>
+                <span className="text-2xl font-black text-[#4A4A4A]">1,202 ر.س</span>
               </div>
               <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">
                 رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!
@@ -666,12 +589,12 @@ export default function LandingPage() {
                   <div className="w-full md:w-80 bg-white text-[#4A4A4A] rounded-3xl p-8 shadow-2xl transform md:rotate-2">
                     <div className="text-center pb-6 border-b border-[#F8F5F2] mb-6">
                       <span className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wider block mb-1">سعر الصورة الواحدة</span>
-                      <span className="text-5xl font-black text-[#D9A3AA]">{calcResult.unit} <RiyalSign size="0.55em" /></span>
+                      <span className="text-5xl font-black text-[#D9A3AA]">{calcResult.unit} <span className="text-base text-[#4A4A4A]/40 font-medium">ر.س</span></span>
                     </div>
                     <div className="space-y-4 mb-8">
-                      <div className="flex justify-between text-sm font-bold"><span className="text-[#4A4A4A]/60">الإجمالي</span><span>{calcResult.total.toFixed(2)} <RiyalSign /></span></div>
+                      <div className="flex justify-between text-sm font-bold"><span className="text-[#4A4A4A]/60">الإجمالي</span><span>{calcResult.total.toFixed(2)} ر.س</span></div>
                       {calcResult.savings > 0 && (
-                        <div className="flex justify-between text-sm font-bold text-[#C5A059] bg-[#C5A059]/10 px-4 py-2 rounded-xl"><span className="flex items-center gap-1"><Sparkles size={14} /> وفرتي</span><span>{calcResult.savings.toFixed(2)} <RiyalSign /></span></div>
+                        <div className="flex justify-between text-sm font-bold text-[#C5A059] bg-[#C5A059]/10 px-4 py-2 rounded-xl"><span className="flex items-center gap-1"><Sparkles size={14} /> وفرتي</span><span>{calcResult.savings.toFixed(2)} ر.س</span></div>
                       )}
                     </div>
                     <a href={`https://wa.me/966569663697?text=مرحباً، أرغب بطباعة ${calcQty} صورة`} target="_blank" rel="noreferrer" className="block w-full bg-[#4A4A4A] text-white text-center py-4 rounded-xl font-bold hover:bg-[#C5A059] transition-colors shadow-lg">اطلبي بهذا السعر</a>
@@ -790,8 +713,8 @@ export default function LandingPage() {
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none"><div className="absolute -top-1/2 -right-1/2 w-[100rem] h-[100rem] bg-[#D9A3AA] rounded-full blur-3xl"></div></div>
         <div className="max-w-7xl mx-auto px-4 relative z-10">
 
-          <div className="bg-white/80 backdrop-blur-sm w-fit mx-auto p-3 rounded-2xl mb-6 border border-white/20">
-            <img src={logo} alt="Art Moment" className="h-16 w-auto object-contain" />
+          <div className="bg-white/10 w-fit mx-auto p-4 rounded-2xl mb-6 backdrop-blur-sm border border-white/10">
+            <img src={logo} alt="Art Moment" className="h-16 w-auto brightness-0 invert" />
           </div>
 
           <p className="mb-8 max-w-md mx-auto text-white/60">
@@ -800,39 +723,30 @@ export default function LandingPage() {
 
           <div className="flex justify-center gap-6 text-sm font-bold mb-8">
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
-            <Link to="/privacy" className="hover:text-[#D9A3AA] transition-colors">الخصوصية والشروط</Link>
             <Link to="/admin/login" className="hover:text-[#D9A3AA] transition-colors">دخول الموظفين</Link>
           </div>
 
-          <div className="flex items-center justify-center gap-4 flex-wrap mb-8">
-            {[
-              { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966569663697',                alt: 'WhatsApp' },
-              { id: 'telegram',  icon: telegramIcon,  url: 'https://t.me/+966569663697',                alt: 'Telegram' },
-              { id: 'instagram', icon: instagramIcon, url: 'https://www.instagram.com/art.moment26/',   alt: 'Instagram' },
-              { id: 'snapchat',  icon: snapchatIcon,  url: 'https://www.snapchat.com/add/omsayedkamal', alt: 'Snapchat' },
-              { id: 'tiktok',    icon: tiktokIcon,    url: 'https://www.tiktok.com/@art.moment26',      alt: 'TikTok' },
-              { id: 'linktree',  icon: linktreeIcon,  url: 'https://linktr.ee/Art_Moment',              alt: 'Linktree' },
-              { id: 'gmail',     icon: gmailIcon,     url: 'mailto:art.moment26@gmail.com',             alt: 'Gmail' },
-            ].map((social) => (
-              <a
-                key={social.id}
-                href={social.url}
-                target={social.url.startsWith('mailto') ? '_self' : '_blank'}
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-white/5 border border-[#D9A3AA]/20 flex items-center justify-center hover:bg-white/10 hover:-translate-y-1 hover:border-[#D9A3AA]/50 transition-all duration-300"
-              >
-                <img src={social.icon} alt={social.alt} className="w-5 h-5 object-contain" />
-              </a>
-            ))}
+          <div className="flex justify-center flex-wrap gap-4 mb-8">
+            <a href="https://www.instagram.com/art.moment__/" target="_blank" rel="noreferrer" title="Instagram" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-gradient-to-tr hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
+              <Instagram size={22} />
+            </a>
+            <a href="https://www.snapchat.com/add/omsayedkamal" target="_blank" rel="noreferrer" title="Snapchat" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-yellow-400 hover:text-black transition-all border border-white/10 hover:border-transparent">
+              <Ghost size={22} />
+            </a>
+            <a href="https://www.tiktok.com/@ayatalshaqaq" target="_blank" rel="noreferrer" title="TikTok" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-black hover:text-white transition-all border border-white/10 hover:border-transparent">
+              <Music size={22} />
+            </a>
+            <a href="https://linktr.ee/Art_Moment" target="_blank" rel="noreferrer" title="Linktree" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-[#43E660] hover:text-white transition-all border border-white/10 hover:border-transparent">
+              <Link2 size={22} />
+            </a>
+            <a href="mailto:art.moment26@gmail.com" title="Email" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#C5A059] hover:bg-red-500 hover:text-white transition-all border border-white/10 hover:border-transparent">
+              <Mail size={22} />
+            </a>
           </div>
 
-          <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-white/30">
-            <p>© 2026 Art Moment. جميع الحقوق محفوظة.</p>
-            <span className="hidden sm:inline text-white/15">·</span>
-            <Link to="/privacy" className="hover:text-[#D9A3AA] transition-colors font-semibold">
-              سياسة الخصوصية وشروط الاستخدام
-            </Link>
-          </div>
+          <p className="text-xs text-white/30 border-t border-white/10 pt-8">
+            © 2026 Art Moment. جميع الحقوق محفوظة.
+          </p>
         </div>
       </footer>
 
