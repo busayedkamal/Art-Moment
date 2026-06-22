@@ -66,25 +66,26 @@ export default function TrackOrderPage() {
 
   const handleIdSearch = async (e) => {
     e.preventDefault();
-    const cleanId = searchId.replace('#', '').trim();
-    if (!cleanId) { setError('يرجى إدخال رقم الطلب'); return; }
+
+    const cleanInput = searchId.replace('#', '').trim().toLowerCase();
+    if (!cleanInput) { setError('يرجى إدخال رقم الطلب'); return; }
+
+    // أخذ أول 6 أحرف فقط — يعمل حتى لو لصق العميل UUID كاملاً
+    const shortCleanId = cleanInput.slice(0, 6);
 
     setLoading(true); setError(null); setOrdersList([]); setCustomerStats(null);
     try {
       const [printRes, storeRes] = await Promise.all([
-        supabase.from('orders').select('*').ilike('id::text', `${cleanId}%`).maybeSingle(),
-        supabase.from('store_orders').select('*').ilike('id::text', `${cleanId}%`).maybeSingle(),
+        supabase.from('orders').select('*').eq('short_id', shortCleanId).maybeSingle(),
+        supabase.from('store_orders').select('*').eq('short_id', shortCleanId).maybeSingle(),
       ]);
-
-      if (printRes.error && printRes.error.code !== 'PGRST116') console.error('Print Search Error:', printRes.error);
-      if (storeRes.error && storeRes.error.code !== 'PGRST116') console.error('Store Search Error:', storeRes.error);
 
       let foundOrder = null;
       if (printRes.data) foundOrder = { ...printRes.data, order_type: 'print' };
       else if (storeRes.data) foundOrder = { ...storeRes.data, order_type: 'store' };
 
       if (!foundOrder) {
-        setError('لم يتم العثور على طلب بهذا الرقم.');
+        setError('لم يتم العثور على طلب بهذا الرقم، تأكد من الرقم وحاول مجدداً.');
         return;
       }
 
@@ -96,6 +97,7 @@ export default function TrackOrderPage() {
         if (foundOrder.phone) await fetchCustomerStats(foundOrder.phone);
       }
     } catch (err) {
+      console.error('Search Error:', err);
       setError('حدث خطأ أثناء البحث، يرجى المحاولة مجدداً.');
     } finally {
       setLoading(false);
