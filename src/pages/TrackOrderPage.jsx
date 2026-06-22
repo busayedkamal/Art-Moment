@@ -72,9 +72,12 @@ export default function TrackOrderPage() {
     setLoading(true); setError(null); setOrdersList([]); setCustomerStats(null);
     try {
       const [printRes, storeRes] = await Promise.all([
-        supabase.from('orders').select('*').ilike('id', `${cleanId}%`).maybeSingle(),
-        supabase.from('store_orders').select('*').ilike('id', `${cleanId}%`).maybeSingle(),
+        supabase.from('orders').select('*').ilike('id::text', `${cleanId}%`).maybeSingle(),
+        supabase.from('store_orders').select('*').ilike('id::text', `${cleanId}%`).maybeSingle(),
       ]);
+
+      if (printRes.error && printRes.error.code !== 'PGRST116') console.error('Print Search Error:', printRes.error);
+      if (storeRes.error && storeRes.error.code !== 'PGRST116') console.error('Store Search Error:', storeRes.error);
 
       let foundOrder = null;
       if (printRes.data) foundOrder = { ...printRes.data, order_type: 'print' };
