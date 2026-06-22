@@ -291,14 +291,21 @@ export default function StoreIndex() {
       <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#F8F5F2]/90 backdrop-blur-md shadow-sm border-b border-[#D9A3AA]/10' : 'bg-transparent'}`}>
         <div className="w-[96%] max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
 
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Art Moment Logo" className="w-10 h-10 object-contain" />
-            <div className="flex flex-col">
-              <h1 className="text-xl font-black text-[#4A4A4A] leading-none">لحظة فن</h1>
-              <span className="text-[10px] text-[#C5A059] font-bold tracking-widest uppercase">Art Moment</span>
+          {/* Right Side: Mobile Menu + Logo */}
+          <div className="flex items-center gap-1 sm:gap-3">
+            <button className="md:hidden p-1 -mr-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <img src={logo} alt="Art Moment Logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
+              <div className="flex flex-col">
+                <h1 className="text-lg sm:text-xl font-black text-[#4A4A4A] leading-none">لحظة فن</h1>
+                <span className="text-[9px] sm:text-[10px] text-[#C5A059] font-bold tracking-widest uppercase">Art Moment</span>
+              </div>
             </div>
           </div>
 
+          {/* Center: Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#4A4A4A]/80">
             <a href="#products" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1.5">
               <ShoppingBag size={15} className="text-[#D9A3AA]" /> المتجر
@@ -311,7 +318,8 @@ export default function StoreIndex() {
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Left Side: Icons */}
+          <div className="flex items-center gap-3 sm:gap-4">
             {(isInstallable || isIOS) && (
               <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#D9A3AA] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C5A059] transition-all">
                 <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
@@ -329,10 +337,6 @@ export default function StoreIndex() {
 
             <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
               <Lock size={16} />
-            </button>
-
-            <button className="md:hidden p-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              {isMobileMenuOpen ? <X /> : <Menu />}
             </button>
           </div>
         </div>
@@ -377,7 +381,7 @@ export default function StoreIndex() {
 
             <div className="flex flex-col sm:flex-row items-center gap-3 justify-center pt-2">
               <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
-                <MessageCircle size={20} /> اطلب عبر واتساب
+                <MessageCircle size={20} /> واتساب
               </a>
               <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
                 <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
