@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import fallbackLogo from '../assets/logo.png';
 
 // ─── إعدادات الفئات ──────────────────────────────────────────────
 const CAT_CONFIG = {
@@ -253,7 +254,7 @@ export default function ProductManagement() {
                 <div className="h-48 relative bg-gradient-to-br from-[#D9A3AA]/10 to-[#C5A059]/10 flex items-center justify-center overflow-hidden">
                   {product.image
                     ? <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    : <cat.icon size={48} className="text-[#D9A3AA]/30" />
+                    : <img src={fallbackLogo} alt={product.name} className="w-full h-full object-contain p-6 opacity-30 grayscale group-hover:scale-105 transition-transform duration-500 mix-blend-multiply" />
                   }
                   <div className="absolute top-3 left-3">
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm ${product.inStock ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>

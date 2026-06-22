@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import logo from '../assets/logo-art-moment.svg';
+import fallbackLogo from '../assets/logo.png';
 import instagramIcon from '../assets/instagram icon.svg';
 import snapchatIcon from '../assets/SnapChat icon.svg';
 import tiktokIcon from '../assets/tiktok icon.svg';
@@ -460,7 +461,7 @@ export default function StoreIndex() {
                       )}
                     </>
                   ) : (
-                    <ImageIcon size={40} className="text-[#D9A3AA]/30" />
+                    <img src={fallbackLogo} alt={product.name} className="absolute inset-0 w-full h-full object-contain p-8 opacity-20 grayscale mix-blend-multiply" />
                   )}
                   {getProductQty(product.id) > 0 && (
                     <span className="absolute top-2 right-2 bg-[#C5A059] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
@@ -937,7 +938,7 @@ export default function StoreIndex() {
               <div className="bg-[#F8F5F2] aspect-square md:aspect-auto md:min-h-80 relative flex items-center justify-center overflow-hidden">
                 {selectedProduct.image
                   ? <img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
-                  : <ImageIcon size={60} className="text-[#D9A3AA]/30" />}
+                  : <img src={fallbackLogo} alt={selectedProduct.name} className="w-full h-full object-contain p-12 opacity-20 grayscale mix-blend-multiply" />}
               </div>
               <div className="p-6 md:p-8 flex flex-col">
                 <span className="text-[#D9A3AA] text-xs font-bold px-3 py-1 bg-[#D9A3AA]/10 rounded-full w-max mb-3">
