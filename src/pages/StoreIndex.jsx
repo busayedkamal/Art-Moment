@@ -354,39 +354,41 @@ export default function StoreIndex() {
       </header>
 
       {/* ══════════════════════════════════
-          1. HERO SECTION (Compact)
+          1. HERO SECTION (Banner Style)
       ══════════════════════════════════ */}
-      <section className="relative pt-12 pb-20 md:pt-16 md:pb-24 overflow-hidden bg-[#4A4A4A] text-white flex justify-center text-center">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D9A3AA]/10 blur-3xl rounded-full translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-1/3 h-full bg-[#C5A059]/10 blur-3xl rounded-full -translate-x-1/2"></div>
+      <section className="pt-6 pb-8 max-w-7xl mx-auto px-4">
+        <div className="relative bg-[#4A4A4A] rounded-[2.5rem] overflow-hidden p-8 md:py-12 shadow-xl border-[4px] border-white/60 flex justify-center text-center text-white">
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D9A3AA]/20 blur-3xl rounded-full translate-x-1/2 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-1/3 h-full bg-[#C5A059]/20 blur-3xl rounded-full -translate-x-1/2 pointer-events-none"></div>
 
-        <div className="max-w-3xl mx-auto px-4 relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-xs font-bold border border-[#D9A3AA]/30 mx-auto">
-            <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
-          </div>
+          <div className="max-w-2xl mx-auto relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-[10px] sm:text-xs font-bold border border-[#D9A3AA]/30 mx-auto shadow-sm">
+              <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
+            </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
-            اطبع أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span> لتبقى للأبد.
-          </h1>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight md:leading-tight">
+              اطبع أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span> لتبقى للأبد.
+            </h1>
 
-          <p className="text-base md:text-lg text-white/70 leading-relaxed mx-auto max-w-2xl">
-            حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية.
-            أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر.
-          </p>
+            <p className="text-sm md:text-base text-white/70 leading-relaxed mx-auto max-w-lg">
+              حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية.
+              أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center pt-2">
-            <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
-              <MessageCircle size={20} /> اطلب عبر واتساب
-            </a>
-            <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
-              <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
-            </Link>
-          </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center pt-2">
+              <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
+                <MessageCircle size={20} /> اطلب عبر واتساب
+              </a>
+              <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
+                <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
+              </Link>
+            </div>
 
-          <div className="pt-2 flex flex-wrap gap-6 justify-center text-xs font-bold text-white/60">
-            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> ورق فاخر</span>
-            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دقة عالية</span>
-            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دفع عند الاستلام</span>
+            <div className="pt-2 flex flex-wrap gap-4 justify-center text-[10px] sm:text-xs font-bold text-white/60">
+              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> ورق فاخر</span>
+              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دقة عالية</span>
+              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دفع عند الاستلام</span>
+            </div>
           </div>
         </div>
       </section>
