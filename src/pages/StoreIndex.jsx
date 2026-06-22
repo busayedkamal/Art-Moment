@@ -21,7 +21,6 @@ import linktreeIcon from '../assets/linktree_icon.svg';
 import whatsappIcon from '../assets/whatsapp icon.svg';
 import telegramIcon from '../assets/telegram icon.svg';
 import gmailIcon from '../assets/gmail icon.svg';
-import printedPhotos from '../assets/printed-photos.png';
 
 const fromDb = (p) => ({
   id:         p.id,
@@ -355,56 +354,39 @@ export default function StoreIndex() {
       </header>
 
       {/* ══════════════════════════════════
-          1. HERO SECTION
+          1. HERO SECTION (Compact)
       ══════════════════════════════════ */}
-      <section className="relative py-16 md:py-24 overflow-hidden bg-[#4A4A4A] text-white">
+      <section className="relative pt-12 pb-20 md:pt-16 md:pb-24 overflow-hidden bg-[#4A4A4A] text-white flex justify-center text-center">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D9A3AA]/10 blur-3xl rounded-full translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-1/3 h-full bg-[#C5A059]/10 blur-3xl rounded-full -translate-x-1/2"></div>
 
-        <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
-          <div className="text-center md:text-right space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-xs font-bold border border-[#D9A3AA]/30">
-              <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
-            </div>
-
-            <h1 className="text-4xl md:text-6xl font-black text-white leading-normal md:leading-[1.4]">
-              اطبع أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span><br /> لتبقى للأبد.
-            </h1>
-
-            <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto md:mx-0">
-              حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية. أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر يليق بذكرياتك.
-            </p>
-
-            <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 justify-center md:justify-start">
-              <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer"
-                className="w-full sm:w-auto px-7 py-4 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg">
-                <MessageCircle size={20} /> اطلب عبر واتساب
-              </a>
-              <a href="#products"
-                className="w-full sm:w-auto px-7 py-4 rounded-full bg-[#D9A3AA] hover:bg-[#C5A059] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg">
-                <ShoppingBag size={20} /> تسوق المنتجات
-              </a>
-              <Link to="/track"
-                className="w-full sm:w-auto px-7 py-4 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
-                <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
-              </Link>
-            </div>
-
-            <div className="pt-2 flex flex-wrap gap-6 justify-center md:justify-start text-xs font-bold text-white/60">
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> ورق فاخر</span>
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دقة عالية</span>
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دفع عند الاستلام</span>
-            </div>
+        <div className="max-w-3xl mx-auto px-4 relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-xs font-bold border border-[#D9A3AA]/30 mx-auto">
+            <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
           </div>
 
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#D9A3AA]/20 to-[#C5A059]/20 rounded-[2.5rem] rotate-3 transition-transform group-hover:rotate-6 duration-500"></div>
-            <img src={printedPhotos} alt="صور مطبوعة"
-              className="relative z-10 w-full rounded-[2.5rem] shadow-2xl shadow-[#D9A3AA]/10 border-4 border-white/20 transform transition-transform group-hover:-rotate-2 duration-500 object-cover h-[480px]" />
-            <div className="absolute bottom-10 -right-6 bg-white p-4 rounded-2xl shadow-xl shadow-[#C5A059]/10 border border-[#F8F5F2] flex items-center gap-3 z-20">
-              <div className="w-10 h-10 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA]"><Printer size={20} /></div>
-              <div><p className="font-bold text-[#4A4A4A] text-sm">طباعة فورية</p><p className="text-[10px] text-[#C5A059]">جودة 100%</p></div>
-            </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
+            اطبع أجمل <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظاتك</span> لتبقى للأبد.
+          </h1>
+
+          <p className="text-base md:text-lg text-white/70 leading-relaxed mx-auto max-w-2xl">
+            حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية.
+            أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center pt-2">
+            <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
+              <MessageCircle size={20} /> اطلب عبر واتساب
+            </a>
+            <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
+              <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
+            </Link>
+          </div>
+
+          <div className="pt-2 flex flex-wrap gap-6 justify-center text-xs font-bold text-white/60">
+            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> ورق فاخر</span>
+            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دقة عالية</span>
+            <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دفع عند الاستلام</span>
           </div>
         </div>
       </section>
