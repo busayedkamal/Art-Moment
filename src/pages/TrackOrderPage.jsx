@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  Search, Package, Clock, CheckCircle, Truck, 
-  AlertCircle, Banknote, Wallet, FileText, 
-  MapPin, Calendar, UserCheck, Home, 
-  Image, BookOpen, History, ShieldCheck, Copy, MessageCircle, Phone
+  Search, Package, Clock, CheckCircle, Truck,
+  AlertCircle, Banknote, Wallet, FileText,
+  MapPin, Calendar, UserCheck, Home,
+  Image, BookOpen, History, ShieldCheck, Copy, MessageCircle, Phone, ShoppingBag
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
@@ -77,7 +77,7 @@ export default function TrackOrderPage() {
     try {
       const [printRes, storeRes] = await Promise.all([
         supabase.from('orders').select('*').eq('short_id', shortCleanId).maybeSingle(),
-        supabase.from('store_orders').select('*').eq('short_id', shortCleanId).maybeSingle(),
+        supabase.from('store_orders').select(`*, items:store_order_items(quantity, price, product:products(name, image))`).eq('short_id', shortCleanId).maybeSingle(),
       ]);
 
       let foundOrder = null;
@@ -128,7 +128,7 @@ export default function TrackOrderPage() {
 
       const [printRes, storeRes] = await Promise.all([
         supabase.from('orders').select('*').or(phoneQuery),
-        supabase.from('store_orders').select('*').or(phoneQuery)
+        supabase.from('store_orders').select(`*, items:store_order_items(quantity, price, product:products(name, image))`).or(phoneQuery)
       ]);
 
       const pOrders = (printRes.data || []).map(o => ({ ...o, order_type: 'print' }));
@@ -396,6 +396,34 @@ export default function TrackOrderPage() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Store Order Items */}
+                    {order.order_type === 'store' && order.items && order.items.length > 0 && (
+                      <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 p-5 mb-4 shadow-sm">
+                        <h4 className="text-sm font-bold text-[#4A4A4A] mb-3 flex items-center gap-2">
+                          <ShoppingBag size={16} className="text-[#C5A059]" /> المنتجات المطلوبة
+                        </h4>
+                        <div className="space-y-3">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-3 bg-[#F8F5F2] p-2.5 rounded-xl border border-[#D9A3AA]/10 hover:border-[#C5A059]/30 transition-colors">
+                              <div className="w-14 h-14 rounded-lg bg-white overflow-hidden shrink-0 border border-[#D9A3AA]/20 flex items-center justify-center p-1">
+                                {item.product?.image
+                                  ? <img src={item.product.image} alt={item.product?.name} className="w-full h-full object-cover rounded-md" />
+                                  : <Package size={24} className="text-[#D9A3AA]/30" />
+                                }
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-bold text-[#4A4A4A] leading-tight">{item.product?.name || 'منتج محذوف'}</p>
+                                <div className="flex justify-between items-center mt-2">
+                                  <span className="text-xs text-[#4A4A4A]/60 bg-white px-2 py-0.5 rounded-md border border-[#D9A3AA]/10">الكمية: <span className="font-bold text-[#D9A3AA]">{item.quantity}</span></span>
+                                  <span className="text-xs font-black text-[#4A4A4A]">{Number(item.price).toFixed(2)} ر.س</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
