@@ -289,7 +289,7 @@ export default function StoreIndex() {
           NAVBAR
       ══════════════════════════════════ */}
       <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#F8F5F2]/90 backdrop-blur-md shadow-sm border-b border-[#D9A3AA]/10' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="w-[96%] max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
 
           <div className="flex items-center gap-3">
             <img src={logo} alt="Art Moment Logo" className="w-10 h-10 object-contain" />
@@ -356,12 +356,12 @@ export default function StoreIndex() {
       {/* ══════════════════════════════════
           1. HERO SECTION (Banner Style)
       ══════════════════════════════════ */}
-      <section className="pt-6 pb-8 max-w-7xl mx-auto px-4">
+      <section className="pt-6 pb-8 w-[96%] max-w-[1600px] mx-auto px-4">
         <div className="relative bg-[#4A4A4A] rounded-[2.5rem] overflow-hidden p-8 md:py-12 shadow-xl border-[4px] border-white/60 flex justify-center text-center text-white">
           <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D9A3AA]/20 blur-3xl rounded-full translate-x-1/2 pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 w-1/3 h-full bg-[#C5A059]/20 blur-3xl rounded-full -translate-x-1/2 pointer-events-none"></div>
 
-          <div className="max-w-2xl mx-auto relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+          <div className="max-w-4xl mx-auto relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-[10px] sm:text-xs font-bold border border-[#D9A3AA]/30 mx-auto shadow-sm">
               <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
             </div>
@@ -858,7 +858,7 @@ export default function StoreIndex() {
           9. PROFESSIONAL FOOTER
       ══════════════════════════════════ */}
       <footer className="bg-white border-t border-[#D9A3AA]/20 pt-16 pb-8">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div className="w-[96%] max-w-[1600px] mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img src={logo} alt="لحظة فن" className="w-10 h-10 object-contain grayscale opacity-80" />
@@ -911,7 +911,7 @@ export default function StoreIndex() {
             </div>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 text-center border-t border-[#F8F5F2] pt-8">
+        <div className="w-[96%] max-w-[1600px] mx-auto px-4 text-center border-t border-[#F8F5F2] pt-8">
           <p className="text-xs font-bold text-[#4A4A4A]/50">جميع الحقوق محفوظة لمتجر لحظة فن © {new Date().getFullYear()}</p>
         </div>
       </footer>
