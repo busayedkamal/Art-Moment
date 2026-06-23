@@ -63,6 +63,20 @@ export default function Dashboard() {
           .select('phone, points_balance')
           .order('id', { ascending: true }); // الأحدث (id أعلى) يفوز عند التكرار
 
+        // 3b. جلب طلبات المتجر لدمجها في الإجماليات
+        const { data: storeOrders } = await supabase
+          .from('store_orders')
+          .select('total_amount, amount_paid');
+
+        let storeSalesAmount = 0, storePaidAmount = 0, storeDebtAmount = 0;
+        (storeOrders || []).forEach(order => {
+          const total = Number(order.total_amount || 0);
+          const paid  = Number(order.amount_paid  || 0);
+          storeSalesAmount += total;
+          storePaidAmount  += paid;
+          storeDebtAmount  += Math.max(0, total - paid);
+        });
+
         // 4. جلب معاملات الباقات لحساب رصيد الباقات بشكل منفصل
         const { data: packageTransactions, error: transactionsError } = await supabase
           .from('wallet_transactions')
@@ -136,10 +150,13 @@ export default function Dashboard() {
           (o.total_amount - (o.deposit || 0) - Number(o.wallet_used || 0)) > 0.5
         );
 
-        setStats({ 
-          totalOrders, totalRevenue, totalCashReceived, totalDebt, totalExpenses, 
+        setStats({
+          totalOrders, totalExpenses,
+          totalRevenue:      totalRevenue      + storeSalesAmount,
+          totalCashReceived: totalCashReceived + storePaidAmount,
+          totalDebt:         totalDebt         + storeDebtAmount,
           totalWalletBalance, totalPointsBalance, totalPackageBalance, packagesTotal,
-          pendingOrders, newOrders: newOrdersCount, lateOrders 
+          pendingOrders, newOrders: newOrdersCount, lateOrders,
         });
         setRecentNewOrders(recentNew);
         setUnpaidDelivered(debts); // حفظ القائمة

@@ -1,9 +1,10 @@
 // src/pages/Reports.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { 
-  BarChart3, Calendar, Download, TrendingDown, TrendingUp, 
-  PieChart as PieIcon, Activity, CheckCircle2, MapPin, Crown, Users, Copy, ChevronDown, Wallet
+import {
+  BarChart3, Calendar, Download, TrendingDown, TrendingUp,
+  PieChart as PieIcon, Activity, CheckCircle2, MapPin, Crown, Users, Copy, ChevronDown, Wallet,
+  ShoppingBag, Banknote
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -16,8 +17,9 @@ import toast from 'react-hot-toast';
 
 export default function Reports() {
   const [loading, setLoading] = useState(true);
-  const [payments, setPayments] = useState([]); 
-  const [orders, setOrders] = useState([]); 
+  const [payments, setPayments] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [storeOrders, setStoreOrders] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [wallets, setWallets] = useState([]);
   const [packageTransactions, setPackageTransactions] = useState([]);
@@ -36,6 +38,8 @@ export default function Reports() {
         const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('*').in('type', ['package_charge', 'package_add', 'package_redeem']);
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
+        const { data: storeOrdersData } = await supabase.from('store_orders').select('total_amount, amount_paid');
+        setStoreOrders(storeOrdersData || []);
         setPayments(paymentsData || []);
         setOrders(ordersData || []);
         setExpenses(expensesData || []);
@@ -244,6 +248,18 @@ export default function Reports() {
     };
   }, [payments, expenses, orders, wallets, packageTransactions, settings]);
 
+  const storeStats = useMemo(() => {
+    return storeOrders.reduce((acc, order) => {
+      const total = Number(order.total_amount || 0);
+      const paid  = Number(order.amount_paid  || 0);
+      return {
+        sales: acc.sales + total,
+        paid:  acc.paid  + paid,
+        debt:  acc.debt  + Math.max(0, total - paid),
+      };
+    }, { sales: 0, paid: 0, debt: 0 });
+  }, [storeOrders]);
+
   // ألوان الرسوم البيانية — متوافقة مع هوية لحظة فن
   const CHART_COLORS = ['#D9A3AA', '#C5A059', '#4A4A4A', '#ef4444', '#C48A92'];
 
@@ -413,6 +429,36 @@ export default function Reports() {
           <span className="text-xs text-[#4A4A4A]/40">من إجمالي الإيرادات</span>
         </div>
 
+      </div>
+
+      {/* --- Store Financials Section --- */}
+      <div className="mt-8 mb-4">
+        <h3 className="text-lg font-black text-[#4A4A4A] flex items-center gap-2 mb-4">
+          <ShoppingBag className="text-[#C5A059]" size={20} /> أداء المتجر (المنتجات الجاهزة)
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">مبيعات المتجر</p>
+              <h3 className="text-xl font-black text-[#4A4A4A]">{storeStats.sales.toFixed(2)} <span className="text-xs">ر.س</span></h3>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-[#D9A3AA]/10 flex items-center justify-center text-[#D9A3AA]"><ShoppingBag size={20} /></div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs text-emerald-600/60 font-bold mb-1">المُحصّل من المتجر</p>
+              <h3 className="text-xl font-black text-emerald-600">{storeStats.paid.toFixed(2)} <span className="text-xs">ر.س</span></h3>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500"><Banknote size={20} /></div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs text-red-500/60 font-bold mb-1">مديونيات المتجر</p>
+              <h3 className="text-xl font-black text-red-500">{storeStats.debt.toFixed(2)} <span className="text-xs">ر.س</span></h3>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-400"><Wallet size={20} /></div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
