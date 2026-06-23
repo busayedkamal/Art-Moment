@@ -227,12 +227,13 @@ export default function StoreOrdersManagement() {
   const handleSaveEdit = async () => {
     const toastId = toast.loading('جاري حفظ التعديلات...');
     try {
+      const { amount_paid: _skip, ...safeEditForm } = editForm;
       const { error } = await supabase
         .from('store_orders')
-        .update(editForm)
+        .update(safeEditForm)
         .eq('id', selectedOrder.id);
       if (error) throw error;
-      const updatedOrder = { ...selectedOrder, ...editForm };
+      const updatedOrder = { ...selectedOrder, ...safeEditForm };
       setSelectedOrder(updatedOrder);
       setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
       setIsEditing(false);
@@ -359,7 +360,7 @@ export default function StoreOrdersManagement() {
       return {
         totalOrdersValue:   acc.totalOrdersValue   + total,
         totalPaidValue:     acc.totalPaidValue     + paid,
-        totalRemainingValue: acc.totalRemainingValue + (total - paid),
+        totalRemainingValue: acc.totalRemainingValue + Math.max(0, total - paid),
       };
     }, { totalOrdersValue: 0, totalPaidValue: 0, totalRemainingValue: 0 });
   }, [orders]);
@@ -621,10 +622,6 @@ export default function StoreOrdersManagement() {
                       <div>
                         <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الإجمالي (ر.س)</label>
                         <input type="number" value={editForm.total_amount} onChange={e => setEditForm({...editForm, total_amount: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">المبلغ المدفوع (ر.س)</label>
-                        <input type="number" value={editForm.amount_paid} onChange={e => setEditForm({...editForm, amount_paid: e.target.value})} className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-400" />
                       </div>
                       <div>
                         <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">المدينة</label>
