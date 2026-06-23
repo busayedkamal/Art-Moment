@@ -13,6 +13,7 @@ import {
   ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale
 } from 'lucide-react';
 
+import promoVideo from '../assets/printing-quality.mp4';
 import logo from '../assets/logo-art-moment.svg';
 import fallbackLogo from '../assets/logo.png';
 import instagramIcon from '../assets/instagram icon.svg';
@@ -420,7 +421,7 @@ export default function StoreIndex() {
             playsInline
             className="absolute inset-0 w-full h-full object-cover opacity-80 transition-transform duration-1000 group-hover:scale-105"
           >
-            <source src="https://cdn.pixabay.com/video/2020/05/21/40008-424855900_large.mp4" type="video/mp4" />
+            <source src={promoVideo} type="video/mp4" />
             متصفحك لا يدعم تشغيل الفيديو.
           </video>
 
