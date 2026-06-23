@@ -226,15 +226,19 @@ export default function ProductManagement() {
         >
           الكل ({products.length})
         </button>
-        {Object.entries(CAT_CONFIG).map(([key, cfg]) => (
-          <button
-            key={key}
-            onClick={() => setCatFilter(key)}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap border ${catFilter === key ? `${cfg.bg} text-white border-transparent` : `bg-white ${cfg.text} border-[#D9A3AA]/20 hover:bg-[#F8F5F2]`}`}
-          >
-            <cfg.icon size={14} /> {cfg.label} ({products.filter(p => p.category === key).length})
-          </button>
-        ))}
+        {dynamicCategories.map(key => {
+          const cfg = getCatStyle(key);
+          const Icon = cfg.icon;
+          return (
+            <button
+              key={key}
+              onClick={() => setCatFilter(key)}
+              className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap border ${catFilter === key ? `${cfg.bg} text-white border-transparent` : `bg-white ${cfg.text} border-[#D9A3AA]/20 hover:bg-[#F8F5F2]`}`}
+            >
+              <Icon size={14} /> {cfg.label} ({products.filter(p => p.category === key).length})
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Products Grid ── */}
@@ -366,21 +370,36 @@ export default function ProductManagement() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-[#4A4A4A]/60 block mb-2">الفئة (اختر أو اكتب فئة جديدة) <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    list="dynamic-categories"
-                    value={form.category}
-                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                    placeholder="مثال: أكواب، تيشرتات..."
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] transition-colors"
-                    required
-                  />
-                  <datalist id="dynamic-categories">
-                    {dynamicCategories.map(cat => (
-                      <option key={cat} value={cat} />
-                    ))}
-                  </datalist>
+                  <label className="text-[10px] font-bold text-[#4A4A4A]/60 block mb-2">الفئة <span className="text-red-500">*</span></label>
+                  <div className="space-y-2">
+                    <select
+                      value={dynamicCategories.includes(form.category) ? form.category : '__NEW__'}
+                      onChange={e => {
+                        if (e.target.value !== '__NEW__') {
+                          setForm(f => ({ ...f, category: e.target.value }));
+                        } else {
+                          setForm(f => ({ ...f, category: '' }));
+                        }
+                      }}
+                      className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] transition-colors cursor-pointer"
+                    >
+                      <option value="" disabled>اختر الفئة...</option>
+                      {dynamicCategories.map(cat => (
+                        <option key={cat} value={cat}>{getCatStyle(cat).label}</option>
+                      ))}
+                      <option value="__NEW__">➕ إضافة فئة جديدة...</option>
+                    </select>
+                    {!dynamicCategories.includes(form.category) && (
+                      <input
+                        type="text"
+                        value={form.category}
+                        onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                        placeholder="اكتب اسم الفئة الجديدة..."
+                        className="w-full bg-white border-2 border-[#C5A059]/50 rounded-xl px-4 py-3 outline-none focus:border-[#C5A059] transition-colors"
+                        required
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
