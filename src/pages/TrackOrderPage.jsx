@@ -77,7 +77,7 @@ export default function TrackOrderPage() {
     try {
       const [printRes, storeRes] = await Promise.all([
         supabase.from('orders').select('*').eq('short_id', shortCleanId).maybeSingle(),
-        supabase.from('store_orders').select(`*, store_order_items(quantity, price, products(name, image))`).eq('short_id', shortCleanId).maybeSingle(),
+        supabase.from('store_orders').select(`*, store_order_items(quantity, price_at_time, products(name, image))`).eq('short_id', shortCleanId).maybeSingle(),
       ]);
 
       let foundOrder = null;
@@ -128,7 +128,7 @@ export default function TrackOrderPage() {
 
       const [printRes, storeRes] = await Promise.all([
         supabase.from('orders').select('*').or(phoneQuery),
-        supabase.from('store_orders').select(`*, store_order_items(quantity, price, products(name, image))`).or(phoneQuery)
+        supabase.from('store_orders').select(`*, store_order_items(quantity, price_at_time, products(name, image))`).or(phoneQuery)
       ]);
 
       const pOrders = (printRes.data || []).map(o => ({ ...o, order_type: 'print' }));
@@ -420,7 +420,7 @@ export default function TrackOrderPage() {
                                   <p className="text-sm font-bold text-[#4A4A4A] leading-tight">{productInfo?.name || 'منتج محذوف'}</p>
                                   <div className="flex justify-between items-center mt-2">
                                     <span className="text-xs text-[#4A4A4A]/60 bg-white px-2 py-0.5 rounded-md border border-[#D9A3AA]/10">الكمية: <span className="font-bold text-[#D9A3AA]">{item.quantity}</span></span>
-                                    <span className="text-xs font-black text-[#4A4A4A]">{Number(item.price).toFixed(2)} ر.س</span>
+                                    <span className="text-xs font-black text-[#4A4A4A]">{Number(item.price_at_time || 0).toFixed(2)} ر.س</span>
                                   </div>
                                 </div>
                               </div>
