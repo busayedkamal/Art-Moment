@@ -1,10 +1,10 @@
 // src/pages/StoreOrdersManagement.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Eye, Clock, CheckCircle, Package, Truck, X,
   ArrowLeft, RotateCcw, Printer, FileText, AlertCircle,
   ShoppingBag, Phone, User, StickyNote, Image as ImageIcon,
-  RefreshCw, Trash2, Edit3, Save, XCircle
+  RefreshCw, Trash2, Edit3, Save, XCircle, Banknote, Wallet
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -100,6 +100,8 @@ export default function StoreOrdersManagement() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [isEditingPayment, setIsEditingPayment] = useState(false);
+  const [editAmountPaid, setEditAmountPaid] = useState('');
 
   // ── Fetch orders list ──────────────────────────────────────────────────────
 
@@ -241,6 +243,59 @@ export default function StoreOrdersManagement() {
     }
   };
 
+  // ── Smart payment save with overpayment → wallet transfer ─────────────────
+
+  const savePayment = async () => {
+    try {
+      const numericTotal    = Number(selectedOrder.total_amount || 0);
+      const numericPaidInput = Number(editAmountPaid || 0);
+
+      let finalPaid   = numericPaidInput;
+      let excessAmount = 0;
+
+      if (numericPaidInput > numericTotal) {
+        excessAmount = numericPaidInput - numericTotal;
+        finalPaid    = numericTotal;
+
+        const confirmed = window.confirm(
+          `المبلغ المدخل (${numericPaidInput} ر.س) أكبر من قيمة الطلب (${numericTotal} ر.س).\n\nهل تريد سداد الطلب بالكامل وتحويل الفائض (${excessAmount} ر.س) إلى محفظة العميل كـ رصيد إضافي؟`
+        );
+        if (!confirmed) return;
+      }
+
+      const { error: orderError } = await supabase
+        .from('store_orders')
+        .update({ amount_paid: finalPaid })
+        .eq('id', selectedOrder.id);
+      if (orderError) throw orderError;
+
+      if (excessAmount > 0 && selectedOrder.phone) {
+        let shortPhone = selectedOrder.phone.replace(/\D/g, '');
+        if (shortPhone.startsWith('966')) shortPhone = shortPhone.slice(3);
+        if (shortPhone.startsWith('0'))   shortPhone = shortPhone.slice(1);
+        const phoneQ = `phone.eq.${shortPhone},phone.eq.0${shortPhone},phone.eq.966${shortPhone},phone.eq.+966${shortPhone}`;
+
+        const { data: wallet } = await supabase.from('wallets').select('*').or(phoneQ).maybeSingle();
+        if (wallet) {
+          const newBalance = Number(wallet.points_balance || 0) + excessAmount;
+          await supabase.from('wallets').update({ points_balance: newBalance }).eq('id', wallet.id);
+          toast.success(`تم سداد الطلب وإضافة الفائض (${excessAmount} ر.س) لمحفظة العميل.`);
+        } else {
+          toast.error('تم سداد الطلب، لكن لم يُعثر على محفظة مسجلة للعميل.');
+        }
+      } else {
+        toast.success('تم تحديث المدفوعات بنجاح');
+      }
+
+      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, amount_paid: finalPaid } : o));
+      setSelectedOrder(prev => ({ ...prev, amount_paid: finalPaid }));
+      setIsEditingPayment(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('حدث خطأ أثناء حفظ المدفوعات');
+    }
+  };
+
   // ── FSM status update ──────────────────────────────────────────────────────
 
   const handleStatusChange = async (newStatus) => {
@@ -297,6 +352,18 @@ export default function StoreOrdersManagement() {
     ? orders
     : orders.filter(o => o.status === filterStatus);
 
+  const { totalOrdersValue, totalPaidValue, totalRemainingValue } = useMemo(() => {
+    return orders.reduce((acc, order) => {
+      const total = Number(order.total_amount || 0);
+      const paid  = Number(order.amount_paid  || 0);
+      return {
+        totalOrdersValue:   acc.totalOrdersValue   + total,
+        totalPaidValue:     acc.totalPaidValue     + paid,
+        totalRemainingValue: acc.totalRemainingValue + (total - paid),
+      };
+    }, { totalOrdersValue: 0, totalPaidValue: 0, totalRemainingValue: 0 });
+  }, [orders]);
+
   const statusCounts = orders.reduce((acc, o) => {
     acc[o.status] = (acc[o.status] || 0) + 1;
     return acc;
@@ -321,6 +388,31 @@ export default function StoreOrdersManagement() {
         >
           <RefreshCw size={15} /> تحديث
         </button>
+      </div>
+
+      {/* ── Financial Summary Cards ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">إجمالي المبيعات</p>
+            <h3 className="text-2xl font-black text-[#4A4A4A]">{totalOrdersValue.toFixed(2)} <span className="text-sm">ر.س</span></h3>
+          </div>
+          <div className="w-12 h-12 rounded-full bg-[#D9A3AA]/10 flex items-center justify-center text-[#D9A3AA]"><ShoppingBag size={24} /></div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs text-emerald-600/60 font-bold mb-1">المدفوع والمُحصّل</p>
+            <h3 className="text-2xl font-black text-emerald-600">{totalPaidValue.toFixed(2)} <span className="text-sm">ر.س</span></h3>
+          </div>
+          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500"><Banknote size={24} /></div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs text-red-500/60 font-bold mb-1">المتبقي (المديونيات)</p>
+            <h3 className="text-2xl font-black text-red-500">{Math.max(0, totalRemainingValue).toFixed(2)} <span className="text-sm">ر.س</span></h3>
+          </div>
+          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-400"><Wallet size={24} /></div>
+        </div>
       </div>
 
       {/* ── Status Filter Chips ── */}
@@ -577,6 +669,48 @@ export default function StoreOrdersManagement() {
                               </span>
                             );
                           })()}
+                        </div>
+
+                        {/* Payment edit inline */}
+                        <div className="col-span-2 border-t border-[#D9A3AA]/15 pt-3">
+                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-2 flex items-center gap-1">
+                            <Banknote size={10} /> المبلغ المدفوع
+                          </span>
+                          {isEditingPayment ? (
+                            <div className="flex flex-wrap gap-2 items-center">
+                              <input
+                                type="number"
+                                value={editAmountPaid}
+                                onChange={e => setEditAmountPaid(e.target.value)}
+                                className="w-32 bg-white border border-emerald-500/30 rounded-xl px-3 py-2 text-center font-black text-emerald-600 outline-none focus:border-emerald-500 shadow-inner"
+                                dir="ltr"
+                              />
+                              <button
+                                onClick={() => setEditAmountPaid(selectedOrder.total_amount)}
+                                className="px-3 py-2 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                              >
+                                سداد كامل
+                              </button>
+                              <button onClick={savePayment} className="px-3 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-colors">
+                                حفظ
+                              </button>
+                              <button onClick={() => setIsEditingPayment(false)} className="px-3 py-2 bg-red-50 text-red-500 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-100 transition-colors">
+                                إلغاء
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <span className="font-black text-emerald-600">
+                                {Number(selectedOrder.amount_paid || 0).toFixed(2)} ر.س
+                              </span>
+                              <button
+                                onClick={() => { setEditAmountPaid(selectedOrder.amount_paid || 0); setIsEditingPayment(true); }}
+                                className="text-xs font-bold text-[#4A4A4A]/50 hover:text-[#D9A3AA] flex items-center gap-1 transition-colors"
+                              >
+                                <Edit3 size={11} /> تعديل
+                              </button>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">تاريخ الطلب</span>
