@@ -159,6 +159,15 @@ export default function StoreIndex() {
     return matchCat && matchSearch;
   });
 
+  const uniqueCategories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
+  const getCategoryLabel = (cat) => {
+    if (cat === 'all')      return 'الكل';
+    if (cat === 'albums')   return 'ألبومات';
+    if (cat === 'frames')   return 'إطارات';
+    if (cat === 'stickers') return 'ملصقات';
+    return cat;
+  };
+
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   const addToCart = (product) => {
@@ -376,8 +385,7 @@ export default function StoreIndex() {
             </h1>
 
             <p className="text-sm md:text-base text-white/70 leading-relaxed mx-auto max-w-lg">
-              حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية.
-              أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر.
+              حوّل صورك الرقمية إلى ذكريات ملموسة.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 justify-center pt-2">
@@ -412,17 +420,17 @@ export default function StoreIndex() {
 
         {/* Category filter chips */}
         <div className="flex overflow-x-auto gap-3 pb-4 mb-8 justify-start md:justify-center">
-          {CATEGORIES.map(cat => (
+          {uniqueCategories.map(cat => (
             <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
               className={`px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all border ${
-                activeCategory === cat.id
+                activeCategory === cat
                   ? 'bg-[#D9A3AA] text-white border-[#D9A3AA] shadow-md'
                   : 'bg-white text-[#4A4A4A] border-[#D9A3AA]/20 hover:border-[#D9A3AA]'
               }`}
             >
-              {cat.name}
+              {getCategoryLabel(cat)}
             </button>
           ))}
         </div>
@@ -942,7 +950,7 @@ export default function StoreIndex() {
               </div>
               <div className="p-6 md:p-8 flex flex-col">
                 <span className="text-[#D9A3AA] text-xs font-bold px-3 py-1 bg-[#D9A3AA]/10 rounded-full w-max mb-3">
-                  {CATEGORIES.find(c => c.id === selectedProduct.category)?.name || selectedProduct.category}
+                  {getCategoryLabel(selectedProduct.category)}
                 </span>
                 <h2 className="text-2xl font-black text-[#4A4A4A] mb-3">{selectedProduct.name}</h2>
                 <p className="text-2xl font-black text-[#C5A059] mb-6">{selectedProduct.price} <span className="text-sm font-normal">ر.س</span></p>

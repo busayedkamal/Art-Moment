@@ -14,6 +14,9 @@ const CAT_CONFIG = {
   stickers: { label: 'ملصقات', bg: 'bg-[#4A4A4A]', text: 'text-[#4A4A4A]', icon: StickyNote },
 };
 
+const getCatStyle = (cat) =>
+  CAT_CONFIG[cat] || { label: cat, bg: 'bg-[#F8F5F2]', text: 'text-[#4A4A4A]', icon: Package };
+
 // تحويل صف قاعدة البيانات (snake_case) → حالة React (camelCase)
 const fromDb = (p) => ({
   id:            p.id,
@@ -187,6 +190,7 @@ export default function ProductManagement() {
   };
 
   const filtered = catFilter === 'all' ? products : products.filter(p => p.category === catFilter);
+  const dynamicCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
   /* ══════════════════════════════════════════════════════════════ */
   return (
@@ -246,7 +250,7 @@ export default function ProductManagement() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map(product => {
-            const cat = CAT_CONFIG[product.category] || CAT_CONFIG.albums;
+            const cat = getCatStyle(product.category);
             return (
               <div key={product.id} className="bg-white rounded-3xl overflow-hidden border border-[#D9A3AA]/20 shadow-sm hover:shadow-lg transition-all flex flex-col group">
 
@@ -362,16 +366,21 @@ export default function ProductManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">الفئة <span className="text-red-500">*</span></label>
-                  <select
+                  <label className="text-[10px] font-bold text-[#4A4A4A]/60 block mb-2">الفئة (اختر أو اكتب فئة جديدة) <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    list="dynamic-categories"
                     value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all font-bold text-[#4A4A4A]"
-                  >
-                    <option value="albums">ألبومات</option>
-                    <option value="frames">إطارات</option>
-                    <option value="stickers">ملصقات</option>
-                  </select>
+                    placeholder="مثال: أكواب، تيشرتات..."
+                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] transition-colors"
+                    required
+                  />
+                  <datalist id="dynamic-categories">
+                    {dynamicCategories.map(cat => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
 
