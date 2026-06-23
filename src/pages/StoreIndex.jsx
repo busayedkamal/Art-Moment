@@ -407,6 +407,50 @@ export default function StoreIndex() {
       </section>
 
       {/* ══════════════════════════════════
+          1.5 VIDEO PROMO SECTION
+      ══════════════════════════════════ */}
+      <section className="w-[96%] max-w-[1600px] mx-auto px-4 mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+        <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-[4px] border-white h-[350px] md:h-[450px] flex items-center justify-center group bg-[#4A4A4A]">
+
+          {/* Video Background */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-80 transition-transform duration-1000 group-hover:scale-105"
+          >
+            <source src="https://cdn.pixabay.com/video/2020/05/21/40008-424855900_large.mp4" type="video/mp4" />
+            متصفحك لا يدعم تشغيل الفيديو.
+          </video>
+
+          {/* Dark Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#4A4A4A]/90 via-[#4A4A4A]/20 to-transparent"></div>
+
+          {/* Text Content */}
+          <div className="relative z-10 text-center px-6 mt-auto pb-10 w-full">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold border border-white/20 mx-auto mb-4 shadow-sm">
+              <Sparkles size={14} className="text-[#C5A059]" /> جودة لا تضاهى
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-white mb-3 drop-shadow-md">
+              شاهد سحر <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">التفاصيل</span>
+            </h2>
+
+            <p className="text-xs sm:text-sm md:text-base text-white/90 max-w-2xl mx-auto drop-shadow-sm leading-relaxed">
+              نستخدم أحدث تقنيات الطباعة وأجود أنواع الورق لنضمن لك ألواناً تنبض بالحياة وذكريات تدوم للأبد.
+              كل طلب يُغلف بحب واهتمام فائق.
+            </p>
+          </div>
+
+          {/* 4K badge */}
+          <div className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70">
+            <span className="font-mono text-[10px] font-bold">4K</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════
           2. STORE PRODUCTS GRID
       ══════════════════════════════════ */}
       <main id="products" className="max-w-7xl mx-auto px-4 py-14">
