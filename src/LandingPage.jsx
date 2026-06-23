@@ -255,13 +255,12 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-base md:text-lg text-white/70 leading-relaxed mx-auto max-w-2xl">
-            حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية.
-            أرسل صورك، تابع الطلب، واستلمها بتغليف فاخر.
+            حوّل صورك الرقمية إلى ذكريات ملموسة بجودة استثنائية
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-center pt-2">
             <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
-              <MessageCircle size={20} /> اطلب عبر واتساب
+              <MessageCircle size={20} />واتساب
             </a>
             <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
               <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
