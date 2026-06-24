@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import AuthProvider, { useAuth } from './contexts/AuthContext'
 
+// الصفحة الرئيسية
+import LandingPage from './LandingPage.jsx'
+
 // الصفحات العامة
 import StoreIndex from './pages/StoreIndex.jsx'
 import TrackOrderPage from './pages/TrackOrderPage.jsx'
@@ -43,8 +46,8 @@ function AppRoutes() {
   return (
     <Routes>
       {/* 1. المسارات العامة */}
-      <Route path="/" element={<StoreIndex />} />
-      <Route path="/store" element={<Navigate to="/" replace />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/store" element={<StoreIndex />} />
       <Route path="/track" element={<TrackOrderPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/store/cart" element={<StoreCart />} />
