@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
-  Menu, X, Lock, Download, AlertCircle, ShoppingBag, Plus,
+  Menu, X, Download, AlertCircle, ShoppingBag, Plus,
   ChevronRight, ChevronLeft, ArrowLeft
 } from 'lucide-react';
 
@@ -24,9 +23,6 @@ const fromDb = (p) => ({
 });
 
 export default function StoreIndex() {
-  const navigate = useNavigate();
-  const { session } = useAuth();
-
   const [products, setProducts]             = useState([]);
   const [searchQ, setSearchQ]               = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -81,11 +77,6 @@ export default function StoreIndex() {
     if (isIosDevice && !isStandalone) setIsIOS(true);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
-
-  const handleAdminClick = (e) => {
-    e.preventDefault();
-    navigate(session ? '/app/dashboard' : '/admin/login');
-  };
 
   const handleInstallClick = async () => {
     if (isIOS) {
@@ -179,9 +170,6 @@ export default function StoreIndex() {
                 </span>
               )}
             </Link>
-            <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
-              <Lock size={16} />
-            </button>
           </div>
         </div>
 

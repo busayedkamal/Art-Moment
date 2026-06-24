@@ -338,14 +338,6 @@ export default function LandingPage() {
               </button>
             )}
 
-            <Link to="/store/cart" className="relative p-2 bg-white/70 rounded-full hover:bg-[#D9A3AA]/10 transition-colors border border-[#D9A3AA]/20">
-              <ShoppingCart size={20} className="text-[#4A4A4A]" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#D9A3AA] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
 
             <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
               <Lock size={16} />
