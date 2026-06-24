@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Plus, ExternalLink, Image as ImageIcon, Trash2, Edit3,
-  Check, X, Loader2, Package, Frame, StickyNote, UploadCloud
+  Check, X, Loader2, Package, Frame, StickyNote, UploadCloud, Star
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -27,8 +27,9 @@ const fromDb = (p) => ({
   image:         p.image        || null,
   hoverImage:    p.hover_image  || null,
   sortOrder:     p.sort_order   ?? 0,
-  inStock:       p.in_stock     ?? true,
+  inStock:       p.in_stock      ?? true,
   stockQuantity: p.stock_quantity ?? 0,
+  isBestSeller:  p.is_best_seller ?? false,
 });
 
 // تحويل حالة React (camelCase) → صف قاعدة البيانات (snake_case)
@@ -42,11 +43,12 @@ const toDb = (f) => ({
   sort_order:     Number(f.sortOrder),
   in_stock:       f.inStock,
   stock_quantity: Number(f.stockQuantity) || 0,
+  is_best_seller: f.isBestSeller,
 });
 
 const initialForm = {
   name: '', description: '', price: '', category: 'albums',
-  image: null, hoverImage: null, sortOrder: 0, inStock: true, stockQuantity: 0,
+  image: null, hoverImage: null, sortOrder: 0, inStock: true, stockQuantity: 0, isBestSeller: false,
 };
 
 export default function ProductManagement() {
@@ -269,10 +271,15 @@ export default function ProductManagement() {
                       {product.inStock ? 'متاح' : 'نفد'}
                     </span>
                   </div>
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-3 right-3 flex flex-col gap-1">
                     <span className={`flex items-center gap-1 bg-white/90 backdrop-blur px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm ${cat.text}`}>
                       <cat.icon size={10} /> {cat.label}
                     </span>
+                    {product.isBestSeller && (
+                      <span className="flex items-center gap-1 bg-[#C5A059] text-white px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm">
+                        <Star size={10} fill="currentColor" /> الأكثر مبيعاً
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -453,8 +460,8 @@ export default function ProductManagement() {
                 </div>
               </div>
 
-              {/* الترتيب + الكمية + المخزون */}
-              <div className="grid grid-cols-3 gap-4 border-t border-[#F8F5F2] pt-4">
+              {/* الترتيب + الكمية + المخزون + الأكثر مبيعاً */}
+              <div className="grid grid-cols-4 gap-4 border-t border-[#F8F5F2] pt-4">
                 <div>
                   <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">ترتيب العرض</label>
                   <input
@@ -482,6 +489,20 @@ export default function ProductManagement() {
                     </div>
                     <span className={`text-xs font-black ${form.inStock ? 'text-emerald-700' : 'text-gray-500'}`}>
                       {form.inStock ? 'متاح' : 'نفد'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">الأكثر مبيعاً</label>
+                  <div
+                    onClick={() => setForm(f => ({ ...f, isBestSeller: !f.isBestSeller }))}
+                    className={`cursor-pointer w-full h-[42px] rounded-xl flex items-center px-2 gap-2 transition-colors ${form.isBestSeller ? 'bg-[#C5A059]/20' : 'bg-gray-100'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg shadow-sm flex items-center justify-center text-white transition-colors ${form.isBestSeller ? 'bg-[#C5A059]' : 'bg-gray-400'}`}>
+                      <Star size={16} fill={form.isBestSeller ? 'currentColor' : 'none'} />
+                    </div>
+                    <span className={`text-xs font-black ${form.isBestSeller ? 'text-[#C5A059]' : 'text-gray-500'}`}>
+                      {form.isBestSeller ? 'نعم' : 'لا'}
                     </span>
                   </div>
                 </div>
