@@ -10,7 +10,7 @@ import {
   Download, Share, PlusSquare, Sparkles, FileText,
   Plane, Gift, Smartphone, LayoutDashboard,
   MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet,
-  ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale, AlertCircle
+  ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale, AlertCircle, ChevronLeft
 } from 'lucide-react';
 
 import promoVideo from './assets/printing-quality.mp4';
@@ -1052,6 +1052,17 @@ export default function LandingPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Floating Cart Button — redirects to full store for cross-selling */}
+      {cartCount > 0 && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-10">
+          <Link to="/store" className="flex items-center gap-3 bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white px-6 py-3.5 rounded-full font-black hover:shadow-2xl hover:scale-105 transition-all shadow-lg border-2 border-white group">
+            <ShoppingBag size={20} className="group-hover:-translate-y-1 transition-transform" />
+            أكمل طلبك من المتجر ({cartCount})
+            <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+          </Link>
         </div>
       )}
 
