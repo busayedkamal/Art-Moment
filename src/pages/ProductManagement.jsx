@@ -194,6 +194,17 @@ export default function ProductManagement() {
   const filtered = catFilter === 'all' ? products : products.filter(p => p.category === catFilter);
   const dynamicCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
+  const handleToggleBestSeller = () => {
+    if (!form.isBestSeller) {
+      const currentCount = products.filter(p => p.isBestSeller && p.id !== editId).length;
+      if (currentCount >= 6) {
+        toast.error('الحد الأقصى للمنتجات المميزة هو 6 منتجات فقط! 🌟');
+        return;
+      }
+    }
+    setForm(f => ({ ...f, isBestSeller: !f.isBestSeller }));
+  };
+
   /* ══════════════════════════════════════════════════════════════ */
   return (
     <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A]" dir="rtl">
@@ -495,8 +506,8 @@ export default function ProductManagement() {
                 <div>
                   <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">الأكثر مبيعاً</label>
                   <div
-                    onClick={() => setForm(f => ({ ...f, isBestSeller: !f.isBestSeller }))}
-                    className={`cursor-pointer w-full h-[42px] rounded-xl flex items-center px-2 gap-2 transition-colors ${form.isBestSeller ? 'bg-[#C5A059]/20' : 'bg-gray-100'}`}
+                    onClick={handleToggleBestSeller}
+                    className={`cursor-pointer w-full h-[42px] rounded-xl flex items-center px-2 gap-2 transition-colors ${form.isBestSeller ? 'bg-amber-100' : 'bg-gray-100'}`}
                   >
                     <div className={`w-8 h-8 rounded-lg shadow-sm flex items-center justify-center text-white transition-colors ${form.isBestSeller ? 'bg-[#C5A059]' : 'bg-gray-400'}`}>
                       <Star size={16} fill={form.isBestSeller ? 'currentColor' : 'none'} />

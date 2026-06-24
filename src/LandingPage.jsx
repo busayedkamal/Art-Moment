@@ -25,15 +25,16 @@ import telegramIcon from './assets/telegram icon.svg';
 import gmailIcon from './assets/gmail icon.svg';
 
 const fromDb = (p) => ({
-  id:         p.id,
-  name:       p.name,
-  description: p.description || '',
-  price:      p.price,
-  category:   p.category,
-  image:      p.image       || null,
-  hoverImage: p.hover_image || null,
-  sortOrder:  p.sort_order  ?? 0,
-  inStock:    p.in_stock    ?? true,
+  id:           p.id,
+  name:         p.name,
+  description:  p.description || '',
+  price:        p.price,
+  category:     p.category,
+  image:        p.image       || null,
+  hoverImage:   p.hover_image || null,
+  sortOrder:    p.sort_order  ?? 0,
+  inStock:      p.in_stock    ?? true,
+  isBestSeller: p.is_best_seller ?? false,
 });
 
 const CATEGORIES = [
@@ -469,7 +470,7 @@ export default function LandingPage() {
           {products.length === 0 ? (
             <div className="col-span-full text-center py-20 text-[#4A4A4A]/50 font-bold">لا توجد منتجات بعد</div>
           ) : (
-            products.slice(0, 6).map(product => (
+            products.filter(p => p.isBestSeller).slice(0, 6).map(product => (
               <div key={product.id} className={`bg-white rounded-3xl p-4 border border-[#D9A3AA]/10 shadow-sm transition-all group flex flex-col relative overflow-hidden ${product.inStock ? 'hover:shadow-lg' : 'opacity-75 cursor-not-allowed'}`}>
                 <div
                   onClick={() => product.inStock && setSelectedProduct(product)}
