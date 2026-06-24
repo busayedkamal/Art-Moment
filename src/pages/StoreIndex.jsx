@@ -10,7 +10,7 @@ import {
   Download, Share, PlusSquare, Sparkles, FileText,
   Plane, Gift, Smartphone, LayoutDashboard,
   MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet,
-  ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale
+  ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale, AlertCircle
 } from 'lucide-react';
 
 import promoVideo from '../assets/printing-quality.mp4';
@@ -499,10 +499,10 @@ export default function StoreIndex() {
             <div className="col-span-full text-center py-20 text-[#4A4A4A]/50 font-bold">لا توجد منتجات مطابقة لبحثك</div>
           ) : (
             filteredProducts.map(product => (
-              <div key={product.id} className="bg-white rounded-3xl p-4 border border-[#D9A3AA]/10 shadow-sm hover:shadow-lg transition-all group flex flex-col relative overflow-hidden">
+              <div key={product.id} className={`bg-white rounded-3xl p-4 border border-[#D9A3AA]/10 shadow-sm transition-all group flex flex-col relative overflow-hidden ${product.inStock ? 'hover:shadow-lg' : 'opacity-75 cursor-not-allowed'}`}>
                 <div
                   onClick={() => product.inStock && setSelectedProduct(product)}
-                  className={`aspect-square bg-[#F8F5F2] rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'cursor-pointer group-hover:scale-105' : 'opacity-70 grayscale'}`}
+                  className={`aspect-square bg-[#F8F5F2] rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'cursor-pointer group-hover:scale-105' : 'grayscale'}`}
                 >
                   {product.image ? (
                     <>
@@ -516,7 +516,12 @@ export default function StoreIndex() {
                   ) : (
                     <img src={fallbackLogo} alt={product.name} className="absolute inset-0 w-full h-full object-contain p-8 opacity-20 grayscale mix-blend-multiply" />
                   )}
-                  {getProductQty(product.id) > 0 && (
+                  {!product.inStock && (
+                    <div className="absolute top-3 left-3 z-20 bg-red-500/90 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1.5">
+                      <AlertCircle size={12} /> نفدت الكمية
+                    </div>
+                  )}
+                  {product.inStock && getProductQty(product.id) > 0 && (
                     <span className="absolute top-2 right-2 bg-[#C5A059] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
                       في السلة: {getProductQty(product.id)}
                     </span>

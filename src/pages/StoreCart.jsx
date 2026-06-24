@@ -39,11 +39,25 @@ export default function StoreCart() {
 
   const removeItem = (id) => saveCart(cart.filter(item => item.id !== id));
 
+  const setExactQty = (id, val) => {
+    const updated = cart.map(item => {
+      if (item.id !== id) return item;
+      if (val === '') return { ...item, qty: '' };
+      const num = parseInt(val, 10);
+      return { ...item, qty: isNaN(num) ? 1 : num };
+    });
+    saveCart(updated);
+  };
+
+  const handleBlurQty = (id, currentQty) => {
+    if (currentQty === '' || currentQty < 1) setExactQty(id, 1);
+  };
+
   const clearCart = () => {
     if (window.confirm('هل أنت متأكدة من مسح جميع المنتجات؟')) saveCart([]);
   };
 
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (Number(item.qty) || 0)), 0);
 
   const sendAutoConfirmationWhatsApp = async (orderId, customerName, customerPhone, totalAmount, customerPin) => {
     try {
@@ -230,7 +244,15 @@ export default function StoreCart() {
                   <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#4A4A4A]">
                     <Plus size={12} />
                   </button>
-                  <span className="text-xs font-bold w-4 text-center">{item.qty}</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.qty}
+                    onChange={e => setExactQty(item.id, e.target.value)}
+                    onBlur={() => handleBlurQty(item.id, item.qty)}
+                    className="w-10 text-center font-black text-sm text-[#4A4A4A] bg-transparent outline-none focus:bg-white rounded-md transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    dir="ltr"
+                  />
                   <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#4A4A4A]">
                     <Minus size={12} />
                   </button>
