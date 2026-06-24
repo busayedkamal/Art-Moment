@@ -455,50 +455,21 @@ export default function LandingPage() {
           2. STORE PRODUCTS GRID
       ══════════════════════════════════ */}
       <main id="products" className="max-w-7xl mx-auto px-4 py-14">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D9A3AA]/10 text-[#D9A3AA] font-bold text-xs mb-4 border border-[#D9A3AA]/20">
-            <ShoppingBag size={15} /> متجرنا
-          </div>
-          <h2 className="text-3xl md:text-4xl font-black text-[#4A4A4A] mb-3">تشكيلتنا <span className="text-[#D9A3AA]">الفنية</span></h2>
-          <p className="text-[#4A4A4A]/60 max-w-xl mx-auto">ألبومات وإطارات وملصقات مختارة بعناية لتكمل جمال صورك المطبوعة</p>
-        </div>
-
-        {/* Category filter chips */}
-        <div className="flex overflow-x-auto gap-3 pb-4 mb-8 justify-start md:justify-center">
-          {uniqueCategories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all border ${
-                activeCategory === cat
-                  ? 'bg-[#D9A3AA] text-white border-[#D9A3AA] shadow-md'
-                  : 'bg-white text-[#4A4A4A] border-[#D9A3AA]/20 hover:border-[#D9A3AA]'
-              }`}
-            >
-              {getCategoryLabel(cat)}
-            </button>
-          ))}
-        </div>
-
-        {/* Search */}
-        <div className="mb-8 relative max-w-md mx-auto">
-          <input
-            value={searchQ} onChange={e => setSearchQ(e.target.value)}
-            placeholder="ابحثي عن المنتجات..."
-            className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-4 py-3 pr-10 outline-none focus:border-[#D9A3AA] shadow-sm"
-          />
-          <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
-          {searchQ && (
-            <X size={16} onClick={() => setSearchQ('')} className="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer text-red-400" />
-          )}
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl font-black text-[#4A4A4A] mb-4">
+            الأكثر مبيعاً 🌟
+          </h2>
+          <p className="text-sm sm:text-base text-[#4A4A4A]/60 leading-relaxed">
+            تشكيلة من أفضل منتجاتنا الجاهزة والأكثر طلباً لتوثيق لحظاتكم السعيدة.
+          </p>
         </div>
 
         {/* Product grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {filteredProducts.length === 0 ? (
-            <div className="col-span-full text-center py-20 text-[#4A4A4A]/50 font-bold">لا توجد منتجات مطابقة لبحثك</div>
+          {products.length === 0 ? (
+            <div className="col-span-full text-center py-20 text-[#4A4A4A]/50 font-bold">لا توجد منتجات بعد</div>
           ) : (
-            filteredProducts.map(product => (
+            products.slice(0, 6).map(product => (
               <div key={product.id} className={`bg-white rounded-3xl p-4 border border-[#D9A3AA]/10 shadow-sm transition-all group flex flex-col relative overflow-hidden ${product.inStock ? 'hover:shadow-lg' : 'opacity-75 cursor-not-allowed'}`}>
                 <div
                   onClick={() => product.inStock && setSelectedProduct(product)}
@@ -547,12 +518,19 @@ export default function LandingPage() {
           )}
         </div>
 
-        {/* Cart CTA */}
-        {cartCount > 0 && (
-          <div className="mt-10 text-center">
-            <Link to="/store/cart" className="inline-flex items-center gap-3 bg-[#4A4A4A] text-white px-8 py-4 rounded-2xl font-black hover:bg-[#D9A3AA] transition-all shadow-lg hover:-translate-y-1">
-              <ShoppingCart size={20} /> عرض السلة ({cartCount} منتج) <ArrowLeft size={18} />
+        {/* View Full Store CTA */}
+        {products.length > 6 && (
+          <div className="mt-12 sm:mt-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+            <Link
+              to="/store"
+              className="inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 rounded-full bg-gradient-to-r from-[#C5A059] to-[#D9A3AA] text-white font-black text-lg hover:shadow-2xl hover:shadow-[#C5A059]/40 hover:-translate-y-1 transition-all duration-300 group"
+            >
+              <ShoppingBag size={24} className="group-hover:scale-110 transition-transform" />
+              تصفح كامل المتجر ({products.length})
             </Link>
+            <p className="mt-4 text-xs font-bold text-[#4A4A4A]/40">
+              اكتشف المزيد من المنتجات، الهدايا، والتوزيعات الحصرية.
+            </p>
           </div>
         )}
       </main>
