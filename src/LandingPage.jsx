@@ -519,17 +519,17 @@ export default function LandingPage() {
         </div>
 
         {/* View Full Store CTA */}
-        {products.length > 6 && (
+        {products.length > 0 && (
           <div className="mt-12 sm:mt-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
             <Link
               to="/store"
-              className="inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 rounded-full bg-gradient-to-r from-[#C5A059] to-[#D9A3AA] text-white font-black text-lg hover:shadow-2xl hover:shadow-[#C5A059]/40 hover:-translate-y-1 transition-all duration-300 group"
+              className="inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 rounded-full bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white font-black text-lg hover:shadow-2xl hover:shadow-[#C5A059]/40 hover:-translate-y-1 transition-all duration-300 group"
             >
               <ShoppingBag size={24} className="group-hover:scale-110 transition-transform" />
               تصفح كامل المتجر ({products.length})
             </Link>
             <p className="mt-4 text-xs font-bold text-[#4A4A4A]/40">
-              اكتشف المزيد من المنتجات، الهدايا، والتوزيعات الحصرية.
+              اكتشف المزيد من الألبومات، الإطارات، والتوزيعات الحصرية.
             </p>
           </div>
         )}
