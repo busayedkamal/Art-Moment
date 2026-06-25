@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
   Menu, X, Download, AlertCircle, ShoppingBag, Plus,
-  ChevronRight, ChevronLeft, ArrowLeft
+  ChevronRight, ChevronLeft, ArrowLeft, Sparkles
 } from 'lucide-react';
 
 import logo from '../assets/logo-art-moment.svg';
@@ -30,6 +30,8 @@ export default function StoreIndex() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled]             = useState(false);
   const [currentPage, setCurrentPage]       = useState(1);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isModalOpen, setIsModalOpen]         = useState(false);
   const itemsPerPage = 12;
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -130,6 +132,31 @@ export default function StoreIndex() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    document.body.style.overflow = isModalOpen ? 'hidden' : 'auto';
+  }, [isModalOpen]);
+
+  const getRecommendations = (currentProd) => {
+    if (!currentProd) return [];
+    let pool = products.filter(p => p.id !== currentProd.id && p.inStock);
+    const name = currentProd.name.toLowerCase();
+    const isA4    = name.includes('a4');
+    const isSmall = name.includes('4x6') || name.includes('10*15') || name.includes('10×15');
+
+    if (isA4) {
+      pool.sort((a, b) => (b.name.toLowerCase().includes('a4') ? 1 : 0) - (a.name.toLowerCase().includes('a4') ? 1 : 0));
+    } else if (isSmall) {
+      pool.sort((a, b) => {
+        const scoreA = a.category === 'albums' || a.name.includes('10*15') ? 1 : 0;
+        const scoreB = b.category === 'albums' || b.name.includes('10*15') ? 1 : 0;
+        return scoreB - scoreA;
+      });
+    } else {
+      pool.sort(() => 0.5 - Math.random());
+    }
+    return pool.slice(0, 2);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A] relative overflow-x-hidden" dir="rtl">
 
@@ -226,7 +253,11 @@ export default function StoreIndex() {
             <div className="col-span-full text-center py-20 text-[#4A4A4A]/40 font-bold text-lg">لا توجد منتجات مطابقة لبحثك</div>
           ) : (
             currentProducts.map(product => (
-              <div key={product.id} className={`bg-white rounded-[2rem] p-4 border border-[#D9A3AA]/10 shadow-sm transition-all group flex flex-col relative overflow-hidden ${product.inStock ? 'hover:shadow-xl hover:-translate-y-1' : 'opacity-80 cursor-not-allowed'}`}>
+              <div
+                key={product.id}
+                onClick={() => { if (product.inStock) { setSelectedProduct(product); setIsModalOpen(true); } }}
+                className={`bg-white rounded-[2rem] p-4 border border-[#D9A3AA]/10 shadow-sm transition-all group flex flex-col relative overflow-hidden ${product.inStock ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1' : 'opacity-80 cursor-not-allowed'}`}
+              >
 
                 <div className={`aspect-square bg-[#F8F5F2] rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'group-hover:scale-105' : 'grayscale'}`}>
                   {product.image ? (
@@ -260,7 +291,7 @@ export default function StoreIndex() {
                   <div className="flex items-center justify-between mt-auto pt-3 border-t border-[#F8F5F2]">
                     <span className="font-black text-[#D9A3AA] text-lg">{product.price} <span className="text-[10px] text-[#4A4A4A]/60">ر.س</span></span>
                     <button
-                      onClick={() => addToCart(product)}
+                      onClick={(e) => { e.stopPropagation(); addToCart(product); }}
                       disabled={!product.inStock}
                       className={`p-2.5 rounded-xl transition-all ${product.inStock ? 'bg-[#4A4A4A] text-white hover:bg-[#C5A059] shadow-md' : 'bg-gray-200 text-gray-400'}`}
                     >
@@ -320,6 +351,75 @@ export default function StoreIndex() {
           <Link to="/store/cart" className="flex items-center gap-3 bg-[#C5A059] text-white px-6 py-3.5 rounded-full font-black hover:bg-[#4A4A4A] transition-all shadow-xl hover:scale-105 border-2 border-white">
             <ShoppingCart size={20} /> عرض السلة ({cartCount}) <ArrowLeft size={18} />
           </Link>
+        </div>
+      )}
+
+      {/* Product Details Modal */}
+      {isModalOpen && selectedProduct && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+
+          <div className="relative w-full max-w-4xl bg-[#F8F5F2] rounded-t-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col sm:flex-row max-h-[90vh] animate-in slide-in-from-bottom-10 sm:zoom-in-95">
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 left-4 z-10 w-10 h-10 bg-white/50 backdrop-blur rounded-full flex items-center justify-center text-[#4A4A4A] hover:bg-white transition-colors">
+              <X size={20} />
+            </button>
+
+            {/* Image */}
+            <div className="w-full sm:w-1/2 bg-white relative h-64 sm:h-auto shrink-0 flex items-center justify-center p-8">
+              {selectedProduct.image
+                ? <img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-contain mix-blend-multiply" />
+                : <ImageIcon size={64} className="text-[#D9A3AA]/20" />
+              }
+            </div>
+
+            {/* Details */}
+            <div className="w-full sm:w-1/2 p-6 sm:p-10 overflow-y-auto flex flex-col">
+              <span className="inline-block px-3 py-1 bg-[#D9A3AA]/10 text-[#D9A3AA] text-[10px] font-black rounded-full mb-3 w-fit">
+                {getCategoryLabel(selectedProduct.category)}
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#4A4A4A] mb-2">{selectedProduct.name}</h2>
+              <p className="text-2xl font-black text-[#C5A059] mb-6">{selectedProduct.price} <span className="text-sm">ر.س</span></p>
+              <p className="text-[#4A4A4A]/70 text-sm leading-relaxed mb-8 bg-white p-4 rounded-2xl border border-[#D9A3AA]/10">
+                {selectedProduct.description || 'لا يوجد وصف متاح لهذا المنتج حالياً.'}
+              </p>
+
+              <button
+                onClick={() => { addToCart(selectedProduct); setIsModalOpen(false); }}
+                className="w-full py-4 rounded-xl font-black text-white bg-[#4A4A4A] hover:bg-[#D9A3AA] transition-colors flex items-center justify-center gap-2 shadow-lg mb-8"
+              >
+                <Plus size={20} /> إضافة إلى السلة
+              </button>
+
+              {/* Smart Recommendations */}
+              {getRecommendations(selectedProduct).length > 0 && (
+                <div className="mt-auto border-t border-[#D9A3AA]/10 pt-6">
+                  <h4 className="text-sm font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
+                    <Sparkles size={16} className="text-[#C5A059]" /> أكملي مجموعتك الفنية
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {getRecommendations(selectedProduct).map(rec => (
+                      <div
+                        key={rec.id}
+                        onClick={() => setSelectedProduct(rec)}
+                        className="bg-white p-2.5 rounded-xl border border-[#D9A3AA]/10 flex items-center gap-3 cursor-pointer hover:border-[#C5A059]/40 transition-colors group"
+                      >
+                        <div className="w-12 h-12 bg-[#F8F5F2] rounded-lg overflow-hidden shrink-0">
+                          {rec.image
+                            ? <img src={rec.image} alt={rec.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                            : <ImageIcon className="w-full h-full p-3 opacity-20" />
+                          }
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-[#4A4A4A] line-clamp-1">{rec.name}</p>
+                          <p className="text-xs font-black text-[#D9A3AA]">{rec.price} ر.س</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
