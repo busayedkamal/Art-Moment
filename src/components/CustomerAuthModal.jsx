@@ -58,7 +58,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
 
         toast.success(`أهلاً بك في لحظة فن ${name ? name : ''}! ✨`);
         onClose();
-        window.location.reload();
+        window.location.href = '/store';
 
       } else {
         // ── تسجيل الدخول ─────────────────────────────────────────────
@@ -83,7 +83,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
 
         toast.success(`مرحباً بعودتك${customer.name ? ' ' + customer.name : ''}! 👋`);
         onClose();
-        window.location.reload();
+        window.location.href = '/store';
       }
     } catch (err) {
       console.error(err);
@@ -159,7 +159,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
               <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/60" size={18} />
               <input
                 type="email"
-                placeholder="البريد الإلكتروني (اختياري)"
+                placeholder="البريد الإلكتروني"
                 value={formData.email}
                 onChange={set('email')}
                 className="w-full h-12 pr-12 pl-4 rounded-xl border border-[#D9A3AA]/20 bg-white focus:border-[#D9A3AA] outline-none transition-all text-sm dir-ltr text-right"

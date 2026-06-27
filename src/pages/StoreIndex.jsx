@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
   Menu, X, Download, AlertCircle, ShoppingBag, Plus,
-  ChevronRight, ChevronLeft, ArrowLeft, Sparkles, User, LogOut
+  ChevronRight, ChevronLeft, ArrowLeft, Sparkles, User, LogOut, Package, Wallet
 } from 'lucide-react';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 
@@ -40,7 +40,8 @@ export default function StoreIndex() {
   const [isInstallable, setIsInstallable]   = useState(false);
   const [isIOS, setIsIOS]                   = useState(false);
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen]       = useState(false);
+  const [isAccountSidebarOpen, setIsAccountSidebarOpen] = useState(false);
   const [customer, setCustomer]               = useState(null);
 
   useEffect(() => {
@@ -218,11 +219,8 @@ export default function StoreIndex() {
 
             {customer ? (
               <div className="flex items-center gap-1 sm:gap-2">
-                <Link to="/track" className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#4A4A4A] bg-white px-3 py-2 rounded-full border border-[#D9A3AA]/20 hover:bg-[#D9A3AA]/10 transition-colors shadow-sm">
+                <button onClick={() => setIsAccountSidebarOpen(true)} className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#4A4A4A] bg-white px-3 py-2 rounded-full border border-[#D9A3AA]/20 hover:bg-[#D9A3AA]/10 transition-colors shadow-sm">
                   <User size={16} className="text-[#C5A059]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
-                </Link>
-                <button onClick={handleLogout} className="p-2 text-red-400 hover:text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors" title="تسجيل الخروج">
-                  <LogOut size={16} />
                 </button>
               </div>
             ) : (
@@ -397,6 +395,91 @@ export default function StoreIndex() {
           } catch (e) {}
         }}
       />
+
+      {/* Customer Account Sidebar */}
+      {isAccountSidebarOpen && customer && (
+        <div className="fixed inset-0 z-[110] flex justify-end">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsAccountSidebarOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-[#F8F5F2] h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col" dir="rtl">
+
+            {/* Header */}
+            <div className="bg-[#4A4A4A] text-white p-6 pb-8 relative overflow-hidden shrink-0 rounded-bl-3xl">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#D9A3AA]/20 rounded-full blur-2xl" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#C5A059]/20 rounded-full blur-2xl" />
+              <button onClick={() => setIsAccountSidebarOpen(false)} className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-20">
+                <X size={18} />
+              </button>
+              <div className="flex items-center gap-4 mt-6 relative z-10">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white shrink-0">
+                  {customer.name ? customer.name.charAt(0) : <User size={28} />}
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-black truncate">{customer.name || 'عميل لحظة فن'}</h2>
+                  <p className="text-white/70 text-sm font-mono mt-1 truncate" dir="ltr">{customer.phone}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 gap-3">
+                <Link to="/track" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#D9A3AA]/10 flex flex-col items-center justify-center gap-2 hover:border-[#D9A3AA]/40 transition-colors group">
+                  <div className="w-12 h-12 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA] group-hover:scale-110 transition-transform">
+                    <Package size={22} />
+                  </div>
+                  <span className="font-bold text-sm text-[#4A4A4A]">طلباتي</span>
+                </Link>
+                <Link to="/track" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C5A059]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C5A059]/40 transition-colors group">
+                  <div className="w-12 h-12 bg-[#C5A059]/10 rounded-full flex items-center justify-center text-[#C5A059] group-hover:scale-110 transition-transform">
+                    <Wallet size={22} />
+                  </div>
+                  <span className="font-bold text-sm text-[#4A4A4A]">المحفظة</span>
+                </Link>
+              </div>
+
+              {/* Profile Details */}
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9A3AA]/10">
+                <h3 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
+                  <User size={16} className="text-[#C5A059]" /> بيانات الحساب
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">الاسم</label>
+                    <input type="text" defaultValue={customer.name || ''} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none text-[#4A4A4A] font-bold" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">البريد الإلكتروني</label>
+                    <input type="email" defaultValue={customer.email || 'غير مسجل'} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none dir-ltr text-right text-[#4A4A4A] font-bold" />
+                  </div>
+                  <a
+                    href="https://wa.me/966569663697?text=مرحباً، أرغب بتعديل بيانات حسابي"
+                    target="_blank" rel="noreferrer"
+                    className="w-full py-3 mt-2 bg-[#F8F5F2] text-[#4A4A4A] font-bold text-xs rounded-xl hover:bg-[#D9A3AA]/10 transition-colors border border-[#D9A3AA]/20 block text-center"
+                  >
+                    طلب تعديل البيانات
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer / Logout */}
+            <div className="p-6 bg-white border-t border-[#D9A3AA]/10 shrink-0">
+              <button
+                onClick={() => { setIsAccountSidebarOpen(false); handleLogout(); }}
+                className="w-full py-4 bg-red-50 text-red-500 font-black text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors shadow-sm"
+              >
+                <LogOut size={18} /> تسجيل الخروج
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Product Details Modal */}
       {isModalOpen && selectedProduct && (
