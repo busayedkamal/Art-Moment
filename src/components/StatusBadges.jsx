@@ -11,7 +11,7 @@ export function StatusBadge({ status }) {
 
   if      (status === 'جديد')        cls += ' bg-blue-100 text-blue-700'
   else if (status === 'قيد الطباعة') cls += ' bg-amber-100 text-amber-700'
-  else if (status === 'جاهز')        cls += ' bg-[#D9A3AA]/20 text-[#C48A92]'   // وردي هوية لحظة فن
+  else if (status === 'جاهز')        cls += ' bg-purple-50 text-purple-700'
   else if (status === 'تم التسليم') cls += ' bg-emerald-100 text-emerald-700'
   else if (status === 'ملغي')        cls += ' bg-red-100 text-red-700'
   else                               cls += ' bg-[#4A4A4A]/10 text-[#4A4A4A]/60'

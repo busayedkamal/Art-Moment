@@ -101,7 +101,7 @@ export default function Orders() {
       case 'printing':
         return 'bg-[#EAF2FF] text-[#1F5FBF] border border-[#BBD4FF]';
       case 'done':
-        return 'bg-[#F7E9EB] text-[#B46C78] border border-[#E9C7CC]';
+        return 'bg-purple-50 text-purple-700 border border-purple-200';
       case 'delivered':
         return 'bg-[#E9F7EF] text-[#1E7F4D] border border-[#BFE8D0]';
       default:

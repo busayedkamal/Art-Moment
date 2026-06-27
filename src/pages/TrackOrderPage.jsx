@@ -135,7 +135,26 @@ export default function TrackOrderPage() {
       const sOrders = (storeRes.data || []).map(o => ({ ...o, order_type: 'store' }));
       
       const combined = [...pOrders, ...sOrders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      
+
+      let calcPayments = 0;
+      let calcDebt = 0;
+      pOrders.forEach(o => {
+        const total = Number(o.total_amount || 0);
+        const paid  = Number(o.deposit || 0) + Number(o.wallet_used || 0);
+        calcPayments += paid;
+        calcDebt     += Math.max(0, total - paid);
+      });
+      sOrders.forEach(o => {
+        const total = Number(o.total_amount || 0);
+        const paid  = Number(o.amount_paid || 0);
+        calcPayments += paid;
+        calcDebt     += Math.max(0, total - paid);
+      });
+      setCustomerStats(prev =>
+        prev ? { ...prev, totalPayments: calcPayments, totalDebt: calcDebt }
+             : { points: 0, packages: 0, totalPayments: calcPayments, totalDebt: calcDebt }
+      );
+
       if (combined.length === 0) {
         toast.success('تم تسجيل الدخول بنجاح، ولكن لا توجد طلبات سابقة.');
       } else {
@@ -258,11 +277,19 @@ export default function TrackOrderPage() {
                  <div className="grid grid-cols-2 gap-4 text-center">
                     <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
                        <span className="font-bold text-violet-600/60 block mb-1 text-[10px]">رصيد الباقات المتاح</span>
-                       <span className="font-black text-violet-600 dir-ltr text-xl">{customerStats.packages.toFixed(2)}</span>
+                       <span className="font-black text-violet-600 dir-ltr text-xl">{(customerStats.packages || 0).toFixed(2)}</span>
                     </div>
                     <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
                        <span className="font-bold text-emerald-600/60 block mb-1 text-[10px]">رصيد النقاط (كاش باك)</span>
-                       <span className="font-black text-emerald-600 dir-ltr text-xl">{customerStats.points.toFixed(2)}</span>
+                       <span className="font-black text-emerald-600 dir-ltr text-xl">{(customerStats.points || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
+                       <span className="font-bold text-blue-600/60 block mb-1 text-[10px]">المدفوعات الكلية</span>
+                       <span className="font-black text-blue-600 dir-ltr text-xl">{(customerStats.totalPayments || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
+                       <span className="font-bold text-red-600/60 block mb-1 text-[10px]">المديونية المتبقية</span>
+                       <span className="font-black text-red-600 dir-ltr text-xl">{(customerStats.totalDebt || 0).toFixed(2)}</span>
                     </div>
                  </div>
               </div>

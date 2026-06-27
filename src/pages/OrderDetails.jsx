@@ -25,7 +25,7 @@ const STATUS_CONFIG = {
   // حالات النظام القديم
   new:      { label: 'جديد',   bgClass: 'bg-blue-100',  textClass: 'text-blue-700',  btnClass: 'bg-blue-600 hover:bg-blue-500 text-white',   icon: FileText },
   printing: { label: 'طباعة',  bgClass: 'bg-amber-100', textClass: 'text-amber-700', btnClass: 'bg-amber-500 hover:bg-amber-400 text-white',  icon: Printer },
-  done:     { label: 'جاهز',   bgClass: 'bg-pink-100',  textClass: 'text-pink-700',  btnClass: 'bg-pink-500 hover:bg-pink-400 text-white',    icon: CheckCircle },
+  done:     { label: 'جاهز',   bgClass: 'bg-purple-50',  textClass: 'text-purple-700',  btnClass: 'bg-purple-600 hover:bg-purple-500 text-white',    icon: CheckCircle },
 };
 
 const VALID_TRANSITIONS = {
