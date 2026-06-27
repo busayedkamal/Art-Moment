@@ -10,8 +10,10 @@ import {
   Download, Share, PlusSquare, Sparkles, FileText,
   Plane, Gift, Smartphone, LayoutDashboard,
   MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet,
-  ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale, AlertCircle, ChevronLeft
+  ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale, AlertCircle, ChevronLeft,
+  User, LogOut
 } from 'lucide-react';
+import CustomerAuthModal from './components/CustomerAuthModal';
 
 import promoVideo from './assets/printing-quality.mp4';
 import logo from './assets/logo-art-moment.svg';
@@ -87,6 +89,23 @@ export default function LandingPage() {
   const [isInstallable, setIsInstallable]               = useState(false);
   const [isIOS, setIsIOS]                               = useState(false);
   const [showIOSInstructions, setShowIOSInstructions]   = useState(false);
+
+  // --- Customer auth ---
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [customer, setCustomer]               = useState(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('art_moment_customer');
+      if (saved) setCustomer(JSON.parse(saved));
+    } catch (e) {}
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('art_moment_customer');
+    setCustomer(null);
+    toast.success('تم تسجيل الخروج بنجاح');
+  };
 
   // --- Pricing states ---
   const [pricingSettings, setPricingSettings] = useState(null);
@@ -342,6 +361,21 @@ export default function LandingPage() {
             <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
               <Lock size={16} />
             </button>
+
+            {customer ? (
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Link to="/track" className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#4A4A4A] bg-white px-3 py-2 rounded-full border border-[#D9A3AA]/20 hover:bg-[#D9A3AA]/10 transition-colors shadow-sm">
+                  <User size={16} className="text-[#C5A059]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
+                </Link>
+                <button onClick={handleLogout} className="p-2 text-red-400 hover:text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors" title="تسجيل الخروج">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setIsAuthModalOpen(true)} className="flex items-center gap-1.5 bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm text-xs font-bold">
+                <User size={16} /> <span className="hidden sm:inline">دخول</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -1057,6 +1091,17 @@ export default function LandingPage() {
           </Link>
         </div>
       )}
+
+      <CustomerAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          try {
+            const saved = localStorage.getItem('art_moment_customer');
+            if (saved) setCustomer(JSON.parse(saved));
+          } catch (e) {}
+        }}
+      />
 
       {/* Floating WhatsApp button */}
       <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer"
