@@ -3,6 +3,11 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import {
+  getCustomerPhoneVariants,
+  getCustomerSession,
+  normalizeCustomerPhone,
+} from '../utils/customerSession';
 
 export default function StoreCart() {
   const [cart, setCart] = useState([]);
@@ -19,6 +24,11 @@ export default function StoreCart() {
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
     setCart(savedCart);
+    const customer = getCustomerSession();
+    if (customer) {
+      setName(customer.name || '');
+      setPhone(customer.phone || '');
+    }
   }, []);
 
   const saveCart = (newCart) => {
@@ -97,14 +107,16 @@ export default function StoreCart() {
     const toastId = toast.loading('جاري إرسال الطلب...');
 
     try {
-      const formattedPhone = String(phone).replace(/\D/g, '');
+      const formattedPhone = normalizeCustomerPhone(phone);
+      const phoneVariants = getCustomerPhoneVariants(phone);
 
       // CRM: lookup or create wallet entry
       let customerPin;
       const { data: existingWallet } = await supabase
         .from('wallets')
         .select('subscription_code')
-        .eq('phone', formattedPhone)
+        .in('phone', phoneVariants)
+        .limit(1)
         .maybeSingle();
 
       if (existingWallet) {
@@ -119,20 +131,37 @@ export default function StoreCart() {
         });
       }
 
-      const { data: orderData, error: orderError } = await supabase
+      const customerSession = getCustomerSession();
+      const orderPayload = {
+        customer_name: name || customerSession?.name || 'عميل المتجر',
+        phone: formattedPhone,
+        total_amount: subtotal,
+        amount_paid: 0,
+        delivery_fee: 0,
+        notes: notes || null,
+        city,
+        district,
+        street,
+      };
+
+      if (customerSession?.id) orderPayload.customer_id = customerSession.id;
+
+      let orderInsert = await supabase
         .from('store_orders')
-        .insert({
-          customer_name: name || 'عميل المتجر',
-          phone: formattedPhone,
-          total_amount: subtotal,
-          amount_paid: 0,
-          delivery_fee: 0,
-          notes: notes || null,
-          city, district, street
-        })
+        .insert(orderPayload)
         .select('id')
         .single();
 
+      if (orderInsert.error && orderPayload.customer_id && /customer_id|schema cache|column/i.test(orderInsert.error.message || '')) {
+        delete orderPayload.customer_id;
+        orderInsert = await supabase
+          .from('store_orders')
+          .insert(orderPayload)
+          .select('id')
+          .single();
+      }
+
+      const { data: orderData, error: orderError } = orderInsert;
       if (orderError) throw orderError;
 
       const orderItems = cart.map(item => ({

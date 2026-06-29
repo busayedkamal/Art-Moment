@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import RiyalSign from './components/RiyalSign';
+import { clearCustomerSession, getCustomerSession } from './utils/customerSession';
 
 import {
   Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck,
@@ -92,17 +94,15 @@ export default function LandingPage() {
 
   // --- Customer auth ---
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAccountSidebarOpen, setIsAccountSidebarOpen] = useState(false);
   const [customer, setCustomer]               = useState(null);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('art_moment_customer');
-      if (saved) setCustomer(JSON.parse(saved));
-    } catch (e) {}
+    setCustomer(getCustomerSession());
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('art_moment_customer');
+    clearCustomerSession();
     setCustomer(null);
     toast.success('تم تسجيل الخروج بنجاح');
   };
@@ -209,8 +209,31 @@ export default function LandingPage() {
 
   const getRelatedProducts = (currentProduct) => {
     if (!currentProduct) return [];
+    const getProductText = (product) =>
+      `${product.name || ''} ${product.description || ''} ${product.category || ''}`.toLowerCase();
+    const hasSmallPrintSize = (text) =>
+      /(?:10\s*[x×*]\s*15)|(?:4\s*[x×*]\s*6)|(?:4×6)|(?:10×15)/i.test(text);
+    const currentText = getProductText(currentProduct);
+    const currentIsA4 = currentText.includes('a4');
+    const currentIsSmall = hasSmallPrintSize(currentText);
+
     return products
-      .filter(p => p.id !== currentProduct.id && p.category !== currentProduct.category && p.inStock)
+      .filter(p => p.id !== currentProduct.id && p.inStock)
+      .map(product => {
+        const text = getProductText(product);
+        let score = product.category !== currentProduct.category ? 1 : 0;
+        if (currentIsA4) {
+          if (product.category === 'frames') score += 4;
+          if (text.includes('a4')) score += 3;
+        }
+        if (currentIsSmall) {
+          if (product.category === 'albums') score += 4;
+          if (hasSmallPrintSize(text)) score += 3;
+        }
+        return { product, score };
+      })
+      .sort((a, b) => b.score - a.score || (a.product.sortOrder || 0) - (b.product.sortOrder || 0))
+      .map(item => item.product)
       .slice(0, 4);
   };
 
@@ -364,10 +387,13 @@ export default function LandingPage() {
 
             {customer ? (
               <div className="flex items-center gap-1 sm:gap-2">
-                <Link to="/track" className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#4A4A4A] bg-white px-3 py-2 rounded-full border border-[#D9A3AA]/20 hover:bg-[#D9A3AA]/10 transition-colors shadow-sm">
+                <button onClick={() => setIsAccountSidebarOpen(true)} className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#4A4A4A] bg-white px-3 py-2 rounded-full border border-[#D9A3AA]/20 hover:bg-[#D9A3AA]/10 transition-colors shadow-sm">
                   <User size={16} className="text-[#C5A059]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
-                </Link>
-                <button onClick={handleLogout} className="p-2 text-red-400 hover:text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors" title="تسجيل الخروج">
+                </button>
+                <button onClick={() => setIsAccountSidebarOpen(true)} className="sm:hidden p-2 text-[#4A4A4A] bg-white rounded-full border border-[#D9A3AA]/20 transition-colors" title="حسابي">
+                  <User size={16} />
+                </button>
+                <button onClick={handleLogout} className="hidden sm:flex p-2 text-red-400 hover:text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors" title="تسجيل الخروج">
                   <LogOut size={16} />
                 </button>
               </div>
@@ -387,6 +413,14 @@ export default function LandingPage() {
             <a href="#services" className="block py-2 text-[#4A4A4A]"           onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
             <a href="#services" className="flex items-center gap-2 py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}><Wallet size={16} /> شحن المحفظة</a>
             <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
+            {customer && (
+              <button
+                onClick={() => { setIsMobileMenuOpen(false); setIsAccountSidebarOpen(true); }}
+                className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#C5A059]/20 shadow-sm"
+              >
+                حسابي
+              </button>
+            )}
             <button onClick={(e) => { setIsMobileMenuOpen(false); handleAdminClick(e); }}
               className="w-full text-center py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-white hover:text-[#D9A3AA] transition-all flex items-center justify-center gap-2">
               <Lock size={16} /> دخول المسؤول
@@ -1092,14 +1126,80 @@ export default function LandingPage() {
         </div>
       )}
 
+      {isAccountSidebarOpen && customer && (
+        <div className="fixed inset-0 z-[110] flex justify-end">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsAccountSidebarOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-[#F8F5F2] h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col" dir="rtl">
+            <div className="bg-[#4A4A4A] text-white p-6 pb-8 relative overflow-hidden shrink-0 rounded-bl-3xl">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#D9A3AA]/20 rounded-full blur-2xl" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#C5A059]/20 rounded-full blur-2xl" />
+              <button onClick={() => setIsAccountSidebarOpen(false)} className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-20">
+                <X size={18} />
+              </button>
+              <div className="flex items-center gap-4 mt-6 relative z-10">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white shrink-0">
+                  {customer.name ? customer.name.charAt(0) : <User size={28} />}
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-black truncate">{customer.name || 'عميل لحظة فن'}</h2>
+                  <p className="text-white/70 text-sm font-mono mt-1 truncate" dir="ltr">{customer.phone}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-3">
+                <Link to="/track" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#D9A3AA]/10 flex flex-col items-center justify-center gap-2 hover:border-[#D9A3AA]/40 transition-colors group">
+                  <div className="w-12 h-12 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA] group-hover:scale-110 transition-transform">
+                    <ShoppingBag size={22} />
+                  </div>
+                  <span className="font-bold text-sm text-[#4A4A4A]">طلباتي</span>
+                </Link>
+                <Link to="/track" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C5A059]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C5A059]/40 transition-colors group">
+                  <div className="w-12 h-12 bg-[#C5A059]/10 rounded-full flex items-center justify-center text-[#C5A059] group-hover:scale-110 transition-transform">
+                    <Wallet size={22} />
+                  </div>
+                  <span className="font-bold text-sm text-[#4A4A4A]">المحفظة</span>
+                </Link>
+              </div>
+
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9A3AA]/10">
+                <h3 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
+                  <User size={16} className="text-[#C5A059]" /> بيانات الحساب
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">الاسم</label>
+                    <input type="text" defaultValue={customer.name || ''} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none text-[#4A4A4A] font-bold" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">البريد الإلكتروني</label>
+                    <input type="email" defaultValue={customer.email || 'غير مسجل'} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none dir-ltr text-right text-[#4A4A4A] font-bold" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-white border-t border-[#D9A3AA]/10 shrink-0">
+              <button
+                onClick={() => { setIsAccountSidebarOpen(false); handleLogout(); }}
+                className="w-full py-4 bg-red-50 text-red-500 font-black text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors shadow-sm"
+              >
+                <LogOut size={18} /> تسجيل الخروج
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <CustomerAuthModal
         isOpen={isAuthModalOpen}
         onClose={() => {
           setIsAuthModalOpen(false);
-          try {
-            const saved = localStorage.getItem('art_moment_customer');
-            if (saved) setCustomer(JSON.parse(saved));
-          } catch (e) {}
+          setCustomer(getCustomerSession());
         }}
       />
 

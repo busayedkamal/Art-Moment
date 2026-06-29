@@ -1,5 +1,5 @@
 // src/pages/TrackOrderPage.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Search, Package, Clock, CheckCircle, Truck,
@@ -10,6 +10,7 @@ import {
 import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../assets/logo-art-moment.svg';
+import { getCustomerSession } from '../utils/customerSession';
 
 export default function TrackOrderPage() {
   const [activeTab, setActiveTab] = useState('id'); // 'id' or 'history'
@@ -23,6 +24,11 @@ export default function TrackOrderPage() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const customer = getCustomerSession();
+    if (customer?.phone) setPhone(customer.phone);
+  }, []);
 
   const storeStatusMap = {
     pending_verification: { label: 'بانتظار التأكيد', color: 'bg-blue-100 text-blue-700' },

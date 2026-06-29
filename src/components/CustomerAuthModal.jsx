@@ -2,6 +2,56 @@ import React, { useState } from 'react';
 import { X, Mail, Phone, User, Lock, LogIn, UserPlus, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import {
+  getCustomerPhoneVariants,
+  normalizeCustomerPhone,
+  saveCustomerSession,
+} from '../utils/customerSession';
+
+const HASH_PREFIX = 'pbkdf2';
+const HASH_ITERATIONS = 150000;
+
+const legacyObscure = (str) => btoa(unescape(encodeURIComponent(str)));
+
+const bytesToBase64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
+
+const base64ToBytes = (base64) =>
+  Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+
+async function derivePasswordHash(password, saltBytes, iterations = HASH_ITERATIONS) {
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: saltBytes, iterations },
+    keyMaterial,
+    256
+  );
+  return bytesToBase64(bits);
+}
+
+async function createPasswordHash(password) {
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await derivePasswordHash(password, saltBytes);
+  return `${HASH_PREFIX}$${HASH_ITERATIONS}$${bytesToBase64(saltBytes)}$${hash}`;
+}
+
+async function verifyPassword(password, storedHash) {
+  if (!storedHash) return { valid: false, legacy: false };
+  if (!storedHash.startsWith(`${HASH_PREFIX}$`)) {
+    return { valid: legacyObscure(password) === storedHash, legacy: true };
+  }
+
+  const [, iterations, salt, expectedHash] = storedHash.split('$');
+  if (!iterations || !salt || !expectedHash) return { valid: false, legacy: false };
+
+  const actualHash = await derivePasswordHash(password, base64ToBytes(salt), Number(iterations));
+  return { valid: actualHash === expectedHash, legacy: false };
+}
 
 export default function CustomerAuthModal({ isOpen, onClose }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,47 +64,56 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
 
   const set = (field) => (e) => setFormData(prev => ({ ...prev, [field]: e.target.value }));
 
-  // Simple reversible obscuring — not cryptographic, just not plaintext
-  const obscure = (str) => btoa(unescape(encodeURIComponent(str)));
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { name, email, phone, password, rememberMe } = formData;
+    const normalizedPhone = normalizeCustomerPhone(phone);
+    const phoneVariants = getCustomerPhoneVariants(phone);
+    const normalizedEmail = email.trim() || null;
 
-    if (!phone || !password) {
+    if (!normalizedPhone || !password) {
       toast.error('رقم الجوال وكلمة المرور مطلوبان.');
       return;
     }
 
     setLoading(true);
-    const passwordHash = obscure(password);
 
     try {
       if (!isLogin) {
         // ── تسجيل حساب جديد ──────────────────────────────────────────
-        const { data: existing } = await supabase
+        const { data: existingPhone } = await supabase
           .from('customers')
           .select('id')
-          .or(`phone.eq.${phone}${email ? `,email.eq.${email}` : ''}`)
+          .in('phone', phoneVariants)
+          .limit(1)
           .maybeSingle();
+        const { data: existingEmail } = normalizedEmail
+          ? await supabase.from('customers').select('id').eq('email', normalizedEmail).maybeSingle()
+          : { data: null };
 
-        if (existing) {
+        if (existingPhone || existingEmail) {
           toast.error('رقم الجوال أو البريد الإلكتروني مسجل مسبقاً. حاول تسجيل الدخول.');
           setLoading(false);
           return;
         }
 
+        const passwordHash = await createPasswordHash(password);
+
         const { data: newCustomer, error: insertErr } = await supabase
           .from('customers')
-          .insert({ name: name || null, email: email || null, phone, password_hash: passwordHash })
+          .insert({
+            name: name || null,
+            email: normalizedEmail,
+            phone: normalizedPhone,
+            password_hash: passwordHash,
+          })
           .select()
           .single();
 
         if (insertErr) throw insertErr;
 
         const session = { id: newCustomer.id, name: newCustomer.name, email: newCustomer.email, phone: newCustomer.phone };
-        localStorage.setItem('art_moment_customer', JSON.stringify(session));
-        if (rememberMe) localStorage.setItem('art_moment_customer_remember', 'true');
+        saveCustomerSession(session, { remember: rememberMe });
 
         toast.success(`أهلاً بك في لحظة فن ${name ? name : ''}! ✨`);
         onClose();
@@ -65,21 +124,30 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
         const { data: customer, error: fetchErr } = await supabase
           .from('customers')
           .select('*')
-          .eq('phone', phone)
-          .eq('password_hash', passwordHash)
+          .in('phone', phoneVariants)
+          .limit(1)
           .maybeSingle();
 
         if (fetchErr) throw fetchErr;
 
-        if (!customer) {
+        const passwordCheck = await verifyPassword(password, customer?.password_hash);
+        if (!customer || !passwordCheck.valid) {
           toast.error('رقم الجوال أو كلمة المرور غير صحيحة.');
           setLoading(false);
           return;
         }
 
-        const session = { id: customer.id, name: customer.name, email: customer.email, phone: customer.phone };
-        localStorage.setItem('art_moment_customer', JSON.stringify(session));
-        if (rememberMe) localStorage.setItem('art_moment_customer_remember', 'true');
+        const sessionPhone = normalizeCustomerPhone(customer.phone);
+        if (passwordCheck.legacy) {
+          const upgradedHash = await createPasswordHash(password);
+          await supabase
+            .from('customers')
+            .update({ password_hash: upgradedHash, phone: sessionPhone })
+            .eq('id', customer.id);
+        }
+
+        const session = { id: customer.id, name: customer.name, email: customer.email, phone: sessionPhone };
+        saveCustomerSession(session, { remember: rememberMe });
 
         toast.success(`مرحباً بعودتك${customer.name ? ' ' + customer.name : ''}! 👋`);
         onClose();

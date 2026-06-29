@@ -128,6 +128,12 @@ export default function ProductManagement() {
 
   const saveProduct = async () => {
     if (!form.name || !form.price) return toast.error('يرجى تعبئة الحقول المطلوبة');
+    if (form.isBestSeller) {
+      const currentCount = products.filter(p => p.isBestSeller && p.id !== editId).length;
+      if (currentCount >= 6) {
+        return toast.error('الحد الأقصى للمنتجات المميزة هو 6 منتجات فقط! 🌟');
+      }
+    }
     setIsSaving(true);
     try {
       if (isEdit) {

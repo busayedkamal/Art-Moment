@@ -571,7 +571,11 @@ export default function OrderDetails() {
         return toast.error('كود غير صالح');
       }
 
-      try { await syncWalletSpend(0); } catch (_) {}
+      try {
+        await syncWalletSpend(0);
+      } catch {
+        // Wallet cleanup is best-effort when switching to coupon discount.
+      }
       setDiscountSource('discount');
 
       const currentSubtotal = Number(order.subtotal || 0);
@@ -1187,7 +1191,7 @@ export default function OrderDetails() {
                   {order.status && (
                     <span className={`hidden sm:inline-flex shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' :
-                      order.status === 'done'      ? 'bg-[#D9A3AA]/20 text-[#C48A92]' :
+                      order.status === 'done'      ? 'bg-purple-50 text-purple-700' :
                       order.status === 'printing'  ? 'bg-amber-100 text-amber-700' :
                                                      'bg-blue-100 text-blue-700'
                     }`}>

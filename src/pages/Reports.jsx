@@ -104,7 +104,7 @@ export default function Reports() {
       if (dateInfo && monthlyMap[dateInfo.key]) monthlyMap[dateInfo.key].orders += 1;
 
       const city = o.source ? o.source.trim() : 'أخرى';
-      if (citiesMap.hasOwnProperty(city)) {
+      if (Object.prototype.hasOwnProperty.call(citiesMap, city)) {
         citiesMap[city]++;
       } else {
         citiesMap['أخرى']++;

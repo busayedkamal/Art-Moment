@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import { clearCustomerSession, getCustomerSession } from '../utils/customerSession';
 import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
   Menu, X, Download, AlertCircle, ShoppingBag, Plus,
@@ -45,14 +46,11 @@ export default function StoreIndex() {
   const [customer, setCustomer]               = useState(null);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('art_moment_customer');
-      if (saved) setCustomer(JSON.parse(saved));
-    } catch (e) {}
+    setCustomer(getCustomerSession());
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('art_moment_customer');
+    clearCustomerSession();
     setCustomer(null);
     toast.success('تم تسجيل الخروج بنجاح');
   };
@@ -157,23 +155,32 @@ export default function StoreIndex() {
 
   const getRecommendations = (currentProd) => {
     if (!currentProd) return [];
-    let pool = products.filter(p => p.id !== currentProd.id && p.inStock);
-    const name = currentProd.name.toLowerCase();
-    const isA4    = name.includes('a4');
-    const isSmall = name.includes('4x6') || name.includes('10*15') || name.includes('10×15');
+    const getProductText = (product) =>
+      `${product.name || ''} ${product.description || ''} ${product.category || ''}`.toLowerCase();
+    const hasSmallPrintSize = (text) =>
+      /(?:10\s*[x×*]\s*15)|(?:4\s*[x×*]\s*6)|(?:4×6)|(?:10×15)/i.test(text);
+    const currentText = getProductText(currentProd);
+    const isA4 = currentText.includes('a4');
+    const isSmall = hasSmallPrintSize(currentText);
 
-    if (isA4) {
-      pool.sort((a, b) => (b.name.toLowerCase().includes('a4') ? 1 : 0) - (a.name.toLowerCase().includes('a4') ? 1 : 0));
-    } else if (isSmall) {
-      pool.sort((a, b) => {
-        const scoreA = a.category === 'albums' || a.name.includes('10*15') ? 1 : 0;
-        const scoreB = b.category === 'albums' || b.name.includes('10*15') ? 1 : 0;
-        return scoreB - scoreA;
-      });
-    } else {
-      pool.sort(() => 0.5 - Math.random());
-    }
-    return pool.slice(0, 2);
+    return products
+      .filter(p => p.id !== currentProd.id && p.inStock)
+      .map(product => {
+        const text = getProductText(product);
+        let score = product.category !== currentProd.category ? 1 : 0;
+        if (isA4) {
+          if (product.category === 'frames') score += 4;
+          if (text.includes('a4')) score += 3;
+        }
+        if (isSmall) {
+          if (product.category === 'albums') score += 4;
+          if (hasSmallPrintSize(text)) score += 3;
+        }
+        return { product, score };
+      })
+      .sort((a, b) => b.score - a.score || (a.product.sortOrder || 0) - (b.product.sortOrder || 0))
+      .map(item => item.product)
+      .slice(0, 2);
   };
 
   return (
@@ -389,10 +396,7 @@ export default function StoreIndex() {
         isOpen={isAuthModalOpen}
         onClose={() => {
           setIsAuthModalOpen(false);
-          try {
-            const saved = localStorage.getItem('art_moment_customer');
-            if (saved) setCustomer(JSON.parse(saved));
-          } catch (e) {}
+          setCustomer(getCustomerSession());
         }}
       />
 
