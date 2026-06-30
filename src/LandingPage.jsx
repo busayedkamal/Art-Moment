@@ -147,8 +147,9 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const { data } = await supabase.from('settings').select('*').eq('id', 1).single();
-        if (data) setPricingSettings(data);
+        const { data, error } = await supabase.functions.invoke('public-settings', { body: {} });
+        if (error) throw error;
+        if (data?.settings) setPricingSettings(data.settings);
       } catch (err) { console.error('Error fetching settings:', err); }
     };
     fetchSettings();

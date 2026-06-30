@@ -12,6 +12,15 @@ import toast, { Toaster } from 'react-hot-toast';
 import logo from '../assets/logo-art-moment.svg';
 import { getCustomerSession } from '../utils/customerSession';
 
+async function getFunctionError(error) {
+  try {
+    const body = await error?.context?.clone?.().json?.();
+    return body?.error || error?.message;
+  } catch {
+    return error?.message;
+  }
+}
+
 export default function TrackOrderPage() {
   const [activeTab, setActiveTab] = useState('id'); // 'id' or 'history'
   const [searchId, setSearchId] = useState('');
@@ -41,35 +50,6 @@ export default function TrackOrderPage() {
     returned:             { label: 'مرتجع',           color: 'bg-orange-100 text-orange-700' },
   };
 
-  const fetchCustomerStats = async (phoneStr) => {
-    if (!phoneStr) return;
-    let digits = String(phoneStr).replace(/\D/g, '');
-    if (digits.startsWith('966')) digits = digits.slice(3);
-    if (digits.startsWith('0')) digits = digits.slice(1);
-    const withZero = digits.length === 9 ? '0' + digits : digits;
-    const allFormats = [withZero, digits, '966' + digits, '+966' + digits, '+966' + withZero, '00966' + digits];
-
-    try {
-      const { data: walletsFound } = await supabase.from('wallets').select('id, points_balance').in('phone', allFormats);
-      const allWalletIds = (walletsFound || []).map(w => w.id);
-      const pointsBalance = (walletsFound || []).reduce((sum, w) => sum + Number(w.points_balance || 0), 0);
-
-      let packageBalance = 0;
-      if (allWalletIds.length > 0) {
-        const { data: pkgTx } = await supabase.from('wallet_transactions').select('type, points, amount_value')
-          .in('wallet_id', allWalletIds).in('type', ['package_charge', 'package_redeem']);
-        (pkgTx || []).forEach(tx => {
-          if (tx.type === 'package_charge') packageBalance += Number(tx.points || 0);
-          if (tx.type === 'package_redeem') packageBalance -= Number(tx.amount_value || 0);
-        });
-        packageBalance = Math.max(0, packageBalance);
-      }
-      setCustomerStats({ points: pointsBalance, packages: packageBalance, debt: 0, net: pointsBalance });
-    } catch (e) {
-      console.error("Error fetching stats:", e);
-    }
-  };
-
   const handleIdSearch = async (e) => {
     e.preventDefault();
 
@@ -81,27 +61,14 @@ export default function TrackOrderPage() {
 
     setLoading(true); setError(null); setOrdersList([]); setCustomerStats(null);
     try {
-      const [printRes, storeRes] = await Promise.all([
-        supabase.from('orders').select('*').eq('short_id', shortCleanId).maybeSingle(),
-        supabase.from('store_orders').select(`*, store_order_items(quantity, price_at_time, products(name, image))`).eq('short_id', shortCleanId).maybeSingle(),
-      ]);
+      const { data, error } = await supabase.functions.invoke('track-order', {
+        body: { mode: 'id', searchId: shortCleanId },
+      });
+      if (error) throw new Error(await getFunctionError(error));
 
-      let foundOrder = null;
-      if (printRes.data) foundOrder = { ...printRes.data, order_type: 'print' };
-      else if (storeRes.data) foundOrder = { ...storeRes.data, order_type: 'store' };
-
-      if (!foundOrder) {
-        setError('لم يتم العثور على طلب بهذا الرقم، تأكد من الرقم وحاول مجدداً.');
-        return;
-      }
-
-      setOrdersList([foundOrder]);
-
-      if (foundOrder.order_type === 'print') {
-        const { data: payData } = await supabase.from('order_payments').select('*').eq('order_id', foundOrder.id).order('payment_date', { ascending: true });
-        setPaymentsMap({ [foundOrder.id]: payData || [] });
-        if (foundOrder.phone) await fetchCustomerStats(foundOrder.phone);
-      }
+      setOrdersList(data?.orders || []);
+      setPaymentsMap(data?.paymentsMap || {});
+      setCustomerStats(data?.customerStats || null);
     } catch (err) {
       console.error('Search Error:', err);
       setError('حدث خطأ أثناء البحث، يرجى المحاولة مجدداً.');
@@ -117,66 +84,19 @@ export default function TrackOrderPage() {
 
     setLoading(true); setError(null); setOrdersList([]); setCustomerStats(null);
     try {
-      let shortPhone = cleanPhone;
-      if (cleanPhone.startsWith('0')) shortPhone = cleanPhone.slice(1);
-      if (cleanPhone.startsWith('966')) shortPhone = cleanPhone.slice(3);
-      
-      const phoneQuery = `phone.eq.${shortPhone},phone.eq.0${shortPhone},phone.eq.966${shortPhone},phone.eq.+966${shortPhone}`;
-
-      const { data: wallet } = await supabase.from('wallets').select('*').eq('subscription_code', pin).or(phoneQuery).maybeSingle();
-
-      if (!wallet) {
-        setError('رقم الجوال أو رمز الاشتراك غير صحيح');
-        setLoading(false); return;
-      }
-
-      await fetchCustomerStats(shortPhone);
-
-      const [printRes, storeRes] = await Promise.all([
-        supabase.from('orders').select('*').or(phoneQuery),
-        supabase.from('store_orders').select(`*, store_order_items(quantity, price_at_time, products(name, image))`).or(phoneQuery)
-      ]);
-
-      const pOrders = (printRes.data || []).map(o => ({ ...o, order_type: 'print' }));
-      const sOrders = (storeRes.data || []).map(o => ({ ...o, order_type: 'store' }));
-      
-      const combined = [...pOrders, ...sOrders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-      let calcPayments = 0;
-      let calcDebt = 0;
-      pOrders.forEach(o => {
-        const total = Number(o.total_amount || 0);
-        const paid  = Number(o.deposit || 0) + Number(o.wallet_used || 0);
-        calcPayments += paid;
-        calcDebt     += Math.max(0, total - paid);
+      const { data, error } = await supabase.functions.invoke('track-order', {
+        body: { mode: 'history', phone, pin },
       });
-      sOrders.forEach(o => {
-        const total = Number(o.total_amount || 0);
-        const paid  = Number(o.amount_paid || 0);
-        calcPayments += paid;
-        calcDebt     += Math.max(0, total - paid);
-      });
-      setCustomerStats(prev =>
-        prev ? { ...prev, totalPayments: calcPayments, totalDebt: calcDebt }
-             : { points: 0, packages: 0, totalPayments: calcPayments, totalDebt: calcDebt }
-      );
+      if (error) throw new Error(await getFunctionError(error));
 
-      if (combined.length === 0) {
+      const orders = data?.orders || [];
+      setOrdersList(orders);
+      setPaymentsMap(data?.paymentsMap || {});
+      setCustomerStats(data?.customerStats || null);
+
+      if (orders.length === 0) {
         toast.success('تم تسجيل الدخول بنجاح، ولكن لا توجد طلبات سابقة.');
-      } else {
-        const printIds = pOrders.map(o => o.id);
-        if (printIds.length > 0) {
-          const {data: payData} = await supabase.from('order_payments').select('*').in('order_id', printIds).order('payment_date', { ascending: true });
-          const pMap = {};
-          (payData || []).forEach(p => {
-            if (!pMap[p.order_id]) pMap[p.order_id] = [];
-            pMap[p.order_id].push(p);
-          });
-          setPaymentsMap(pMap);
-        }
       }
-      setOrdersList(combined);
-
     } catch (err) {
       console.error(err);
       setError('حدث خطأ أثناء جلب السجل.');

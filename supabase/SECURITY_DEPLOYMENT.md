@@ -1,0 +1,46 @@
+# Art Moment Security Deployment
+
+## Order of operations
+
+1. Deploy the Edge Functions:
+
+```bash
+supabase functions deploy public-settings
+supabase functions deploy customer-auth
+supabase functions deploy store-checkout
+supabase functions deploy track-order
+```
+
+2. Set secrets for server-side WhatsApp sending:
+
+```bash
+supabase secrets set WHATSAPP_ENABLED=true
+supabase secrets set ULTRAMSG_INSTANCE_ID=your-instance-id
+supabase secrets set ULTRAMSG_TOKEN=your-token
+```
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` must be available to the functions. If they are not already present in the project, add them as Supabase secrets before deploying.
+
+3. Apply the RLS migration from Supabase SQL Editor:
+
+```text
+supabase/migrations/202606300001_secure_public_access.sql
+```
+
+4. Confirm these public flows still work:
+
+- Landing page pricing loads.
+- Customer signup/login works.
+- Store checkout creates an order.
+- Tracking by short order id works.
+- Tracking by phone + PIN works.
+
+5. After confirming admin access, add at least one admin row:
+
+```sql
+insert into public.admin_users (email)
+values ('admin@example.com')
+on conflict (email) do nothing;
+```
+
+When `admin_users` is empty, any Supabase Auth user can use admin policies as a bootstrap fallback. Once at least one row exists, access is limited to matching `user_id` or `email`.

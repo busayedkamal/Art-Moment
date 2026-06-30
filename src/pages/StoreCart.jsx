@@ -4,10 +4,18 @@ import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as Ima
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {
-  getCustomerPhoneVariants,
   getCustomerSession,
   normalizeCustomerPhone,
 } from '../utils/customerSession';
+
+async function getFunctionError(error) {
+  try {
+    const body = await error?.context?.clone?.().json?.();
+    return body?.error || error?.message;
+  } catch {
+    return error?.message;
+  }
+}
 
 export default function StoreCart() {
   const [cart, setCart] = useState([]);
@@ -69,35 +77,6 @@ export default function StoreCart() {
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (Number(item.qty) || 0)), 0);
 
-  const sendAutoConfirmationWhatsApp = async (orderId, customerName, customerPhone, totalAmount, customerPin) => {
-    try {
-      const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
-      if (!settings || !settings.whatsapp_enabled || !settings.whatsapp_instance_id || !settings.whatsapp_token) return;
-
-      let formattedPhone = String(customerPhone).replace(/\D/g, '');
-      if (formattedPhone.startsWith('0')) formattedPhone = '966' + formattedPhone.substring(1);
-
-      const msg =
-        `مرحباً *${customerName || 'عميلنا العزيز'}* 🌸\n\n` +
-        `تم استلام طلبك من متجر لحظة فن بنجاح! 🎉\n` +
-        `رقم الطلب: *#${String(orderId).slice(0, 6)}*\n` +
-        `الإجمالي: *${totalAmount} ريال*\n\n` +
-        `رقم جوالك المسجل: *${formattedPhone}*\n` +
-        `رمز التتبع (PIN): *${customerPin}*\n\n` +
-        `طلبك الآن (بانتظار التأكيد) ⏳.\n` +
-        `لتأكيد الطلب والبدء بتجهيزه، يرجى الرد على هذه الرسالة بكلمة *"تأكيد"*. وفي حال الرغبة بالإلغاء يرجى الرد بكلمة *"إلغاء"*.\n\n` +
-        `شكراً لاختيارك لحظة فن ✨`;
-
-      await fetch(`https://api.ultramsg.com/${settings.whatsapp_instance_id}/messages/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: settings.whatsapp_token, to: formattedPhone, body: msg })
-      });
-    } catch (error) {
-      console.error('WhatsApp Auto-Message Error:', error);
-    }
-  };
-
   const handleCheckout = async () => {
     const isValidPhone = /^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim());
     if (!isValidPhone) { setPhoneError(true); return; }
@@ -107,78 +86,30 @@ export default function StoreCart() {
     const toastId = toast.loading('جاري إرسال الطلب...');
 
     try {
-      const formattedPhone = normalizeCustomerPhone(phone);
-      const phoneVariants = getCustomerPhoneVariants(phone);
-
-      // CRM: lookup or create wallet entry
-      let customerPin;
-      const { data: existingWallet } = await supabase
-        .from('wallets')
-        .select('subscription_code')
-        .in('phone', phoneVariants)
-        .limit(1)
-        .maybeSingle();
-
-      if (existingWallet) {
-        customerPin = existingWallet.subscription_code;
-      } else {
-        customerPin = String(Math.floor(1000 + Math.random() * 9000));
-        await supabase.from('wallets').insert({
-          phone: formattedPhone,
-          subscription_code: customerPin,
-          points_balance: 0,
-          total_spent: 0,
-        });
-      }
-
       const customerSession = getCustomerSession();
-      const orderPayload = {
-        customer_name: name || customerSession?.name || 'عميل المتجر',
-        phone: formattedPhone,
-        total_amount: subtotal,
-        amount_paid: 0,
-        delivery_fee: 0,
-        notes: notes || null,
-        city,
-        district,
-        street,
-      };
+      const { error } = await supabase.functions.invoke('store-checkout', {
+        body: {
+          customer: {
+            id: customerSession?.id,
+            name: name || customerSession?.name,
+            phone: normalizeCustomerPhone(phone),
+            notes,
+            city,
+            district,
+            street,
+          },
+          items: cart.map(item => ({
+            id: item.id,
+            qty: item.qty,
+          })),
+        },
+      });
 
-      if (customerSession?.id) orderPayload.customer_id = customerSession.id;
-
-      let orderInsert = await supabase
-        .from('store_orders')
-        .insert(orderPayload)
-        .select('id')
-        .single();
-
-      if (orderInsert.error && orderPayload.customer_id && /customer_id|schema cache|column/i.test(orderInsert.error.message || '')) {
-        delete orderPayload.customer_id;
-        orderInsert = await supabase
-          .from('store_orders')
-          .insert(orderPayload)
-          .select('id')
-          .single();
+      if (error) {
+        throw new Error(await getFunctionError(error));
       }
-
-      const { data: orderData, error: orderError } = orderInsert;
-      if (orderError) throw orderError;
-
-      const orderItems = cart.map(item => ({
-        store_order_id: orderData.id,
-        product_id: item.id,
-        quantity: item.qty,
-        price_at_time: item.price
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('store_order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
 
       saveCart([]);
-      await sendAutoConfirmationWhatsApp(orderData.id, name, formattedPhone, subtotal, customerPin);
       toast.success('تم استلام طلبك بنجاح!', { id: toastId });
       setIsSubmitted(true);
     } catch (error) {
