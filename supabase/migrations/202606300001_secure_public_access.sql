@@ -61,7 +61,7 @@ create policy products_public_read
 on public.products
 for select
 to anon, authenticated
-using (public.is_admin() or coalesce(in_stock, true));
+using (true);
 
 drop policy if exists products_admin_all on public.products;
 create policy products_admin_all

@@ -116,12 +116,8 @@ export default function TrackOrderPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F5F2] flex flex-col items-center py-10 px-4 relative font-sans text-[#4A4A4A]" dir="rtl">
+    <div className="art-page min-h-screen flex flex-col items-center py-10 px-4 relative font-sans text-[#4A4A4A]" dir="rtl">
       <Toaster position="top-center" />
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-         <div className="absolute top-[-10%] right-[-5%] w-[30rem] h-[30rem] bg-[#D9A3AA]/10 rounded-full blur-3xl"></div>
-         <div className="absolute bottom-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-[#C5A059]/10 rounded-full blur-3xl"></div>
-      </div>
 
       <Link to="/" className="absolute top-6 right-6 flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-[#D9A3AA]/20 shadow-sm text-[#4A4A4A] hover:text-[#D9A3AA] transition-colors font-bold text-sm z-10">
         <Home size={16} /> الرئيسية
@@ -136,7 +132,7 @@ export default function TrackOrderPage() {
       <div className="w-full max-w-xl mx-auto relative z-10">
 
         {/* Tabs */}
-        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-[#D9A3AA]/10 mb-6">
+        <div className="art-panel flex p-1 rounded-2xl mb-6">
           <button
             onClick={() => { setActiveTab('id'); setOrdersList([]); setError(null); }}
             className={`flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
@@ -161,7 +157,7 @@ export default function TrackOrderPage() {
             <input
               type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)}
               placeholder="مثال: bf0177..."
-              className="w-full h-14 pl-14 pr-6 rounded-2xl border-2 border-[#D9A3AA]/20 bg-white shadow-sm focus:border-[#D9A3AA] outline-none text-center font-mono transition-all" dir="ltr"
+              className="art-input w-full h-14 pl-14 pr-6 rounded-2xl outline-none text-center font-mono" dir="ltr"
             />
             <button type="submit" disabled={loading} className="absolute left-2 top-2 bottom-2 aspect-square bg-[#D9A3AA] text-white rounded-xl flex items-center justify-center hover:bg-[#C5A059] transition-colors disabled:opacity-70 shadow-md">
               {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search size={24} />}
@@ -171,7 +167,7 @@ export default function TrackOrderPage() {
           <form onSubmit={handleHistorySearch} className="space-y-4 mb-6">
             <div className="relative">
               <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/50" size={20} />
-              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الجوال المسجل (مثال: 05...)" className="w-full h-14 pr-12 pl-4 rounded-2xl border-2 border-[#D9A3AA]/20 bg-white shadow-sm focus:border-[#D9A3AA] outline-none transition-all" />
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الجوال المسجل (مثال: 05...)" className="art-input w-full h-14 pr-12 pl-4 rounded-2xl outline-none" />
             </div>
             <div className="relative">
               <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/50" size={20} />

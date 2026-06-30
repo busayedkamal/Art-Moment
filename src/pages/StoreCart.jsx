@@ -122,7 +122,7 @@ export default function StoreCart() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-[#F8F5F2] font-sans flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
+      <div className="art-page min-h-screen font-sans flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
         <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center shadow-sm mb-6 animate-in zoom-in duration-500">
           <CheckCircle size={40} />
         </div>
@@ -143,7 +143,7 @@ export default function StoreCart() {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F8F5F2] font-sans flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
+      <div className="art-page min-h-screen font-sans flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-[#D9A3AA]/30">
           <ShoppingBag size={40} />
         </div>
@@ -157,9 +157,9 @@ export default function StoreCart() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A] pb-24" dir="rtl">
+    <div className="art-page min-h-screen font-sans text-[#4A4A4A] pb-24" dir="rtl">
       {/* Header */}
-      <header className="bg-white sticky top-0 z-40 border-b border-[#D9A3AA]/20 shadow-sm px-4 h-16 flex items-center justify-between">
+      <header className="art-nav art-nav-scrolled sticky top-0 z-40 px-4 h-16 flex items-center justify-between">
         <Link to="/store" className="flex items-center gap-2 text-[#4A4A4A]/60 hover:text-[#D9A3AA] text-sm font-bold transition-colors">
           <ArrowRight size={18} /> متابعة التسوق
         </Link>
@@ -225,7 +225,7 @@ export default function StoreCart() {
         {/* ملخص الطلب وبيانات العميل */}
         <div className="space-y-6">
           {/* ملخص */}
-          <div className="bg-white p-6 rounded-3xl border border-[#D9A3AA]/20 shadow-sm">
+          <div className="art-panel p-6 rounded-[1.5rem]">
             <h2 className="font-black text-[#4A4A4A] mb-4">ملخص الطلب</h2>
             <div className="space-y-3 mb-6 border-b border-[#F8F5F2] pb-4">
               <div className="flex justify-between text-sm">
@@ -244,7 +244,7 @@ export default function StoreCart() {
           </div>
 
           {/* بيانات التواصل والشحن */}
-          <div className="bg-white p-6 rounded-3xl border border-[#D9A3AA]/20 shadow-sm">
+          <div className="art-panel p-6 rounded-[1.5rem]">
             <h2 className="font-black text-[#4A4A4A] mb-4">بيانات التواصل والشحن</h2>
             <div className="space-y-4">
               <div>
@@ -257,7 +257,7 @@ export default function StoreCart() {
                   value={phone}
                   onChange={e => { setPhone(e.target.value); setPhoneError(false); }}
                   placeholder="05XXXXXXXX"
-                  className={`w-full bg-[#F8F5F2] border rounded-xl px-4 py-2.5 outline-none text-right transition-colors ${
+                  className={`art-input w-full rounded-xl px-4 py-2.5 outline-none text-right ${
                     phoneError
                       ? 'border-red-400 focus:border-red-500 bg-red-50'
                       : 'border-[#D9A3AA]/20 focus:border-[#D9A3AA]'
@@ -276,7 +276,7 @@ export default function StoreCart() {
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA]"
+                  className="art-input w-full rounded-xl px-4 py-2.5 outline-none"
                 />
               </div>
 
@@ -289,7 +289,7 @@ export default function StoreCart() {
                   <select
                     value={city}
                     onChange={e => setCity(e.target.value)}
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA] appearance-none"
+                    className="art-input w-full rounded-xl px-4 py-2.5 outline-none appearance-none"
                   >
                     <option value="">اختر المدينة...</option>
                     <option value="الأحساء">الأحساء</option>
@@ -310,7 +310,7 @@ export default function StoreCart() {
                     value={district}
                     onChange={e => setDistrict(e.target.value)}
                     placeholder="اسم الحي"
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA]"
+                    className="art-input w-full rounded-xl px-4 py-2.5 outline-none"
                   />
                 </div>
                 <div>
@@ -322,7 +322,7 @@ export default function StoreCart() {
                     value={street}
                     onChange={e => setStreet(e.target.value)}
                     placeholder="اسم الشارع أو رقم المبنى"
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA]"
+                    className="art-input w-full rounded-xl px-4 py-2.5 outline-none"
                   />
                 </div>
               </div>
@@ -333,7 +333,7 @@ export default function StoreCart() {
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="مثال: طريقة التوصيل المرتجاة..."
-                  className="w-full h-20 resize-none bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-2 outline-none focus:border-[#D9A3AA]"
+                  className="art-input w-full h-20 resize-none rounded-xl px-4 py-2 outline-none"
                 />
               </div>
             </div>
@@ -344,7 +344,7 @@ export default function StoreCart() {
             disabled={!phone || !city || !district || !street || isSubmitting}
             className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg ${
               phone && city && district && street && !isSubmitting
-                ? 'bg-[#4A4A4A] text-white hover:bg-[#D9A3AA] hover:-translate-y-1'
+                ? 'art-cta'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
             }`}
           >

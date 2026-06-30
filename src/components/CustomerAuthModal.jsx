@@ -96,8 +96,8 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" dir="rtl">
-      <div className="relative w-full max-w-md bg-[#F8F5F2] rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="art-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" dir="rtl">
+      <div className="art-auth-card relative w-full max-w-md rounded-[1.5rem] overflow-hidden animate-in zoom-in-95 duration-300">
         <button
           type="button"
           onClick={onClose}
@@ -107,9 +107,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
           <X size={18} />
         </button>
 
-        <div className="bg-[#4A4A4A] pt-10 pb-6 px-6 text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#D9A3AA]/20 rounded-full blur-2xl" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#C5A059]/20 rounded-full blur-2xl" />
+        <div className="art-auth-header pt-10 pb-6 px-6 text-center relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-2xl font-black text-white mb-2">
               {isLogin ? 'مرحباً بعودتك' : 'انضمي إلى لحظة فن'}
@@ -148,7 +146,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
                 placeholder="الاسم (اختياري)"
                 value={formData.name}
                 onChange={set('name')}
-                className="w-full h-12 pr-12 pl-4 rounded-xl border border-[#D9A3AA]/20 bg-white focus:border-[#D9A3AA] outline-none transition-all text-sm"
+                className="art-input w-full h-12 pr-12 pl-4 rounded-xl outline-none text-sm"
               />
             </div>
           )}
@@ -161,7 +159,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
                 placeholder="البريد الإلكتروني"
                 value={formData.email}
                 onChange={set('email')}
-                className="w-full h-12 pr-12 pl-4 rounded-xl border border-[#D9A3AA]/20 bg-white focus:border-[#D9A3AA] outline-none transition-all text-sm dir-ltr text-right"
+                className="art-input w-full h-12 pr-12 pl-4 rounded-xl outline-none text-sm dir-ltr text-right"
               />
             </div>
           )}
@@ -174,7 +172,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
               placeholder="رقم الجوال (05...)"
               value={formData.phone}
               onChange={set('phone')}
-              className="w-full h-12 pr-12 pl-4 rounded-xl border border-[#D9A3AA]/20 bg-white focus:border-[#D9A3AA] outline-none transition-all text-sm dir-ltr text-right"
+              className="art-input w-full h-12 pr-12 pl-4 rounded-xl outline-none text-sm dir-ltr text-right"
             />
           </div>
 
@@ -187,7 +185,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
               placeholder="كلمة المرور"
               value={formData.password}
               onChange={set('password')}
-              className="w-full h-12 pr-12 pl-4 rounded-xl border border-[#D9A3AA]/20 bg-white focus:border-[#D9A3AA] outline-none transition-all text-sm"
+              className="art-input w-full h-12 pr-12 pl-4 rounded-xl outline-none text-sm"
             />
           </div>
 
@@ -211,7 +209,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 mt-2 bg-[#4A4A4A] text-white rounded-xl font-black text-sm hover:bg-[#D9A3AA] transition-colors flex items-center justify-center gap-2 shadow-lg disabled:opacity-60"
+            className="art-cta w-full h-12 mt-2 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={18} className="animate-spin" />

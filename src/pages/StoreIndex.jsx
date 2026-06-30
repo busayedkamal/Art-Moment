@@ -184,11 +184,11 @@ export default function StoreIndex() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A] relative overflow-x-hidden" dir="rtl">
+    <div className="art-page min-h-screen font-sans relative overflow-x-hidden" dir="rtl">
 
       {/* Navbar */}
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#F8F5F2]/90 backdrop-blur-md shadow-sm border-b border-[#D9A3AA]/10' : 'bg-transparent'}`}>
-        <div className="w-[96%] max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <header className={`sticky top-0 z-50 art-nav transition-all duration-300 ${scrolled ? 'art-nav-scrolled' : ''}`}>
+        <div className="art-shell h-20 flex items-center justify-between">
 
           <div className="flex items-center gap-1 sm:gap-3">
             <button className="md:hidden p-1 -mr-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -255,7 +255,7 @@ export default function StoreIndex() {
         </div>
 
         {/* Search & Filters */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8 bg-white p-4 rounded-3xl border border-[#D9A3AA]/10 shadow-sm">
+        <div className="art-panel flex flex-col md:flex-row gap-4 items-center justify-between mb-8 p-4 rounded-[1.5rem]">
           <div className="flex overflow-x-auto gap-2 w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
             {uniqueCategories.map(cat => (
               <button
@@ -276,7 +276,7 @@ export default function StoreIndex() {
             <input
               value={searchQ} onChange={e => setSearchQ(e.target.value)}
               placeholder="ابحث هنا..."
-              className="w-full bg-[#F8F5F2] border border-transparent rounded-full px-4 py-2.5 pr-10 outline-none focus:border-[#D9A3AA] transition-colors text-sm"
+              className="art-input w-full rounded-full px-4 py-2.5 pr-10 outline-none text-sm"
             />
             <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
             {searchQ && (
@@ -294,10 +294,10 @@ export default function StoreIndex() {
               <div
                 key={product.id}
                 onClick={() => { if (product.inStock) { setSelectedProduct(product); setIsModalOpen(true); } }}
-                className={`bg-white rounded-[2rem] p-4 border border-[#D9A3AA]/10 shadow-sm transition-all group flex flex-col relative overflow-hidden ${product.inStock ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1' : 'opacity-80 cursor-not-allowed'}`}
+                className={`art-product-card p-4 group flex flex-col relative overflow-hidden ${product.inStock ? 'cursor-pointer' : 'opacity-80 cursor-not-allowed'}`}
               >
 
-                <div className={`aspect-square bg-[#F8F5F2] rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'group-hover:scale-105' : 'grayscale'}`}>
+                <div className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'group-hover:scale-105' : 'grayscale'}`}>
                   {product.image ? (
                     <>
                       <img src={product.image} alt={product.name}
@@ -410,9 +410,7 @@ export default function StoreIndex() {
           <div className="relative w-full max-w-sm bg-[#F8F5F2] h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col" dir="rtl">
 
             {/* Header */}
-            <div className="bg-[#4A4A4A] text-white p-6 pb-8 relative overflow-hidden shrink-0 rounded-bl-3xl">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#D9A3AA]/20 rounded-full blur-2xl" />
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#C5A059]/20 rounded-full blur-2xl" />
+            <div className="art-auth-header text-white p-6 pb-8 relative overflow-hidden shrink-0 rounded-bl-3xl">
               <button onClick={() => setIsAccountSidebarOpen(false)} className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-20">
                 <X size={18} />
               </button>

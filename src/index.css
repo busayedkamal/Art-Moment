@@ -33,10 +33,158 @@ body {
   --shadow-card-md:    0 4px 20px rgba(74,74,74,0.10);
   --shadow-pink:       0 4px 14px rgba(217,163,170,0.35);
   --shadow-gold:       0 4px 14px rgba(197,160,89,0.35);
+  --am-rose:           #D9A3AA;
+  --am-rose-deep:      #B97882;
+  --am-gold:           #C5A059;
+  --am-gold-deep:      #9E7D35;
+  --am-ink:            #393737;
+  --am-muted:          rgba(57,55,55,0.64);
+  --am-bg:             #F8F5F2;
+  --am-paper:          #FFFFFF;
+  --am-warm:           #F1E8DF;
+  --am-line:           rgba(57,55,55,0.10);
+  --am-shadow-soft:    0 18px 45px rgba(57,55,55,0.08);
+  --am-shadow-lift:    0 24px 70px rgba(57,55,55,0.14);
 }
 
 /* ─── مكوّنات عامة — هوية لحظة فن ─────────────── */
 @layer components {
+
+  .art-page {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(248,245,242,0.96) 34%, #F8F5F2 100%),
+      repeating-linear-gradient(135deg, rgba(197,160,89,0.035) 0 1px, transparent 1px 22px);
+    color: var(--am-ink);
+  }
+
+  .art-shell {
+    @apply w-[96%] max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .art-nav {
+    background: rgba(248,245,242,0.72);
+    border-bottom: 1px solid transparent;
+    backdrop-filter: blur(18px);
+  }
+
+  .art-nav-scrolled {
+    background: rgba(255,255,255,0.82);
+    border-bottom-color: var(--am-line);
+    box-shadow: 0 12px 32px rgba(57,55,55,0.06);
+  }
+
+  .art-panel {
+    background: rgba(255,255,255,0.78);
+    border: 1px solid rgba(217,163,170,0.18);
+    box-shadow: var(--am-shadow-soft);
+    backdrop-filter: blur(16px);
+  }
+
+  .art-section {
+    @apply mx-auto px-4;
+  }
+
+  .art-section-kicker {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-black;
+    background: rgba(217,163,170,0.14);
+    color: var(--am-rose-deep);
+    border: 1px solid rgba(217,163,170,0.22);
+  }
+
+  .art-title {
+    @apply font-black leading-tight;
+    color: var(--am-ink);
+    letter-spacing: 0;
+  }
+
+  .art-subtitle {
+    color: var(--am-muted);
+    line-height: 1.9;
+  }
+
+  .art-hero-card {
+    background:
+      linear-gradient(135deg, rgba(57,55,55,0.98), rgba(70,61,57,0.94)),
+      linear-gradient(90deg, rgba(217,163,170,0.18), rgba(197,160,89,0.16));
+    border: 1px solid rgba(255,255,255,0.44);
+    box-shadow: var(--am-shadow-lift);
+  }
+
+  .art-product-card {
+    border-radius: 24px;
+    border: 1px solid rgba(217,163,170,0.16);
+    background: rgba(255,255,255,0.86);
+    box-shadow: 0 12px 36px rgba(57,55,55,0.07);
+    transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  }
+
+  .art-product-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(197,160,89,0.34);
+    box-shadow: 0 24px 60px rgba(57,55,55,0.12);
+  }
+
+  .art-product-media {
+    background:
+      linear-gradient(145deg, rgba(248,245,242,0.96), rgba(241,232,223,0.84));
+    border: 1px solid rgba(217,163,170,0.14);
+  }
+
+  .art-chip {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-black transition-all;
+    background: rgba(255,255,255,0.72);
+    color: var(--am-ink);
+    border: 1px solid rgba(217,163,170,0.18);
+  }
+
+  .art-chip-active {
+    background: linear-gradient(135deg, var(--am-rose), var(--am-gold));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 10px 24px rgba(197,160,89,0.22);
+  }
+
+  .art-cta {
+    background: linear-gradient(135deg, var(--am-rose), var(--am-gold));
+    color: #fff;
+    box-shadow: 0 16px 32px rgba(197,160,89,0.24);
+  }
+
+  .art-cta:hover {
+    box-shadow: 0 22px 46px rgba(197,160,89,0.32);
+    transform: translateY(-2px);
+  }
+
+  .art-input {
+    background: rgba(255,255,255,0.78);
+    border: 1px solid rgba(217,163,170,0.22);
+    color: var(--am-ink);
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+
+  .art-input:focus {
+    background: #fff;
+    border-color: rgba(197,160,89,0.56);
+    box-shadow: 0 0 0 4px rgba(197,160,89,0.12);
+  }
+
+  .art-modal-backdrop {
+    background: rgba(34,31,30,0.52);
+    backdrop-filter: blur(18px);
+  }
+
+  .art-auth-card {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,245,242,0.98));
+    border: 1px solid rgba(255,255,255,0.74);
+    box-shadow: var(--am-shadow-lift);
+  }
+
+  .art-auth-header {
+    background:
+      linear-gradient(135deg, rgba(57,55,55,0.98), rgba(70,61,57,0.96)),
+      linear-gradient(90deg, rgba(217,163,170,0.22), rgba(197,160,89,0.18));
+  }
 
   /* ── زر رئيسي (CTA) — وردي ناعم ────────────── */
   .btn-primary {

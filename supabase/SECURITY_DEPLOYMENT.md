@@ -27,6 +27,12 @@ supabase secrets set ULTRAMSG_TOKEN=your-token
 supabase/migrations/202606300001_secure_public_access.sql
 ```
 
+If the first migration was already applied before the product catalog patch, also run:
+
+```text
+supabase/migrations/202606300002_public_products_catalog.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.

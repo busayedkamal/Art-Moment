@@ -307,13 +307,7 @@ export default function LandingPage() {
   const activePkg = packages[activePackage];
 
   return (
-    <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A] relative overflow-x-hidden selection:bg-[#D9A3AA] selection:text-white" dir="rtl">
-
-      {/* Decorative background blobs */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[-10%] right-[-5%] w-[40rem] h-[40rem] bg-[#D9A3AA]/5 rounded-full blur-3xl opacity-60 mix-blend-multiply"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50rem] h-[50rem] bg-[#C5A059]/5 rounded-full blur-3xl opacity-50 mix-blend-multiply"></div>
-      </div>
+    <div className="art-page min-h-screen font-sans relative overflow-x-hidden selection:bg-[#D9A3AA] selection:text-white" dir="rtl">
 
       {/* Toast notification */}
       {toastMsg && (
@@ -343,8 +337,8 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           NAVBAR
       ══════════════════════════════════ */}
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#F8F5F2]/90 backdrop-blur-md shadow-sm border-b border-[#D9A3AA]/10' : 'bg-transparent'}`}>
-        <div className="w-[96%] max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <header className={`sticky top-0 z-50 art-nav transition-all duration-300 ${scrolled ? 'art-nav-scrolled' : ''}`}>
+        <div className="art-shell h-20 flex items-center justify-between">
 
           {/* Right Side: Mobile Menu + Logo */}
           <div className="flex items-center gap-1 sm:gap-3">
@@ -434,10 +428,7 @@ export default function LandingPage() {
           1. HERO SECTION (Banner Style)
       ══════════════════════════════════ */}
       <section className="pt-6 pb-8 w-[96%] max-w-[1600px] mx-auto px-4">
-        <div className="relative bg-[#4A4A4A] rounded-[2.5rem] overflow-hidden p-8 md:py-12 shadow-xl border-[4px] border-white/60 flex justify-center text-center text-white">
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D9A3AA]/20 blur-3xl rounded-full translate-x-1/2 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-1/3 h-full bg-[#C5A059]/20 blur-3xl rounded-full -translate-x-1/2 pointer-events-none"></div>
-
+        <div className="art-hero-card relative rounded-[2rem] md:rounded-[2.5rem] overflow-hidden p-8 md:py-12 flex justify-center text-center text-white">
           <div className="max-w-4xl mx-auto relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-[10px] sm:text-xs font-bold border border-[#D9A3AA]/30 mx-auto shadow-sm">
               <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
@@ -532,10 +523,10 @@ export default function LandingPage() {
             <div className="col-span-full text-center py-20 text-[#4A4A4A]/50 font-bold">لا توجد منتجات بعد</div>
           ) : (
             products.filter(p => p.isBestSeller).slice(0, 6).map(product => (
-              <div key={product.id} className={`bg-white rounded-3xl p-4 border border-[#D9A3AA]/10 shadow-sm transition-all group flex flex-col relative overflow-hidden ${product.inStock ? 'hover:shadow-lg' : 'opacity-75 cursor-not-allowed'}`}>
+              <div key={product.id} className={`art-product-card p-4 group flex flex-col relative overflow-hidden ${product.inStock ? '' : 'opacity-75 cursor-not-allowed'}`}>
                 <div
                   onClick={() => product.inStock && setSelectedProduct(product)}
-                  className={`aspect-square bg-[#F8F5F2] rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'cursor-pointer group-hover:scale-105' : 'grayscale'}`}
+                  className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'cursor-pointer group-hover:scale-105' : 'grayscale'}`}
                 >
                   {product.image ? (
                     <>
@@ -585,10 +576,10 @@ export default function LandingPage() {
           <div className="mt-12 sm:mt-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
             <Link
               to="/store"
-              className="inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 rounded-full bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white font-black text-lg hover:shadow-2xl hover:shadow-[#C5A059]/40 hover:-translate-y-1 transition-all duration-300 group"
+              className="art-cta inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 rounded-full font-black text-lg transition-all duration-300 group"
             >
               <ShoppingBag size={24} className="group-hover:scale-110 transition-transform" />
-              تصفح كامل المتجر ({products.length})
+              تصفح المتجر ({products.length})
             </Link>
             <p className="mt-4 text-xs font-bold text-[#4A4A4A]/40">
               اكتشف المزيد من الألبومات، الإطارات، والتوزيعات الحصرية.
@@ -1134,9 +1125,7 @@ export default function LandingPage() {
             onClick={() => setIsAccountSidebarOpen(false)}
           />
           <div className="relative w-full max-w-sm bg-[#F8F5F2] h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col" dir="rtl">
-            <div className="bg-[#4A4A4A] text-white p-6 pb-8 relative overflow-hidden shrink-0 rounded-bl-3xl">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#D9A3AA]/20 rounded-full blur-2xl" />
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#C5A059]/20 rounded-full blur-2xl" />
+            <div className="art-auth-header text-white p-6 pb-8 relative overflow-hidden shrink-0 rounded-bl-3xl">
               <button onClick={() => setIsAccountSidebarOpen(false)} className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-20">
                 <X size={18} />
               </button>
