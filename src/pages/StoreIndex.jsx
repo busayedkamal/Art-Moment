@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -6,7 +6,8 @@ import { clearCustomerSession, getCustomerSession } from '../utils/customerSessi
 import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
   Menu, X, Download, AlertCircle, ShoppingBag, Plus,
-  ChevronRight, ChevronLeft, ArrowLeft, Sparkles, User, LogOut, Package, Wallet
+  ChevronRight, ChevronLeft, ArrowLeft, Sparkles, User, LogOut, Package, Wallet,
+  ArrowUpDown
 } from 'lucide-react';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 
@@ -29,6 +30,9 @@ export default function StoreIndex() {
   const [products, setProducts]             = useState([]);
   const [searchQ, setSearchQ]               = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [sortMode, setSortMode]             = useState('featured');
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [productsError, setProductsError]   = useState('');
   const [cart, setCart]                     = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled]             = useState(false);
@@ -55,24 +59,30 @@ export default function StoreIndex() {
     toast.success('تم تسجيل الخروج بنجاح');
   };
 
+  const fetchProducts = useCallback(async () => {
+    try {
+      setIsProductsLoading(true);
+      setProductsError('');
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      setProducts((data || []).map(fromDb));
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setProductsError('تعذر تحميل المنتجات حالياً. تحققي من اتصال Supabase أو سياسات القراءة العامة للمنتجات.');
+    } finally {
+      setIsProductsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .order('sort_order', { ascending: true });
-        if (error) throw error;
-        setProducts((data || []).map(fromDb));
-      } catch (err) {
-        console.error('Error fetching products:', err);
-      }
-    };
     fetchProducts();
 
     const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
     setCart(savedCart);
-  }, []);
+  }, [fetchProducts]);
 
   useEffect(() => {
     localStorage.setItem('art_moment_cart', JSON.stringify(cart));
@@ -122,6 +132,13 @@ export default function StoreIndex() {
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   const uniqueCategories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
+  const categoryCounts = useMemo(() => products.reduce((counts, product) => {
+    const category = product.category || 'uncategorized';
+    counts.all += 1;
+    counts[category] = (counts[category] || 0) + 1;
+    return counts;
+  }, { all: 0 }), [products]);
+
   const getCategoryLabel = (cat) => {
     if (cat === 'all')      return 'الكل';
     if (cat === 'albums')   return 'ألبومات';
@@ -130,13 +147,24 @@ export default function StoreIndex() {
     return cat;
   };
 
-  const filteredProducts = useMemo(() => products.filter(p => {
-    const matchCat    = activeCategory === 'all' || p.category === activeCategory;
-    const matchSearch = p.name.toLowerCase().includes(searchQ.toLowerCase());
-    return matchCat && matchSearch;
-  }), [products, activeCategory, searchQ]);
+  const filteredProducts = useMemo(() => {
+    const normalizedSearch = searchQ.trim().toLowerCase();
+    const matches = products.filter(p => {
+      const matchCat = activeCategory === 'all' || p.category === activeCategory;
+      const productText = `${p.name || ''} ${p.description || ''}`.toLowerCase();
+      const matchSearch = !normalizedSearch || productText.includes(normalizedSearch);
+      return matchCat && matchSearch;
+    });
 
-  useEffect(() => { setCurrentPage(1); }, [activeCategory, searchQ]);
+    return [...matches].sort((a, b) => {
+      if (sortMode === 'price_asc') return Number(a.price || 0) - Number(b.price || 0);
+      if (sortMode === 'price_desc') return Number(b.price || 0) - Number(a.price || 0);
+      if (sortMode === 'name') return (a.name || '').localeCompare(b.name || '', 'ar');
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
+    });
+  }, [products, activeCategory, searchQ, sortMode]);
+
+  useEffect(() => { setCurrentPage(1); }, [activeCategory, searchQ, sortMode]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const currentProducts = filteredProducts.slice(
@@ -255,40 +283,122 @@ export default function StoreIndex() {
         </div>
 
         {/* Search & Filters */}
-        <div className="art-panel flex flex-col md:flex-row gap-4 items-center justify-between mb-8 p-4 rounded-[1.5rem]">
-          <div className="flex overflow-x-auto gap-2 w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
-            {uniqueCategories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all border ${
-                  activeCategory === cat
-                    ? 'bg-[#D9A3AA] text-white border-[#D9A3AA] shadow-md'
-                    : 'bg-[#F8F5F2] text-[#4A4A4A] border-transparent hover:border-[#D9A3AA]/30'
-                }`}
-              >
-                {getCategoryLabel(cat)}
-              </button>
-            ))}
-          </div>
+        <div className="art-panel mb-4 p-4 rounded-[1.5rem]">
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+            <div className="flex overflow-x-auto gap-2 w-full lg:w-auto pb-2 lg:pb-0 hide-scrollbar">
+              {uniqueCategories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-4 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all border inline-flex items-center gap-2 ${
+                    activeCategory === cat
+                      ? 'bg-[#D9A3AA] text-white border-[#D9A3AA] shadow-md'
+                      : 'bg-[#F8F5F2] text-[#4A4A4A] border-transparent hover:border-[#D9A3AA]/30'
+                  }`}
+                >
+                  <span>{getCategoryLabel(cat)}</span>
+                  <span className={`min-w-6 h-6 px-2 rounded-full text-[11px] flex items-center justify-center ${
+                    activeCategory === cat ? 'bg-white/20 text-white' : 'bg-white text-[#C5A059]'
+                  }`}>
+                    {categoryCounts[cat] || 0}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-          <div className="relative w-full md:w-72 shrink-0">
-            <input
-              value={searchQ} onChange={e => setSearchQ(e.target.value)}
-              placeholder="ابحث هنا..."
-              className="art-input w-full rounded-full px-4 py-2.5 pr-10 outline-none text-sm"
-            />
-            <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
-            {searchQ && (
-              <X size={14} onClick={() => setSearchQ('')} className="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer text-red-400" />
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_12rem] gap-3 w-full lg:w-[34rem]">
+              <div className="relative">
+                <input
+                  value={searchQ} onChange={e => setSearchQ(e.target.value)}
+                  placeholder="ابحث باسم المنتج أو الوصف..."
+                  className="art-input w-full rounded-full px-4 py-2.5 pr-10 outline-none text-sm"
+                />
+                <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
+                {searchQ && (
+                  <X size={14} onClick={() => setSearchQ('')} className="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer text-red-400" />
+                )}
+              </div>
+
+              <label className="relative block">
+                <ArrowUpDown size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C5A059] pointer-events-none" />
+                <select
+                  value={sortMode}
+                  onChange={e => setSortMode(e.target.value)}
+                  className="art-input w-full appearance-none rounded-full px-4 py-2.5 pr-10 pl-8 outline-none text-sm font-bold bg-white"
+                  aria-label="ترتيب المنتجات"
+                >
+                  <option value="featured">الأولوية</option>
+                  <option value="price_asc">السعر: الأقل</option>
+                  <option value="price_desc">السعر: الأعلى</option>
+                  <option value="name">الاسم</option>
+                </select>
+              </label>
+            </div>
           </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8 text-sm">
+          <p className="text-[#4A4A4A]/60 font-bold">
+            يعرض {filteredProducts.length} منتج من أصل {products.length}
+          </p>
+          {(searchQ || activeCategory !== 'all' || sortMode !== 'featured') && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQ('');
+                setActiveCategory('all');
+                setSortMode('featured');
+              }}
+              className="w-fit px-4 py-2 rounded-full bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 font-bold hover:bg-[#D9A3AA]/10 transition-colors"
+            >
+              مسح التصفية
+            </button>
+          )}
         </div>
 
         {/* Products Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
-          {currentProducts.length === 0 ? (
-            <div className="col-span-full text-center py-20 text-[#4A4A4A]/40 font-bold text-lg">لا توجد منتجات مطابقة لبحثك</div>
+          {isProductsLoading ? (
+            Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="art-product-card p-4 overflow-hidden">
+                <div className="art-product-media aspect-square rounded-2xl mb-4 bg-white/80 animate-pulse" />
+                <div className="h-4 w-4/5 bg-white rounded-full animate-pulse mb-3" />
+                <div className="h-3 w-3/5 bg-white rounded-full animate-pulse mb-6" />
+                <div className="flex items-center justify-between pt-3 border-t border-[#F8F5F2]">
+                  <div className="h-5 w-20 bg-white rounded-full animate-pulse" />
+                  <div className="h-10 w-10 bg-white rounded-xl animate-pulse" />
+                </div>
+              </div>
+            ))
+          ) : productsError ? (
+            <div className="col-span-full art-panel text-center py-14 px-6 rounded-[1.5rem]">
+              <AlertCircle size={34} className="mx-auto mb-4 text-[#D9A3AA]" />
+              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">لم نتمكن من تحميل المنتجات</h3>
+              <p className="text-[#4A4A4A]/60 max-w-lg mx-auto mb-6">{productsError}</p>
+              <button
+                type="button"
+                onClick={fetchProducts}
+                className="art-cta inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-black text-white"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
+          ) : currentProducts.length === 0 ? (
+            <div className="col-span-full text-center py-20 text-[#4A4A4A]/60">
+              <p className="font-black text-lg mb-4">لا توجد منتجات مطابقة لبحثك</p>
+              {(searchQ || activeCategory !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQ('');
+                    setActiveCategory('all');
+                  }}
+                  className="px-5 py-2.5 rounded-full bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 font-bold hover:bg-[#D9A3AA]/10 transition-colors"
+                >
+                  عرض كل المنتجات
+                </button>
+              )}
+            </div>
           ) : (
             currentProducts.map(product => (
               <div

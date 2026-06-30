@@ -148,9 +148,9 @@ export default function StoreCart() {
           <ShoppingBag size={40} />
         </div>
         <h2 className="text-2xl font-black mb-2">سلة المشتريات فارغة</h2>
-        <p className="text-[#4A4A4A]/50 text-sm mb-8">لم تقومي بإضافة أي منتجات للسلة بعد.</p>
+        <p className="text-[#4A4A4A]/50 text-sm mb-8">لم تقم بإضافة أي منتجات للسلة بعد.</p>
         <Link to="/store" className="bg-[#4A4A4A] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#D9A3AA] transition-colors">
-          تصفحي المتجر
+          تصفح المتجر
         </Link>
       </div>
     );
@@ -265,7 +265,7 @@ export default function StoreCart() {
                 />
                 {phoneError && (
                   <span className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
-                    <AlertCircle size={10} /> يرجى إدخال رقم جوال سعودي صحيح
+                    <AlertCircle size={10} /> يرجى إدخال رقم جوال صحيح
                   </span>
                 )}
               </div>

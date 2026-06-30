@@ -1,16 +1,122 @@
-# React + Vite
+# لحظة فن Art Moment
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+منصة تجارة إلكترونية وإدارة طلبات لطباعة الصور والمنتجات الفنية. تجمع المنصة بين واجهة عميل للمتجر والتتبع، ولوحة إدارة داخلية للطلبات والعملاء والمحافظ والتقارير.
 
-Currently, two official plugins are available:
+## نظرة عامة
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- الواجهة مبنية بـ React وVite.
+- التصميم مبني بـ Tailwind CSS مع هوية بصرية خاصة: وردي ناعم، ذهبي مطفي، خلفية لؤلؤية، ونص فحمي.
+- قاعدة البيانات والخدمات الخلفية عبر Supabase.
+- المسارات العامة الحساسة تعمل عبر Supabase Edge Functions بدل قراءة الجداول مباشرة من المتصفح.
+- لوحة الإدارة تعتمد على Supabase Auth وسياسات RLS.
 
-## React Compiler
+## أهم المسارات
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `/` الصفحة الرئيسية والتسويق والباقات.
+- `/store` المتجر الكامل، البحث، الفلاتر، وسلة الشراء.
+- `/store/cart` إتمام طلب المتجر.
+- `/track` تتبع الطلب أو عرض سجل العميل.
+- `/admin/login` دخول الإدارة.
+- `/app/dashboard` لوحة الإدارة.
+- `/app/orders` طلبات الطباعة.
+- `/app/store-orders` طلبات المتجر.
+- `/app/customers` العملاء والمحافظ.
+- `/app/products` إدارة منتجات المتجر.
+- `/app/reports` التقارير.
 
-## Expanding the ESLint configuration
+## التشغيل المحلي
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+ثبت الحزم:
+
+```bash
+npm install
+```
+
+شغل بيئة التطوير:
+
+```bash
+npm run dev
+```
+
+الفحص:
+
+```bash
+npm run lint
+```
+
+بناء نسخة الإنتاج:
+
+```bash
+npm run build
+```
+
+معاينة نسخة الإنتاج:
+
+```bash
+npm run preview
+```
+
+## متغيرات البيئة
+
+يحتاج التطبيق إلى ملف `.env.local` يحتوي:
+
+```bash
+VITE_SUPABASE_URL="https://your-project.supabase.co"
+VITE_SUPABASE_ANON_KEY="your-anon-key"
+```
+
+لا تضع مفاتيح الخدمة أو مفاتيح WhatsApp داخل متغيرات Vite لأنها تصل للمتصفح.
+
+## Supabase وRLS
+
+تم تجهيز سياسات RLS والوظائف الآمنة داخل مجلد `supabase/`.
+
+### الوظائف الآمنة
+
+- `public-settings`: قراءة الأسعار العامة بدون أسرار.
+- `customer-auth`: تسجيل/دخول العميل بدون كشف `password_hash`.
+- `store-checkout`: إنشاء طلب المتجر والمحفظة من جهة الخادم.
+- `track-order`: تتبع الطلب وسجل العميل بدون فتح جداول الطلبات والمحافظ للمتصفح.
+
+### ملفات SQL المهمة
+
+- `supabase/migrations/202606300001_secure_public_access.sql`
+  يقفل الجداول الحساسة ويفعل RLS.
+- `supabase/migrations/202606300002_public_products_catalog.sql`
+  يحافظ على قراءة كتالوج المنتجات للزوار بعد تفعيل RLS.
+
+راجع:
+
+```text
+supabase/SECURITY_DEPLOYMENT.md
+```
+
+## نشر وظائف Supabase
+
+```bash
+supabase functions deploy public-settings
+supabase functions deploy customer-auth
+supabase functions deploy store-checkout
+supabase functions deploy track-order
+```
+
+أسرار WhatsApp والخدمة يجب أن تكون في Supabase Secrets، وليس داخل الواجهة:
+
+```bash
+supabase secrets set WHATSAPP_ENABLED=true
+supabase secrets set ULTRAMSG_INSTANCE_ID=your-instance-id
+supabase secrets set ULTRAMSG_TOKEN=your-token
+```
+
+## ملاحظات أمنية
+
+- لا تفتح جداول `wallets`, `wallet_transactions`, `orders`, `store_orders`, `customers`, `settings` للـ `anon`.
+- قراءة المنتجات العامة مسموحة، والكتابة عليها للإدارة فقط.
+- إرسال WhatsApp يجب أن يبقى من Edge Function أو خدمة خلفية.
+- بعد إضافة صف في `admin_users` يصبح الوصول الإداري محصورًا على المديرين المسجلين.
+
+## ملاحظات تطوير
+
+- استخدم أنماط الهوية الموجودة في `src/index.css` مثل `art-page`, `art-panel`, `art-product-card`, `art-input`, `art-cta`.
+- عند تعديل صفحات العميل العامة، تجنب أي قراءة مباشرة للجداول الحساسة.
+- الصور الكبيرة داخل جدول المنتجات تعمل حاليًا، لكن الأفضل لاحقًا نقلها إلى Supabase Storage لتحسين الأداء.
