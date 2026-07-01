@@ -7,6 +7,7 @@
 ```bash
 supabase functions deploy public-settings
 supabase functions deploy customer-auth
+supabase functions deploy customer-orders
 supabase functions deploy store-checkout
 supabase functions deploy track-order
 ```
@@ -16,6 +17,7 @@ supabase functions deploy track-order
 ```bash
 supabase secrets set RESEND_API_KEY=your-resend-api-key
 supabase secrets set RESEND_FROM="Art Moment <hello@your-domain.com>"
+supabase secrets set CUSTOMER_SESSION_SECRET=your-long-random-secret
 supabase secrets set WHATSAPP_ENABLED=true
 supabase secrets set ULTRAMSG_INSTANCE_ID=your-instance-id
 supabase secrets set ULTRAMSG_TOKEN=your-token
@@ -46,6 +48,7 @@ supabase/migrations/202607010001_customer_account_recovery.sql
 - Landing page pricing loads.
 - Customer signup/login works.
 - Customer password recovery sends a Resend email and accepts the reset code.
+- Customer store orders page loads only after customer login.
 - Store checkout creates an order.
 - Tracking by short order id works.
 - Tracking by phone + PIN works.

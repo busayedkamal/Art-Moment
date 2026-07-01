@@ -131,6 +131,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
       email: customer.email,
       phone: normalizeCustomerPhone(customer.phone),
       marketingOptIn: customer.marketingOptIn,
+      sessionToken: data?.sessionToken,
     }, { remember: formData.rememberMe });
 
     toast.success('مرحباً بعودتك إلى لحظة فن.');
@@ -175,6 +176,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
       email: customer.email,
       phone: normalizeCustomerPhone(customer.phone),
       marketingOptIn: customer.marketingOptIn,
+      sessionToken: data?.sessionToken,
     }, { remember: formData.rememberMe });
 
     toast.success('تم إنشاء حسابك بنجاح.');

@@ -380,6 +380,7 @@ export default function LandingPage() {
             <a href="#services" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1.5">
               <Wallet size={15} className="text-[#C5A059]" /> شحن المحفظة
             </a>
+            <Link to="/store/orders" className="hover:text-[#D9A3AA] transition-colors">طلباتي</Link>
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
           </nav>
 
@@ -423,6 +424,7 @@ export default function LandingPage() {
             <a href="#services" className="block py-2 text-[#4A4A4A] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
             <a href="#services" className="block py-2 text-[#4A4A4A]"           onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
             <a href="#services" className="flex items-center gap-2 py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}><Wallet size={16} /> شحن المحفظة</a>
+            <Link to="/store/orders" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
             <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
             {customer && (
               <button
@@ -1178,13 +1180,13 @@ export default function LandingPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="grid grid-cols-2 gap-3">
-                <Link to="/track" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#D9A3AA]/10 flex flex-col items-center justify-center gap-2 hover:border-[#D9A3AA]/40 transition-colors group">
+                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#D9A3AA]/10 flex flex-col items-center justify-center gap-2 hover:border-[#D9A3AA]/40 transition-colors group">
                   <div className="w-12 h-12 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA] group-hover:scale-110 transition-transform">
                     <ShoppingBag size={22} />
                   </div>
                   <span className="font-bold text-sm text-[#4A4A4A]">طلباتي</span>
                 </Link>
-                <Link to="/track" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C5A059]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C5A059]/40 transition-colors group">
+                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C5A059]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C5A059]/40 transition-colors group">
                   <div className="w-12 h-12 bg-[#C5A059]/10 rounded-full flex items-center justify-center text-[#C5A059] group-hover:scale-110 transition-transform">
                     <Wallet size={22} />
                   </div>

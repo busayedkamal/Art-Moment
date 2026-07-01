@@ -250,6 +250,7 @@ export default function StoreIndex() {
           <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#4A4A4A]/80">
             <Link to="/" className="hover:text-[#D9A3AA] transition-colors">الرئيسية</Link>
             <span className="text-[#D9A3AA] flex items-center gap-1.5"><ShoppingBag size={15} /> المتجر</span>
+            <Link to="/store/orders" className="hover:text-[#D9A3AA] transition-colors">طلباتي</Link>
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
           </nav>
 
@@ -286,7 +287,8 @@ export default function StoreIndex() {
           <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
             <Link to="/" className="block py-2 text-[#4A4A4A] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الرئيسية</Link>
             <span className="flex items-center gap-2 py-2 text-[#D9A3AA] font-bold"><ShoppingBag size={16} /> المتجر</span>
-            <Link to="/track" className="block w-full text-center py-3 mt-2 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
+            <Link to="/store/orders" className="block w-full text-center py-3 mt-2 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
+            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
           </div>
         )}
       </header>
@@ -576,13 +578,13 @@ export default function StoreIndex() {
 
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-3">
-                <Link to="/track" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#D9A3AA]/10 flex flex-col items-center justify-center gap-2 hover:border-[#D9A3AA]/40 transition-colors group">
+                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#D9A3AA]/10 flex flex-col items-center justify-center gap-2 hover:border-[#D9A3AA]/40 transition-colors group">
                   <div className="w-12 h-12 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA] group-hover:scale-110 transition-transform">
                     <Package size={22} />
                   </div>
                   <span className="font-bold text-sm text-[#4A4A4A]">طلباتي</span>
                 </Link>
-                <Link to="/track" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C5A059]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C5A059]/40 transition-colors group">
+                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C5A059]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C5A059]/40 transition-colors group">
                   <div className="w-12 h-12 bg-[#C5A059]/10 rounded-full flex items-center justify-center text-[#C5A059] group-hover:scale-110 transition-transform">
                     <Wallet size={22} />
                   </div>

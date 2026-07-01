@@ -1,4 +1,5 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { createCustomerSessionToken } from '../_shared/customerToken.ts';
 import { sendEmail } from '../_shared/email.ts';
 import { createPasswordHash, verifyPassword } from '../_shared/password.ts';
 import { isValidSaudiMobile, normalizeSaudiPhone, phoneVariants } from '../_shared/phone.ts';
@@ -263,7 +264,10 @@ Deno.serve(async (req) => {
         .single();
 
       if (insertError) throw insertError;
-      return jsonResponse({ customer: safeCustomer(newCustomer) });
+      return jsonResponse({
+        customer: safeCustomer(newCustomer),
+        sessionToken: await createCustomerSessionToken(String(newCustomer.id)),
+      });
     }
 
     const customer = await findCustomerByIdentifier(supabase, getIdentifier(body));
@@ -291,7 +295,10 @@ Deno.serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    return jsonResponse({ customer: safeCustomer(updatedCustomer) });
+    return jsonResponse({
+      customer: safeCustomer(updatedCustomer),
+      sessionToken: await createCustomerSessionToken(String(updatedCustomer.id)),
+    });
   } catch (error) {
     console.error('customer-auth error:', error);
     const publicErrors = new Set(['email_send_failed']);

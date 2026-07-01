@@ -1,4 +1,5 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { verifyCustomerSessionToken } from '../_shared/customerToken.ts';
 import { isValidSaudiMobile, normalizeSaudiPhone, phoneVariants } from '../_shared/phone.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 
@@ -101,6 +102,23 @@ Deno.serve(async (req) => {
     });
 
     const variants = phoneVariants(phone);
+    let verifiedCustomerId: string | null = null;
+
+    const tokenPayload = await verifyCustomerSessionToken(customer.sessionToken);
+    if (tokenPayload?.sub) {
+      const { data: tokenCustomer, error: tokenCustomerError } = await supabase
+        .from('customers')
+        .select('id, phone')
+        .eq('id', tokenPayload.sub)
+        .maybeSingle();
+      if (tokenCustomerError) throw tokenCustomerError;
+
+      const tokenPhoneVariants = phoneVariants(tokenCustomer?.phone);
+      if (tokenCustomer && tokenPhoneVariants.includes(phone)) {
+        verifiedCustomerId = String(tokenCustomer.id);
+      }
+    }
+
     const { data: existingWallet, error: walletError } = await supabase
       .from('wallets')
       .select('id, subscription_code')
@@ -135,7 +153,7 @@ Deno.serve(async (req) => {
       district: String(customer.district || '').trim() || null,
       street: String(customer.street || '').trim() || null,
     };
-    if (customer.id) orderPayload.customer_id = customer.id;
+    if (verifiedCustomerId) orderPayload.customer_id = verifiedCustomerId;
 
     let orderInsert = await supabase
       .from('store_orders')

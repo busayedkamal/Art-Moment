@@ -157,6 +157,7 @@ export default function StoreCart() {
         body: {
           customer: {
             id: customerSession?.id,
+            sessionToken: customerSession?.sessionToken,
             name: name || customerSession?.name,
             phone: normalizeCustomerPhone(phone),
             notes,
