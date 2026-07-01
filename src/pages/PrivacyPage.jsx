@@ -124,7 +124,7 @@ export default function PrivacyPage() {
 
       {/* ═══ شريط التنقل ═══════════════════════════════════════════════════════ */}
       <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#F8F5F2]/95 backdrop-blur-md shadow-sm border-b border-[#D9A3AA]/15' : 'bg-[#F8F5F2]'}`}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="art-shell h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <img src={logo} alt="Art Moment" className="w-8 h-8 object-contain" />
             <div>
@@ -148,7 +148,7 @@ export default function PrivacyPage() {
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#D9A3AA]/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#C5A059]/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-14 md:py-20 relative z-10">
+        <div className="art-shell py-14 md:py-20 relative z-10">
           {/* شارة */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D9A3AA]/20 border border-[#D9A3AA]/30 text-[#D9A3AA] text-xs font-bold mb-6">
             <Shield size={14} />
@@ -177,7 +177,7 @@ export default function PrivacyPage() {
 
       {/* ═══ جدول المحتويات ════════════════════════════════════════════════════ */}
       <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-[#D9A3AA]/15 shadow-sm overflow-x-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="art-shell">
           <div className="flex items-center gap-1 py-3 whitespace-nowrap">
             <span className="text-xs font-bold text-[#4A4A4A]/40 ml-3 shrink-0">الأقسام:</span>
             {sections.map((s, i) => (
@@ -195,7 +195,7 @@ export default function PrivacyPage() {
       </div>
 
       {/* ═══ المحتوى الرئيسي ═══════════════════════════════════════════════════ */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 md:py-14 space-y-6">
+      <main className="art-shell py-10 md:py-14 space-y-6">
 
         {/* ══ رأس: سياسة الخصوصية ══════════════════════════════════════════ */}
         <div className="flex items-center gap-3 pt-2 pb-1">
@@ -423,7 +423,7 @@ export default function PrivacyPage() {
 
       {/* ═══ تذييل الصفحة ══════════════════════════════════════════════════════ */}
       <footer className="bg-[#4A4A4A] text-white py-10 text-center mt-10">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="art-shell">
           <div className="bg-white/80 backdrop-blur-sm w-fit mx-auto p-3 rounded-2xl mb-6 border border-white/20 shadow-sm">
             <img src={logo} alt="Art Moment" className="h-12 w-auto object-contain" />
           </div>

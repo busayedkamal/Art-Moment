@@ -5,6 +5,12 @@ import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import RiyalSign from './components/RiyalSign';
 import { clearCustomerSession, getCustomerSession } from './utils/customerSession';
+import {
+  canAddProductToCart,
+  getStockLabel,
+  isProductAvailable,
+  normalizeStockQuantity,
+} from './utils/productStock';
 
 import {
   Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck,
@@ -28,18 +34,22 @@ import whatsappIcon from './assets/whatsapp icon.svg';
 import telegramIcon from './assets/telegram icon.svg';
 import gmailIcon from './assets/gmail icon.svg';
 
-const fromDb = (p) => ({
-  id:           p.id,
-  name:         p.name,
-  description:  p.description || '',
-  price:        p.price,
-  category:     p.category,
-  image:        p.image       || null,
-  hoverImage:   p.hover_image || null,
-  sortOrder:    p.sort_order  ?? 0,
-  inStock:      p.in_stock    ?? true,
-  isBestSeller: p.is_best_seller ?? false,
-});
+const fromDb = (p) => {
+  const stockQuantity = normalizeStockQuantity(p.stock_quantity);
+  return {
+    id:           p.id,
+    name:         p.name,
+    description:  p.description || '',
+    price:        p.price,
+    category:     p.category,
+    image:        p.image       || null,
+    hoverImage:   p.hover_image || null,
+    sortOrder:    p.sort_order  ?? 0,
+    stockQuantity,
+    inStock:      (p.in_stock ?? true) && (stockQuantity === null || stockQuantity > 0),
+    isBestSeller: p.is_best_seller ?? false,
+  };
+};
 
 const CATEGORIES = [
   { id: 'all',      name: 'الكل' },
@@ -193,9 +203,15 @@ export default function LandingPage() {
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   const addToCart = (product) => {
+    const currentQty = getProductQty(product.id);
+    if (!canAddProductToCart(product, currentQty)) {
+      showToast('وصلت إلى الكمية المتوفرة لهذا المنتج');
+      return;
+    }
+
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
-      if (existing) return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+      if (existing) return prev.map(item => item.id === product.id ? { ...item, ...product, qty: item.qty + 1 } : item);
       return [...prev, { ...product, qty: 1 }];
     });
     showToast(`تم إضافة ${product.name} للسلة 🛍️`);
@@ -427,7 +443,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           1. HERO SECTION (Banner Style)
       ══════════════════════════════════ */}
-      <section className="pt-6 pb-8 w-[96%] max-w-[1600px] mx-auto px-4">
+      <section className="pt-6 pb-8 art-shell">
         <div className="art-hero-card relative rounded-[2rem] md:rounded-[2.5rem] overflow-hidden p-8 md:py-12 flex justify-center text-center text-white">
           <div className="max-w-4xl mx-auto relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-[10px] sm:text-xs font-bold border border-[#D9A3AA]/30 mx-auto shadow-sm">
@@ -463,7 +479,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           1.5 VIDEO PROMO SECTION
       ══════════════════════════════════ */}
-      <section className="w-[96%] max-w-[1600px] mx-auto px-4 mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+      <section className="art-shell mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
         <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-[4px] border-white h-[350px] md:h-[450px] flex items-center justify-center group bg-[#4A4A4A]">
 
           {/* Video Background */}
@@ -507,7 +523,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           2. STORE PRODUCTS GRID
       ══════════════════════════════════ */}
-      <main id="products" className="max-w-7xl mx-auto px-4 py-14">
+      <main id="products" className="art-shell py-12 sm:py-14">
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16">
           <h2 className="text-3xl sm:text-4xl font-black text-[#4A4A4A] mb-4">
             الأكثر مبيعاً 🌟
@@ -518,15 +534,20 @@ export default function LandingPage() {
         </div>
 
         {/* Product grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 lg:gap-8">
           {products.length === 0 ? (
             <div className="col-span-full text-center py-20 text-[#4A4A4A]/50 font-bold">لا توجد منتجات بعد</div>
           ) : (
-            products.filter(p => p.isBestSeller).slice(0, 6).map(product => (
-              <div key={product.id} className={`art-product-card p-4 group flex flex-col relative overflow-hidden ${product.inStock ? '' : 'opacity-75 cursor-not-allowed'}`}>
+            products.filter(p => p.isBestSeller).slice(0, 6).map(product => {
+              const productQty = getProductQty(product.id);
+              const canAddProduct = canAddProductToCart(product, productQty);
+              const productAvailable = isProductAvailable(product);
+
+              return (
+              <div key={product.id} className={`art-product-card p-3 sm:p-4 lg:p-5 group flex flex-col relative overflow-hidden ${productAvailable ? '' : 'opacity-75 cursor-not-allowed'}`}>
                 <div
-                  onClick={() => product.inStock && setSelectedProduct(product)}
-                  className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'cursor-pointer group-hover:scale-105' : 'grayscale'}`}
+                  onClick={() => productAvailable && setSelectedProduct(product)}
+                  className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${productAvailable ? 'cursor-pointer group-hover:scale-105' : 'grayscale'}`}
                 >
                   {product.image ? (
                     <>
@@ -540,14 +561,21 @@ export default function LandingPage() {
                   ) : (
                     <img src={fallbackLogo} alt={product.name} className="absolute inset-0 w-full h-full object-contain p-8 opacity-20 grayscale mix-blend-multiply" />
                   )}
-                  {!product.inStock && (
+                  {!productAvailable && (
                     <div className="absolute top-3 left-3 z-20 bg-red-500/90 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1.5">
                       <AlertCircle size={12} /> نفدت الكمية
                     </div>
                   )}
-                  {product.inStock && getProductQty(product.id) > 0 && (
+                  <span className={`absolute bottom-2 right-2 z-20 text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm border ${
+                    productAvailable
+                      ? 'bg-white/90 text-[#4A4A4A] border-[#D9A3AA]/20'
+                      : 'bg-red-500 text-white border-red-400'
+                  }`}>
+                    {getStockLabel(product)}
+                  </span>
+                  {productAvailable && productQty > 0 && (
                     <span className="absolute top-2 right-2 bg-[#C5A059] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
-                      في السلة: {getProductQty(product.id)}
+                      في السلة: {productQty}
                     </span>
                   )}
                 </div>
@@ -555,19 +583,27 @@ export default function LandingPage() {
                 <div className="flex-1 flex flex-col">
                   <h3 className="font-black text-[#4A4A4A] text-sm md:text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
                   <p className="text-[#4A4A4A]/50 text-xs line-clamp-2 mb-3 flex-1">{product.description}</p>
-                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-[#F8F5F2]">
-                    <span className="font-black text-[#D9A3AA]">{product.price} <span className="text-[10px]">ر.س</span></span>
+                  <div className="mt-auto pt-3 border-t border-[#F8F5F2] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-[#D9A3AA]">{product.price} <span className="text-[10px]">ر.س</span></span>
+                    </div>
                     <button
                       onClick={() => addToCart(product)}
-                      disabled={!product.inStock}
-                      className={`p-2 rounded-xl transition-all ${product.inStock ? 'bg-[#4A4A4A] text-white hover:bg-[#D9A3AA] hover:scale-110' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                      disabled={!canAddProduct}
+                      className={`w-full py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-black ${
+                        canAddProduct
+                          ? 'bg-[#4A4A4A] text-white hover:bg-[#D9A3AA] shadow-md'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
                     >
-                      <Plus size={18} />
+                      <span>{productAvailable ? 'إضافة إلى السلة' : 'غير متوفر'}</span>
+                      <Plus size={16} />
                     </button>
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -591,7 +627,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           3. EXPANDABLE SERVICES ACCORDION
       ══════════════════════════════════ */}
-      <section id="services" className="max-w-3xl mx-auto px-4 py-12">
+      <section id="services" className="art-shell py-12">
         <h2 className="text-xl font-black text-center mb-6 text-[#4A4A4A]">اكتشف خدماتنا</h2>
         <div className="space-y-3">
 
@@ -622,7 +658,7 @@ export default function LandingPage() {
                       <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> هدايا وميزات حصرية</span>
                     </div>
                   </div>
-                  <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                  <div className="grid md:grid-cols-3 gap-5 lg:gap-6">
                     <div className="bg-white rounded-[2rem] p-8 border border-orange-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
                       <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-orange-400 to-orange-200"></div>
                       <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:scale-110 transition-transform"><CreditCard size={28} /></div>
@@ -685,7 +721,7 @@ export default function LandingPage() {
               <div className="bg-[#4A4A4A] text-white border-t border-white/10 overflow-hidden relative">
                 <div className="absolute top-0 left-0 w-64 h-64 bg-[#D9A3AA]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
                 <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#C5A059]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
-                <div className="max-w-6xl mx-auto px-4 py-10 relative z-10">
+                <div className="px-4 sm:px-6 lg:px-8 py-10 relative z-10">
                   <div className="text-center mb-10">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/20 text-[#C5A059] font-bold text-xs mb-3 border border-[#C5A059]/30">
                       <Sparkles size={14} /> حلك الجاهز عندنا
@@ -751,8 +787,8 @@ export default function LandingPage() {
             </button>
             {activeExpandable === 'print' && (
               <div className="bg-white border-t border-[#D9A3AA]/10">
-                <div className="py-10 px-4 max-w-7xl mx-auto">
-                  <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
+                <div className="py-10 px-4 sm:px-6 lg:px-8">
+                  <div className="grid md:grid-cols-3 gap-5 lg:gap-8 mb-12">
                     {[
                       { icon: ImageIcon, title: 'صور 4×6', desc: 'المقاس الأشهر والأكثر طلباً. مثالي لحفظ يومياتك وتوثيق اللحظات العفوية والرحلات.', features: ['ورق تصوير فاخر مقاوم للبهتان', 'ألوان زاهية وواقعية تدوم طويلاً', 'المقاس المثالي للألبومات الكلاسيكية'], color: 'text-[#D9A3AA]', bg: 'bg-[#D9A3AA]/10' },
                       { icon: FileText, title: 'صور A4', desc: 'لصورك الاحترافية واللوحات الفنية. المقاس الأفضل لإبراز أدق التفاصيل وتزيين المكان.', features: ['دقة طباعة استثنائية للتفاصيل', 'حجم كبير مناسب للبراويز الجدارية', 'مثالية لصور التخرج والمناسبات الكبرى'], color: 'text-[#C5A059]', bg: 'bg-[#C5A059]/10' },
@@ -776,7 +812,7 @@ export default function LandingPage() {
                     ))}
                   </div>
                   {pricingSettings?.is_dynamic_pricing_enabled && (
-                    <div className="max-w-4xl mx-auto">
+                    <div className="max-w-6xl mx-auto">
                       <div className="bg-[#4A4A4A] rounded-[3rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
@@ -843,7 +879,7 @@ export default function LandingPage() {
             </button>
             {activeExpandable === 'reviews' && (
               <div className="bg-[#F8F5F2] border-t border-[#D9A3AA]/10">
-                <div className="py-10 px-4 max-w-7xl mx-auto">
+                <div className="py-10 px-4 sm:px-6 lg:px-8">
                   <div className="text-center mb-8">
                     <h3 className="text-2xl font-black text-[#4A4A4A] mb-3">ماذا يقول <span className="text-[#D9A3AA]">عملاؤنا؟</span></h3>
                     <div className="flex justify-center gap-1 mb-8 text-[#C5A059]">
@@ -929,7 +965,7 @@ export default function LandingPage() {
           8. TRUST & COMPLIANCE
       ══════════════════════════════════ */}
       <section className="bg-[#4A4A4A] text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+        <div className="art-shell grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 text-center">
           <div className="flex flex-col items-center">
             <ShieldCheck size={40} className="text-[#D9A3AA] mb-4" />
             <h3 className="font-black text-lg mb-2">تسوق آمن وموثق</h3>
@@ -952,7 +988,7 @@ export default function LandingPage() {
           9. PROFESSIONAL FOOTER
       ══════════════════════════════════ */}
       <footer className="bg-white border-t border-[#D9A3AA]/20 pt-16 pb-8">
-        <div className="w-[96%] max-w-[1600px] mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div className="art-shell grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img src={logo} alt="لحظة فن" className="w-10 h-10 object-contain grayscale opacity-80" />
@@ -1005,7 +1041,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="w-[96%] max-w-[1600px] mx-auto px-4 text-center border-t border-[#F8F5F2] pt-8">
+        <div className="art-shell text-center border-t border-[#F8F5F2] pt-8">
           <p className="text-xs font-bold text-[#4A4A4A]/50">جميع الحقوق محفوظة لمتجر لحظة فن © {new Date().getFullYear()}</p>
         </div>
       </footer>

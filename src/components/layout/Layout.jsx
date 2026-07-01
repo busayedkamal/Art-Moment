@@ -115,7 +115,7 @@ export default function Layout() {
           المحتوى الرئيسي
           md:pr-64 = إزاحة 256px عن السايدبار (RTL: right padding)
       ══════════════════════════════════════════════ */}
-      <div className="md:pr-64 flex flex-col min-h-screen">
+      <div className="md:pr-64 flex flex-col min-h-screen w-full min-w-0">
 
         {/* هيدر الجوال فقط */}
         <header className="md:hidden sticky top-0 z-40 flex items-center justify-between bg-white border-b border-[#D9A3AA]/20 px-4 py-3 shadow-sm">
@@ -129,7 +129,7 @@ export default function Layout() {
         </header>
 
         {/* محتوى الصفحة */}
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 w-full min-w-0 p-3 sm:p-5 lg:p-6 xl:p-8">
           <Outlet />
         </main>
       </div>

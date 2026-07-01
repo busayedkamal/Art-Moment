@@ -7,6 +7,11 @@ import {
   getCustomerSession,
   normalizeCustomerPhone,
 } from '../utils/customerSession';
+import {
+  clampCartQuantity,
+  getAvailableStock,
+  normalizeStockQuantity,
+} from '../utils/productStock';
 
 async function getFunctionError(error) {
   try {
@@ -30,13 +35,53 @@ export default function StoreCart() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
-    setCart(savedCart);
+    let cancelled = false;
+
+    const loadCartWithStock = async () => {
+      const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
+      let nextCart = savedCart;
+
+      const productIds = [...new Set(savedCart.map(item => item.id).filter(Boolean))];
+      if (productIds.length > 0) {
+        try {
+          const { data, error } = await supabase
+            .from('products')
+            .select('id, stock_quantity, in_stock')
+            .in('id', productIds);
+          if (error) throw error;
+
+          const stockById = new Map((data || []).map(product => [product.id, product]));
+          nextCart = savedCart
+            .map(item => {
+              const productStock = stockById.get(item.id);
+              const stockQuantity = normalizeStockQuantity(productStock?.stock_quantity ?? item.stockQuantity);
+              const inStock = (productStock?.in_stock ?? item.inStock ?? true) && (stockQuantity === null || stockQuantity > 0);
+              const hydratedItem = { ...item, stockQuantity, inStock };
+              return { ...hydratedItem, qty: clampCartQuantity(hydratedItem, item.qty) };
+            })
+            .filter(item => item.inStock !== false && Number(item.qty) > 0);
+
+          if (nextCart.length !== savedCart.length || nextCart.some((item, index) => item.qty !== savedCart[index]?.qty)) {
+            localStorage.setItem('art_moment_cart', JSON.stringify(nextCart));
+            toast.success('تم تحديث السلة حسب الكمية المتوفرة');
+          }
+        } catch (error) {
+          console.error('Error refreshing cart stock:', error);
+        }
+      }
+
+      if (!cancelled) setCart(nextCart);
+    };
+
+    loadCartWithStock();
+
     const customer = getCustomerSession();
     if (customer) {
       setName(customer.name || '');
       setPhone(customer.phone || '');
     }
+
+    return () => { cancelled = true; };
   }, []);
 
   const saveCart = (newCart) => {
@@ -45,26 +90,38 @@ export default function StoreCart() {
   };
 
   const updateQty = (id, delta) => {
+    let reachedLimit = false;
     const updated = cart.map(item => {
       if (item.id === id) {
-        const newQty = item.qty + delta;
-        return newQty > 0 ? { ...item, qty: newQty } : item;
+        const currentQty = Number(item.qty) || 1;
+        const nextQty = clampCartQuantity(item, currentQty + delta);
+        if (delta > 0 && nextQty === currentQty && getAvailableStock(item) !== null) {
+          reachedLimit = true;
+        }
+        return { ...item, qty: nextQty };
       }
       return item;
     });
     saveCart(updated);
+    if (reachedLimit) toast.error('لا يمكن تجاوز الكمية المتوفرة');
   };
 
   const removeItem = (id) => saveCart(cart.filter(item => item.id !== id));
 
   const setExactQty = (id, val) => {
+    let reachedLimit = false;
     const updated = cart.map(item => {
       if (item.id !== id) return item;
       if (val === '') return { ...item, qty: '' };
       const num = parseInt(val, 10);
-      return { ...item, qty: isNaN(num) ? 1 : num };
+      const nextQty = clampCartQuantity(item, isNaN(num) ? 1 : num);
+      if (!isNaN(num) && getAvailableStock(item) !== null && num > nextQty) {
+        reachedLimit = true;
+      }
+      return { ...item, qty: nextQty };
     });
     saveCart(updated);
+    if (reachedLimit) toast.error('تم ضبط الكمية على الحد المتوفر');
   };
 
   const handleBlurQty = (id, currentQty) => {
@@ -81,6 +138,15 @@ export default function StoreCart() {
     const isValidPhone = /^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim());
     if (!isValidPhone) { setPhoneError(true); return; }
     setPhoneError(false);
+
+    const exceededItem = cart.find(item => {
+      const stock = getAvailableStock(item);
+      return stock !== null && Number(item.qty || 0) > stock;
+    });
+    if (exceededItem) {
+      toast.error(`كمية ${exceededItem.name} أعلى من المتوفر`);
+      return;
+    }
 
     setIsSubmitting(true);
     const toastId = toast.loading('جاري إرسال الطلب...');
@@ -100,7 +166,7 @@ export default function StoreCart() {
           },
           items: cart.map(item => ({
             id: item.id,
-            qty: item.qty,
+            qty: Number(item.qty) || 1,
           })),
         },
       });
@@ -167,10 +233,10 @@ export default function StoreCart() {
         <span className="bg-[#D9A3AA] text-white text-xs font-bold px-2 py-0.5 rounded-full">{cart.length}</span>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
+      <main className="art-shell py-8 grid lg:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)] gap-5 lg:gap-8">
 
         {/* قائمة المنتجات */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           <div className="flex justify-between items-center mb-2">
             <h2 className="font-black text-[#4A4A4A]">منتجاتك</h2>
             <button onClick={clearCart} className="text-xs text-red-400 font-bold hover:text-red-500 transition-colors">
@@ -178,9 +244,13 @@ export default function StoreCart() {
             </button>
           </div>
 
-          {cart.map(item => (
-            <div key={item.id} className="bg-white p-4 rounded-3xl border border-[#D9A3AA]/15 flex items-center gap-4 shadow-sm">
-              <div className="w-16 h-16 bg-[#F8F5F2] rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
+          {cart.map(item => {
+            const availableStock = getAvailableStock(item);
+            const reachedMax = availableStock !== null && Number(item.qty || 0) >= availableStock;
+
+            return (
+            <div key={item.id} className="bg-white p-4 sm:p-5 rounded-3xl border border-[#D9A3AA]/15 flex items-center gap-4 sm:gap-5 shadow-sm">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#F8F5F2] rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
                 {item.image
                   ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                   : <ImageIcon size={20} className="text-[#D9A3AA]/30" />
@@ -190,6 +260,9 @@ export default function StoreCart() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-sm line-clamp-1">{item.name}</h3>
                 <p className="text-[10px] text-[#4A4A4A]/50 mt-1">{item.price} ر.س × {item.qty}</p>
+                <p className={`text-[10px] font-bold mt-1 ${reachedMax ? 'text-amber-600' : 'text-[#4A4A4A]/45'}`}>
+                  {availableStock === null ? 'الكمية متاحة' : `المتوفر: ${availableStock}`}
+                </p>
                 <div className="font-black text-[#C5A059] text-sm mt-1">{item.price * item.qty} ر.س</div>
               </div>
 
@@ -201,12 +274,19 @@ export default function StoreCart() {
                   <Trash2 size={14} />
                 </button>
                 <div className="flex items-center gap-2 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/20 p-1">
-                  <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#4A4A4A]">
+                  <button
+                    onClick={() => updateQty(item.id, 1)}
+                    disabled={reachedMax}
+                    className={`w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm transition-colors ${
+                      reachedMax ? 'text-[#4A4A4A]/25 cursor-not-allowed' : 'text-[#4A4A4A]'
+                    }`}
+                  >
                     <Plus size={12} />
                   </button>
                   <input
                     type="number"
                     min="1"
+                    max={availableStock ?? undefined}
                     value={item.qty}
                     onChange={e => setExactQty(item.id, e.target.value)}
                     onBlur={() => handleBlurQty(item.id, item.qty)}
@@ -219,11 +299,12 @@ export default function StoreCart() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ملخص الطلب وبيانات العميل */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* ملخص */}
           <div className="art-panel p-6 rounded-[1.5rem]">
             <h2 className="font-black text-[#4A4A4A] mb-4">ملخص الطلب</h2>

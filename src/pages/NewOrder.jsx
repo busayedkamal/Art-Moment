@@ -369,7 +369,7 @@ export default function NewOrder() {
   if (loadingSettings) return <div className="p-10 text-center flex justify-center gap-2"><Loader2 className="animate-spin" /> جاري التحميل...</div>;
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6" onClick={() => setShowSuggestions(null)}>
+    <div className="w-full max-w-none space-y-6" onClick={() => setShowSuggestions(null)}>
 
       {lowStockItems.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 animate-pulse">
@@ -399,8 +399,8 @@ export default function NewOrder() {
         <button type="button" onClick={() => navigate('/app/orders')} className="px-4 py-2 bg-white border rounded-xl hover:bg-slate-50">إلغاء</button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 md:grid-cols-12">
-        <div className="md:col-span-8 space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5 lg:gap-6 xl:grid-cols-12">
+        <div className="xl:col-span-8 space-y-6 min-w-0">
 
           {/* بيانات العميل */}
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
@@ -522,7 +522,7 @@ export default function NewOrder() {
         </div>
 
         {/* ملخص الدفع */}
-        <div className="md:col-span-4 space-y-4">
+        <div className="xl:col-span-4 space-y-4 min-w-0">
           <div className="bg-white text-[#4A4A4A] rounded-2xl p-6 shadow-lg border border-[#D9A3AA]/20 sticky top-6">
             <h3 className="text-lg font-bold mb-4">ملخص الدفع</h3>
 

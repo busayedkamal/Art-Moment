@@ -4,6 +4,12 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { clearCustomerSession, getCustomerSession } from '../utils/customerSession';
 import {
+  canAddProductToCart,
+  getStockLabel,
+  isProductAvailable,
+  normalizeStockQuantity,
+} from '../utils/productStock';
+import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
   Menu, X, Download, AlertCircle, ShoppingBag, Plus,
   ChevronRight, ChevronLeft, ArrowLeft, Sparkles, User, LogOut, Package, Wallet,
@@ -14,17 +20,21 @@ import CustomerAuthModal from '../components/CustomerAuthModal';
 import logo from '../assets/logo-art-moment.svg';
 import fallbackLogo from '../assets/logo.png';
 
-const fromDb = (p) => ({
-  id:          p.id,
-  name:        p.name,
-  description: p.description || '',
-  price:       p.price,
-  category:    p.category,
-  image:       p.image       || null,
-  hoverImage:  p.hover_image || null,
-  sortOrder:   p.sort_order  ?? 0,
-  inStock:     p.in_stock    ?? true,
-});
+const fromDb = (p) => {
+  const stockQuantity = normalizeStockQuantity(p.stock_quantity);
+  return {
+    id:          p.id,
+    name:        p.name,
+    description: p.description || '',
+    price:       p.price,
+    category:    p.category,
+    image:       p.image       || null,
+    hoverImage:  p.hover_image || null,
+    sortOrder:   p.sort_order  ?? 0,
+    stockQuantity,
+    inStock:     (p.in_stock ?? true) && (stockQuantity === null || stockQuantity > 0),
+  };
+};
 
 export default function StoreIndex() {
   const [products, setProducts]             = useState([]);
@@ -121,9 +131,15 @@ export default function StoreIndex() {
   };
 
   const addToCart = (product) => {
+    const currentQty = getProductQty(product.id);
+    if (!canAddProductToCart(product, currentQty)) {
+      toast.error('وصلت إلى الكمية المتوفرة لهذا المنتج');
+      return;
+    }
+
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
-      if (existing) return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+      if (existing) return prev.map(item => item.id === product.id ? { ...item, ...product, qty: item.qty + 1 } : item);
       return [...prev, { ...product, qty: 1 }];
     });
   };
@@ -276,7 +292,7 @@ export default function StoreIndex() {
       </header>
 
       {/* Main Store Content */}
-      <main className="max-w-7xl mx-auto px-4 py-12">
+      <main className="art-shell py-8 sm:py-10 lg:py-12">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-black text-[#4A4A4A] mb-4">متجر <span className="text-[#D9A3AA]">لحظة فن</span></h2>
           <p className="text-[#4A4A4A]/60 max-w-xl mx-auto">تصفح تشكيلتنا المتكاملة من الألبومات، الإطارات، والملحقات الفنية.</p>
@@ -357,10 +373,10 @@ export default function StoreIndex() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-7 mb-12">
           {isProductsLoading ? (
             Array.from({ length: 8 }).map((_, index) => (
-              <div key={index} className="art-product-card p-4 overflow-hidden">
+              <div key={index} className="art-product-card p-3 sm:p-4 lg:p-5 overflow-hidden">
                 <div className="art-product-media aspect-square rounded-2xl mb-4 bg-white/80 animate-pulse" />
                 <div className="h-4 w-4/5 bg-white rounded-full animate-pulse mb-3" />
                 <div className="h-3 w-3/5 bg-white rounded-full animate-pulse mb-6" />
@@ -400,14 +416,19 @@ export default function StoreIndex() {
               )}
             </div>
           ) : (
-            currentProducts.map(product => (
+            currentProducts.map(product => {
+              const productQty = getProductQty(product.id);
+              const canAddProduct = canAddProductToCart(product, productQty);
+              const productAvailable = isProductAvailable(product);
+
+              return (
               <div
                 key={product.id}
-                onClick={() => { if (product.inStock) { setSelectedProduct(product); setIsModalOpen(true); } }}
-                className={`art-product-card p-4 group flex flex-col relative overflow-hidden ${product.inStock ? 'cursor-pointer' : 'opacity-80 cursor-not-allowed'}`}
+                onClick={() => { if (productAvailable) { setSelectedProduct(product); setIsModalOpen(true); } }}
+                className={`art-product-card p-3 sm:p-4 lg:p-5 group flex flex-col relative overflow-hidden ${productAvailable ? 'cursor-pointer' : 'opacity-80 cursor-not-allowed'}`}
               >
 
-                <div className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${product.inStock ? 'group-hover:scale-105' : 'grayscale'}`}>
+                <div className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${productAvailable ? 'group-hover:scale-105' : 'grayscale'}`}>
                   {product.image ? (
                     <>
                       <img src={product.image} alt={product.name}
@@ -421,14 +442,21 @@ export default function StoreIndex() {
                     <img src={fallbackLogo} alt={product.name} className="absolute inset-0 w-full h-full object-contain p-8 opacity-20 grayscale mix-blend-multiply" />
                   )}
 
-                  {!product.inStock && (
+                  {!productAvailable && (
                     <div className="absolute top-3 left-3 z-20 bg-red-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
                       <AlertCircle size={12} /> نفدت الكمية
                     </div>
                   )}
-                  {product.inStock && getProductQty(product.id) > 0 && (
+                  <span className={`absolute bottom-2 right-2 z-20 text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm border ${
+                    productAvailable
+                      ? 'bg-white/90 text-[#4A4A4A] border-[#D9A3AA]/20'
+                      : 'bg-red-500 text-white border-red-400'
+                  }`}>
+                    {getStockLabel(product)}
+                  </span>
+                  {productAvailable && productQty > 0 && (
                     <span className="absolute top-2 right-2 bg-[#C5A059] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
-                      في السلة: {getProductQty(product.id)}
+                      في السلة: {productQty}
                     </span>
                   )}
                 </div>
@@ -436,19 +464,27 @@ export default function StoreIndex() {
                 <div className="flex-1 flex flex-col px-1">
                   <h3 className="font-black text-[#4A4A4A] text-sm md:text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
                   <p className="text-[#4A4A4A]/50 text-xs line-clamp-2 mb-4 flex-1">{product.description}</p>
-                  <div className="flex items-center justify-between mt-auto pt-3 border-t border-[#F8F5F2]">
-                    <span className="font-black text-[#D9A3AA] text-lg">{product.price} <span className="text-[10px] text-[#4A4A4A]/60">ر.س</span></span>
+                  <div className="mt-auto pt-3 border-t border-[#F8F5F2] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-[#D9A3AA] text-lg">{product.price} <span className="text-[10px] text-[#4A4A4A]/60">ر.س</span></span>
+                    </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); addToCart(product); }}
-                      disabled={!product.inStock}
-                      className={`p-2.5 rounded-xl transition-all ${product.inStock ? 'bg-[#4A4A4A] text-white hover:bg-[#C5A059] shadow-md' : 'bg-gray-200 text-gray-400'}`}
+                      disabled={!canAddProduct}
+                      className={`w-full py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-black ${
+                        canAddProduct
+                          ? 'bg-[#4A4A4A] text-white hover:bg-[#C5A059] shadow-md'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
                     >
-                      <Plus size={18} />
+                      <span>{productAvailable ? 'إضافة إلى السلة' : 'غير متوفر'}</span>
+                      <Plus size={16} />
                     </button>
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 

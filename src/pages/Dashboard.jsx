@@ -210,7 +210,7 @@ export default function Dashboard() {
   const realNetProfit = stats.totalCashReceived + (stats.packagesTotal || 0) - stats.totalExpenses;
 
   return (
-    <div className="w-full px-6 xl:px-10 space-y-6 pb-12 text-[#4A4A4A]">
+    <div className="w-full max-w-none space-y-5 lg:space-y-6 pb-12 text-[#4A4A4A]">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between pt-2">
@@ -222,7 +222,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 2xl:gap-6">
         {/* إجمالي المبيعات */}
         <div className="col-span-2 lg:col-span-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -285,7 +285,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Operational Stats ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 2xl:gap-6">
         {[
           { label: 'طلبات جديدة', value: stats.newOrders, color: 'text-[#D9A3AA]', bg: 'bg-[#D9A3AA]/8', icon: <ShoppingBag size={18}/>, iconColor: 'text-[#D9A3AA]' },
           { label: 'قيد التنفيذ', value: stats.pendingOrders, color: 'text-orange-500', bg: 'bg-orange-50', icon: <Clock size={18}/>, iconColor: 'text-orange-500' },
@@ -305,7 +305,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Chart + Debts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 2xl:gap-8">
 
         {/* رسم المبيعات */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">

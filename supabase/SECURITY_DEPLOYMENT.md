@@ -11,9 +11,11 @@ supabase functions deploy store-checkout
 supabase functions deploy track-order
 ```
 
-2. Set secrets for server-side WhatsApp sending:
+2. Set secrets for server-side email and WhatsApp sending:
 
 ```bash
+supabase secrets set RESEND_API_KEY=your-resend-api-key
+supabase secrets set RESEND_FROM="Art Moment <hello@your-domain.com>"
 supabase secrets set WHATSAPP_ENABLED=true
 supabase secrets set ULTRAMSG_INSTANCE_ID=your-instance-id
 supabase secrets set ULTRAMSG_TOKEN=your-token
@@ -33,10 +35,17 @@ If the first migration was already applied before the product catalog patch, als
 supabase/migrations/202606300002_public_products_catalog.sql
 ```
 
+For customer password recovery and marketing preferences, also run:
+
+```text
+supabase/migrations/202607010001_customer_account_recovery.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.
 - Customer signup/login works.
+- Customer password recovery sends a Resend email and accepts the reset code.
 - Store checkout creates an order.
 - Tracking by short order id works.
 - Tracking by phone + PIN works.
