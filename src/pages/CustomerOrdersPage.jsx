@@ -14,11 +14,14 @@ import {
   Package,
   ReceiptText,
   RefreshCw,
+  RotateCcw,
+  Send,
   ShieldCheck,
   ShoppingBag,
   Truck,
   Wallet,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { supabase } from '../lib/supabase';
 import { getCustomerSession } from '../utils/customerSession';
@@ -27,6 +30,7 @@ import {
   getStorePaymentMethod,
   getStoreOrderStatus,
   getStoreOrderStepIndex,
+  getStoreReturnStatus,
   STORE_ORDER_STEPS,
 } from '../utils/storeOrderStatus';
 import logo from '../assets/logo-art-moment.svg';
@@ -83,6 +87,232 @@ function PaymentBadge({ order }) {
       <Wallet size={13} />
       {payment.label}
     </span>
+  );
+}
+
+function ReturnStatusBadge({ status }) {
+  const info = getStoreReturnStatus(status);
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-black ${info.tone}`}>
+      <RotateCcw size={13} />
+      {info.label}
+    </span>
+  );
+}
+
+function ReturnRequestPanel({ order, onSubmitted }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [details, setDetails] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [quantities, setQuantities] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const returnRequests = order.returnRequests || [];
+  const latestRequest = returnRequests[0] || null;
+  const hasActiveRequest = returnRequests.some((request) => !['rejected', 'refunded'].includes(request.status));
+  const canRequestReturn = !hasActiveRequest
+    && order.items.length > 0
+    && !['cancelled', 'returned'].includes(order.status);
+
+  useEffect(() => {
+    setQuantities({});
+    setReason('');
+    setDetails('');
+    setImageUrl('');
+    setIsOpen(false);
+  }, [order.id]);
+
+  const selectedItems = order.items
+    .map((item) => ({
+      ...item,
+      returnQuantity: Number(quantities[item.id] || 0),
+    }))
+    .filter((item) => item.returnQuantity > 0);
+
+  const requestedAmount = selectedItems.reduce(
+    (sum, item) => sum + Number(item.price || 0) * Number(item.returnQuantity || 0),
+    0,
+  );
+
+  const setItemQuantity = (item, value) => {
+    const max = Number(item.quantity || 0);
+    const next = Math.min(max, Math.max(0, Number(value || 0)));
+    setQuantities((current) => ({ ...current, [item.id]: next }));
+  };
+
+  const submitReturnRequest = async () => {
+    const session = getCustomerSession();
+    if (!session?.sessionToken) {
+      toast.error('سجلي الدخول أولاً لإرسال طلب الاسترجاع');
+      return;
+    }
+    if (!reason.trim() || selectedItems.length === 0) {
+      toast.error('اختاري المنتجات واكتبي سبب الاسترجاع');
+      return;
+    }
+
+    setSubmitting(true);
+    const toastId = toast.loading('جاري إرسال طلب الاسترجاع...');
+    try {
+      const { error } = await supabase.functions.invoke('store-return-requests', {
+        body: {
+          action: 'create',
+          sessionToken: session.sessionToken,
+          orderId: order.id,
+          reason,
+          details,
+          imageUrl,
+          items: selectedItems.map((item) => ({
+            storeOrderItemId: item.id,
+            quantity: item.returnQuantity,
+          })),
+        },
+      });
+
+      if (error) throw new Error(await getFunctionError(error));
+
+      toast.success('تم إرسال طلب الاسترجاع للمراجعة', { id: toastId });
+      setIsOpen(false);
+      onSubmitted?.();
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err.message === 'active_return_request_exists'
+          ? 'يوجد طلب استرجاع نشط لهذا الطلب بالفعل'
+          : 'تعذر إرسال طلب الاسترجاع حالياً',
+        { id: toastId },
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div>
+          <h2 className="font-black text-[#4A4A4A] flex items-center gap-2">
+            <RotateCcw size={18} className="text-[#C5A059]" /> الاسترجاع والاسترداد
+          </h2>
+          <p className="text-xs text-[#4A4A4A]/55 mt-1">
+            اختاري المنتجات المراد استرجاعها وسيتم مراجعة الطلب من الإدارة.
+          </p>
+        </div>
+        {latestRequest && <ReturnStatusBadge status={latestRequest.status} />}
+      </div>
+
+      {latestRequest && (
+        <div className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-4 mb-4 space-y-3">
+          <div className="flex justify-between gap-3 text-sm">
+            <span className="text-[#4A4A4A]/55">قيمة الطلب</span>
+            <span className="font-black text-[#C5A059]">{formatCurrency(latestRequest.requestedRefundAmount)}</span>
+          </div>
+          <p className="text-sm font-bold text-[#4A4A4A]">{latestRequest.reason}</p>
+          {latestRequest.adminNote && (
+            <p className="rounded-xl bg-white border border-[#D9A3AA]/10 p-3 text-xs text-[#4A4A4A]/70 leading-relaxed">
+              {latestRequest.adminNote}
+            </p>
+          )}
+          {latestRequest.items?.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {latestRequest.items.map((item) => (
+                <span key={item.id} className="rounded-full bg-white border border-[#D9A3AA]/10 px-3 py-1 text-[11px] font-bold">
+                  {item.name} × {item.quantity}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {canRequestReturn ? (
+        <>
+          {!isOpen ? (
+            <button
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="w-full py-3 rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/15 text-[#4A4A4A] font-black hover:bg-[#D9A3AA]/10 transition-colors flex items-center justify-center gap-2"
+            >
+              <RotateCcw size={17} /> طلب استرجاع
+            </button>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
+                    <div className="w-12 h-12 rounded-xl bg-white overflow-hidden shrink-0">
+                      {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-3 text-[#D9A3AA]/35" size={24} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black truncate">{item.name}</p>
+                      <p className="text-[11px] text-[#4A4A4A]/45">المتاح للاسترجاع: {item.quantity}</p>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      max={item.quantity}
+                      value={quantities[item.id] || 0}
+                      onChange={(event) => setItemQuantity(item, event.target.value)}
+                      className="w-16 rounded-xl border border-[#D9A3AA]/20 bg-white px-2 py-2 text-center font-black outline-none"
+                      dir="ltr"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <textarea
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="سبب الاسترجاع"
+                className="art-input w-full min-h-[80px] resize-none rounded-2xl px-4 py-3 outline-none"
+              />
+              <textarea
+                value={details}
+                onChange={(event) => setDetails(event.target.value)}
+                placeholder="تفاصيل إضافية أو ملاحظات"
+                className="art-input w-full min-h-[70px] resize-none rounded-2xl px-4 py-3 outline-none"
+              />
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(event) => setImageUrl(event.target.value)}
+                placeholder="رابط صورة إن وجد"
+                className="art-input w-full rounded-2xl px-4 py-3 outline-none"
+                dir="ltr"
+              />
+
+              <div className="rounded-2xl bg-[#C5A059]/10 border border-[#C5A059]/15 p-3 flex justify-between text-sm font-black">
+                <span>المبلغ المتوقع للمراجعة</span>
+                <span>{formatCurrency(requestedAmount)}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="py-3 rounded-2xl bg-[#F8F5F2] text-[#4A4A4A] font-black border border-[#D9A3AA]/15"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={submitReturnRequest}
+                  disabled={submitting || selectedItems.length === 0 || !reason.trim()}
+                  className="py-3 rounded-2xl bg-[#4A4A4A] text-white font-black disabled:opacity-45 disabled:pointer-events-none flex items-center justify-center gap-2"
+                >
+                  <Send size={16} /> إرسال
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : !latestRequest ? (
+        <p className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-4 text-xs font-bold text-[#4A4A4A]/55 leading-relaxed">
+          لا يتوفر طلب الاسترجاع لهذا الطلب حالياً. يمكن التواصل مع الدعم عند الحاجة.
+        </p>
+      ) : null}
+    </section>
   );
 }
 
@@ -145,6 +375,7 @@ function OrderCard({ order }) {
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={order.status} />
             <PaymentBadge order={order} />
+            {order.returnRequests?.[0] && <ReturnStatusBadge status={order.returnRequests[0].status} />}
           </div>
         </div>
 
@@ -188,7 +419,7 @@ function OrderCard({ order }) {
   );
 }
 
-function OrderDetails({ order }) {
+function OrderDetails({ order, onReturnSubmitted }) {
   const trackingUrl = getTrackingUrl(order);
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
   const remaining = Math.max(0, total - Number(order.amountPaid || 0));
@@ -317,6 +548,8 @@ function OrderDetails({ order }) {
               )}
             </div>
           </section>
+
+          <ReturnRequestPanel order={order} onSubmitted={onReturnSubmitted} />
 
           <a
             href={`https://wa.me/966569663697?text=${encodeURIComponent(`مرحباً، أحتاج مساعدة بخصوص طلب المتجر #${order.shortId}`)}`}
@@ -461,7 +694,7 @@ export default function CustomerOrdersPage() {
             </div>
           </section>
         ) : orderId ? (
-          selectedOrder ? <OrderDetails order={selectedOrder} /> : null
+          selectedOrder ? <OrderDetails order={selectedOrder} onReturnSubmitted={loadOrders} /> : null
         ) : (
           <div className="space-y-6">
             <div className="grid sm:grid-cols-3 gap-4">

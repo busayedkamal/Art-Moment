@@ -10,6 +10,7 @@ supabase functions deploy customer-auth
 supabase functions deploy customer-orders
 supabase functions deploy store-checkout
 supabase functions deploy track-order
+supabase functions deploy store-return-requests
 ```
 
 2. Set secrets for server-side email and WhatsApp sending:
@@ -18,6 +19,7 @@ supabase functions deploy track-order
 supabase secrets set RESEND_API_KEY=your-resend-api-key
 supabase secrets set RESEND_FROM="Art Moment <hello@your-domain.com>"
 supabase secrets set CUSTOMER_SESSION_SECRET=your-long-random-secret
+supabase secrets set RETURN_REQUEST_NOTIFY_EMAIL=admin@example.com
 supabase secrets set WHATSAPP_ENABLED=true
 supabase secrets set ULTRAMSG_INSTANCE_ID=your-instance-id
 supabase secrets set ULTRAMSG_TOKEN=your-token
@@ -48,6 +50,12 @@ For store customer links and payment statuses, also run:
 ```text
 supabase/migrations/202607010002_store_orders_customer_link.sql
 supabase/migrations/202607010003_store_payment_statuses.sql
+```
+
+For return and refund requests, also run:
+
+```text
+supabase/migrations/202607020001_store_return_requests.sql
 ```
 
 4. Confirm these public flows still work:

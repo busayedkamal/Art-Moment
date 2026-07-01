@@ -11,6 +11,8 @@ import { supabase } from '../lib/supabase';
 import {
   getPaymentState,
   getStorePaymentMethod,
+  getStoreReturnStatus,
+  STORE_RETURN_TRANSITIONS,
   STORE_PAYMENT_STATUSES,
 } from '../utils/storeOrderStatus';
 
@@ -90,6 +92,15 @@ function StatusBadge({ status }) {
   );
 }
 
+function ReturnStatusBadge({ status }) {
+  const info = getStoreReturnStatus(status);
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${info.tone}`}>
+      <RotateCcw size={11} /> {info.label}
+    </span>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function StoreOrdersManagement() {
@@ -98,7 +109,10 @@ export default function StoreOrdersManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
+  const [returnRequests, setReturnRequests] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(false);
+  const [returnsLoading, setReturnsLoading] = useState(false);
+  const [returnUpdatingId, setReturnUpdatingId] = useState(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState('');
   const [courierName, setCourierName] = useState('سمسا');
@@ -133,10 +147,36 @@ export default function StoreOrdersManagement() {
 
   // ── Fetch items when a modal opens ────────────────────────────────────────
 
+  const fetchReturnRequests = async (orderId) => {
+    setReturnsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('store_return_requests')
+        .select('*, store_return_request_items(id, store_order_item_id, product_id, quantity, price_at_time, product:products(name, image))')
+        .eq('store_order_id', orderId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        if (/store_return_requests|schema cache|relation|does not exist/i.test(error.message || '')) {
+          setReturnRequests([]);
+          return;
+        }
+        throw error;
+      }
+      setReturnRequests(data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل تحميل طلبات الاسترجاع');
+    } finally {
+      setReturnsLoading(false);
+    }
+  };
+
   const openModal = async (order) => {
     setSelectedOrder(order);
     setOrderItems([]);
+    setReturnRequests([]);
     setItemsLoading(true);
+    fetchReturnRequests(order.id);
     try {
       const { data, error } = await supabase
         .from('store_order_items')
@@ -155,6 +195,7 @@ export default function StoreOrdersManagement() {
   const closeModal = () => {
     setSelectedOrder(null);
     setOrderItems([]);
+    setReturnRequests([]);
     setTrackingNumber('');
     setCourierName('سمسا');
     setIsEditing(false);
@@ -163,6 +204,7 @@ export default function StoreOrdersManagement() {
     setEditAmountPaid('');
     setEditPaymentStatus('pending_payment');
     setEditRefundedAmount('');
+    setReturnUpdatingId(null);
   };
 
   // ── WhatsApp tracking notification ────────────────────────────────────────
@@ -390,6 +432,70 @@ export default function StoreOrdersManagement() {
       toast.error('فشل تحديث الحالة', { id: toastId });
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  const handleReturnStatusChange = async (returnRequest, newStatus) => {
+    if (!selectedOrder || returnUpdatingId) return;
+
+    const info = getStoreReturnStatus(newStatus);
+    let approvedRefundAmount = Number(returnRequest.approved_refund_amount || returnRequest.requested_refund_amount || 0);
+    let adminNote = returnRequest.admin_note || '';
+
+    if (newStatus === 'refunded') {
+      const amountInput = window.prompt('أدخل مبلغ الاسترداد المعتمد', String(approvedRefundAmount.toFixed(2)));
+      if (amountInput === null) return;
+      approvedRefundAmount = Math.max(0, Number(amountInput || 0));
+      if (approvedRefundAmount <= 0) {
+        toast.error('مبلغ الاسترداد غير صحيح');
+        return;
+      }
+    }
+
+    if (newStatus === 'rejected') {
+      const noteInput = window.prompt('سبب رفض طلب الاسترجاع', adminNote);
+      if (noteInput === null) return;
+      adminNote = noteInput;
+    }
+
+    setReturnUpdatingId(returnRequest.id);
+    const toastId = toast.loading(`جاري تحديث الاسترجاع إلى: ${info.label}`);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const { data, error } = await supabase.functions.invoke('store-return-requests', {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: {
+          action: 'admin_update',
+          returnRequestId: returnRequest.id,
+          status: newStatus,
+          approvedRefundAmount,
+          adminNote,
+        },
+      });
+      if (error) throw error;
+
+      const updatedRequest = data?.returnRequest;
+      const orderPatch = data?.orderPatch || {};
+
+      setReturnRequests(prev => prev.map(req => req.id === returnRequest.id ? {
+        ...req,
+        status: updatedRequest?.status || newStatus,
+        admin_note: updatedRequest?.adminNote ?? adminNote,
+        approved_refund_amount: updatedRequest?.approvedRefundAmount ?? approvedRefundAmount,
+      } : req));
+
+      if (Object.keys(orderPatch).length > 0) {
+        setSelectedOrder(prev => ({ ...prev, ...orderPatch }));
+        setOrders(prev => prev.map(order => order.id === selectedOrder.id ? { ...order, ...orderPatch } : order));
+      }
+
+      toast.success('تم تحديث طلب الاسترجاع وإشعار العميل', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('تعذر تحديث طلب الاسترجاع', { id: toastId });
+    } finally {
+      setReturnUpdatingId(null);
     }
   };
 
@@ -923,6 +1029,84 @@ export default function StoreOrdersManagement() {
                           {Number(selectedOrder.total_amount || 0).toFixed(2)} ر.س
                         </span>
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Return Requests ── */}
+                <div className="bg-[#F8F5F2] rounded-2xl p-4 border border-[#D9A3AA]/10">
+                  <h3 className="font-bold text-sm text-[#4A4A4A]/60 mb-3 flex items-center gap-1.5">
+                    <RotateCcw size={14} className="text-[#C5A059]" /> طلبات الاسترجاع والاسترداد
+                  </h3>
+                  {returnsLoading ? (
+                    <div className="flex justify-center py-6">
+                      <div className="w-6 h-6 border-4 border-[#D9A3AA]/30 border-t-[#D9A3AA] rounded-full animate-spin" />
+                    </div>
+                  ) : returnRequests.length === 0 ? (
+                    <p className="text-sm text-[#4A4A4A]/40 text-center py-5">لا توجد طلبات استرجاع لهذا الطلب</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {returnRequests.map((request) => {
+                        const nextStatuses = STORE_RETURN_TRANSITIONS[request.status] || [];
+                        return (
+                          <div key={request.id} className="rounded-2xl bg-white border border-[#D9A3AA]/15 p-4 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <ReturnStatusBadge status={request.status} />
+                              <span className="text-xs font-mono text-[#4A4A4A]/45">
+                                #{String(request.id).slice(0, 8)}
+                              </span>
+                            </div>
+                            <p className="text-sm font-bold text-[#4A4A4A] leading-relaxed">{request.reason}</p>
+                            {request.details && (
+                              <p className="text-xs text-[#4A4A4A]/60 leading-relaxed bg-[#F8F5F2] rounded-xl p-3">
+                                {request.details}
+                              </p>
+                            )}
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="rounded-xl bg-[#F8F5F2] p-3">
+                                <span className="block text-[#4A4A4A]/45 mb-1">المطلوب</span>
+                                <span className="font-black text-[#C5A059]">{Number(request.requested_refund_amount || 0).toFixed(2)} ر.س</span>
+                              </div>
+                              <div className="rounded-xl bg-[#F8F5F2] p-3">
+                                <span className="block text-[#4A4A4A]/45 mb-1">المعتمد</span>
+                                <span className="font-black text-emerald-600">{Number(request.approved_refund_amount || 0).toFixed(2)} ر.س</span>
+                              </div>
+                            </div>
+                            {request.store_return_request_items?.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {request.store_return_request_items.map((item) => (
+                                  <span key={item.id} className="rounded-full bg-[#F8F5F2] border border-[#D9A3AA]/10 px-3 py-1 text-[11px] font-bold">
+                                    {(item.product?.name || item.products?.name || 'منتج')} × {item.quantity}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {request.admin_note && (
+                              <p className="text-xs text-[#4A4A4A]/60 border-t border-[#D9A3AA]/10 pt-3">
+                                ملاحظة الإدارة: {request.admin_note}
+                              </p>
+                            )}
+                            {nextStatuses.length > 0 && (
+                              <div className="flex flex-wrap gap-2 pt-2 border-t border-[#D9A3AA]/10">
+                                {nextStatuses.map((status) => {
+                                  const info = getStoreReturnStatus(status);
+                                  return (
+                                    <button
+                                      key={status}
+                                      type="button"
+                                      disabled={returnUpdatingId === request.id}
+                                      onClick={() => handleReturnStatusChange(request, status)}
+                                      className={`px-3 py-2 rounded-xl text-xs font-black border transition-colors disabled:opacity-50 ${info.tone}`}
+                                    >
+                                      {info.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

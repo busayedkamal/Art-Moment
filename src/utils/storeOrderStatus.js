@@ -133,3 +133,55 @@ export function getStorePaymentStatus(status) {
 export function getStorePaymentMethod(method) {
   return STORE_PAYMENT_METHODS[method || 'bank_transfer'] || STORE_PAYMENT_METHODS.other;
 }
+
+export const STORE_RETURN_STATUSES = {
+  new_request: {
+    label: 'طلب استرجاع جديد',
+    description: 'تم استلام طلب الاسترجاع وينتظر مراجعة الإدارة.',
+    tone: 'bg-blue-50 text-blue-700 border-blue-100',
+  },
+  under_review: {
+    label: 'قيد المراجعة',
+    description: 'تراجع الإدارة تفاصيل الطلب والمنتجات المختارة.',
+    tone: 'bg-amber-50 text-amber-700 border-amber-100',
+  },
+  approved: {
+    label: 'مقبول',
+    description: 'تم قبول طلب الاسترجاع مبدئياً.',
+    tone: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  },
+  rejected: {
+    label: 'مرفوض',
+    description: 'تم رفض طلب الاسترجاع مع توضيح السبب عند توفره.',
+    tone: 'bg-red-50 text-red-700 border-red-100',
+  },
+  awaiting_item: {
+    label: 'بانتظار استلام المنتج',
+    description: 'ينتظر الفريق استلام المنتج المرتجع أو تأكيد حالته.',
+    tone: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+  },
+  item_received: {
+    label: 'تم الاستلام',
+    description: 'تم استلام المنتج المرتجع وجاري إنهاء المعالجة المالية.',
+    tone: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  },
+  refunded: {
+    label: 'تم رد المبلغ',
+    description: 'تم ربط طلب الاسترجاع بسجل الاسترداد المالي.',
+    tone: 'bg-slate-100 text-slate-700 border-slate-200',
+  },
+};
+
+export const STORE_RETURN_TRANSITIONS = {
+  new_request: ['under_review', 'approved', 'rejected'],
+  under_review: ['approved', 'rejected'],
+  approved: ['awaiting_item', 'item_received', 'refunded'],
+  awaiting_item: ['item_received', 'rejected'],
+  item_received: ['refunded'],
+  rejected: ['under_review'],
+  refunded: [],
+};
+
+export function getStoreReturnStatus(status) {
+  return STORE_RETURN_STATUSES[status] || STORE_RETURN_STATUSES.new_request;
+}
