@@ -53,8 +53,13 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const customer = body?.customer || {};
+    const payment = body?.payment || {};
     const items = Array.isArray(body?.items) ? body.items : [];
     let phone = normalizeSaudiPhone(customer.phone);
+    const allowedPaymentMethods = new Set(['bank_transfer', 'cash_on_delivery', 'card', 'wallet', 'manual', 'other']);
+    const paymentMethod = allowedPaymentMethods.has(String(payment.method))
+      ? String(payment.method)
+      : 'bank_transfer';
 
     const normalizedItems = items
       .map((item: Record<string, unknown>) => ({
@@ -152,6 +157,12 @@ Deno.serve(async (req) => {
       total_amount: subtotal,
       amount_paid: 0,
       delivery_fee: 0,
+      payment_status: 'pending_payment',
+      payment_method: paymentMethod,
+      payment_reference: null,
+      payment_failed_reason: null,
+      refunded_amount: 0,
+      payment_updated_at: new Date().toISOString(),
       notes: String(customer.notes || '').trim() || null,
       city: String(customer.city || '').trim() || null,
       district: String(customer.district || '').trim() || null,
@@ -165,8 +176,16 @@ Deno.serve(async (req) => {
       .select('id, short_id, customer_name, phone, total_amount')
       .single();
 
-    if (orderInsert.error && orderPayload.customer_id && /customer_id|schema cache|column/i.test(orderInsert.error.message || '')) {
-      delete orderPayload.customer_id;
+    if (orderInsert.error && /customer_id|payment_status|payment_method|payment_reference|payment_failed_reason|refunded_amount|payment_updated_at|schema cache|column/i.test(orderInsert.error.message || '')) {
+      if (/customer_id/i.test(orderInsert.error.message || '')) delete orderPayload.customer_id;
+      if (/payment_status|payment_method|payment_reference|payment_failed_reason|refunded_amount|payment_updated_at|schema cache|column/i.test(orderInsert.error.message || '')) {
+        delete orderPayload.payment_status;
+        delete orderPayload.payment_method;
+        delete orderPayload.payment_reference;
+        delete orderPayload.payment_failed_reason;
+        delete orderPayload.refunded_amount;
+        delete orderPayload.payment_updated_at;
+      }
       orderInsert = await supabase
         .from('store_orders')
         .insert(orderPayload)

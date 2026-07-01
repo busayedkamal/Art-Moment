@@ -28,6 +28,11 @@ function normalizeOrder(order: Record<string, unknown>) {
     totalAmount: Number(order.total_amount || 0),
     amountPaid: Number(order.amount_paid || 0),
     deliveryFee: Number(order.delivery_fee || 0),
+    paymentStatus: order.payment_status || null,
+    paymentMethod: order.payment_method || null,
+    paymentReference: order.payment_reference || null,
+    refundedAmount: Number(order.refunded_amount || 0),
+    paymentUpdatedAt: order.payment_updated_at || null,
     city: order.city || null,
     district: order.district || null,
     street: order.street || null,
@@ -77,21 +82,7 @@ Deno.serve(async (req) => {
 
     const orderId = String(body?.orderId || '').trim();
     const selectFields = `
-      id,
-      short_id,
-      customer_name,
-      phone,
-      total_amount,
-      amount_paid,
-      delivery_fee,
-      status,
-      city,
-      district,
-      street,
-      notes,
-      tracking_number,
-      courier_name,
-      created_at,
+      *,
       store_order_items(id, product_id, quantity, price_at_time, products(name, image))
     `;
 

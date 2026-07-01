@@ -43,6 +43,13 @@ For customer password recovery and marketing preferences, also run:
 supabase/migrations/202607010001_customer_account_recovery.sql
 ```
 
+For store customer links and payment statuses, also run:
+
+```text
+supabase/migrations/202607010002_store_orders_customer_link.sql
+supabase/migrations/202607010003_store_payment_statuses.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.

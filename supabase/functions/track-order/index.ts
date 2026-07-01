@@ -54,7 +54,7 @@ async function fetchCustomerStats(
   });
 
   storeOrders.forEach((order) => {
-    const total = Number(order.total_amount || 0);
+    const total = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
     const paid = Number(order.amount_paid || 0);
     totalPayments += paid;
     totalDebt += Math.max(0, total - paid);

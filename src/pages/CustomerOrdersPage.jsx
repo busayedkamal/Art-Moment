@@ -24,6 +24,7 @@ import { supabase } from '../lib/supabase';
 import { getCustomerSession } from '../utils/customerSession';
 import {
   getPaymentState,
+  getStorePaymentMethod,
   getStoreOrderStatus,
   getStoreOrderStepIndex,
   STORE_ORDER_STEPS,
@@ -78,7 +79,7 @@ function StatusBadge({ status }) {
 function PaymentBadge({ order }) {
   const payment = getPaymentState(order);
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${payment.tone}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-black ${payment.tone}`}>
       <Wallet size={13} />
       {payment.label}
     </span>
@@ -191,7 +192,9 @@ function OrderDetails({ order }) {
   const trackingUrl = getTrackingUrl(order);
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
   const remaining = Math.max(0, total - Number(order.amountPaid || 0));
+  const refunded = Number(order.refundedAmount || 0);
   const status = getStoreOrderStatus(order.status);
+  const payment = getPaymentState(order);
 
   return (
     <div className="space-y-6">
@@ -247,7 +250,18 @@ function OrderDetails({ order }) {
             <h2 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
               <ReceiptText size={18} className="text-[#D9A3AA]" /> ملخص الدفع
             </h2>
+            <div className={`mb-4 rounded-2xl border p-3 ${payment.tone}`}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-black">حالة الدفع</span>
+                <span className="text-sm font-black">{payment.label}</span>
+              </div>
+              <p className="mt-1 text-xs opacity-75">{payment.description}</p>
+            </div>
             <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-[#4A4A4A]/55">طريقة الدفع</span>
+                <span className="font-bold">{getStorePaymentMethod(order.paymentMethod)}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-[#4A4A4A]/55">المنتجات</span>
                 <span className="font-bold">{formatCurrency(order.totalAmount)}</span>
@@ -260,6 +274,12 @@ function OrderDetails({ order }) {
                 <span>المدفوع</span>
                 <span className="font-bold">{formatCurrency(order.amountPaid)}</span>
               </div>
+              {refunded > 0 && (
+                <div className="flex justify-between text-orange-600">
+                  <span>المسترد</span>
+                  <span className="font-bold">{formatCurrency(refunded)}</span>
+                </div>
+              )}
               <div className="border-t border-[#D9A3AA]/15 pt-3 flex justify-between font-black text-base">
                 <span>المتبقي</span>
                 <span className={remaining > 0 ? 'text-red-500' : 'text-emerald-600'}>

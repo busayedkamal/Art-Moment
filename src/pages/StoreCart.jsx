@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {
@@ -33,6 +33,7 @@ export default function StoreCart() {
   const [street, setStreet] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
 
   useEffect(() => {
     let cancelled = false;
@@ -169,6 +170,9 @@ export default function StoreCart() {
             id: item.id,
             qty: Number(item.qty) || 1,
           })),
+          payment: {
+            method: paymentMethod,
+          },
         },
       });
 
@@ -196,14 +200,22 @@ export default function StoreCart() {
         <h2 className="text-2xl md:text-3xl font-black mb-3 text-center">تم استلام طلبك بنجاح! 🎉</h2>
         <p className="text-[#4A4A4A]/60 text-sm md:text-base mb-8 text-center max-w-md leading-relaxed">
           طلبك الآن في حالة <strong className="text-[#D9A3AA]">"بانتظار التأكيد"</strong>.<br />
-          ستصلك رسالة عبر الواتساب قريباً تحتوي على تفاصيل فاتورتك.
+          وحالة الدفع <strong className="text-red-500">بانتظار الدفع</strong>. يمكنك متابعة التفاصيل من صفحة طلباتي.
         </p>
-        <Link
-          to="/store"
-          className="bg-[#4A4A4A] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#D9A3AA] transition-all hover:-translate-y-1"
-        >
-          العودة للمتجر
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link
+            to="/store/orders"
+            className="bg-[#4A4A4A] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#D9A3AA] transition-all hover:-translate-y-1"
+          >
+            عرض طلباتي
+          </Link>
+          <Link
+            to="/store"
+            className="bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-8 py-3.5 rounded-full font-bold shadow-sm hover:bg-[#F8F5F2] transition-all"
+          >
+            العودة للمتجر
+          </Link>
+        </div>
       </div>
     );
   }
@@ -418,6 +430,45 @@ export default function StoreCart() {
                   className="art-input w-full h-20 resize-none rounded-xl px-4 py-2 outline-none"
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="art-panel p-6 rounded-[1.5rem]">
+            <h2 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
+              <Wallet size={18} className="text-[#C5A059]" /> طريقة الدفع
+            </h2>
+            <div className="grid gap-3">
+              {[
+                {
+                  value: 'bank_transfer',
+                  title: 'تحويل بنكي',
+                  description: 'سيظهر الطلب بانتظار الدفع، وبعد التحويل تراجعه الإدارة وتؤكد الدفع.',
+                },
+                {
+                  value: 'cash_on_delivery',
+                  title: 'الدفع عند الاستلام',
+                  description: 'يتم تنسيق الدفع مع الإدارة حسب توفر خيار الاستلام أو التوصيل.',
+                },
+              ].map(method => (
+                <button
+                  key={method.value}
+                  type="button"
+                  onClick={() => setPaymentMethod(method.value)}
+                  className={`text-right rounded-2xl border p-4 transition-all ${
+                    paymentMethod === method.value
+                      ? 'border-[#C5A059] bg-[#C5A059]/10 shadow-sm'
+                      : 'border-[#D9A3AA]/15 bg-white hover:border-[#D9A3AA]/35'
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="font-black text-[#4A4A4A]">{method.title}</span>
+                    <span className={`h-4 w-4 rounded-full border-2 ${
+                      paymentMethod === method.value ? 'border-[#C5A059] bg-[#C5A059]' : 'border-[#D9A3AA]/30'
+                    }`} />
+                  </span>
+                  <span className="block mt-1 text-xs leading-relaxed text-[#4A4A4A]/55">{method.description}</span>
+                </button>
+              ))}
             </div>
           </div>
 

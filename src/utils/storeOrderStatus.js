@@ -67,7 +67,69 @@ export function getStoreOrderStepIndex(status) {
 export function getPaymentState(order) {
   const total = Number(order?.totalAmount || 0) + Number(order?.deliveryFee || 0);
   const paid = Number(order?.amountPaid || 0);
-  if (total > 0 && paid >= total) return { label: 'مدفوع بالكامل', tone: 'bg-emerald-50 text-emerald-700' };
-  if (paid > 0) return { label: 'مدفوع جزئياً', tone: 'bg-amber-50 text-amber-700' };
-  return { label: 'بانتظار الدفع', tone: 'bg-red-50 text-red-600' };
+  const refunded = Number(order?.refundedAmount ?? order?.refunded_amount ?? 0);
+  const explicitStatus = order?.paymentStatus || order?.payment_status;
+
+  if (explicitStatus && STORE_PAYMENT_STATUSES[explicitStatus]) {
+    return {
+      code: explicitStatus,
+      ...STORE_PAYMENT_STATUSES[explicitStatus],
+    };
+  }
+
+  if (total > 0 && refunded >= total) return { code: 'full_refund', ...STORE_PAYMENT_STATUSES.full_refund };
+  if (refunded > 0) return { code: 'partial_refund', ...STORE_PAYMENT_STATUSES.partial_refund };
+  if (total > 0 && paid >= total) return { code: 'paid', ...STORE_PAYMENT_STATUSES.paid };
+  if (paid > 0) return { code: 'awaiting_review', ...STORE_PAYMENT_STATUSES.awaiting_review };
+  return { code: 'pending_payment', ...STORE_PAYMENT_STATUSES.pending_payment };
+}
+
+export const STORE_PAYMENT_STATUSES = {
+  pending_payment: {
+    label: 'بانتظار الدفع',
+    description: 'لم يتم تسجيل دفعة على الطلب بعد.',
+    tone: 'bg-red-50 text-red-600 border-red-100',
+  },
+  awaiting_review: {
+    label: 'بانتظار المراجعة',
+    description: 'تم تسجيل دفعة أو تحويل ويحتاج مراجعة الإدارة.',
+    tone: 'bg-amber-50 text-amber-700 border-amber-100',
+  },
+  paid: {
+    label: 'مدفوع',
+    description: 'تم تأكيد الدفع لهذا الطلب.',
+    tone: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  },
+  payment_failed: {
+    label: 'فشل الدفع',
+    description: 'لم تكتمل محاولة الدفع ويمكن إعادة المحاولة.',
+    tone: 'bg-rose-50 text-rose-700 border-rose-100',
+  },
+  partial_refund: {
+    label: 'مسترد جزئياً',
+    description: 'تم رد جزء من مبلغ الطلب.',
+    tone: 'bg-orange-50 text-orange-700 border-orange-100',
+  },
+  full_refund: {
+    label: 'مسترد بالكامل',
+    description: 'تم رد كامل مبلغ الطلب.',
+    tone: 'bg-slate-100 text-slate-700 border-slate-200',
+  },
+};
+
+export const STORE_PAYMENT_METHODS = {
+  bank_transfer: 'تحويل بنكي',
+  cash_on_delivery: 'الدفع عند الاستلام',
+  card: 'بطاقة دفع',
+  wallet: 'محفظة العميل',
+  manual: 'تنسيق يدوي',
+  other: 'طريقة أخرى',
+};
+
+export function getStorePaymentStatus(status) {
+  return STORE_PAYMENT_STATUSES[status] || STORE_PAYMENT_STATUSES.pending_payment;
+}
+
+export function getStorePaymentMethod(method) {
+  return STORE_PAYMENT_METHODS[method || 'bank_transfer'] || STORE_PAYMENT_METHODS.other;
 }

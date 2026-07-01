@@ -13,6 +13,7 @@ import TrackOrderPage from './pages/TrackOrderPage.jsx'
 import PrivacyPage from './pages/PrivacyPage.jsx'
 import StoreCart from './pages/StoreCart.jsx'
 import CustomerOrdersPage from './pages/CustomerOrdersPage.jsx'
+import StorePaymentResult from './pages/StorePaymentResult.jsx'
 import ProductManagement from './pages/ProductManagement.jsx'
 import StoreOrdersManagement from './pages/StoreOrdersManagement.jsx'
 
@@ -52,6 +53,8 @@ function AppRoutes() {
       <Route path="/track" element={<TrackOrderPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/store/cart" element={<StoreCart />} />
+      <Route path="/store/payment/success" element={<StorePaymentResult />} />
+      <Route path="/store/payment/failed" element={<StorePaymentResult />} />
       <Route path="/store/orders" element={<CustomerOrdersPage />} />
       <Route path="/store/orders/:orderId" element={<CustomerOrdersPage />} />
       

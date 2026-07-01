@@ -8,6 +8,11 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import {
+  getPaymentState,
+  getStorePaymentMethod,
+  STORE_PAYMENT_STATUSES,
+} from '../utils/storeOrderStatus';
 
 // ─── FSM Configuration ────────────────────────────────────────────────────────
 
@@ -102,6 +107,8 @@ export default function StoreOrdersManagement() {
   const [editForm, setEditForm] = useState({});
   const [isEditingPayment, setIsEditingPayment] = useState(false);
   const [editAmountPaid, setEditAmountPaid] = useState('');
+  const [editPaymentStatus, setEditPaymentStatus] = useState('pending_payment');
+  const [editRefundedAmount, setEditRefundedAmount] = useState('');
 
   // ── Fetch orders list ──────────────────────────────────────────────────────
 
@@ -151,7 +158,11 @@ export default function StoreOrdersManagement() {
     setTrackingNumber('');
     setCourierName('سمسا');
     setIsEditing(false);
+    setIsEditingPayment(false);
     setEditForm({});
+    setEditAmountPaid('');
+    setEditPaymentStatus('pending_payment');
+    setEditRefundedAmount('');
   };
 
   // ── WhatsApp tracking notification ────────────────────────────────────────
@@ -248,11 +259,20 @@ export default function StoreOrdersManagement() {
 
   const savePayment = async () => {
     try {
-      const numericTotal    = Number(selectedOrder.total_amount || 0);
+      const numericTotal = Number(selectedOrder.total_amount || 0) + Number(selectedOrder.delivery_fee || 0);
       const numericPaidInput = Number(editAmountPaid || 0);
+      const numericRefundInput = Math.max(0, Number(editRefundedAmount || 0));
 
       let finalPaid   = numericPaidInput;
       let excessAmount = 0;
+      let finalRefunded = numericRefundInput;
+      let finalPaymentStatus = editPaymentStatus || getPaymentState({
+        totalAmount: selectedOrder.total_amount,
+        deliveryFee: selectedOrder.delivery_fee,
+        amountPaid: selectedOrder.amount_paid,
+        refundedAmount: selectedOrder.refunded_amount,
+        paymentStatus: selectedOrder.payment_status,
+      }).code;
 
       if (numericPaidInput > numericTotal) {
         excessAmount = numericPaidInput - numericTotal;
@@ -264,9 +284,33 @@ export default function StoreOrdersManagement() {
         if (!confirmed) return;
       }
 
+      if (finalPaymentStatus === 'paid' && finalPaid < numericTotal) {
+        finalPaid = numericTotal;
+      }
+
+      if (finalPaymentStatus === 'full_refund') {
+        finalRefunded = numericTotal;
+        if (finalPaid < numericTotal) finalPaid = numericTotal;
+      }
+
+      if (finalPaymentStatus === 'partial_refund' && finalRefunded <= 0) {
+        toast.error('أدخل مبلغ الاسترداد الجزئي أولاً');
+        return;
+      }
+
+      if (['pending_payment', 'payment_failed'].includes(finalPaymentStatus)) {
+        finalPaid = 0;
+        finalRefunded = 0;
+      }
+
       const { error: orderError } = await supabase
         .from('store_orders')
-        .update({ amount_paid: finalPaid })
+        .update({
+          amount_paid: finalPaid,
+          payment_status: finalPaymentStatus,
+          refunded_amount: finalRefunded,
+          payment_updated_at: new Date().toISOString(),
+        })
         .eq('id', selectedOrder.id);
       if (orderError) throw orderError;
 
@@ -288,8 +332,18 @@ export default function StoreOrdersManagement() {
         toast.success('تم تحديث المدفوعات بنجاح');
       }
 
-      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, amount_paid: finalPaid } : o));
-      setSelectedOrder(prev => ({ ...prev, amount_paid: finalPaid }));
+      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? {
+        ...o,
+        amount_paid: finalPaid,
+        payment_status: finalPaymentStatus,
+        refunded_amount: finalRefunded,
+      } : o));
+      setSelectedOrder(prev => ({
+        ...prev,
+        amount_paid: finalPaid,
+        payment_status: finalPaymentStatus,
+        refunded_amount: finalRefunded,
+      }));
       setIsEditingPayment(false);
     } catch (err) {
       console.error(err);
@@ -341,12 +395,15 @@ export default function StoreOrdersManagement() {
 
   // ── Derived data ───────────────────────────────────────────────────────────
 
-  const getPaymentBadge = (total, paid) => {
-    const t = Number(total || 0);
-    const p = Number(paid || 0);
-    if (p >= t && t > 0) return { label: 'مدفوع بالكامل', bg: 'bg-emerald-100', text: 'text-emerald-700' };
-    if (p > 0) return { label: `مدفوع ${p.toFixed(0)} ر.س`, bg: 'bg-amber-100', text: 'text-amber-700' };
-    return { label: 'غير مدفوع', bg: 'bg-red-50', text: 'text-red-500' };
+  const getPaymentBadge = (order) => {
+    const payment = getPaymentState({
+      totalAmount: order.total_amount,
+      deliveryFee: order.delivery_fee,
+      amountPaid: order.amount_paid,
+      refundedAmount: order.refunded_amount,
+      paymentStatus: order.payment_status,
+    });
+    return { label: payment.label, className: payment.tone };
   };
 
   const filteredOrders = filterStatus === 'all'
@@ -355,7 +412,7 @@ export default function StoreOrdersManagement() {
 
   const { totalOrdersValue, totalPaidValue, totalRemainingValue } = useMemo(() => {
     return orders.reduce((acc, order) => {
-      const total = Number(order.total_amount || 0);
+      const total = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
       const paid  = Number(order.amount_paid  || 0);
       return {
         totalOrdersValue:   acc.totalOrdersValue   + total,
@@ -483,12 +540,12 @@ export default function StoreOrdersManagement() {
                     <td className="py-3.5 px-4 font-mono text-sm text-[#4A4A4A]/70">{order.phone}</td>
                     <td className="py-3.5 px-4">
                       <div className="font-black text-[#C5A059] text-sm leading-tight">
-                        {Number(order.total_amount || 0).toFixed(2)} <span className="text-[10px] font-normal">ر.س</span>
+                        {(Number(order.total_amount || 0) + Number(order.delivery_fee || 0)).toFixed(2)} <span className="text-[10px] font-normal">ر.س</span>
                       </div>
                       {(() => {
-                        const badge = getPaymentBadge(order.total_amount, order.amount_paid);
+                        const badge = getPaymentBadge(order);
                         return (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${badge.className}`}>
                             {badge.label}
                           </span>
                         );
@@ -526,12 +583,12 @@ export default function StoreOrdersManagement() {
                   <p className="font-mono text-xs text-[#4A4A4A]/50">{order.phone}</p>
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                     <span className="font-black text-[#C5A059] text-sm">
-                      {Number(order.total_amount || 0).toFixed(2)} ر.س
+                      {(Number(order.total_amount || 0) + Number(order.delivery_fee || 0)).toFixed(2)} ر.س
                     </span>
                     {(() => {
-                      const badge = getPaymentBadge(order.total_amount, order.amount_paid);
+                      const badge = getPaymentBadge(order);
                       return (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${badge.className}`}>
                           {badge.label}
                         </span>
                       );
@@ -656,12 +713,12 @@ export default function StoreOrdersManagement() {
                         <div>
                           <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">الإجمالي</span>
                           <span className="font-black text-[#C5A059]">
-                            {Number(selectedOrder.total_amount || 0).toFixed(2)} ر.س
+                            {(Number(selectedOrder.total_amount || 0) + Number(selectedOrder.delivery_fee || 0)).toFixed(2)} ر.س
                           </span>
                           {(() => {
-                            const badge = getPaymentBadge(selectedOrder.total_amount, selectedOrder.amount_paid);
+                            const badge = getPaymentBadge(selectedOrder);
                             return (
-                              <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
+                              <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.className}`}>
                                 {badge.label}
                               </span>
                             );
@@ -674,16 +731,38 @@ export default function StoreOrdersManagement() {
                             <Banknote size={10} /> المبلغ المدفوع
                           </span>
                           {isEditingPayment ? (
-                            <div className="flex flex-wrap gap-2 items-center">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <select
+                                value={editPaymentStatus}
+                                onChange={e => setEditPaymentStatus(e.target.value)}
+                                className="sm:col-span-2 bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                              >
+                                {Object.entries(STORE_PAYMENT_STATUSES).map(([key, value]) => (
+                                  <option key={key} value={key}>{value.label}</option>
+                                ))}
+                              </select>
                               <input
                                 type="number"
                                 value={editAmountPaid}
                                 onChange={e => setEditAmountPaid(e.target.value)}
-                                className="w-32 bg-white border border-emerald-500/30 rounded-xl px-3 py-2 text-center font-black text-emerald-600 outline-none focus:border-emerald-500 shadow-inner"
+                                placeholder="المبلغ المدفوع"
+                                className="w-full bg-white border border-emerald-500/30 rounded-xl px-3 py-2 text-center font-black text-emerald-600 outline-none focus:border-emerald-500 shadow-inner"
+                                dir="ltr"
+                              />
+                              <input
+                                type="number"
+                                value={editRefundedAmount}
+                                onChange={e => setEditRefundedAmount(e.target.value)}
+                                placeholder="المبلغ المسترد"
+                                className="w-full bg-white border border-orange-500/30 rounded-xl px-3 py-2 text-center font-black text-orange-600 outline-none focus:border-orange-500 shadow-inner"
                                 dir="ltr"
                               />
                               <button
-                                onClick={() => setEditAmountPaid(selectedOrder.total_amount)}
+                                onClick={() => {
+                                  setEditAmountPaid(Number(selectedOrder.total_amount || 0) + Number(selectedOrder.delivery_fee || 0));
+                                  setEditPaymentStatus('paid');
+                                  setEditRefundedAmount(0);
+                                }}
                                 className="px-3 py-2 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-colors"
                               >
                                 سداد كامل
@@ -696,12 +775,32 @@ export default function StoreOrdersManagement() {
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
                               <span className="font-black text-emerald-600">
-                                {Number(selectedOrder.amount_paid || 0).toFixed(2)} ر.س
+                                مدفوع: {Number(selectedOrder.amount_paid || 0).toFixed(2)} ر.س
+                              </span>
+                              {Number(selectedOrder.refunded_amount || 0) > 0 && (
+                                <span className="font-black text-orange-600">
+                                  مسترد: {Number(selectedOrder.refunded_amount || 0).toFixed(2)} ر.س
+                                </span>
+                              )}
+                              <span className="text-xs font-bold text-[#4A4A4A]/45">
+                                {getStorePaymentMethod(selectedOrder.payment_method)}
                               </span>
                               <button
-                                onClick={() => { setEditAmountPaid(selectedOrder.amount_paid || 0); setIsEditingPayment(true); }}
+                                onClick={() => {
+                                  const payment = getPaymentState({
+                                    totalAmount: selectedOrder.total_amount,
+                                    deliveryFee: selectedOrder.delivery_fee,
+                                    amountPaid: selectedOrder.amount_paid,
+                                    refundedAmount: selectedOrder.refunded_amount,
+                                    paymentStatus: selectedOrder.payment_status,
+                                  });
+                                  setEditAmountPaid(selectedOrder.amount_paid || 0);
+                                  setEditRefundedAmount(selectedOrder.refunded_amount || 0);
+                                  setEditPaymentStatus(payment.code);
+                                  setIsEditingPayment(true);
+                                }}
                                 className="text-xs font-bold text-[#4A4A4A]/50 hover:text-[#D9A3AA] flex items-center gap-1 transition-colors"
                               >
                                 <Edit3 size={11} /> تعديل

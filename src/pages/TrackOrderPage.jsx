@@ -51,10 +51,12 @@ function StorePaymentBadge({ order }) {
     totalAmount: order.total_amount,
     deliveryFee: order.delivery_fee,
     amountPaid: order.amount_paid,
+    paymentStatus: order.payment_status,
+    refundedAmount: order.refunded_amount,
   });
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${payment.tone}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-black ${payment.tone}`}>
       <Wallet size={13} />
       {payment.label}
     </span>
@@ -298,6 +300,7 @@ export default function TrackOrderPage() {
               const currentStep = getStepStatus(order.status);
               const walletUsed = Number(order.wallet_used || 0);
               const storeTotal = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
+              const storeRefunded = Number(order.refunded_amount || 0);
               const storeStatus = order.order_type === 'store' ? getStoreOrderStatus(order.status) : null;
               const remaining = order.order_type === 'store'
                 ? storeTotal - Number(order.amount_paid || 0)
@@ -449,6 +452,7 @@ export default function TrackOrderPage() {
                             <div className="flex justify-between items-center text-sm px-1"><span>المنتجات</span><span className="font-bold">{Number(order.total_amount || 0).toFixed(2)}</span></div>
                             {Number(order.delivery_fee || 0) > 0 && <div className="flex justify-between items-center text-sm px-1"><span className="flex items-center gap-1"><MapPin size={12}/> توصيل</span><span className="font-bold">{Number(order.delivery_fee).toFixed(2)}</span></div>}
                             {Number(order.amount_paid || 0) > 0 && <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg"><span>المدفوع</span><span className="font-bold dir-ltr">-{Number(order.amount_paid).toFixed(2)}</span></div>}
+                            {storeRefunded > 0 && <div className="flex justify-between items-center text-sm text-orange-600 px-2 bg-orange-50 py-1.5 rounded-lg"><span>المسترد</span><span className="font-bold dir-ltr">{storeRefunded.toFixed(2)}</span></div>}
                           </>
                         ) : (
                           <>
