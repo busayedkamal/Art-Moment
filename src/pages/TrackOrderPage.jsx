@@ -11,6 +11,12 @@ import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../assets/logo-art-moment.svg';
 import { getCustomerSession } from '../utils/customerSession';
+import {
+  getPaymentState,
+  getStoreOrderStatus,
+  getStoreOrderStepIndex,
+  STORE_ORDER_STEPS,
+} from '../utils/storeOrderStatus';
 
 async function getFunctionError(error) {
   try {
@@ -19,6 +25,88 @@ async function getFunctionError(error) {
   } catch {
     return error?.message;
   }
+}
+
+const STORE_STEP_ICONS = {
+  pending_verification: Clock,
+  confirmed: CheckCircle,
+  processing: Package,
+  ready_for_delivery: Package,
+  shipped: Truck,
+  delivered: ShieldCheck,
+};
+
+function StoreStatusBadge({ status }) {
+  const info = getStoreOrderStatus(status);
+  return (
+    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black ${info.tone}`}>
+      <span className="h-2 w-2 rounded-full bg-current" />
+      {info.label}
+    </span>
+  );
+}
+
+function StorePaymentBadge({ order }) {
+  const payment = getPaymentState({
+    totalAmount: order.total_amount,
+    deliveryFee: order.delivery_fee,
+    amountPaid: order.amount_paid,
+  });
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${payment.tone}`}>
+      <Wallet size={13} />
+      {payment.label}
+    </span>
+  );
+}
+
+function StoreOrderTimeline({ status }) {
+  const activeIndex = getStoreOrderStepIndex(status);
+  const info = getStoreOrderStatus(status);
+
+  if (activeIndex === -1) {
+    return (
+      <div className={`mb-6 rounded-2xl border p-4 text-sm font-bold ${info.tone}`}>
+        {info.description}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-6 rounded-2xl border border-[#D9A3AA]/15 bg-white p-4 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-black text-[#C5A059]">تتبع طلب المتجر</p>
+          <p className="text-sm font-bold text-[#4A4A4A]/65">{info.description}</p>
+        </div>
+        <StoreStatusBadge status={status} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        {STORE_ORDER_STEPS.map((step, index) => {
+          const stepInfo = getStoreOrderStatus(step);
+          const Icon = STORE_STEP_ICONS[step] || Package;
+          const done = index <= activeIndex;
+
+          return (
+            <div key={step} className="flex flex-col items-center gap-2 text-center">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition-all ${
+                done
+                  ? 'border-[#C5A059] bg-[#C5A059] text-white shadow-sm'
+                  : 'border-[#D9A3AA]/10 bg-[#F8F5F2] text-[#4A4A4A]/30'
+              }`}>
+                <Icon size={17} />
+              </div>
+              <span className={`text-[10px] font-black leading-tight ${done ? 'text-[#4A4A4A]' : 'text-[#4A4A4A]/35'}`}>
+                {stepInfo.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function TrackOrderPage() {
@@ -38,17 +126,6 @@ export default function TrackOrderPage() {
     const customer = getCustomerSession();
     if (customer?.phone) setPhone(customer.phone);
   }, []);
-
-  const storeStatusMap = {
-    pending_verification: { label: 'بانتظار التأكيد', color: 'bg-blue-100 text-blue-700' },
-    confirmed:            { label: 'مؤكد',            color: 'bg-indigo-100 text-indigo-700' },
-    processing:           { label: 'قيد التجهيز',     color: 'bg-amber-100 text-amber-700' },
-    ready_for_delivery:   { label: 'جاهز للتسليم',    color: 'bg-teal-100 text-teal-700' },
-    shipped:              { label: 'تم الشحن',        color: 'bg-cyan-100 text-cyan-700' },
-    delivered:            { label: 'تم الاستلام',     color: 'bg-emerald-100 text-emerald-700' },
-    cancelled:            { label: 'ملغي',            color: 'bg-red-100 text-red-700' },
-    returned:             { label: 'مرتجع',           color: 'bg-orange-100 text-orange-700' },
-  };
 
   const handleIdSearch = async (e) => {
     e.preventDefault();
@@ -220,8 +297,10 @@ export default function TrackOrderPage() {
             {ordersList.map(order => {
               const currentStep = getStepStatus(order.status);
               const walletUsed = Number(order.wallet_used || 0);
+              const storeTotal = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
+              const storeStatus = order.order_type === 'store' ? getStoreOrderStatus(order.status) : null;
               const remaining = order.order_type === 'store'
-                ? Number(order.total_amount || 0) - Number(order.amount_paid || 0)
+                ? storeTotal - Number(order.amount_paid || 0)
                 : Number(order.total_amount || 0) - Number(order.deposit || 0) - walletUsed;
               const orderPayments = paymentsMap[order.id] || [];
 
@@ -238,7 +317,7 @@ export default function TrackOrderPage() {
                       </div>
                       <h2 className="text-2xl font-black mt-2">
                         {order.order_type === 'store'
-                          ? (storeStatusMap[order.status]?.label || order.status)
+                          ? (storeStatus?.label || order.status)
                           : (
                               order.status === 'new' ? 'جديد / قيد المراجعة' :
                               order.status === 'printing' ? 'جاري الطباعة والتجهيز' :
@@ -247,36 +326,19 @@ export default function TrackOrderPage() {
                             )
                         }
                       </h2>
+                      {order.order_type === 'store' && (
+                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                          <StoreStatusBadge status={order.status} />
+                          <StorePaymentBadge order={order} />
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="p-6">
                     {/* Progress Bar */}
                     {order.order_type === 'store' ? (
-                      <div className="relative flex justify-between mb-8 px-2">
-                        {(() => {
-                          const storeSteps = ['confirmed','processing','shipped','delivered'];
-                          const idx = storeSteps.indexOf(order.status);
-                          const activeStep = idx === -1 ? 0 : idx + 1;
-                          const icons = [CheckCircle, Clock, Truck, Package];
-                          const labels = ['مؤكد','تجهيز','شحن','استلام'];
-                          return (
-                            <>
-                              <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#F8F5F2] -translate-y-1/2 z-0"></div>
-                              <div className="absolute top-1/2 right-0 h-1 bg-[#C5A059] -translate-y-1/2 z-0 transition-all duration-1000" style={{ left: `${100 - ((Math.max(activeStep-1,0)) / 3 * 100)}%` }}></div>
-                              {storeSteps.map((_, i) => {
-                                const Icon = icons[i];
-                                return (
-                                  <div key={i} className="relative z-10 flex flex-col items-center gap-1">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${activeStep > i ? 'bg-[#C5A059] border-[#C5A059] text-white shadow-md scale-110' : 'bg-white border-[#F8F5F2] text-[#4A4A4A]/30'}`}><Icon size={14} /></div>
-                                    <span className={`text-[10px] font-bold ${activeStep > i ? 'text-[#C5A059]' : 'text-[#4A4A4A]/30'}`}>{labels[i]}</span>
-                                  </div>
-                                );
-                              })}
-                            </>
-                          );
-                        })()}
-                      </div>
+                      <StoreOrderTimeline status={order.status} />
                     ) : (
                       <div className="relative flex justify-between mb-8 px-2">
                         <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#F8F5F2] -translate-y-1/2 z-0"></div>
@@ -400,7 +462,7 @@ export default function TrackOrderPage() {
 
                       <div className="flex justify-between items-center mb-5 px-1 border-t border-[#D9A3AA]/20 pt-4">
                         <span className="font-bold text-[#4A4A4A]">الإجمالي النهائي</span>
-                        <span className="font-black text-xl text-[#4A4A4A]">{Number(order.total_amount || 0).toFixed(2)} ر.س</span>
+                        <span className="font-black text-xl text-[#4A4A4A]">{(order.order_type === 'store' ? storeTotal : Number(order.total_amount || 0)).toFixed(2)} ر.س</span>
                       </div>
 
                       {order.order_type === 'print' && orderPayments.length > 0 && (
