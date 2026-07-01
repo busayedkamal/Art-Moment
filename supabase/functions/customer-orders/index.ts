@@ -92,7 +92,6 @@ Deno.serve(async (req) => {
       tracking_number,
       courier_name,
       created_at,
-      updated_at,
       store_order_items(id, product_id, quantity, price_at_time, products(name, image))
     `;
 

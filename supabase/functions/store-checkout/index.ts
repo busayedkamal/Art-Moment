@@ -54,11 +54,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const customer = body?.customer || {};
     const items = Array.isArray(body?.items) ? body.items : [];
-    const phone = normalizeSaudiPhone(customer.phone);
-
-    if (!isValidSaudiMobile(phone)) {
-      return jsonResponse({ error: 'invalid_phone' }, 400);
-    }
+    let phone = normalizeSaudiPhone(customer.phone);
 
     const normalizedItems = items
       .map((item: Record<string, unknown>) => ({
@@ -72,6 +68,30 @@ Deno.serve(async (req) => {
     }
 
     const supabase = getServiceClient();
+    let verifiedCustomerId: string | null = null;
+    let verifiedCustomerName = '';
+
+    const tokenPayload = await verifyCustomerSessionToken(customer.sessionToken);
+    if (tokenPayload?.sub) {
+      const { data: tokenCustomer, error: tokenCustomerError } = await supabase
+        .from('customers')
+        .select('id, name, phone')
+        .eq('id', tokenPayload.sub)
+        .maybeSingle();
+      if (tokenCustomerError) throw tokenCustomerError;
+
+      const accountPhone = normalizeSaudiPhone(tokenCustomer?.phone);
+      if (tokenCustomer && isValidSaudiMobile(accountPhone)) {
+        verifiedCustomerId = String(tokenCustomer.id);
+        verifiedCustomerName = String(tokenCustomer.name || '').trim();
+        phone = accountPhone;
+      }
+    }
+
+    if (!isValidSaudiMobile(phone)) {
+      return jsonResponse({ error: 'invalid_phone' }, 400);
+    }
+
     const productIds = normalizedItems.map((item: { product_id: number }) => item.product_id);
     const { data: products, error: productsError } = await supabase
       .from('products')
@@ -102,22 +122,6 @@ Deno.serve(async (req) => {
     });
 
     const variants = phoneVariants(phone);
-    let verifiedCustomerId: string | null = null;
-
-    const tokenPayload = await verifyCustomerSessionToken(customer.sessionToken);
-    if (tokenPayload?.sub) {
-      const { data: tokenCustomer, error: tokenCustomerError } = await supabase
-        .from('customers')
-        .select('id, phone')
-        .eq('id', tokenPayload.sub)
-        .maybeSingle();
-      if (tokenCustomerError) throw tokenCustomerError;
-
-      const tokenPhoneVariants = phoneVariants(tokenCustomer?.phone);
-      if (tokenCustomer && tokenPhoneVariants.includes(phone)) {
-        verifiedCustomerId = String(tokenCustomer.id);
-      }
-    }
 
     const { data: existingWallet, error: walletError } = await supabase
       .from('wallets')
@@ -143,7 +147,7 @@ Deno.serve(async (req) => {
     }
 
     const orderPayload: Record<string, unknown> = {
-      customer_name: String(customer.name || 'عميل المتجر').trim(),
+      customer_name: String(customer.name || verifiedCustomerName || 'عميل المتجر').trim(),
       phone,
       total_amount: subtotal,
       amount_paid: 0,
