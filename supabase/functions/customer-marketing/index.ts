@@ -9,6 +9,16 @@ type CustomerRow = {
   marketing_opt_in?: boolean | null;
 };
 
+type MessageTemplateRow = {
+  id: string;
+  template_key: string;
+  name: string;
+  category?: string | null;
+  subject?: string | null;
+  body?: string | null;
+  is_active?: boolean | null;
+};
+
 function getBearerToken(req: Request) {
   const header = req.headers.get('authorization') || '';
   const match = header.match(/^Bearer\s+(.+)$/i);
@@ -146,6 +156,23 @@ function campaignEmailHtml(input: {
         <p style="margin:0 0 18px">مرحباً ${escapeHtml(input.customerName || 'عميل لحظة فن')}،</p>
         <div style="white-space:pre-line;margin:0 0 22px">${escapeHtml(input.body)}</div>
         <a href="${escapeHtml(input.unsubscribeUrl)}" style="font-size:12px;color:#777;text-decoration:underline">إلغاء الاشتراك في الرسائل التسويقية</a>
+      </div>
+    </div>
+  `;
+}
+
+function notificationEmailHtml(input: {
+  title: string;
+  body: string;
+  customerName: string;
+}) {
+  return `
+    <div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.9;color:#4A4A4A;background:#F8F5F2;padding:28px">
+      <div style="max-width:580px;margin:auto;background:#fff;border:1px solid #ead8da;border-radius:24px;padding:28px">
+        <p style="margin:0 0 8px;color:#C5A059;font-weight:700">لحظة فن Art Moment</p>
+        <h2 style="margin:0 0 14px;color:#4A4A4A">${escapeHtml(input.title)}</h2>
+        <p style="margin:0 0 18px">مرحباً ${escapeHtml(input.customerName || 'عميل لحظة فن')}،</p>
+        <div style="white-space:pre-line;margin:0 0 22px">${escapeHtml(input.body)}</div>
       </div>
     </div>
   `;
@@ -302,6 +329,128 @@ Deno.serve(async (req) => {
         failed,
         skipped: Math.max(0, (customers || []).length - recipients.length),
         eligible: recipients.length,
+      });
+    }
+
+    if (action === 'send_template') {
+      if (!await isAdminRequest(req, supabase)) {
+        return jsonResponse({ error: 'unauthorized' }, 401);
+      }
+
+      const templateKey = cleanText(body?.templateKey, 120);
+      const customerId = cleanText(body?.customerId, 80);
+      const fallbackEmail = cleanText(body?.email, 240);
+      const fallbackName = cleanText(body?.customerName || 'عميل لحظة فن', 160);
+      if (!templateKey || (!customerId && !isValidEmail(fallbackEmail))) {
+        return jsonResponse({ error: 'invalid_template_request' }, 400);
+      }
+
+      const { data: template, error: templateError } = await supabase
+        .from('customer_message_templates')
+        .select('id, template_key, name, category, subject, body, is_active')
+        .eq('template_key', templateKey)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (templateError) throw templateError;
+      if (!template) return jsonResponse({ error: 'template_not_found' }, 404);
+
+      let customer: CustomerRow | null = null;
+      if (customerId) {
+        const { data: customerRow, error: customerError } = await supabase
+          .from('customers')
+          .select('id, name, email, marketing_opt_in')
+          .eq('id', customerId)
+          .maybeSingle();
+        if (customerError) throw customerError;
+        customer = customerRow as CustomerRow | null;
+      }
+
+      const targetEmail = String(customer?.email || fallbackEmail || '').trim();
+      const customerName = String(customer?.name || fallbackName || 'عميل لحظة فن').trim();
+      if (!isValidEmail(targetEmail)) {
+        return jsonResponse({ error: 'missing_customer_email' }, 400);
+      }
+
+      const activeTemplate = template as MessageTemplateRow;
+      if (activeTemplate.category === 'marketing' && customer?.marketing_opt_in !== true) {
+        return jsonResponse({ error: 'marketing_opt_in_required' }, 400);
+      }
+
+      const variables: Record<string, string> = {};
+      if (body?.variables && typeof body.variables === 'object') {
+        for (const [key, value] of Object.entries(body.variables as Record<string, unknown>)) {
+          variables[key] = cleanText(value, 1000);
+        }
+      }
+      variables.customer_name = variables.customer_name || customerName;
+
+      const subject = renderTemplate(activeTemplate.subject || activeTemplate.name || 'رسالة من لحظة فن', variables);
+      const message = renderTemplate(activeTemplate.body || '', variables);
+      const siteUrl = getPublicSiteUrl(req);
+
+      let html = notificationEmailHtml({ title: subject, body: message, customerName });
+      let text = message;
+
+      if (activeTemplate.category === 'marketing' && customer?.id) {
+        const token = await createUnsubscribeToken(String(customer.id));
+        const unsubscribeUrl = `${siteUrl}/marketing/unsubscribe?token=${encodeURIComponent(token)}`;
+        html = campaignEmailHtml({ title: subject, body: message, customerName, unsubscribeUrl });
+        text = `${message}\n\nإلغاء الاشتراك: ${unsubscribeUrl}`;
+      }
+
+      try {
+        await sendEmail({
+          to: targetEmail,
+          subject,
+          html,
+          text,
+          tags: [
+            { name: 'type', value: 'customer_template' },
+            { name: 'template', value: activeTemplate.template_key.slice(0, 32) },
+          ],
+        });
+
+        await logMessage(supabase, {
+          customer_id: customer?.id || null,
+          channel: 'email',
+          type: `template_${activeTemplate.category || 'general'}`,
+          subject,
+          body: message,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          metadata: {
+            source: 'admin_order_panel',
+            templateKey: activeTemplate.template_key,
+            templateName: activeTemplate.name,
+            variables,
+          },
+        });
+      } catch (emailError) {
+        await logMessage(supabase, {
+          customer_id: customer?.id || null,
+          channel: 'email',
+          type: `template_${activeTemplate.category || 'general'}`,
+          subject,
+          body: message,
+          status: 'failed',
+          error_message: emailError instanceof Error ? emailError.message : 'email_failed',
+          metadata: {
+            source: 'admin_order_panel',
+            templateKey: activeTemplate.template_key,
+            templateName: activeTemplate.name,
+            variables,
+          },
+        });
+        throw emailError;
+      }
+
+      return jsonResponse({
+        ok: true,
+        sent: 1,
+        template: {
+          key: activeTemplate.template_key,
+          name: activeTemplate.name,
+        },
       });
     }
 

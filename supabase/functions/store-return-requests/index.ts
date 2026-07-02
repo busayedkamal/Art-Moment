@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
         if (orderUpdateError) throw orderUpdateError;
       }
 
-      if (existingRequest.customer_id) {
+      if (body?.notifyCustomer === true && existingRequest.customer_id) {
         const { data: customer } = await supabase
           .from('customers')
           .select('email, name')

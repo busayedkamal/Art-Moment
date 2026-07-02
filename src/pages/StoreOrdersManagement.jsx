@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Eye, Clock, CheckCircle, Package, Truck, X,
-  ArrowLeft, RotateCcw, Printer, FileText, AlertCircle,
+  ArrowLeft, RotateCcw, Printer, AlertCircle,
   ShoppingBag, Phone, User, StickyNote, Image as ImageIcon,
-  RefreshCw, Trash2, Edit3, Save, XCircle, Banknote, Wallet
+  RefreshCw, Trash2, Edit3, Save, XCircle, Banknote, Wallet,
+  Mail, Send
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -80,6 +81,35 @@ const VALID_TRANSITIONS = {
   returned:             [],
 };
 
+const ORDER_TEMPLATE_BY_STATUS = {
+  pending_verification: 'store_order_confirmation',
+  confirmed: 'store_order_confirmation',
+  processing: 'store_order_confirmation',
+  ready_for_delivery: 'shipping_update',
+  shipped: 'shipping_update',
+  delivered: 'shipping_update',
+  cancelled: 'store_order_confirmation',
+  returned: 'return_status_update',
+};
+
+const PAYMENT_TEMPLATE_BY_STATUS = {
+  pending_payment: 'payment_reminder',
+  awaiting_review: 'payment_reminder',
+  paid: 'payment_received',
+  payment_failed: 'payment_reminder',
+  partial_refund: 'payment_received',
+  full_refund: 'payment_received',
+};
+
+const ADMIN_ORDER_TEMPLATE_CATEGORIES = new Set(['order', 'payment', 'shipping', 'return']);
+
+const TEMPLATE_CATEGORY_LABELS = {
+  order: 'طلب',
+  payment: 'دفع',
+  shipping: 'شحن',
+  return: 'استرجاع',
+};
+
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
@@ -112,6 +142,21 @@ function getStatusUpdateErrorMessage(error) {
   return 'فشل تحديث الحالة';
 }
 
+async function getFunctionErrorMessage(error) {
+  try {
+    const body = await error?.context?.clone?.().json?.();
+    return body?.error || error?.message || 'function_failed';
+  } catch {
+    return error?.message || 'function_failed';
+  }
+}
+
+function getSuggestedTemplateKey(order) {
+  if (!order) return 'store_order_confirmation';
+  if (PAYMENT_TEMPLATE_BY_STATUS[order.payment_status]) return PAYMENT_TEMPLATE_BY_STATUS[order.payment_status];
+  return ORDER_TEMPLATE_BY_STATUS[order.status] || 'store_order_confirmation';
+}
+
 export default function StoreOrdersManagement() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -132,6 +177,10 @@ export default function StoreOrdersManagement() {
   const [editAmountPaid, setEditAmountPaid] = useState('');
   const [editPaymentStatus, setEditPaymentStatus] = useState('pending_payment');
   const [editRefundedAmount, setEditRefundedAmount] = useState('');
+  const [messageTemplates, setMessageTemplates] = useState([]);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState('');
+  const [templateContext, setTemplateContext] = useState({});
+  const [templateSending, setTemplateSending] = useState(false);
 
   // ── Fetch orders list ──────────────────────────────────────────────────────
 
@@ -152,7 +201,29 @@ export default function StoreOrdersManagement() {
     }
   }, []);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  const fetchMessageTemplates = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_message_templates')
+        .select('template_key, name, category, subject, body, variables')
+        .eq('is_active', true)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true });
+      if (error) {
+        if (/customer_message_templates|schema cache|relation|does not exist/i.test(error.message || '')) return;
+        throw error;
+      }
+      setMessageTemplates(data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل تحميل قوالب الرسائل');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+    fetchMessageTemplates();
+  }, [fetchOrders, fetchMessageTemplates]);
 
   // ── Fetch items when a modal opens ────────────────────────────────────────
 
@@ -184,6 +255,8 @@ export default function StoreOrdersManagement() {
     setSelectedOrder(order);
     setOrderItems([]);
     setReturnRequests([]);
+    setSelectedTemplateKey(getSuggestedTemplateKey(order));
+    setTemplateContext({});
     setItemsLoading(true);
     fetchReturnRequests(order.id);
     try {
@@ -214,6 +287,9 @@ export default function StoreOrdersManagement() {
     setEditPaymentStatus('pending_payment');
     setEditRefundedAmount('');
     setReturnUpdatingId(null);
+    setSelectedTemplateKey('');
+    setTemplateContext({});
+    setTemplateSending(false);
   };
 
   // ── WhatsApp tracking notification ────────────────────────────────────────
@@ -247,6 +323,92 @@ export default function StoreOrdersManagement() {
       });
     } catch (error) {
       console.error('Tracking WhatsApp Error:', error);
+    }
+  };
+
+  const buildTemplateVariables = (order = selectedOrder, extra = {}) => {
+    const total = Number(order?.total_amount || 0) + Number(order?.delivery_fee || 0);
+    const paid = Number(order?.amount_paid || 0);
+    const refunded = Number(order?.refunded_amount || 0);
+    const payment = getPaymentState({
+      totalAmount: order?.total_amount,
+      deliveryFee: order?.delivery_fee,
+      amountPaid: order?.amount_paid,
+      refundedAmount: order?.refunded_amount,
+      paymentStatus: order?.payment_status,
+    });
+
+    return {
+      customer_name: order?.customer_name || 'عميل لحظة فن',
+      order_number: String(order?.short_id || order?.id || '').slice(0, 6),
+      total_amount: total.toFixed(2),
+      remaining_amount: Math.max(0, total - paid).toFixed(2),
+      paid_amount: paid.toFixed(2),
+      refunded_amount: refunded.toFixed(2),
+      payment_method: getStorePaymentMethod(order?.payment_method),
+      payment_status: payment.label,
+      order_status: STATUS_CONFIG[order?.status]?.label || order?.status || '',
+      courier_name: order?.courier_name || courierName || 'شركة الشحن',
+      tracking_number: order?.tracking_number || trackingNumber || 'يتم تحديثه قريباً',
+      return_number: '',
+      return_status: '',
+      admin_note: 'لا توجد ملاحظات إضافية',
+      ...extra,
+    };
+  };
+
+  const suggestTemplateNotification = (templateKey, extra = {}) => {
+    if (!templateKey) return;
+    setSelectedTemplateKey(templateKey);
+    setTemplateContext(extra);
+  };
+
+  const sendOrderTemplate = async () => {
+    if (!selectedOrder || templateSending) return;
+    if (!selectedTemplateKey) {
+      toast.error('اختر قالب الإشعار أولاً');
+      return;
+    }
+
+    const customerId = selectedOrder.customer_id || selectedOrder.customer?.id || '';
+    const fallbackEmail = selectedOrder.customer_email || selectedOrder.email || selectedOrder.customer?.email || '';
+    if (!customerId && !fallbackEmail) {
+      toast.error('لا يوجد حساب أو بريد إلكتروني مرتبط بهذا الطلب');
+      return;
+    }
+
+    setTemplateSending(true);
+    const toastId = toast.loading('جاري إرسال الإشعار...');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const { error } = await supabase.functions.invoke('customer-marketing', {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: {
+          action: 'send_template',
+          templateKey: selectedTemplateKey,
+          customerId,
+          email: fallbackEmail,
+          customerName: selectedOrder.customer_name,
+          variables: buildTemplateVariables(selectedOrder, templateContext),
+        },
+      });
+      if (error) throw error;
+      toast.success('تم إرسال الإشعار للعميل', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      const message = await getFunctionErrorMessage(err);
+      if (/missing_customer_email/i.test(message)) {
+        toast.error('لا يوجد بريد إلكتروني محفوظ لهذا العميل', { id: toastId });
+      } else if (/template_not_found/i.test(message)) {
+        toast.error('القالب غير متاح أو غير مفعل', { id: toastId });
+      } else if (/unauthorized/i.test(message)) {
+        toast.error('لا تملك صلاحية إرسال الإشعار', { id: toastId });
+      } else {
+        toast.error('تعذر إرسال الإشعار', { id: toastId });
+      }
+    } finally {
+      setTemplateSending(false);
     }
   };
 
@@ -395,6 +557,7 @@ export default function StoreOrdersManagement() {
         payment_status: finalPaymentStatus,
         refunded_amount: finalRefunded,
       }));
+      suggestTemplateNotification(PAYMENT_TEMPLATE_BY_STATUS[finalPaymentStatus] || 'payment_received');
       setIsEditingPayment(false);
     } catch (err) {
       console.error(err);
@@ -438,6 +601,11 @@ export default function StoreOrdersManagement() {
         await sendTrackingWhatsApp(updated, trackingNumber.trim(), courierName);
       }
 
+      suggestTemplateNotification(ORDER_TEMPLATE_BY_STATUS[newStatus], {
+        order_status: STATUS_CONFIG[newStatus]?.label || newStatus,
+        courier_name: updated.courier_name || courierName,
+        tracking_number: updated.tracking_number || trackingNumber || 'يتم تحديثه قريباً',
+      });
       toast.success(`تم تغيير الحالة إلى: ${STATUS_CONFIG[newStatus]?.label || newStatus}`, { id: toastId });
     } catch (err) {
       console.error(err);
@@ -502,7 +670,12 @@ export default function StoreOrdersManagement() {
         setOrders(prev => prev.map(order => order.id === selectedOrder.id ? { ...order, ...orderPatch } : order));
       }
 
-      toast.success('تم تحديث طلب الاسترجاع وإشعار العميل', { id: toastId });
+      suggestTemplateNotification('return_status_update', {
+        return_number: String(returnRequest.id).slice(0, 8),
+        return_status: info.label,
+        admin_note: adminNote || info.description || 'تم تحديث حالة طلب الاسترجاع الخاص بك.',
+      });
+      toast.success('تم تحديث طلب الاسترجاع. يمكنك إرسال الإشعار الجاهز الآن', { id: toastId });
     } catch (err) {
       console.error(err);
       toast.error('تعذر تحديث طلب الاسترجاع', { id: toastId });
@@ -527,6 +700,14 @@ export default function StoreOrdersManagement() {
   const filteredOrders = filterStatus === 'all'
     ? orders
     : orders.filter(o => o.status === filterStatus);
+
+  const orderMessageTemplates = useMemo(() => {
+    return messageTemplates.filter(template => ADMIN_ORDER_TEMPLATE_CATEGORIES.has(template.category));
+  }, [messageTemplates]);
+
+  const selectedMessageTemplate = orderMessageTemplates.find(
+    template => template.template_key === selectedTemplateKey,
+  );
 
   const { totalOrdersValue, totalPaidValue, totalRemainingValue } = useMemo(() => {
     return orders.reduce((acc, order) => {
@@ -1120,6 +1301,59 @@ export default function StoreOrdersManagement() {
                         );
                       })}
                     </div>
+                  )}
+                </div>
+
+                {/* ── Customer Notification Templates ── */}
+                <div className="bg-white rounded-2xl p-4 border border-[#D9A3AA]/15 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <h3 className="font-bold text-sm text-[#4A4A4A]/60 flex items-center gap-1.5">
+                      <Mail size={14} className="text-[#D9A3AA]" /> إشعار العميل
+                    </h3>
+                    {selectedMessageTemplate && (
+                      <span className="text-[10px] font-black rounded-full bg-[#F8F5F2] text-[#C5A059] px-3 py-1 border border-[#D9A3AA]/10">
+                        {TEMPLATE_CATEGORY_LABELS[selectedMessageTemplate.category] || selectedMessageTemplate.category}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                    <select
+                      value={selectedTemplateKey}
+                      onChange={(event) => {
+                        setSelectedTemplateKey(event.target.value);
+                        setTemplateContext({});
+                      }}
+                      className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2.5 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                    >
+                      <option value="">اختر قالب الإشعار</option>
+                      {orderMessageTemplates.map((template) => (
+                        <option key={template.template_key} value={template.template_key}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={sendOrderTemplate}
+                      disabled={templateSending || !selectedTemplateKey || orderMessageTemplates.length === 0}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-4 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C5A059] disabled:opacity-50 disabled:hover:bg-[#4A4A4A]"
+                    >
+                      <Send size={14} /> {templateSending ? 'جاري الإرسال' : 'إرسال'}
+                    </button>
+                  </div>
+
+                  {selectedMessageTemplate ? (
+                    <div className="mt-3 rounded-xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
+                      <p className="text-[10px] text-[#4A4A4A]/45 mb-1">عنوان الرسالة</p>
+                      <p className="text-xs font-bold text-[#4A4A4A] leading-relaxed">
+                        {selectedMessageTemplate.subject || selectedMessageTemplate.name}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-[#4A4A4A]/45">
+                      لا توجد قوالب مرتبطة بالطلبات مفعلة حالياً.
+                    </p>
                   )}
                 </div>
 
