@@ -424,6 +424,8 @@ function OrderDetails({ order, onReturnSubmitted }) {
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
   const remaining = Math.max(0, total - Number(order.amountPaid || 0));
   const refunded = Number(order.refundedAmount || 0);
+  const subtotalBeforeDiscount = Number(order.subtotalAmount ?? order.totalAmount ?? 0);
+  const discountAmount = Number(order.discountAmount || 0);
   const status = getStoreOrderStatus(order.status);
   const payment = getPaymentState(order);
 
@@ -494,7 +496,17 @@ function OrderDetails({ order, onReturnSubmitted }) {
                 <span className="font-bold">{getStorePaymentMethod(order.paymentMethod)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#4A4A4A]/55">المنتجات</span>
+                <span className="text-[#4A4A4A]/55">المنتجات قبل الخصم</span>
+                <span className="font-bold">{formatCurrency(subtotalBeforeDiscount)}</span>
+              </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>{order.couponCode ? `كوبون ${order.couponCode}` : 'خصم'}</span>
+                  <span className="font-bold">-{formatCurrency(discountAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-[#4A4A4A]/55">المنتجات بعد الخصم</span>
                 <span className="font-bold">{formatCurrency(order.totalAmount)}</span>
               </div>
               <div className="flex justify-between">

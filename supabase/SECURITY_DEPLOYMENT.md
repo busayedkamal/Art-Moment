@@ -8,6 +8,7 @@
 supabase functions deploy public-settings
 supabase functions deploy customer-auth
 supabase functions deploy customer-orders
+supabase functions deploy store-coupons
 supabase functions deploy store-checkout
 supabase functions deploy track-order
 supabase functions deploy store-return-requests
@@ -71,6 +72,12 @@ For admin CRM notes, manual customer status, and marketing/support filters, also
 supabase/migrations/202607020003_customer_admin_crm.sql
 ```
 
+For store cart coupons and discount receipts, also run:
+
+```text
+supabase/migrations/202607020004_store_order_coupons.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.
@@ -79,6 +86,7 @@ supabase/migrations/202607020003_customer_admin_crm.sql
 - Customer store orders page loads only after customer login.
 - Customer account page loads only after customer login and can update profile data.
 - Admin customers page shows store account profiles, marketing consent, return flags, and CRM status.
+- Store cart validates coupons through Edge Functions and checkout stores the discount on the order.
 - Store checkout creates an order.
 - Tracking by short order id works.
 - Tracking by phone + PIN works.

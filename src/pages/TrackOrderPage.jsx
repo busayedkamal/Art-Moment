@@ -449,7 +449,9 @@ export default function TrackOrderPage() {
                       <div className="space-y-3 mb-4">
                         {order.order_type === 'store' ? (
                           <>
-                            <div className="flex justify-between items-center text-sm px-1"><span>المنتجات</span><span className="font-bold">{Number(order.total_amount || 0).toFixed(2)}</span></div>
+                            <div className="flex justify-between items-center text-sm px-1"><span>المنتجات قبل الخصم</span><span className="font-bold">{Number(order.subtotal_amount ?? order.total_amount ?? 0).toFixed(2)}</span></div>
+                            {Number(order.discount_amount || 0) > 0 && <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg"><span>{order.coupon_code ? `كوبون ${order.coupon_code}` : 'خصم'}</span><span className="font-bold dir-ltr">-{Number(order.discount_amount).toFixed(2)}</span></div>}
+                            <div className="flex justify-between items-center text-sm px-1"><span>المنتجات بعد الخصم</span><span className="font-bold">{Number(order.total_amount || 0).toFixed(2)}</span></div>
                             {Number(order.delivery_fee || 0) > 0 && <div className="flex justify-between items-center text-sm px-1"><span className="flex items-center gap-1"><MapPin size={12}/> توصيل</span><span className="font-bold">{Number(order.delivery_fee).toFixed(2)}</span></div>}
                             {Number(order.amount_paid || 0) > 0 && <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg"><span>المدفوع</span><span className="font-bold dir-ltr">-{Number(order.amount_paid).toFixed(2)}</span></div>}
                             {storeRefunded > 0 && <div className="flex justify-between items-center text-sm text-orange-600 px-2 bg-orange-50 py-1.5 rounded-lg"><span>المسترد</span><span className="font-bold dir-ltr">{storeRefunded.toFixed(2)}</span></div>}

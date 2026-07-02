@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet } from 'lucide-react';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {
@@ -34,6 +34,9 @@ export default function StoreCart() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +91,7 @@ export default function StoreCart() {
   const saveCart = (newCart) => {
     setCart(newCart);
     localStorage.setItem('art_moment_cart', JSON.stringify(newCart));
+    if (appliedCoupon) setAppliedCoupon(null);
   };
 
   const updateQty = (id, delta) => {
@@ -134,6 +138,47 @@ export default function StoreCart() {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (Number(item.qty) || 0)), 0);
+  const discountAmount = Math.min(subtotal, Number(appliedCoupon?.discountValue || 0));
+  const finalTotal = Math.max(0, subtotal - discountAmount);
+
+  const applyCoupon = async () => {
+    const code = couponCode.trim();
+    if (!code) {
+      toast.error('أدخلي كود الخصم أولاً');
+      return;
+    }
+    if (cart.length === 0) return;
+
+    setIsCheckingCoupon(true);
+    const toastId = toast.loading('جاري التحقق من الكوبون...');
+    try {
+      const { data, error } = await supabase.functions.invoke('store-coupons', {
+        body: {
+          code,
+          items: cart.map(item => ({
+            id: item.id,
+            qty: Number(item.qty) || 1,
+          })),
+        },
+      });
+      if (error) throw new Error(await getFunctionError(error));
+
+      setAppliedCoupon(data.coupon);
+      setCouponCode(data.coupon.code);
+      toast.success(`تم تطبيق خصم ${Number(data.coupon.discountValue || 0).toFixed(2)} ر.س`, { id: toastId });
+    } catch (error) {
+      console.error('Coupon Error:', error);
+      setAppliedCoupon(null);
+      toast.error(
+        error.message === 'invalid_coupon'
+          ? 'الكوبون غير صالح أو غير نشط'
+          : 'تعذر تطبيق الكوبون حالياً',
+        { id: toastId },
+      );
+    } finally {
+      setIsCheckingCoupon(false);
+    }
+  };
 
   const handleCheckout = async () => {
     const isValidPhone = /^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim());
@@ -173,6 +218,7 @@ export default function StoreCart() {
           payment: {
             method: paymentMethod,
           },
+          couponCode: appliedCoupon?.code || null,
         },
       });
 
@@ -326,6 +372,56 @@ export default function StoreCart() {
                 <span className="text-[#4A4A4A]/60">المجموع الفرعي</span>
                 <span className="font-bold">{subtotal} ر.س</span>
               </div>
+              <div className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/15 p-3">
+                <label className="mb-2 flex items-center gap-2 text-xs font-black text-[#4A4A4A]/60">
+                  <TicketPercent size={14} className="text-[#C5A059]" /> كوبون خصم
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={couponCode}
+                    onChange={e => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      if (appliedCoupon) setAppliedCoupon(null);
+                    }}
+                    onKeyDown={e => e.key === 'Enter' && applyCoupon()}
+                    placeholder="مثال: AM10"
+                    className="min-w-0 flex-1 rounded-xl border border-[#D9A3AA]/15 bg-white px-3 py-2 text-sm font-black outline-none focus:border-[#D9A3AA]"
+                    dir="ltr"
+                  />
+                  {appliedCoupon ? (
+                    <button
+                      type="button"
+                      onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
+                      className="h-10 w-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
+                      title="إزالة الكوبون"
+                    >
+                      <X size={15} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={applyCoupon}
+                      disabled={isCheckingCoupon || !couponCode.trim()}
+                      className="px-4 rounded-xl bg-[#4A4A4A] text-white text-xs font-black disabled:opacity-45 flex items-center gap-2"
+                    >
+                      {isCheckingCoupon && <Loader2 size={13} className="animate-spin" />}
+                      تطبيق
+                    </button>
+                  )}
+                </div>
+                {appliedCoupon && (
+                  <div className="mt-2 flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-xs font-black text-emerald-600">
+                    <span>{appliedCoupon.code}</span>
+                    <span>-{discountAmount.toFixed(2)} ر.س</span>
+                  </div>
+                )}
+              </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-emerald-600">
+                  <span>خصم الكوبون</span>
+                  <span className="font-bold">-{discountAmount.toFixed(2)} ر.س</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-[#4A4A4A]/60">تكلفة الشحن</span>
                 <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded font-bold">تُحدد عبر واتساب</span>
@@ -333,7 +429,7 @@ export default function StoreCart() {
             </div>
             <div className="flex justify-between items-center">
               <span className="font-black text-lg">الإجمالي</span>
-              <span className="font-black text-2xl text-[#D9A3AA]">{subtotal} <span className="text-sm">ر.س</span></span>
+              <span className="font-black text-2xl text-[#D9A3AA]">{finalTotal.toFixed(2)} <span className="text-sm">ر.س</span></span>
             </div>
           </div>
 
