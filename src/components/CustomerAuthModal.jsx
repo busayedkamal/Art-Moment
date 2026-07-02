@@ -78,7 +78,7 @@ function getSubtitle(mode) {
   return 'ادخلي برقم الجوال أو البريد الإلكتروني لمتابعة طلباتك.';
 }
 
-export default function CustomerAuthModal({ isOpen, onClose }) {
+export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/store' }) {
   const [mode, setMode] = useState('login');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
@@ -136,7 +136,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
 
     toast.success('مرحباً بعودتك إلى لحظة فن.');
     onClose();
-    window.location.href = '/store';
+    window.location.href = redirectTo;
   };
 
   const signupCustomer = async () => {
@@ -181,7 +181,7 @@ export default function CustomerAuthModal({ isOpen, onClose }) {
 
     toast.success('تم إنشاء حسابك بنجاح.');
     onClose();
-    window.location.href = '/store';
+    window.location.href = redirectTo;
   };
 
   const requestPasswordReset = async () => {

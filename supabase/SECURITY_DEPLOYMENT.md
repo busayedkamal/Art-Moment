@@ -11,6 +11,7 @@ supabase functions deploy customer-orders
 supabase functions deploy store-checkout
 supabase functions deploy track-order
 supabase functions deploy store-return-requests
+supabase functions deploy customer-account
 ```
 
 2. Set secrets for server-side email and WhatsApp sending:
@@ -58,12 +59,19 @@ For return and refund requests, also run:
 supabase/migrations/202607020001_store_return_requests.sql
 ```
 
+For customer account profile fields, saved addresses, and contact preferences, also run:
+
+```text
+supabase/migrations/202607020002_customer_account_profile.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.
 - Customer signup/login works.
 - Customer password recovery sends a Resend email and accepts the reset code.
 - Customer store orders page loads only after customer login.
+- Customer account page loads only after customer login and can update profile data.
 - Store checkout creates an order.
 - Tracking by short order id works.
 - Tracking by phone + PIN works.

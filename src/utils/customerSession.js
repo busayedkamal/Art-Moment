@@ -28,6 +28,16 @@ export function saveCustomerSession(session, { remember = false } = {}) {
   }
 }
 
+export function updateCustomerSession(patch) {
+  const current = getCustomerSession();
+  if (!current) return null;
+
+  const remember = window.localStorage.getItem(CUSTOMER_REMEMBER_KEY) === 'true';
+  const nextSession = { ...current, ...patch };
+  saveCustomerSession(nextSession, { remember });
+  return nextSession;
+}
+
 export function clearCustomerSession() {
   window.sessionStorage.removeItem(CUSTOMER_SESSION_KEY);
   window.localStorage.removeItem(CUSTOMER_SESSION_KEY);

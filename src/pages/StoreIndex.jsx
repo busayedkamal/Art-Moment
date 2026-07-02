@@ -606,13 +606,13 @@ export default function StoreIndex() {
                     <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">البريد الإلكتروني</label>
                     <input type="email" defaultValue={customer.email || 'غير مسجل'} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none dir-ltr text-right text-[#4A4A4A] font-bold" />
                   </div>
-                  <a
-                    href="https://wa.me/966569663697?text=مرحباً، أرغب بتعديل بيانات حسابي"
-                    target="_blank" rel="noreferrer"
-                    className="w-full py-3 mt-2 bg-[#F8F5F2] text-[#4A4A4A] font-bold text-xs rounded-xl hover:bg-[#D9A3AA]/10 transition-colors border border-[#D9A3AA]/20 block text-center"
+                  <Link
+                    to="/store/account"
+                    onClick={() => setIsAccountSidebarOpen(false)}
+                    className="w-full py-3 mt-2 bg-[#F8F5F2] text-[#4A4A4A] font-bold text-xs rounded-xl hover:bg-[#D9A3AA]/10 transition-colors border border-[#D9A3AA]/20 flex items-center justify-center gap-2"
                   >
-                    طلب تعديل البيانات
-                  </a>
+                    <User size={15} className="text-[#C5A059]" /> إدارة الحساب
+                  </Link>
                 </div>
               </div>
             </div>
