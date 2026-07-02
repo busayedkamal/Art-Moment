@@ -4,10 +4,127 @@ import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 import {
   Search, Users, Wallet, ShoppingBag, Sparkles, Crown,
-  Phone, Calendar, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
-  Edit2, Check, Package, Trash2, ArrowUpDown
+  Phone, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
+  Edit2, Check, Package, Trash2, ArrowUpDown, Mail, ShieldCheck,
+  RotateCcw, AlertTriangle, Tag
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
+
+const CRM_STATUS_OPTIONS = [
+  { value: 'active', label: 'نشط' },
+  { value: 'vip', label: 'VIP يدوي' },
+  { value: 'needs_followup', label: 'يحتاج متابعة' },
+  { value: 'problem', label: 'لديه مشكلة' },
+  { value: 'blocked', label: 'موقوف' },
+];
+
+const CONTACT_METHOD_LABELS = {
+  whatsapp: 'واتساب',
+  email: 'البريد',
+  phone: 'اتصال',
+};
+
+const SEGMENT_META = {
+  needs_attention: {
+    label: 'يحتاج متابعة',
+    icon: AlertTriangle,
+    className: 'bg-red-50 text-red-600 border-red-100',
+  },
+  high_value: {
+    label: 'عالي القيمة',
+    icon: Crown,
+    className: 'bg-amber-50 text-amber-700 border-amber-100',
+  },
+  repeat: {
+    label: 'متكرر',
+    icon: ShoppingBag,
+    className: 'bg-violet-50 text-violet-700 border-violet-100',
+  },
+  new: {
+    label: 'جديد',
+    icon: Sparkles,
+    className: 'bg-blue-50 text-blue-600 border-blue-100',
+  },
+  inactive: {
+    label: 'غير نشط',
+    icon: Users,
+    className: 'bg-slate-50 text-slate-500 border-slate-100',
+  },
+};
+
+function getSegmentMeta(segment) {
+  return SEGMENT_META[segment] || SEGMENT_META.inactive;
+}
+
+function normalizePhoneValue(raw) {
+  if (!raw) return '';
+  let value = String(raw).replace(/\D/g, '');
+  if (value.startsWith('00966')) value = value.slice(5);
+  if (value.startsWith('966')) value = value.slice(3);
+  if (value.startsWith('0')) value = value.slice(1);
+  return value;
+}
+
+function phoneWithZero(raw) {
+  const clean = normalizePhoneValue(raw);
+  return clean.length === 9 ? `0${clean}` : clean;
+}
+
+function getWhatsappPhone(raw) {
+  const clean = normalizePhoneValue(raw);
+  return clean.length === 9 ? `966${clean}` : clean;
+}
+
+function createCustomerBucket({ key, name = 'عميل لحظة فن', phone = '' }) {
+  return {
+    id: key,
+    name,
+    phone,
+    cleanPhone: normalizePhoneValue(phone),
+    totalRequired: 0,
+    totalPaid: 0,
+    debt: 0,
+    orderIds: new Set(),
+    storeOrderIds: new Set(),
+    storeTotal: 0,
+    storePaid: 0,
+    storeRefunded: 0,
+    storeDebt: 0,
+    openReturnRequests: 0,
+    returnRequestsCount: 0,
+    pendingPaymentsCount: 0,
+    lastOrderDate: null,
+  };
+}
+
+function ensureStoreFields(customer) {
+  if (!customer.storeOrderIds) customer.storeOrderIds = new Set();
+  customer.storeTotal = Number(customer.storeTotal || 0);
+  customer.storePaid = Number(customer.storePaid || 0);
+  customer.storeRefunded = Number(customer.storeRefunded || 0);
+  customer.storeDebt = Number(customer.storeDebt || 0);
+  customer.openReturnRequests = Number(customer.openReturnRequests || 0);
+  customer.returnRequestsCount = Number(customer.returnRequestsCount || 0);
+  customer.pendingPaymentsCount = Number(customer.pendingPaymentsCount || 0);
+  return customer;
+}
+
+function deriveSegment(customer) {
+  if (
+    customer.adminStatus === 'problem'
+    || customer.adminStatus === 'needs_followup'
+    || customer.dataDeletionRequestedAt
+    || Number(customer.openReturnRequests || 0) > 0
+    || Number(customer.debt || 0) > 0.5
+    || Number(customer.storeDebt || 0) > 0.5
+    || Number(customer.pendingPaymentsCount || 0) > 0
+  ) return 'needs_attention';
+
+  if (customer.isVip || customer.adminStatus === 'vip') return 'high_value';
+  if (Number(customer.allOrdersCount || 0) >= 2) return 'repeat';
+  if (customer.hasStoreAccount || Number(customer.allOrdersCount || 0) > 0) return 'new';
+  return 'inactive';
+}
 
 export default function Customers() {
   const [customersData, setCustomersData] = useState([]);
@@ -19,7 +136,7 @@ export default function Customers() {
   const [sortDesc, setSortDesc] = useState(true);
 
   const [expandedCustomerId, setExpandedCustomerId] = useState(null);
-  const [customerDetails, setCustomerDetails] = useState({ address: '', notes: '' });
+  const [customerDetails, setCustomerDetails] = useState({ address: '', notes: '', adminStatus: 'active' });
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
 
@@ -56,13 +173,7 @@ export default function Customers() {
   async function fetchData() {
     setLoading(true);
     try {
-      const normalizePhone = (raw) => {
-        if (!raw) return '';
-        let p = String(raw).replace(/\D/g, '');
-        if (p.startsWith('966')) p = p.slice(3);
-        if (p.startsWith('0')) p = p.slice(1);
-        return p;
-      };
+      const normalizePhone = normalizePhoneValue;
 
       // 1) الطلبات
       const { data: ordersData, error: ordersError } = await supabase
@@ -90,6 +201,25 @@ export default function Customers() {
         .from('wallet_transactions')
         .select('wallet_id, type, points, amount_value')
         .in('type', ['package_charge', 'package_redeem']);
+
+      const { data: storeCustomersData, error: storeCustomersError } = await supabase
+        .from('customers')
+        .select('id, name, email, phone, marketing_opt_in, preferred_contact_method, saved_addresses, created_at, last_login_at, data_deletion_requested_at, admin_notes, admin_status, admin_tags');
+      if (storeCustomersError) throw storeCustomersError;
+
+      const { data: storeOrdersData, error: storeOrdersError } = await supabase
+        .from('store_orders')
+        .select('id, short_id, customer_id, customer_name, phone, total_amount, delivery_fee, amount_paid, refunded_amount, payment_status, status, created_at');
+      if (storeOrdersError) throw storeOrdersError;
+
+      const { data: storeReturnRequestsData, error: storeReturnRequestsError } = await supabase
+        .from('store_return_requests')
+        .select('id, customer_id, store_order_id, status, requested_refund_amount, approved_refund_amount, created_at');
+      if (storeReturnRequestsError) {
+        if (!/store_return_requests|schema cache|relation|does not exist/i.test(storeReturnRequestsError.message || '')) {
+          throw storeReturnRequestsError;
+        }
+      }
 
       // بناء خريطة رصيد الباقات لكل wallet_id
       // package_charge: points = الرصيد المضاف (مع المكافأة)
@@ -197,7 +327,99 @@ export default function Customers() {
         };
       });
 
+      const storeCustomerById = new Map();
+      const storeCustomerKeyById = new Map();
+      const storeOrderKeyById = new Map();
+
+      const getOrCreateStoreCustomer = ({ key, name, phone }) => {
+        if (!map[key]) {
+          map[key] = createCustomerBucket({
+            key,
+            name: name || 'عميل المتجر',
+            phone: phone || phoneWithZero(key),
+          });
+        }
+        return ensureStoreFields(map[key]);
+      };
+
+      (storeCustomersData || []).forEach(customer => {
+        storeCustomerById.set(customer.id, customer);
+        const clean = normalizePhone(customer.phone);
+        const key = clean || `customer_${customer.id}`;
+        const entry = getOrCreateStoreCustomer({
+          key,
+          name: customer.name || 'عميل المتجر',
+          phone: customer.phone || '',
+        });
+
+        if (!entry.name || entry.name === 'غير معروف' || entry.name === 'عميل باقة') {
+          entry.name = customer.name || entry.name;
+        }
+        entry.phone = entry.phone || phoneWithZero(customer.phone);
+        entry.cleanPhone = entry.cleanPhone || clean;
+        entry.customerId = customer.id;
+        entry.email = customer.email || '';
+        entry.hasStoreAccount = true;
+        entry.marketingOptIn = Boolean(customer.marketing_opt_in);
+        entry.preferredContactMethod = customer.preferred_contact_method || 'whatsapp';
+        entry.savedAddresses = Array.isArray(customer.saved_addresses) ? customer.saved_addresses : [];
+        entry.customerCreatedAt = customer.created_at || null;
+        entry.lastLoginAt = customer.last_login_at || null;
+        entry.dataDeletionRequestedAt = customer.data_deletion_requested_at || null;
+        entry.adminNotes = customer.admin_notes || '';
+        entry.adminStatus = customer.admin_status || 'active';
+        entry.adminTags = Array.isArray(customer.admin_tags) ? customer.admin_tags : [];
+        storeCustomerKeyById.set(customer.id, key);
+      });
+
+      (storeOrdersData || []).forEach(order => {
+        const storeCustomer = order.customer_id ? storeCustomerById.get(order.customer_id) : null;
+        const clean = normalizePhone(storeCustomer?.phone || order.phone);
+        const key = (order.customer_id && storeCustomerKeyById.get(order.customer_id)) || clean || `store_order_${order.id}`;
+        const entry = getOrCreateStoreCustomer({
+          key,
+          name: storeCustomer?.name || order.customer_name || 'عميل المتجر',
+          phone: storeCustomer?.phone || order.phone || '',
+        });
+
+        if (!entry.customerId && order.customer_id) entry.customerId = order.customer_id;
+        if (!entry.name || entry.name === 'عميل المتجر') entry.name = storeCustomer?.name || order.customer_name || entry.name;
+        if (!entry.phone) entry.phone = phoneWithZero(storeCustomer?.phone || order.phone);
+        entry.cleanPhone = entry.cleanPhone || clean;
+        entry.storeOrderIds.add(order.id);
+        storeOrderKeyById.set(order.id, key);
+
+        const orderTotal = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
+        const amountPaid = Number(order.amount_paid || 0);
+        const refunded = Number(order.refunded_amount || 0);
+        entry.storeTotal += orderTotal;
+        entry.storePaid += amountPaid;
+        entry.storeRefunded += refunded;
+        entry.storeDebt += Math.max(0, orderTotal - amountPaid);
+        if (['pending_payment', 'awaiting_review', 'failed_payment'].includes(order.payment_status)) {
+          entry.pendingPaymentsCount += 1;
+        }
+
+        if (order.created_at) {
+          const dt = new Date(order.created_at);
+          if (!entry.lastOrderDate || dt > entry.lastOrderDate) entry.lastOrderDate = dt;
+        }
+      });
+
+      (storeReturnRequestsData || []).forEach(request => {
+        const key = (request.customer_id && storeCustomerKeyById.get(request.customer_id))
+          || storeOrderKeyById.get(request.store_order_id);
+        if (!key || !map[key]) return;
+
+        const entry = ensureStoreFields(map[key]);
+        entry.returnRequestsCount += 1;
+        if (!['rejected', 'refunded'].includes(request.status)) {
+          entry.openReturnRequests += 1;
+        }
+      });
+
       const result = Object.values(map).map(c => {
+        ensureStoreFields(c);
         // نبحث بالشكلين (مع وبدون الصفر)
         const cleanKey = c.cleanPhone || '';
         const cleanWithZero = cleanKey.length === 9 ? '0' + cleanKey : cleanKey;
@@ -211,8 +433,13 @@ export default function Customers() {
         const walletId = walletData ? walletData.id : null;
         const debt = Number(c.debt || 0);
         const netBalance = walletBalance - debt;
+        const printOrdersCount = c.orderIds?.size || 0;
+        const storeOrdersCount = c.storeOrderIds?.size || 0;
+        const allOrdersCount = printOrdersCount + storeOrdersCount;
+        const lifetimeValue = Number(c.totalRequired || 0) + Number(c.storeTotal || 0);
+        const isVip = allOrdersCount >= 3 || lifetimeValue >= 500 || c.adminStatus === 'vip';
 
-        return {
+        const customer = {
           ...c,
           walletBalance,
           packageBalance,
@@ -222,9 +449,19 @@ export default function Customers() {
           walletId,
           debt,
           netBalance,
-          totalOrders: c.orderIds.size,
-          isVip: c.orderIds.size >= 3 || c.totalRequired >= 500
+          printOrdersCount,
+          storeOrdersCount,
+          allOrdersCount,
+          lifetimeValue,
+          totalOrders: allOrdersCount,
+          isVip,
+          marketingOptIn: Boolean(c.marketingOptIn),
+          adminStatus: c.adminStatus || 'active',
+          adminNotes: c.adminNotes || notes,
+          savedAddresses: c.savedAddresses || [],
+          preferredContactMethod: c.preferredContactMethod || 'whatsapp',
         };
+        return { ...customer, segment: deriveSegment(customer) };
       });
 
       setCustomersData(result);
@@ -237,27 +474,41 @@ export default function Customers() {
   }
 
   const handleSaveCustomerDetails = async (customer) => {
-    if (!customer.cleanPhone) {
-      toast.error("لا يمكن حفظ البيانات لعميل بدون رقم هاتف");
+    if (!customer.cleanPhone && !customer.customerId) {
+      toast.error("لا يمكن حفظ البيانات لعميل بدون رقم هاتف أو حساب متجر");
       return;
     }
     setIsSavingDetails(true);
     try {
-      const { data: existingWallet } = await supabase
-        .from('wallets').select('id').eq('phone', customer.cleanPhone).maybeSingle();
+      if (customer.cleanPhone) {
+        const { data: existingWallet } = await supabase
+          .from('wallets').select('id').eq('phone', customer.cleanPhone).maybeSingle();
 
-      if (existingWallet) {
-        await supabase.from('wallets')
-          .update({ address: customerDetails.address, notes: customerDetails.notes })
-          .eq('id', existingWallet.id);
-      } else {
-        await supabase.from('wallets').insert([{
-          phone: customer.cleanPhone,
-          points_balance: 0,
-          address: customerDetails.address,
-          notes: customerDetails.notes
-        }]);
+        if (existingWallet) {
+          await supabase.from('wallets')
+            .update({ address: customerDetails.address, notes: customerDetails.notes })
+            .eq('id', existingWallet.id);
+        } else {
+          await supabase.from('wallets').insert([{
+            phone: customer.cleanPhone,
+            points_balance: 0,
+            address: customerDetails.address,
+            notes: customerDetails.notes
+          }]);
+        }
       }
+
+      if (customer.customerId) {
+        const { error: customerError } = await supabase
+          .from('customers')
+          .update({
+            admin_notes: customerDetails.notes,
+            admin_status: customerDetails.adminStatus || 'active',
+          })
+          .eq('id', customer.customerId);
+        if (customerError) throw customerError;
+      }
+
       toast.success("تم حفظ بيانات العميل بنجاح ✨");
       fetchData();
     } catch (error) {
@@ -360,7 +611,11 @@ export default function Customers() {
       setEditingBalanceId(null);
     } else {
       setExpandedCustomerId(customer.id);
-      setCustomerDetails({ address: customer.address || '', notes: customer.notes || '' });
+      setCustomerDetails({
+        address: customer.address || '',
+        notes: customer.adminNotes || customer.notes || '',
+        adminStatus: customer.adminStatus || 'active',
+      });
     }
   };
 
@@ -625,9 +880,17 @@ export default function Customers() {
   const filtered = useMemo(() => {
     let data = customersData;
     if (filter === "vip") data = data.filter(c => c.isVip);
+    if (filter === "store") data = data.filter(c => c.hasStoreAccount || c.storeOrdersCount > 0);
+    if (filter === "marketing") data = data.filter(c => c.marketingOptIn);
+    if (filter === "attention") data = data.filter(c => c.segment === 'needs_attention');
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      data = data.filter(c => (c.name || "").toLowerCase().includes(q) || (c.phone || "").toLowerCase().includes(q));
+      data = data.filter(c => (
+        (c.name || "").toLowerCase().includes(q)
+        || (c.phone || "").toLowerCase().includes(q)
+        || (c.email || "").toLowerCase().includes(q)
+        || (c.cleanPhone || "").toLowerCase().includes(q)
+      ));
     }
     data = [...data].sort((a, b) => {
       let valA = a[sortBy];
@@ -649,7 +912,11 @@ export default function Customers() {
     const totalCustomers = customersData.length;
     const vipCustomers = customersData.filter(c => c.isVip).length;
     const totalPackageBalance = customersData.reduce((sum, c) => sum + (Number(c.packageBalance || 0)), 0);
-    return { totalCustomers, vipCustomers, totalPackageBalance };
+    const storeCustomers = customersData.filter(c => c.hasStoreAccount || c.storeOrdersCount > 0).length;
+    const marketingCustomers = customersData.filter(c => c.marketingOptIn).length;
+    const attentionCustomers = customersData.filter(c => c.segment === 'needs_attention').length;
+    const storeRevenue = customersData.reduce((sum, c) => sum + Number(c.storePaid || 0), 0);
+    return { totalCustomers, vipCustomers, totalPackageBalance, storeCustomers, marketingCustomers, attentionCustomers, storeRevenue };
   }, [customersData]);
 
   return (
@@ -675,7 +942,7 @@ export default function Customers() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 text-[#4A4A4A]/50 text-xs font-bold mb-2">
             <Users size={13} /> إجمالي العملاء
@@ -697,6 +964,20 @@ export default function Customers() {
             <span className="text-sm font-normal text-[#4A4A4A]/40 mr-1"><RiyalSign /></span>
           </div>
         </div>
+        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-blue-500/80 text-xs font-bold mb-2">
+            <ShieldCheck size={13} /> حسابات المتجر
+          </div>
+          <div className="text-3xl font-black text-blue-600">{stats.storeCustomers}</div>
+          <div className="text-[10px] text-[#4A4A4A]/45 mt-1">{stats.storeRevenue.toFixed(0)} <RiyalSign size="0.8em" /> مدفوعات</div>
+        </div>
+        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-emerald-500/80 text-xs font-bold mb-2">
+            <Mail size={13} /> موافقات التسويق
+          </div>
+          <div className="text-3xl font-black text-emerald-600">{stats.marketingCustomers}</div>
+          <div className="text-[10px] text-[#4A4A4A]/45 mt-1">جاهزون لحملات Resend</div>
+        </div>
         <div className="bg-gradient-to-br from-amber-500 to-amber-400 rounded-2xl p-5 shadow-lg shadow-amber-500/20">
           <div className="flex items-center gap-2 text-white/70 text-xs font-bold mb-2">
             <Package size={13} /> رصيد الباقات الكلي
@@ -706,6 +987,13 @@ export default function Customers() {
             <span className="text-sm font-normal text-white/70 mr-1"><RiyalSign light /></span>
           </div>
           <div className="text-[10px] text-white/60 mt-1">ربح مشحون مسبقاً</div>
+        </div>
+        <div className="bg-gradient-to-br from-red-500 to-rose-400 rounded-2xl p-5 shadow-lg shadow-red-500/15">
+          <div className="flex items-center gap-2 text-white/75 text-xs font-bold mb-2">
+            <AlertTriangle size={13} /> يحتاج متابعة
+          </div>
+          <div className="text-3xl font-black text-white">{stats.attentionCustomers}</div>
+          <div className="text-[10px] text-white/65 mt-1">مدفوعات، مديونية، أو استرجاع</div>
         </div>
       </div>
 
@@ -721,7 +1009,7 @@ export default function Customers() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="بحث بالاسم أو الجوال..."
+              placeholder="بحث بالاسم أو الجوال أو البريد..."
               className="w-full border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 pr-9 outline-none focus:border-[#D9A3AA] focus:ring-2 focus:ring-[#D9A3AA]/20 text-sm bg-[#F8F5F2]/40"
             />
           </div>
@@ -731,11 +1019,23 @@ export default function Customers() {
           <button onClick={() => setFilter("vip")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "vip" ? "bg-amber-500 text-white border-amber-500 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-amber-300"}`}>
             <Crown size={13} /> VIP
           </button>
+          <button onClick={() => setFilter("store")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "store" ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-blue-300"}`}>
+            <ShieldCheck size={13} /> المتجر
+          </button>
+          <button onClick={() => setFilter("marketing")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "marketing" ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-emerald-300"}`}>
+            <Mail size={13} /> التسويق
+          </button>
+          <button onClick={() => setFilter("attention")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "attention" ? "bg-red-500 text-white border-red-500 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-red-300"}`}>
+            <AlertTriangle size={13} /> متابعة
+          </button>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <span className="text-xs text-[#4A4A4A]/50 font-bold shrink-0">ترتيب حسب:</span>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-[#D9A3AA]/20 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#D9A3AA] bg-[#F8F5F2]/40 flex-1 md:flex-none">
             <option value="netBalance">الرصيد الصافي</option>
+            <option value="lifetimeValue">قيمة العميل</option>
+            <option value="storePaid">مدفوعات المتجر</option>
+            <option value="storeOrdersCount">طلبات المتجر</option>
             <option value="packageBalance">رصيد الباقات</option>
             <option value="totalRequired">أعلى المبيعات</option>
             <option value="totalOrders">أكثر الطلبات</option>
@@ -752,6 +1052,8 @@ export default function Customers() {
           <div className="text-center py-12 text-[#4A4A4A]/50">لا يوجد عملاء</div>
         ) : filtered.map((customer) => {
           const isExpanded = expandedCustomerId === customer.id;
+          const segment = getSegmentMeta(customer.segment);
+          const SegmentIcon = segment.icon;
           return (
             <div key={customer.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isExpanded ? 'border-[#D9A3AA]/40' : 'border-[#D9A3AA]/20'}`}>
               {/* صف رئيسي */}
@@ -769,10 +1071,23 @@ export default function Customers() {
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-[#4A4A4A] text-sm leading-tight">{customer.name}</span>
                     {customer.isVip && <Crown size={12} className="text-amber-500 shrink-0"/>}
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black ${segment.className}`}>
+                      <SegmentIcon size={10} /> {segment.label}
+                    </span>
                   </div>
-                  <div className="text-xs text-[#4A4A4A]/40 font-mono mt-0.5" dir="ltr">{customer.phone || "—"}</div>
+                  <div className="text-xs text-[#4A4A4A]/40 font-mono mt-0.5" dir="ltr">{customer.email || customer.phone || "—"}</div>
                   {/* الأرصدة */}
                   <div className="flex gap-2 mt-1.5 flex-wrap">
+                    {customer.hasStoreAccount && (
+                      <span className="text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-lg">
+                        <ShieldCheck size={9} className="inline ml-0.5"/> متجر
+                      </span>
+                    )}
+                    {customer.marketingOptIn && (
+                      <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-lg">
+                        <Mail size={9} className="inline ml-0.5"/> عروض
+                      </span>
+                    )}
                     {customer.subscriptionCode && (
                       <button
                         onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(customer.subscriptionCode); toast.success(`كود: ${customer.subscriptionCode}`); }}
@@ -795,7 +1110,7 @@ export default function Customers() {
                 {/* أزرار الإجراء السريعة */}
                 <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                   {customer.phone && (
-                    <a href={`https://api.whatsapp.com/send?phone=966${String(customer.phone).startsWith("0") ? String(customer.phone).slice(1) : customer.phone}`}
+                    <a href={`https://api.whatsapp.com/send?phone=${getWhatsappPhone(customer.phone || customer.cleanPhone)}`}
                       target="_blank" rel="noreferrer"
                       className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
                       <Phone size={15}/>
@@ -830,17 +1145,31 @@ export default function Customers() {
                   {/* ملخص النشاط */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
-                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">المشتريات</span>
-                      <span className="font-black text-[#4A4A4A] text-sm">{Number(customer.totalRequired || 0).toFixed(0)}</span>
+                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">قيمة العميل</span>
+                      <span className="font-black text-[#4A4A4A] text-sm">{Number(customer.lifetimeValue || 0).toFixed(0)}</span>
                       <span className="text-[9px] text-[#4A4A4A]/40 block"><RiyalSign size="0.8em" /></span>
                     </div>
                     <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
-                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">الطلبات</span>
-                      <span className="font-black text-[#4A4A4A] text-sm">{customer.orderIds.size}</span>
+                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">طلبات المتجر</span>
+                      <span className="font-black text-blue-600 text-sm">{customer.storeOrdersCount}</span>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 text-center border border-red-100">
+                      <span className="text-[9px] text-red-400 block mb-1">استرجاعات</span>
+                      <span className={`font-black text-sm ${customer.openReturnRequests > 0 ? 'text-red-500' : 'text-[#4A4A4A]/30'}`}>{customer.openReturnRequests || '—'}</span>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
+                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">طلبات الطباعة</span>
+                      <span className="font-black text-[#4A4A4A] text-sm">{customer.printOrdersCount}</span>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 text-center border border-emerald-100">
+                      <span className="text-[9px] text-emerald-500 block mb-1">مدفوعات المتجر</span>
+                      <span className="font-black text-emerald-600 text-sm">{Number(customer.storePaid || 0).toFixed(0)}</span>
                     </div>
                     <div className="bg-white rounded-xl p-3 text-center border border-red-100">
                       <span className="text-[9px] text-red-400 block mb-1">مديونية</span>
-                      <span className={`font-black text-sm ${customer.debt > 0.5 ? 'text-red-500' : 'text-[#4A4A4A]/30'}`}>{customer.debt > 0.5 ? customer.debt.toFixed(1) : '—'}</span>
+                      <span className={`font-black text-sm ${customer.debt + customer.storeDebt > 0.5 ? 'text-red-500' : 'text-[#4A4A4A]/30'}`}>
+                        {customer.debt + customer.storeDebt > 0.5 ? (customer.debt + customer.storeDebt).toFixed(1) : '—'}
+                      </span>
                     </div>
                   </div>
                   {/* تعديل الباقة */}
@@ -857,6 +1186,18 @@ export default function Customers() {
                       <input type="text" placeholder="العنوان / موقع التوصيل" value={customerDetails.address}
                         onChange={(e) => setCustomerDetails({ ...customerDetails, address: e.target.value })}
                         className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"/>
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/60 mb-1"><Tag size={10}/> الحالة الإدارية</label>
+                      <select
+                        value={customerDetails.adminStatus}
+                        onChange={(e) => setCustomerDetails({ ...customerDetails, adminStatus: e.target.value })}
+                        className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"
+                      >
+                        {CRM_STATUS_OPTIONS.map(option => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/60 mb-1"><StickyNote size={10}/> ملاحظات</label>
@@ -909,6 +1250,8 @@ export default function Customers() {
             ) : (
               filtered.map((customer) => {
                 const isExpanded = expandedCustomerId === customer.id;
+                const segment = getSegmentMeta(customer.segment);
+                const SegmentIcon = segment.icon;
                 return (
                   <React.Fragment key={customer.id}>
                     <tr
@@ -929,6 +1272,22 @@ export default function Customers() {
                                 </span>
                               )}
                             </div>
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black ${segment.className}`}>
+                                <SegmentIcon size={10} /> {segment.label}
+                              </span>
+                              {customer.hasStoreAccount && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black bg-blue-50 text-blue-600 border-blue-100">
+                                  <ShieldCheck size={10} /> متجر
+                                </span>
+                              )}
+                              {customer.marketingOptIn && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black bg-emerald-50 text-emerald-600 border-emerald-100">
+                                  <Mail size={10} /> عروض
+                                </span>
+                              )}
+                            </div>
+                            {customer.email && <div className="text-[11px] text-[#4A4A4A]/45 mt-1 dir-ltr text-right">{customer.email}</div>}
                           </div>
                         </div>
                       </td>
@@ -986,7 +1345,7 @@ export default function Customers() {
                         <div className="flex items-center justify-end gap-2">
                           {customer.phone && (
                             <a
-                              href={`https://api.whatsapp.com/send?phone=966${String(customer.phone).startsWith("0") ? String(customer.phone).slice(1) : customer.phone}`}
+                              href={`https://api.whatsapp.com/send?phone=${getWhatsappPhone(customer.phone || customer.cleanPhone)}`}
                               target="_blank" rel="noreferrer"
                               onClick={(e) => e.stopPropagation()}
                               className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100"
@@ -1026,12 +1385,12 @@ export default function Customers() {
                               </h4>
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
-                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">إجمالي المشتريات</span>
+                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">مشتريات الطباعة</span>
                                   <span className="font-black text-[#4A4A4A] text-lg">{Number(customer.totalRequired || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
                                 </div>
                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
-                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">عدد الطلبات</span>
-                                  <span className="font-black text-[#4A4A4A] text-lg">{customer.orderIds.size} <span className="text-xs font-normal">طلبات</span></span>
+                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">طلبات الطباعة</span>
+                                  <span className="font-black text-[#4A4A4A] text-lg">{customer.printOrdersCount} <span className="text-xs font-normal">طلبات</span></span>
                                 </div>
                                 <div className="bg-[#F8F5F2] p-3 rounded-xl">
                                   <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">تاريخ آخر طلب</span>
@@ -1083,6 +1442,61 @@ export default function Customers() {
                                 </div>
                               </div>
 
+                              <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl">
+                                  <span className="block text-[10px] text-blue-600/70 font-bold mb-1">طلبات المتجر</span>
+                                  <span className="font-black text-blue-700 text-lg">{customer.storeOrdersCount}</span>
+                                </div>
+                                <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-xl">
+                                  <span className="block text-[10px] text-emerald-600/70 font-bold mb-1">مدفوعات المتجر</span>
+                                  <span className="font-black text-emerald-700 text-lg">{Number(customer.storePaid || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
+                                </div>
+                                <div className="bg-rose-50 border border-rose-100 p-3 rounded-xl">
+                                  <span className="block text-[10px] text-rose-600/70 font-bold mb-1">استرجاعات مفتوحة</span>
+                                  <span className="font-black text-rose-700 text-lg">{customer.openReturnRequests}</span>
+                                </div>
+                                <div className="bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3 rounded-xl">
+                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">قيمة العميل</span>
+                                  <span className="font-black text-[#4A4A4A] text-lg">{Number(customer.lifetimeValue || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
+                                </div>
+                              </div>
+
+                              {customer.hasStoreAccount && (
+                                <div className="mt-4 bg-blue-50/60 border border-blue-100 rounded-xl p-4 space-y-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <h5 className="font-black text-blue-800 text-sm flex items-center gap-2">
+                                      <ShieldCheck size={15} /> ملف المتجر
+                                    </h5>
+                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-black border ${customer.marketingOptIn ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                      {customer.marketingOptIn ? 'موافق على التسويق' : 'لا ترسل عروض'}
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-white/80 rounded-lg p-2">
+                                      <span className="text-[#4A4A4A]/45 block mb-0.5">البريد</span>
+                                      <span className="font-bold dir-ltr text-right block">{customer.email || 'غير مسجل'}</span>
+                                    </div>
+                                    <div className="bg-white/80 rounded-lg p-2">
+                                      <span className="text-[#4A4A4A]/45 block mb-0.5">التواصل المفضل</span>
+                                      <span className="font-bold">{CONTACT_METHOD_LABELS[customer.preferredContactMethod] || 'واتساب'}</span>
+                                    </div>
+                                    <div className="bg-white/80 rounded-lg p-2">
+                                      <span className="text-[#4A4A4A]/45 block mb-0.5">العناوين المحفوظة</span>
+                                      <span className="font-bold">{customer.savedAddresses?.length || 0}</span>
+                                    </div>
+                                    <div className="bg-white/80 rounded-lg p-2">
+                                      <span className="text-[#4A4A4A]/45 block mb-0.5">آخر دخول</span>
+                                      <span className="font-bold">{customer.lastLoginAt ? new Date(customer.lastLoginAt).toLocaleDateString('en-GB') : '—'}</span>
+                                    </div>
+                                  </div>
+                                  {customer.dataDeletionRequestedAt && (
+                                    <div className="bg-red-50 border border-red-100 text-red-600 rounded-lg p-3 text-xs font-black flex items-center gap-2">
+                                      <AlertTriangle size={14} /> العميل طلب حذف بياناته، راجع الطلب قبل أي إجراء.
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                               {/* بطاقة رصيد الباقات المفصّلة */}
                               {customer.packageBalance > 0 && (
                                 <div className="mt-4 bg-gradient-to-r from-amber-50 to-amber-100/30 border border-amber-200/60 rounded-xl p-3 flex items-center justify-between">
@@ -1115,6 +1529,20 @@ export default function Customers() {
                                     onChange={(e) => setCustomerDetails({ ...customerDetails, address: e.target.value })}
                                     className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] transition-colors"
                                   />
+                                </div>
+                                <div>
+                                  <label className="flex items-center gap-1 text-xs font-bold text-[#4A4A4A]/70 mb-1.5">
+                                    <Tag size={12} /> الحالة الإدارية
+                                  </label>
+                                  <select
+                                    value={customerDetails.adminStatus}
+                                    onChange={(e) => setCustomerDetails({ ...customerDetails, adminStatus: e.target.value })}
+                                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] transition-colors"
+                                  >
+                                    {CRM_STATUS_OPTIONS.map(option => (
+                                      <option key={option.value} value={option.value}>{option.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <div className="flex-1">
                                   <label className="flex items-center gap-1 text-xs font-bold text-[#4A4A4A]/70 mb-1.5">

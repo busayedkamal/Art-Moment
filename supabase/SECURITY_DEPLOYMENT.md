@@ -65,6 +65,12 @@ For customer account profile fields, saved addresses, and contact preferences, a
 supabase/migrations/202607020002_customer_account_profile.sql
 ```
 
+For admin CRM notes, manual customer status, and marketing/support filters, also run:
+
+```text
+supabase/migrations/202607020003_customer_admin_crm.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.
@@ -72,6 +78,7 @@ supabase/migrations/202607020002_customer_account_profile.sql
 - Customer password recovery sends a Resend email and accepts the reset code.
 - Customer store orders page loads only after customer login.
 - Customer account page loads only after customer login and can update profile data.
+- Admin customers page shows store account profiles, marketing consent, return flags, and CRM status.
 - Store checkout creates an order.
 - Tracking by short order id works.
 - Tracking by phone + PIN works.
