@@ -151,6 +151,12 @@ function campaignEmailHtml(input: {
   `;
 }
 
+function renderTemplate(value: string, variables: Record<string, string>) {
+  return String(value || '').replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => (
+    Object.prototype.hasOwnProperty.call(variables, key) ? variables[key] : match
+  ));
+}
+
 async function logMessage(
   supabase: ReturnType<typeof getServiceClient>,
   row: Record<string, unknown>,
@@ -246,13 +252,18 @@ Deno.serve(async (req) => {
         const token = await createUnsubscribeToken(String(customer.id));
         const unsubscribeUrl = `${siteUrl}/marketing/unsubscribe?token=${encodeURIComponent(token)}`;
         const customerName = String(customer.name || 'عميل لحظة فن');
+        const variables = {
+          customer_name: customerName,
+        };
+        const personalizedTitle = renderTemplate(title, variables);
+        const personalizedMessage = renderTemplate(message, variables);
 
         try {
           await sendEmail({
             to: String(customer.email),
             subject,
-            html: campaignEmailHtml({ title, body: message, customerName, unsubscribeUrl }),
-            text: `${title}\n\n${message}\n\nإلغاء الاشتراك: ${unsubscribeUrl}`,
+            html: campaignEmailHtml({ title: personalizedTitle, body: personalizedMessage, customerName, unsubscribeUrl }),
+            text: `${personalizedTitle}\n\n${personalizedMessage}\n\nإلغاء الاشتراك: ${unsubscribeUrl}`,
             tags: [
               { name: 'type', value: 'marketing_campaign' },
               { name: 'campaign', value: campaignId.slice(0, 32) },
@@ -264,7 +275,7 @@ Deno.serve(async (req) => {
             channel: 'email',
             type: 'marketing_campaign',
             subject,
-            body: message,
+            body: personalizedMessage,
             status: 'sent',
             sent_at: new Date().toISOString(),
             metadata: { campaignId, title },

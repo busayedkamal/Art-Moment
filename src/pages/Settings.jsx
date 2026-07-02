@@ -4,9 +4,54 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import {
   Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle,
-  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle
+  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle,
+  FileText, Edit3, XCircle, Mail
 } from 'lucide-react';
 import RiyalSign from '../components/RiyalSign';
+
+const emptyTemplateForm = {
+  template_key: '',
+  name: '',
+  category: 'general',
+  channel: 'email',
+  subject: '',
+  body: '',
+  variablesText: '',
+  is_active: true,
+};
+
+const templateCategories = [
+  { value: 'order', label: 'الطلبات' },
+  { value: 'payment', label: 'الدفع' },
+  { value: 'shipping', label: 'الشحن' },
+  { value: 'return', label: 'الاسترجاع' },
+  { value: 'account', label: 'الحساب' },
+  { value: 'marketing', label: 'التسويق' },
+  { value: 'general', label: 'عام' },
+];
+
+const channelLabels = {
+  email: 'بريد',
+  whatsapp: 'واتساب',
+  sms: 'SMS',
+  system: 'نظام',
+};
+
+function normalizeTemplateKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .slice(0, 80);
+}
+
+function parseVariables(value) {
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim().replace(/[{}]/g, ''))
+    .filter(Boolean);
+}
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -37,6 +82,10 @@ export default function Settings() {
     discount_type: 'fixed', // or 'percent'
     discount_amount: '' 
   });
+  const [messageTemplates, setMessageTemplates] = useState([]);
+  const [templateForm, setTemplateForm] = useState(emptyTemplateForm);
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -57,6 +106,19 @@ export default function Settings() {
       // 3. جلب الكوبونات
       const { data: couponsData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
       if (couponsData) setCoupons(couponsData);
+
+      const { data: templatesData, error: templatesError } = await supabase
+        .from('customer_message_templates')
+        .select('*')
+        .order('category')
+        .order('name');
+      if (templatesError) {
+        if (!/customer_message_templates|schema cache|relation|does not exist/i.test(templatesError.message || '')) {
+          throw templatesError;
+        }
+      } else {
+        setMessageTemplates(templatesData || []);
+      }
 
     } catch (error) {
       toast.error('فشل تحميل الإعدادات');
@@ -123,6 +185,105 @@ export default function Settings() {
       setCoupons(coupons.filter(c => c.id !== id));
       toast.success('تم الحذف');
     } catch { toast.error('فشل الحذف'); }
+  };
+
+  const editTemplate = (template) => {
+    setEditingTemplateId(template.id);
+    setTemplateForm({
+      template_key: template.template_key || '',
+      name: template.name || '',
+      category: template.category || 'general',
+      channel: template.channel || 'email',
+      subject: template.subject || '',
+      body: template.body || '',
+      variablesText: Array.isArray(template.variables) ? template.variables.join(', ') : '',
+      is_active: template.is_active !== false,
+    });
+  };
+
+  const resetTemplateForm = () => {
+    setEditingTemplateId(null);
+    setTemplateForm(emptyTemplateForm);
+  };
+
+  const saveTemplate = async (e) => {
+    e.preventDefault();
+    const templateKey = normalizeTemplateKey(templateForm.template_key || templateForm.name);
+    if (!templateKey || !templateForm.name.trim() || !templateForm.body.trim()) {
+      toast.error('أكمل مفتاح القالب والاسم ونص الرسالة');
+      return;
+    }
+
+    const payload = {
+      template_key: templateKey,
+      name: templateForm.name.trim(),
+      category: templateForm.category,
+      channel: templateForm.channel,
+      subject: templateForm.subject.trim() || null,
+      body: templateForm.body.trim(),
+      variables: parseVariables(templateForm.variablesText),
+      is_active: templateForm.is_active,
+    };
+
+    setSavingTemplate(true);
+    try {
+      if (editingTemplateId) {
+        const { data, error } = await supabase
+          .from('customer_message_templates')
+          .update(payload)
+          .eq('id', editingTemplateId)
+          .select()
+          .single();
+        if (error) throw error;
+        setMessageTemplates((current) => current.map((item) => item.id === editingTemplateId ? data : item));
+        toast.success('تم تحديث القالب');
+      } else {
+        const { data, error } = await supabase
+          .from('customer_message_templates')
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        setMessageTemplates((current) => [...current, data].sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar')));
+        toast.success('تم إضافة القالب');
+      }
+      resetTemplateForm();
+    } catch (error) {
+      console.error(error);
+      toast.error('تعذر حفظ القالب. تأكد من تشغيل ملف SQL الخاص بالقوالب.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const toggleTemplateStatus = async (template) => {
+    try {
+      const { error } = await supabase
+        .from('customer_message_templates')
+        .update({ is_active: !template.is_active })
+        .eq('id', template.id);
+      if (error) throw error;
+      setMessageTemplates((current) => current.map((item) => item.id === template.id ? { ...item, is_active: !template.is_active } : item));
+      toast.success('تم تحديث حالة القالب');
+    } catch {
+      toast.error('تعذر تحديث القالب');
+    }
+  };
+
+  const deleteTemplate = async (template) => {
+    if (!window.confirm(`حذف قالب "${template.name}"؟`)) return;
+    try {
+      const { error } = await supabase
+        .from('customer_message_templates')
+        .delete()
+        .eq('id', template.id);
+      if (error) throw error;
+      setMessageTemplates((current) => current.filter((item) => item.id !== template.id));
+      if (editingTemplateId === template.id) resetTemplateForm();
+      toast.success('تم حذف القالب');
+    } catch {
+      toast.error('تعذر حذف القالب');
+    }
   };
 
   if (loading) return (
@@ -371,6 +532,218 @@ export default function Settings() {
                 </div>
               ))
             )}
+          </div>
+        </div>
+
+        {/* 4. قوالب الرسائل */}
+        <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+            <div>
+              <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
+                <FileText className="text-[#C5A059]" /> قوالب رسائل العملاء
+              </h3>
+              <p className="text-xs text-[#4A4A4A]/50 mt-1">
+                قوالب موحدة للطلبات، الدفع، الشحن، الاسترجاع، الحساب، والحملات التسويقية.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={resetTemplateForm}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F8F5F2] border border-[#D9A3AA]/20 px-4 py-2 text-xs font-bold hover:bg-[#D9A3AA]/10 transition-colors"
+            >
+              <Plus size={15} /> قالب جديد
+            </button>
+          </div>
+
+          <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6">
+            <form onSubmit={saveTemplate} className="bg-[#F8F5F2] border border-[#D9A3AA]/15 rounded-2xl p-4 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="font-black text-[#4A4A4A] flex items-center gap-2">
+                  {editingTemplateId ? <Edit3 size={16} className="text-[#D9A3AA]" /> : <Plus size={16} className="text-[#D9A3AA]" />}
+                  {editingTemplateId ? 'تعديل قالب' : 'إضافة قالب'}
+                </h4>
+                {editingTemplateId && (
+                  <button
+                    type="button"
+                    onClick={resetTemplateForm}
+                    className="p-2 rounded-lg text-[#4A4A4A]/45 hover:text-red-500 hover:bg-white transition-colors"
+                    title="إلغاء التحرير"
+                  >
+                    <XCircle size={17} />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">مفتاح القالب</label>
+                  <input
+                    value={templateForm.template_key}
+                    onChange={(e) => setTemplateForm((current) => ({ ...current, template_key: normalizeTemplateKey(e.target.value) }))}
+                    placeholder="payment_reminder"
+                    dir="ltr"
+                    className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-[#D9A3AA]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">اسم القالب</label>
+                  <input
+                    value={templateForm.name}
+                    onChange={(e) => setTemplateForm((current) => ({ ...current, name: e.target.value }))}
+                    placeholder="تذكير بالدفع"
+                    className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">التصنيف</label>
+                  <select
+                    value={templateForm.category}
+                    onChange={(e) => setTemplateForm((current) => ({ ...current, category: e.target.value }))}
+                    className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                  >
+                    {templateCategories.map((category) => (
+                      <option key={category.value} value={category.value}>{category.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">القناة</label>
+                  <select
+                    value={templateForm.channel}
+                    onChange={(e) => setTemplateForm((current) => ({ ...current, channel: e.target.value }))}
+                    className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                  >
+                    {Object.entries(channelLabels).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">عنوان البريد</label>
+                <input
+                  value={templateForm.subject}
+                  onChange={(e) => setTemplateForm((current) => ({ ...current, subject: e.target.value }))}
+                  placeholder="تم تحديث طلبك #{order_number}"
+                  className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">نص الرسالة</label>
+                <textarea
+                  value={templateForm.body}
+                  onChange={(e) => setTemplateForm((current) => ({ ...current, body: e.target.value }))}
+                  rows={8}
+                  placeholder="مرحباً {customer_name}..."
+                  className="w-full resize-none bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-3 text-sm font-bold leading-7 outline-none focus:border-[#D9A3AA]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">المتغيرات</label>
+                <input
+                  value={templateForm.variablesText}
+                  onChange={(e) => setTemplateForm((current) => ({ ...current, variablesText: e.target.value }))}
+                  placeholder="customer_name, order_number, total_amount"
+                  dir="ltr"
+                  className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-[#D9A3AA]"
+                />
+              </div>
+
+              <label className="flex items-center justify-between gap-3 bg-white border border-[#D9A3AA]/15 rounded-xl px-4 py-3">
+                <span className="text-sm font-bold text-[#4A4A4A]">القالب نشط</span>
+                <button
+                  type="button"
+                  onClick={() => setTemplateForm((current) => ({ ...current, is_active: !current.is_active }))}
+                  className="text-[#D9A3AA]"
+                >
+                  {templateForm.is_active ? <ToggleRight size={30} /> : <ToggleLeft size={30} className="text-[#4A4A4A]/40" />}
+                </button>
+              </label>
+
+              <button
+                type="submit"
+                disabled={savingTemplate}
+                className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#333] disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {savingTemplate ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                حفظ القالب
+              </button>
+            </form>
+
+            <div className="space-y-3 max-h-[660px] overflow-y-auto pr-1 custom-scrollbar">
+              {messageTemplates.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#D9A3AA]/25 bg-[#F8F5F2]/60 p-8 text-center">
+                  <FileText size={30} className="mx-auto mb-3 text-[#D9A3AA]/50" />
+                  <p className="text-sm font-bold text-[#4A4A4A]/55">لا توجد قوالب بعد. شغّل SQL الخاص بالقوالب أو أضف قالباً جديداً.</p>
+                </div>
+              ) : (
+                messageTemplates.map((template) => {
+                  const category = templateCategories.find((item) => item.value === template.category);
+                  return (
+                    <div key={template.id} className={`rounded-2xl border p-4 transition-colors ${template.is_active ? 'bg-white border-[#D9A3AA]/15' : 'bg-[#F8F5F2] border-[#D9A3AA]/10 opacity-75'}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-black text-[#4A4A4A]">{template.name}</h4>
+                            <span className="px-2 py-0.5 rounded-lg bg-[#D9A3AA]/10 text-[#D9A3AA] text-[10px] font-black">
+                              {category?.label || template.category}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-[#F8F5F2] text-[#4A4A4A]/55 text-[10px] font-black flex items-center gap-1">
+                              <Mail size={10} /> {channelLabels[template.channel] || template.channel}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs font-mono text-[#4A4A4A]/45 truncate" dir="ltr">{template.template_key}</p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => editTemplate(template)}
+                            className="p-2 rounded-lg text-[#4A4A4A]/50 hover:text-[#D9A3AA] hover:bg-[#D9A3AA]/10 transition-colors"
+                            title="تعديل"
+                          >
+                            <Edit3 size={16} />
+                          </button>
+                          <button
+                            onClick={() => toggleTemplateStatus(template)}
+                            className="p-1 rounded-lg text-[#D9A3AA] hover:bg-[#D9A3AA]/10 transition-colors"
+                            title={template.is_active ? 'تعطيل' : 'تفعيل'}
+                          >
+                            {template.is_active ? <ToggleRight size={27} /> : <ToggleLeft size={27} className="text-[#4A4A4A]/35" />}
+                          </button>
+                          <button
+                            onClick={() => deleteTemplate(template)}
+                            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="حذف"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {template.subject && (
+                        <p className="mt-3 text-sm font-bold text-[#4A4A4A] bg-[#F8F5F2] rounded-xl px-3 py-2">
+                          {template.subject}
+                        </p>
+                      )}
+                      <p className="mt-3 text-xs leading-6 text-[#4A4A4A]/65 whitespace-pre-line line-clamp-4">
+                        {template.body}
+                      </p>
+                      {Array.isArray(template.variables) && template.variables.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {template.variables.map((variable) => (
+                            <span key={variable} className="rounded-lg bg-[#C5A059]/10 px-2 py-1 text-[10px] font-mono text-[#C5A059]" dir="ltr">
+                              {'{'}{variable}{'}'}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
 

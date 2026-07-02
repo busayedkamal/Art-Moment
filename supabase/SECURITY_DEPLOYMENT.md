@@ -98,6 +98,12 @@ For marketing unsubscribe links and customer message logs, also run:
 supabase/migrations/202607030003_customer_marketing_compliance.sql
 ```
 
+For admin-managed customer message templates, also run:
+
+```text
+supabase/migrations/202607030004_customer_message_templates.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.
@@ -109,6 +115,7 @@ supabase/migrations/202607030003_customer_marketing_compliance.sql
 - Admin customers page shows store account profiles, marketing consent, return flags, and CRM status.
 - Admin customers page can send Resend campaigns only to opted-in customers with email.
 - Marketing campaign emails include a working unsubscribe link.
+- Admin settings page can manage customer message templates and campaigns can use active marketing templates.
 - Store cart validates coupons through Edge Functions and checkout stores the discount on the order.
 - Store checkout creates an order and deducts the ordered quantities from product stock.
 - Cancelling a store order from admin restores stock; reopening a cancelled order reserves stock again.

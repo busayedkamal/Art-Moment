@@ -171,6 +171,8 @@ export default function Customers() {
   const [campaignForm, setCampaignForm] = useState({ subject: '', title: '', message: '' });
   const [isSendingCampaign, setIsSendingCampaign] = useState(false);
   const [campaignResult, setCampaignResult] = useState(null);
+  const [marketingTemplates, setMarketingTemplates] = useState([]);
+  const [selectedMarketingTemplateId, setSelectedMarketingTemplateId] = useState('');
 
   // حالات شحن عميل جديد
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
@@ -240,6 +242,20 @@ export default function Customers() {
         if (!/store_return_requests|schema cache|relation|does not exist/i.test(storeReturnRequestsError.message || '')) {
           throw storeReturnRequestsError;
         }
+      }
+
+      const { data: marketingTemplatesData, error: marketingTemplatesError } = await supabase
+        .from('customer_message_templates')
+        .select('id, name, subject, body, variables')
+        .eq('category', 'marketing')
+        .eq('is_active', true)
+        .order('name');
+      if (marketingTemplatesError) {
+        if (!/customer_message_templates|schema cache|relation|does not exist/i.test(marketingTemplatesError.message || '')) {
+          throw marketingTemplatesError;
+        }
+      } else {
+        setMarketingTemplates(marketingTemplatesData || []);
       }
 
       let messageLogsData = [];
@@ -652,6 +668,7 @@ export default function Customers() {
 
       setCampaignResult(data);
       setCampaignForm({ subject: '', title: '', message: '' });
+      setSelectedMarketingTemplateId('');
       toast.success(`تم إرسال ${data?.sent || 0} رسالة`, { id: toastId });
       fetchData();
     } catch (error) {
@@ -660,6 +677,17 @@ export default function Customers() {
     } finally {
       setIsSendingCampaign(false);
     }
+  };
+
+  const applyMarketingTemplate = (templateId) => {
+    setSelectedMarketingTemplateId(templateId);
+    const template = marketingTemplates.find((item) => String(item.id) === String(templateId));
+    if (!template) return;
+    setCampaignForm({
+      subject: template.subject || template.name || '',
+      title: template.subject || template.name || '',
+      message: template.body || '',
+    });
   };
 
   const handleDeleteCustomer = async (customer) => {
@@ -1836,6 +1864,22 @@ export default function Customers() {
                   تم إرسال {campaignResult.sent || 0} رسالة، وفشل {campaignResult.failed || 0}.
                 </div>
               )}
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">قالب جاهز</label>
+                <select
+                  value={selectedMarketingTemplateId}
+                  onChange={(event) => applyMarketingTemplate(event.target.value)}
+                  className="w-full border border-[#D9A3AA]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold bg-white"
+                >
+                  <option value="">كتابة رسالة بدون قالب</option>
+                  {marketingTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>{template.name}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-[#4A4A4A]/45 mt-1">
+                  يمكن استخدام المتغير {'{customer_name}'} داخل القالب وسيتم استبداله باسم العميل.
+                </p>
+              </div>
               <div>
                 <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">عنوان البريد</label>
                 <input
