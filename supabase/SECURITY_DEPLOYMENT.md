@@ -13,6 +13,7 @@ supabase functions deploy store-checkout
 supabase functions deploy track-order
 supabase functions deploy store-return-requests
 supabase functions deploy customer-account
+supabase functions deploy customer-marketing
 ```
 
 2. Set secrets for server-side email and WhatsApp sending:
@@ -22,6 +23,7 @@ supabase secrets set RESEND_API_KEY=your-resend-api-key
 supabase secrets set RESEND_FROM="Art Moment <hello@your-domain.com>"
 supabase secrets set CUSTOMER_SESSION_SECRET=your-long-random-secret
 supabase secrets set RETURN_REQUEST_NOTIFY_EMAIL=admin@example.com
+supabase secrets set PUBLIC_SITE_URL=https://art-moment.com
 supabase secrets set WHATSAPP_ENABLED=true
 supabase secrets set ULTRAMSG_INSTANCE_ID=your-instance-id
 supabase secrets set ULTRAMSG_TOKEN=your-token
@@ -78,6 +80,24 @@ For store cart coupons and discount receipts, also run:
 supabase/migrations/202607020004_store_order_coupons.sql
 ```
 
+For atomic stock reservation during checkout and admin cancellation/reopen flows, also run:
+
+```text
+supabase/migrations/202607030001_store_stock_reservation.sql
+```
+
+For customer data deletion request review metadata, also run:
+
+```text
+supabase/migrations/202607030002_customer_data_deletion_review.sql
+```
+
+For marketing unsubscribe links and customer message logs, also run:
+
+```text
+supabase/migrations/202607030003_customer_marketing_compliance.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.
@@ -85,9 +105,13 @@ supabase/migrations/202607020004_store_order_coupons.sql
 - Customer password recovery sends a Resend email and accepts the reset code.
 - Customer store orders page loads only after customer login.
 - Customer account page loads only after customer login and can update profile data.
+- Customer account can request data deletion, and admin customers page can mark the request reviewed.
 - Admin customers page shows store account profiles, marketing consent, return flags, and CRM status.
+- Admin customers page can send Resend campaigns only to opted-in customers with email.
+- Marketing campaign emails include a working unsubscribe link.
 - Store cart validates coupons through Edge Functions and checkout stores the discount on the order.
-- Store checkout creates an order.
+- Store checkout creates an order and deducts the ordered quantities from product stock.
+- Cancelling a store order from admin restores stock; reopening a cancelled order reserves stock again.
 - Tracking by short order id works.
 - Tracking by phone + PIN works.
 

@@ -18,6 +18,15 @@ function formatWhatsAppPhone(phone: string) {
   return `966${digits}`;
 }
 
+function getStockRpcErrorMessage(error: { message?: string } | null) {
+  const message = String(error?.message || '');
+  if (/product_out_of_stock/i.test(message)) return 'product_out_of_stock';
+  if (/product_unavailable/i.test(message)) return 'product_unavailable';
+  if (/invalid_stock_items/i.test(message)) return 'invalid_stock_items';
+  if (/not_authorized/i.test(message)) return 'not_authorized';
+  return 'stock_reservation_failed';
+}
+
 async function sendWhatsAppConfirmation(order: Record<string, unknown>, customerPin: string) {
   const enabled = Deno.env.get('WHATSAPP_ENABLED') === 'true';
   const instanceId = Deno.env.get('ULTRAMSG_INSTANCE_ID');
@@ -74,6 +83,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'method_not_allowed' }, 405);
   }
 
+  const supabase = getServiceClient();
+  let createdOrderId: string | null = null;
+  let stockReserved = false;
+  let reservedStockItems: Array<{ product_id: number; quantity: number }> = [];
+
   try {
     const body = await req.json();
     const customer = body?.customer || {};
@@ -97,7 +111,6 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'empty_cart' }, 400);
     }
 
-    const supabase = getServiceClient();
     let verifiedCustomerId: string | null = null;
     let verifiedCustomerName = '';
     let verifiedCustomerEmail = '';
@@ -203,6 +216,21 @@ Deno.serve(async (req) => {
     };
     if (verifiedCustomerId) orderPayload.customer_id = verifiedCustomerId;
 
+    reservedStockItems = orderItems.map((item: { product_id: number; quantity: number }) => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+    }));
+
+    const { error: reserveStockError } = await supabase.rpc('reserve_store_stock', {
+      items: reservedStockItems,
+    });
+
+    if (reserveStockError) {
+      throw new Error(getStockRpcErrorMessage(reserveStockError));
+    }
+
+    stockReserved = true;
+
     let orderInsert = await supabase
       .from('store_orders')
       .insert(orderPayload)
@@ -233,6 +261,7 @@ Deno.serve(async (req) => {
 
     if (orderInsert.error) throw orderInsert.error;
     const order = orderInsert.data;
+    createdOrderId = String(order.id);
 
     const { error: itemsError } = await supabase
       .from('store_order_items')
@@ -242,6 +271,8 @@ Deno.serve(async (req) => {
       })));
 
     if (itemsError) throw itemsError;
+    stockReserved = false;
+    createdOrderId = null;
 
     try {
       await sendWhatsAppConfirmation(order, String(customerPin));
@@ -291,8 +322,27 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('store-checkout error:', error);
+    if (stockReserved && reservedStockItems.length > 0) {
+      const { error: restoreError } = await supabase.rpc('restore_store_stock', {
+        items: reservedStockItems,
+      });
+      if (restoreError) console.error('store-checkout stock restore error:', restoreError);
+    }
+
+    if (createdOrderId) {
+      const { error: cleanupError } = await supabase
+        .from('store_orders')
+        .delete()
+        .eq('id', createdOrderId);
+      if (cleanupError) console.error('store-checkout cleanup error:', cleanupError);
+    }
+
     const message = error instanceof Error ? error.message : 'checkout_failed';
-    const status = ['product_unavailable', 'product_out_of_stock'].includes(message) ? 409 : 500;
+    const status = ['product_unavailable', 'product_out_of_stock'].includes(message)
+      ? 409
+      : ['empty_cart', 'invalid_stock_items', 'not_authorized'].includes(message)
+        ? 400
+        : 500;
     return jsonResponse({ error: message }, status);
   }
 });

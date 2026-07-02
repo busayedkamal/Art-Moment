@@ -103,6 +103,15 @@ function ReturnStatusBadge({ status }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+function getStatusUpdateErrorMessage(error) {
+  const message = String(error?.message || '');
+  if (/product_out_of_stock/i.test(message)) return 'لا توجد كمية كافية لإعادة فتح الطلب';
+  if (/product_unavailable/i.test(message)) return 'أحد منتجات الطلب لم يعد متاحاً في المخزون';
+  if (/invalid_status_transition/i.test(message)) return 'هذا الانتقال غير متاح للحالة الحالية';
+  if (/not_authorized/i.test(message)) return 'لا تملك صلاحية تحديث هذا الطلب';
+  return 'فشل تحديث الحالة';
+}
+
 export default function StoreOrdersManagement() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -412,13 +421,16 @@ export default function StoreOrdersManagement() {
         updatePayload.courier_name = courierName;
       }
 
-      const { error } = await supabase
-        .from('store_orders')
-        .update(updatePayload)
-        .eq('id', selectedOrder.id);
+      const { data, error } = await supabase.rpc('set_store_order_status_with_stock', {
+        p_order_id: selectedOrder.id,
+        p_status: newStatus,
+        p_tracking_number: newStatus === 'shipped' ? trackingNumber.trim() || null : null,
+        p_courier_name: newStatus === 'shipped' ? courierName : null,
+      });
       if (error) throw error;
 
-      const updated = { ...selectedOrder, ...updatePayload };
+      const updatedOrder = Array.isArray(data) ? data[0] : data;
+      const updated = { ...selectedOrder, ...updatePayload, ...(updatedOrder || {}) };
       setSelectedOrder(updated);
       setOrders(prev => prev.map(o => o.id === selectedOrder.id ? updated : o));
 
@@ -429,7 +441,7 @@ export default function StoreOrdersManagement() {
       toast.success(`تم تغيير الحالة إلى: ${STATUS_CONFIG[newStatus]?.label || newStatus}`, { id: toastId });
     } catch (err) {
       console.error(err);
-      toast.error('فشل تحديث الحالة', { id: toastId });
+      toast.error(getStatusUpdateErrorMessage(err), { id: toastId });
     } finally {
       setStatusUpdating(false);
     }

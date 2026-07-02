@@ -149,6 +149,30 @@ async function notifyCustomer(email: unknown, subject: string, body: string) {
   });
 }
 
+async function notifyAdmin(subject: string, body: string) {
+  const to = Deno.env.get('CUSTOMER_ACCOUNT_NOTIFY_EMAIL')
+    || Deno.env.get('RETURN_REQUEST_NOTIFY_EMAIL')
+    || Deno.env.get('ADMIN_NOTIFY_EMAIL');
+
+  if (!to) return;
+
+  await sendEmail({
+    to,
+    subject,
+    html: `
+      <div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8;color:#4A4A4A;background:#F8F5F2;padding:28px">
+        <div style="max-width:560px;margin:auto;background:#fff;border:1px solid #ead8da;border-radius:22px;padding:26px">
+          <p style="margin:0 0 8px;color:#C5A059;font-weight:700">لحظة فن Art Moment</p>
+          <h2 style="margin:0 0 14px;color:#4A4A4A">${escapeHtml(subject)}</h2>
+          <p style="margin:0;white-space:pre-line">${escapeHtml(body)}</p>
+        </div>
+      </div>
+    `,
+    text: body,
+    tags: [{ name: 'type', value: 'customer_account_admin' }],
+  });
+}
+
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);
   if (optionsResponse) return optionsResponse;
@@ -249,7 +273,12 @@ Deno.serve(async (req) => {
       const requestedAt = new Date().toISOString();
       const { data: updatedCustomer, error: updateError } = await supabase
         .from('customers')
-        .update({ data_deletion_requested_at: requestedAt })
+        .update({
+          data_deletion_requested_at: requestedAt,
+          data_deletion_reviewed_at: null,
+          data_deletion_review_note: null,
+          admin_status: 'needs_followup',
+        })
         .eq('id', customer.id)
         .select('id, name, email, phone, marketing_opt_in, preferred_contact_method, saved_addresses, created_at, last_login_at, profile_updated_at, data_deletion_requested_at')
         .single();
@@ -260,6 +289,22 @@ Deno.serve(async (req) => {
         await notifyCustomer(customer.email, 'تم استلام طلب حذف البيانات', 'وصلنا طلب حذف بيانات حسابك، وسيتم مراجعته من الإدارة قبل أي إجراء نهائي.');
       } catch (emailError) {
         console.error('customer deletion email error:', emailError);
+      }
+
+      try {
+        await notifyAdmin(
+          `طلب حذف بيانات عميل #${String(customer.id).slice(0, 8)}`,
+          [
+            `العميل: ${String(customer.name || 'عميل لحظة فن')}`,
+            `الجوال: ${String(customer.phone || '-')}`,
+            `البريد: ${String(customer.email || '-')}`,
+            `وقت الطلب: ${requestedAt}`,
+            '',
+            'يرجى مراجعة الطلب من لوحة العملاء قبل تنفيذ أي إجراء نهائي.',
+          ].join('\n'),
+        );
+      } catch (emailError) {
+        console.error('customer deletion admin email error:', emailError);
       }
 
       return jsonResponse({ customer: safeCustomer(updatedCustomer as Record<string, unknown>) });

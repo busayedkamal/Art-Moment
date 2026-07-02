@@ -15,6 +15,7 @@ import StoreCart from './pages/StoreCart.jsx'
 import CustomerOrdersPage from './pages/CustomerOrdersPage.jsx'
 import CustomerAccountPage from './pages/CustomerAccountPage.jsx'
 import StorePaymentResult from './pages/StorePaymentResult.jsx'
+import MarketingUnsubscribePage from './pages/MarketingUnsubscribePage.jsx'
 import ProductManagement from './pages/ProductManagement.jsx'
 import StoreOrdersManagement from './pages/StoreOrdersManagement.jsx'
 
@@ -59,6 +60,7 @@ function AppRoutes() {
       <Route path="/store/account" element={<CustomerAccountPage />} />
       <Route path="/store/orders" element={<CustomerOrdersPage />} />
       <Route path="/store/orders/:orderId" element={<CustomerOrdersPage />} />
+      <Route path="/marketing/unsubscribe" element={<MarketingUnsubscribePage />} />
       
       {/* 2. صفحة دخول الأدمن */}
       <Route path="/admin/login" element={<AdminLoginPage />} />

@@ -6,7 +6,7 @@ import {
   Search, Users, Wallet, ShoppingBag, Sparkles, Crown,
   Phone, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
   Edit2, Check, Package, Trash2, ArrowUpDown, Mail, ShieldCheck,
-  RotateCcw, AlertTriangle, Tag
+  RotateCcw, AlertTriangle, Tag, Megaphone, Send
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
 
@@ -23,6 +23,22 @@ const CONTACT_METHOD_LABELS = {
   email: 'البريد',
   phone: 'اتصال',
 };
+
+const MESSAGE_TYPE_LABELS = {
+  marketing_campaign: 'حملة تسويقية',
+  marketing_unsubscribe: 'إلغاء اشتراك',
+  customer_account: 'حساب العميل',
+  store_return_request: 'استرجاع',
+};
+
+async function getFunctionError(error) {
+  try {
+    const body = await error?.context?.clone?.().json?.();
+    return body?.error || error?.message;
+  } catch {
+    return error?.message;
+  }
+}
 
 const SEGMENT_META = {
   needs_attention: {
@@ -139,6 +155,7 @@ export default function Customers() {
   const [customerDetails, setCustomerDetails] = useState({ address: '', notes: '', adminStatus: 'active' });
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
+  const [reviewingDeletionFor, setReviewingDeletionFor] = useState(null);
 
   const [editingBalanceId, setEditingBalanceId] = useState(null);
   const [editWalletBalance, setEditWalletBalance] = useState('');
@@ -150,6 +167,10 @@ export default function Customers() {
   const [addedAmount, setAddedAmount] = useState(10);
   const [packageNote, setPackageNote] = useState("شحن باقة مسبق");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMarketingModalOpen, setIsMarketingModalOpen] = useState(false);
+  const [campaignForm, setCampaignForm] = useState({ subject: '', title: '', message: '' });
+  const [isSendingCampaign, setIsSendingCampaign] = useState(false);
+  const [campaignResult, setCampaignResult] = useState(null);
 
   // حالات شحن عميل جديد
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
@@ -204,7 +225,7 @@ export default function Customers() {
 
       const { data: storeCustomersData, error: storeCustomersError } = await supabase
         .from('customers')
-        .select('id, name, email, phone, marketing_opt_in, preferred_contact_method, saved_addresses, created_at, last_login_at, data_deletion_requested_at, admin_notes, admin_status, admin_tags');
+        .select('id, name, email, phone, marketing_opt_in, preferred_contact_method, saved_addresses, created_at, last_login_at, data_deletion_requested_at, data_deletion_reviewed_at, data_deletion_review_note, admin_notes, admin_status, admin_tags');
       if (storeCustomersError) throw storeCustomersError;
 
       const { data: storeOrdersData, error: storeOrdersError } = await supabase
@@ -219,6 +240,20 @@ export default function Customers() {
         if (!/store_return_requests|schema cache|relation|does not exist/i.test(storeReturnRequestsError.message || '')) {
           throw storeReturnRequestsError;
         }
+      }
+
+      let messageLogsData = [];
+      const { data: messageLogs, error: messageLogsError } = await supabase
+        .from('customer_message_logs')
+        .select('id, customer_id, channel, type, subject, status, sent_at, created_at')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (messageLogsError) {
+        if (!/customer_message_logs|schema cache|relation|does not exist/i.test(messageLogsError.message || '')) {
+          throw messageLogsError;
+        }
+      } else {
+        messageLogsData = messageLogs || [];
       }
 
       // بناء خريطة رصيد الباقات لكل wallet_id
@@ -330,6 +365,14 @@ export default function Customers() {
       const storeCustomerById = new Map();
       const storeCustomerKeyById = new Map();
       const storeOrderKeyById = new Map();
+      const messageLogsByCustomerId = new Map();
+
+      (messageLogsData || []).forEach(log => {
+        if (!log.customer_id) return;
+        const logs = messageLogsByCustomerId.get(log.customer_id) || [];
+        logs.push(log);
+        messageLogsByCustomerId.set(log.customer_id, logs.slice(0, 8));
+      });
 
       const getOrCreateStoreCustomer = ({ key, name, phone }) => {
         if (!map[key]) {
@@ -366,9 +409,12 @@ export default function Customers() {
         entry.customerCreatedAt = customer.created_at || null;
         entry.lastLoginAt = customer.last_login_at || null;
         entry.dataDeletionRequestedAt = customer.data_deletion_requested_at || null;
+        entry.dataDeletionReviewedAt = customer.data_deletion_reviewed_at || null;
+        entry.dataDeletionReviewNote = customer.data_deletion_review_note || '';
         entry.adminNotes = customer.admin_notes || '';
         entry.adminStatus = customer.admin_status || 'active';
         entry.adminTags = Array.isArray(customer.admin_tags) ? customer.admin_tags : [];
+        entry.messageLogs = messageLogsByCustomerId.get(customer.id) || [];
         storeCustomerKeyById.set(customer.id, key);
       });
 
@@ -458,6 +504,9 @@ export default function Customers() {
           marketingOptIn: Boolean(c.marketingOptIn),
           adminStatus: c.adminStatus || 'active',
           adminNotes: c.adminNotes || notes,
+          dataDeletionReviewedAt: c.dataDeletionReviewedAt || null,
+          dataDeletionReviewNote: c.dataDeletionReviewNote || '',
+          messageLogs: c.messageLogs || [],
           savedAddresses: c.savedAddresses || [],
           preferredContactMethod: c.preferredContactMethod || 'whatsapp',
         };
@@ -515,6 +564,101 @@ export default function Customers() {
       toast.error("حدث خطأ أثناء الحفظ");
     } finally {
       setIsSavingDetails(false);
+    }
+  };
+
+  const handleReviewDataDeletionRequest = async (customer) => {
+    if (!customer.customerId) {
+      toast.error('لا يوجد حساب متجر مرتبط بهذا العميل.');
+      return;
+    }
+
+    const reviewNote = window.prompt(
+      'ملاحظة مراجعة طلب حذف البيانات',
+      'تمت مراجعة طلب حذف البيانات والتواصل مع العميل عند الحاجة.'
+    );
+    if (reviewNote === null) return;
+
+    const note = reviewNote.trim() || 'تمت مراجعة طلب حذف البيانات.';
+    const reviewedAt = new Date().toISOString();
+    const existingNotes = String(customer.adminNotes || customer.notes || '').trim();
+    const auditLine = `[${new Date().toLocaleDateString('en-GB')}] ${note}`;
+    const nextAdminNotes = [existingNotes, auditLine].filter(Boolean).join('\n');
+
+    setReviewingDeletionFor(customer.id);
+    const toastId = toast.loading('جاري إغلاق طلب حذف البيانات...');
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({
+          data_deletion_requested_at: null,
+          data_deletion_reviewed_at: reviewedAt,
+          data_deletion_review_note: note,
+          admin_notes: nextAdminNotes,
+          admin_status: customer.adminStatus === 'needs_followup' ? 'active' : (customer.adminStatus || 'active'),
+        })
+        .eq('id', customer.customerId);
+
+      if (error) throw error;
+
+      toast.success('تم توثيق مراجعة طلب حذف البيانات', { id: toastId });
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      toast.error('تعذر إغلاق طلب حذف البيانات', { id: toastId });
+    } finally {
+      setReviewingDeletionFor(null);
+    }
+  };
+
+  const handleSendMarketingCampaign = async (event) => {
+    event.preventDefault();
+
+    const subject = campaignForm.subject.trim();
+    const title = campaignForm.title.trim() || subject;
+    const message = campaignForm.message.trim();
+    const customerIds = marketingRecipients.map((customer) => customer.customerId).filter(Boolean);
+
+    if (!subject || !message) {
+      toast.error('أدخل عنوان الرسالة ومحتواها.');
+      return;
+    }
+
+    if (customerIds.length === 0) {
+      toast.error('لا يوجد عملاء موافقون لديهم بريد إلكتروني.');
+      return;
+    }
+
+    if (!window.confirm(`سيتم إرسال الحملة إلى ${customerIds.length} عميل موافق على التسويق. هل تريد المتابعة؟`)) return;
+
+    setIsSendingCampaign(true);
+    setCampaignResult(null);
+    const toastId = toast.loading('جاري إرسال حملة Resend...');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const { data, error } = await supabase.functions.invoke('customer-marketing', {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: {
+          action: 'send_campaign',
+          subject,
+          title,
+          message,
+          customerIds,
+        },
+      });
+
+      if (error) throw new Error(await getFunctionError(error));
+
+      setCampaignResult(data);
+      setCampaignForm({ subject: '', title: '', message: '' });
+      toast.success(`تم إرسال ${data?.sent || 0} رسالة`, { id: toastId });
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || 'تعذر إرسال الحملة', { id: toastId });
+    } finally {
+      setIsSendingCampaign(false);
     }
   };
 
@@ -919,6 +1063,14 @@ export default function Customers() {
     return { totalCustomers, vipCustomers, totalPackageBalance, storeCustomers, marketingCustomers, attentionCustomers, storeRevenue };
   }, [customersData]);
 
+  const marketingRecipients = useMemo(() => (
+    customersData.filter((customer) => (
+      customer.customerId
+      && customer.marketingOptIn
+      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(customer.email || '').trim())
+    ))
+  ), [customersData]);
+
   return (
     <div className="w-full pb-20 space-y-6 text-[#4A4A4A]">
 
@@ -931,6 +1083,13 @@ export default function Customers() {
           <p className="text-xs sm:text-sm text-[#4A4A4A]/50 mt-0.5">إدارة متقدمة لبيانات ومحافظ العملاء</p>
         </div>
         <div className="flex gap-2 shrink-0">
+          <button
+            onClick={() => setIsMarketingModalOpen(true)}
+            className="inline-flex items-center gap-1.5 bg-emerald-600 text-white px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow hover:shadow-emerald-500/25 transition-all whitespace-nowrap"
+          >
+            <Megaphone size={15} />
+            حملة Resend
+          </button>
           <button
             onClick={() => setIsNewCustomerModalOpen(true)}
             className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow hover:shadow-amber-500/30 transition-all whitespace-nowrap"
@@ -1088,6 +1247,11 @@ export default function Customers() {
                         <Mail size={9} className="inline ml-0.5"/> عروض
                       </span>
                     )}
+                    {customer.dataDeletionRequestedAt && (
+                      <span className="text-[10px] font-bold bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded-lg">
+                        <AlertTriangle size={9} className="inline ml-0.5"/> حذف بيانات
+                      </span>
+                    )}
                     {customer.subscriptionCode && (
                       <button
                         onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(customer.subscriptionCode); toast.success(`كود: ${customer.subscriptionCode}`); }}
@@ -1178,6 +1342,38 @@ export default function Customers() {
                       className="w-full flex items-center justify-center gap-2 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl py-2.5 text-xs font-bold">
                       <Package size={13}/> تعديل رصيد الباقة ({customer.packageBalance.toFixed(1)} <RiyalSign size="0.8em" />)
                     </button>
+                  )}
+                  {customer.dataDeletionRequestedAt && (
+                    <div className="bg-red-50 border border-red-100 text-red-600 rounded-xl p-3 text-xs font-black space-y-3">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle size={14} /> العميل طلب حذف بياناته.
+                      </div>
+                      <button
+                        onClick={() => handleReviewDataDeletionRequest(customer)}
+                        disabled={reviewingDeletionFor === customer.id}
+                        className="w-full rounded-lg bg-white border border-red-100 px-3 py-2 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                      >
+                        {reviewingDeletionFor === customer.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                        تمت مراجعة طلب الحذف
+                      </button>
+                    </div>
+                  )}
+                  {customer.messageLogs?.length > 0 && (
+                    <div className="bg-white rounded-xl border border-blue-100 p-3">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-blue-700">
+                        <Mail size={13} /> سجل المراسلات
+                      </div>
+                      <div className="space-y-2">
+                        {customer.messageLogs.slice(0, 2).map((log) => (
+                          <div key={log.id} className="rounded-lg bg-[#F8F5F2] px-3 py-2 text-[11px]">
+                            <div className="font-black text-[#4A4A4A] truncate">{log.subject || MESSAGE_TYPE_LABELS[log.type] || log.type}</div>
+                            <div className="text-[#4A4A4A]/45">
+                              {MESSAGE_TYPE_LABELS[log.type] || log.type} · {log.sent_at || log.created_at ? new Date(log.sent_at || log.created_at).toLocaleDateString('en-GB') : '—'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                   {/* العنوان والملاحظات */}
                   <div className="space-y-3">
@@ -1490,8 +1686,38 @@ export default function Customers() {
                                     </div>
                                   </div>
                                   {customer.dataDeletionRequestedAt && (
-                                    <div className="bg-red-50 border border-red-100 text-red-600 rounded-lg p-3 text-xs font-black flex items-center gap-2">
-                                      <AlertTriangle size={14} /> العميل طلب حذف بياناته، راجع الطلب قبل أي إجراء.
+                                    <div className="bg-red-50 border border-red-100 text-red-600 rounded-lg p-3 text-xs font-black space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <AlertTriangle size={14} /> العميل طلب حذف بياناته، راجع الطلب قبل أي إجراء.
+                                      </div>
+                                      <button
+                                        onClick={() => handleReviewDataDeletionRequest(customer)}
+                                        disabled={reviewingDeletionFor === customer.id}
+                                        className="w-full rounded-lg bg-white border border-red-100 px-3 py-2 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                                      >
+                                        {reviewingDeletionFor === customer.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                                        تمت مراجعة طلب الحذف
+                                      </button>
+                                    </div>
+                                  )}
+                                  {customer.messageLogs?.length > 0 && (
+                                    <div className="bg-white/80 border border-blue-100 rounded-lg p-3">
+                                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-blue-700">
+                                        <Mail size={13} /> سجل المراسلات
+                                      </div>
+                                      <div className="space-y-2">
+                                        {customer.messageLogs.slice(0, 3).map((log) => (
+                                          <div key={log.id} className="flex items-center justify-between gap-3 rounded-lg bg-[#F8F5F2] px-3 py-2 text-[11px]">
+                                            <div className="min-w-0">
+                                              <p className="font-black text-[#4A4A4A] truncate">{log.subject || MESSAGE_TYPE_LABELS[log.type] || log.type}</p>
+                                              <p className="text-[#4A4A4A]/45">{MESSAGE_TYPE_LABELS[log.type] || log.type} · {log.status}</p>
+                                            </div>
+                                            <span className="shrink-0 text-[#4A4A4A]/45">
+                                              {log.sent_at || log.created_at ? new Date(log.sent_at || log.created_at).toLocaleDateString('en-GB') : '—'}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1589,6 +1815,82 @@ export default function Customers() {
         </table>
         </div>
       </div>
+
+      {isMarketingModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-emerald-50 p-6 border-b border-emerald-100 flex justify-between items-center relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 text-emerald-200 opacity-60"><Megaphone size={88} /></div>
+              <div className="relative z-10">
+                <h3 className="text-xl font-black text-emerald-800 flex items-center gap-2">
+                  <Megaphone size={20} /> حملة Resend
+                </h3>
+                <p className="text-emerald-700/70 text-sm mt-1">{marketingRecipients.length} عميل موافق لديه بريد إلكتروني</p>
+              </div>
+              <button onClick={() => setIsMarketingModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A] hover:bg-red-50 hover:text-red-500 transition-colors relative z-10 shadow-sm"><X size={16} /></button>
+            </div>
+
+            <form onSubmit={handleSendMarketingCampaign} className="p-6 space-y-4">
+              {campaignResult && (
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">
+                  تم إرسال {campaignResult.sent || 0} رسالة، وفشل {campaignResult.failed || 0}.
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">عنوان البريد</label>
+                <input
+                  value={campaignForm.subject}
+                  onChange={(event) => setCampaignForm((current) => ({ ...current, subject: event.target.value }))}
+                  maxLength={140}
+                  className="w-full border border-[#D9A3AA]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold"
+                  placeholder="مثال: عرض خاص على الألبومات"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">العنوان داخل الرسالة</label>
+                <input
+                  value={campaignForm.title}
+                  onChange={(event) => setCampaignForm((current) => ({ ...current, title: event.target.value }))}
+                  maxLength={160}
+                  className="w-full border border-[#D9A3AA]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold"
+                  placeholder="يُستخدم عنوان البريد إذا ترك فارغاً"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">نص الرسالة</label>
+                <textarea
+                  value={campaignForm.message}
+                  onChange={(event) => setCampaignForm((current) => ({ ...current, message: event.target.value }))}
+                  maxLength={5000}
+                  rows={7}
+                  className="w-full resize-none border border-[#D9A3AA]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold leading-7"
+                  placeholder="اكتب نص الحملة هنا..."
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsMarketingModalOpen(false)}
+                  className="flex-1 bg-[#F8F5F2] text-[#4A4A4A] py-3 rounded-xl font-bold hover:bg-gray-100"
+                >
+                  إغلاق
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSendingCampaign || marketingRecipients.length === 0}
+                  className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-500 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSendingCampaign ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  إرسال الحملة
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal إضافة رصيد */}
       {isBonusModalOpen && selectedCustomer && (
