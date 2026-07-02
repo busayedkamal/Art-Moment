@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X } from 'lucide-react';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import {
@@ -37,6 +37,8 @@ export default function StoreCart() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +85,34 @@ export default function StoreCart() {
     if (customer) {
       setName(customer.name || '');
       setPhone(customer.phone || '');
+
+      if (customer.sessionToken) {
+        supabase.functions.invoke('customer-account', {
+          body: {
+            action: 'get',
+            sessionToken: customer.sessionToken,
+          },
+        }).then(({ data, error }) => {
+          if (cancelled || error) return;
+          const addresses = Array.isArray(data?.customer?.savedAddresses)
+            ? data.customer.savedAddresses
+            : [];
+          setSavedAddresses(addresses);
+          if (data?.customer?.name) setName(data.customer.name);
+          if (data?.customer?.phone) setPhone(data.customer.phone);
+
+          const firstAddress = addresses[0];
+          if (firstAddress) {
+            setSelectedAddressId(firstAddress.id || '');
+            setCity(firstAddress.city || '');
+            setDistrict(firstAddress.district || '');
+            setStreet(firstAddress.street || '');
+            if (firstAddress.notes) setNotes(current => current || firstAddress.notes);
+          }
+        }).catch(error => {
+          console.error('Error loading customer profile:', error);
+        });
+      }
     }
 
     return () => { cancelled = true; };
@@ -135,6 +165,17 @@ export default function StoreCart() {
 
   const clearCart = () => {
     if (window.confirm('هل أنت متأكدة من مسح جميع المنتجات؟')) saveCart([]);
+  };
+
+  const applySavedAddress = (addressId) => {
+    const address = savedAddresses.find(item => String(item.id || '') === String(addressId || ''));
+    setSelectedAddressId(addressId);
+    if (!address) return;
+
+    setCity(address.city || '');
+    setDistrict(address.district || '');
+    setStreet(address.street || '');
+    if (address.notes) setNotes(current => current || address.notes);
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (Number(item.qty) || 0)), 0);
@@ -469,6 +510,33 @@ export default function StoreCart() {
                   className="art-input w-full rounded-xl px-4 py-2.5 outline-none"
                 />
               </div>
+
+              {savedAddresses.length > 0 ? (
+                <div className="rounded-2xl border border-[#D9A3AA]/15 bg-[#F8F5F2] p-3">
+                  <label className="mb-2 flex items-center gap-2 text-xs font-black text-[#4A4A4A]/65">
+                    <MapPin size={14} className="text-[#C5A059]" /> العناوين المحفوظة
+                  </label>
+                  <select
+                    value={selectedAddressId}
+                    onChange={e => applySavedAddress(e.target.value)}
+                    className="w-full rounded-xl border border-[#D9A3AA]/15 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                  >
+                    {savedAddresses.map((address, index) => (
+                      <option key={address.id || index} value={address.id || ''}>
+                        {address.label || `عنوان ${index + 1}`} - {[address.city, address.district].filter(Boolean).join(' / ') || 'بدون تفاصيل'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : getCustomerSession()?.sessionToken ? (
+                <Link
+                  to="/store/account"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-[#D9A3AA]/25 bg-[#F8F5F2] px-4 py-3 text-xs font-black text-[#4A4A4A]/65 hover:border-[#D9A3AA] hover:text-[#D9A3AA] transition-colors"
+                >
+                  <span className="flex items-center gap-2"><MapPin size={14} /> لا توجد عناوين محفوظة</span>
+                  <span>إضافة عنوان</span>
+                </Link>
+              ) : null}
 
               {/* حقول الشحن */}
               <div className="pt-4 mt-2 border-t border-[#D9A3AA]/20 grid grid-cols-1 md:grid-cols-2 gap-4">

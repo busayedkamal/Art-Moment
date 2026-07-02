@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowRight,
   CalendarDays,
   CheckCircle,
   Clock,
+  Download,
   Home,
   Loader2,
   LogIn,
@@ -25,6 +26,7 @@ import toast from 'react-hot-toast';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { supabase } from '../lib/supabase';
 import { getCustomerSession } from '../utils/customerSession';
+import { clampCartQuantity, normalizeStockQuantity } from '../utils/productStock';
 import {
   getPaymentState,
   getStorePaymentMethod,
@@ -55,6 +57,90 @@ function formatDate(value) {
     month: 'long',
     year: 'numeric',
   });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function buildReceiptHtml(order) {
+  const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
+  const remaining = Math.max(0, total - Number(order.amountPaid || 0));
+  const discount = Number(order.discountAmount || 0);
+  const subtotal = Number(order.subtotalAmount ?? order.totalAmount ?? 0);
+  const itemsRows = (order.items || []).map(item => `
+    <tr>
+      <td>${escapeHtml(item.name)}</td>
+      <td>${Number(item.quantity || 0)}</td>
+      <td>${formatCurrency(item.price)}</td>
+      <td>${formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}</td>
+    </tr>
+  `).join('');
+
+  return `<!doctype html>
+  <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="utf-8" />
+      <title>إيصال طلب #${escapeHtml(order.shortId)}</title>
+      <style>
+        body { font-family: Arial, sans-serif; background:#F8F5F2; color:#4A4A4A; margin:0; padding:32px; }
+        .receipt { max-width:760px; margin:auto; background:#fff; border:1px solid #ead8da; border-radius:24px; padding:28px; }
+        h1 { margin:0 0 8px; font-size:28px; }
+        .muted { color:#888; font-size:13px; }
+        .brand { color:#C5A059; font-weight:800; margin-bottom:20px; }
+        .grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin:22px 0; }
+        .box { background:#F8F5F2; border-radius:16px; padding:14px; }
+        table { width:100%; border-collapse:collapse; margin:18px 0; }
+        th, td { padding:12px; border-bottom:1px solid #f0e3e4; text-align:right; font-size:14px; }
+        th { color:#9d6f74; }
+        .totals { margin-top:18px; display:grid; gap:10px; }
+        .line { display:flex; justify-content:space-between; gap:20px; }
+        .final { font-size:20px; font-weight:900; border-top:1px solid #ead8da; padding-top:14px; }
+        @media print { body { background:#fff; padding:0; } .receipt { border:0; } }
+      </style>
+    </head>
+    <body>
+      <main class="receipt">
+        <div class="brand">لحظة فن Art Moment</div>
+        <h1>إيصال طلب #${escapeHtml(order.shortId)}</h1>
+        <p class="muted">تم إنشاء الإيصال بتاريخ ${escapeHtml(new Date().toLocaleDateString('ar-SA'))}</p>
+        <div class="grid">
+          <div class="box"><strong>حالة الطلب</strong><br />${escapeHtml(getStoreOrderStatus(order.status).label)}</div>
+          <div class="box"><strong>حالة الدفع</strong><br />${escapeHtml(getPaymentState(order).label)}</div>
+          <div class="box"><strong>التاريخ</strong><br />${escapeHtml(formatDate(order.createdAt))}</div>
+          <div class="box"><strong>العنوان</strong><br />${escapeHtml([order.city, order.district, order.street].filter(Boolean).join(' - ') || 'غير مسجل')}</div>
+        </div>
+        <table>
+          <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+          <tbody>${itemsRows || '<tr><td colspan="4">لا توجد منتجات</td></tr>'}</tbody>
+        </table>
+        <div class="totals">
+          <div class="line"><span>المنتجات قبل الخصم</span><strong>${formatCurrency(subtotal)}</strong></div>
+          ${discount > 0 ? `<div class="line"><span>${order.couponCode ? `كوبون ${escapeHtml(order.couponCode)}` : 'خصم'}</span><strong>-${formatCurrency(discount)}</strong></div>` : ''}
+          <div class="line"><span>الشحن</span><strong>${Number(order.deliveryFee || 0) > 0 ? formatCurrency(order.deliveryFee) : 'يحدد لاحقاً'}</strong></div>
+          <div class="line"><span>المدفوع</span><strong>${formatCurrency(order.amountPaid)}</strong></div>
+          <div class="line final"><span>المتبقي</span><strong>${remaining > 0 ? formatCurrency(remaining) : 'لا يوجد'}</strong></div>
+        </div>
+      </main>
+    </body>
+  </html>`;
+}
+
+function downloadReceipt(order) {
+  const blob = new Blob([buildReceiptHtml(order)], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `art-moment-receipt-${order.shortId || order.id}.html`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function getTrackingUrl(order) {
@@ -419,7 +505,7 @@ function OrderCard({ order }) {
   );
 }
 
-function OrderDetails({ order, onReturnSubmitted }) {
+function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt }) {
   const trackingUrl = getTrackingUrl(order);
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
   const remaining = Math.max(0, total - Number(order.amountPaid || 0));
@@ -449,6 +535,23 @@ function OrderDetails({ order, onReturnSubmitted }) {
           </div>
         </div>
       </section>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => onReorder?.(order)}
+          className="rounded-2xl bg-white border border-[#D9A3AA]/15 px-5 py-4 text-sm font-black text-[#4A4A4A] shadow-sm hover:border-[#D9A3AA]/40 hover:bg-[#F8F5F2] transition-colors flex items-center justify-center gap-2"
+        >
+          <RefreshCw size={17} className="text-[#C5A059]" /> إعادة الطلب
+        </button>
+        <button
+          type="button"
+          onClick={() => onDownloadReceipt?.(order)}
+          className="rounded-2xl bg-white border border-[#D9A3AA]/15 px-5 py-4 text-sm font-black text-[#4A4A4A] shadow-sm hover:border-[#D9A3AA]/40 hover:bg-[#F8F5F2] transition-colors flex items-center justify-center gap-2"
+        >
+          <Download size={17} className="text-[#D9A3AA]" /> تحميل الإيصال
+        </button>
+      </div>
 
       <OrderTimeline status={order.status} />
 
@@ -579,6 +682,7 @@ function OrderDetails({ order, onReturnSubmitted }) {
 
 export default function CustomerOrdersPage() {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const [customer, setCustomer] = useState(() => getCustomerSession());
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -587,6 +691,87 @@ export default function CustomerOrdersPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const canLoadOrders = Boolean(customer?.sessionToken);
+
+  const handleReorder = async (order) => {
+    const productIds = [...new Set((order.items || []).map(item => item.productId).filter(Boolean))];
+    if (productIds.length === 0) {
+      toast.error('لا توجد منتجات قابلة لإعادة الطلب');
+      return;
+    }
+
+    const toastId = toast.loading('جاري تجهيز السلة...');
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, description, price, image, stock_quantity, in_stock')
+        .in('id', productIds);
+      if (error) throw error;
+
+      const productsById = new Map((data || []).map(product => [String(product.id), product]));
+      const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
+      const nextCart = [...savedCart];
+      let addedCount = 0;
+      let skippedCount = 0;
+
+      (order.items || []).forEach(item => {
+        const product = productsById.get(String(item.productId));
+        const stockQuantity = normalizeStockQuantity(product?.stock_quantity);
+        const inStock = product && product.in_stock !== false && (stockQuantity === null || stockQuantity > 0);
+
+        if (!inStock) {
+          skippedCount += 1;
+          return;
+        }
+
+        const cartProduct = {
+          id: product.id,
+          name: product.name,
+          description: product.description || '',
+          price: Number(product.price || item.price || 0),
+          image: product.image || item.image || null,
+          qty: Number(item.quantity || 1),
+          stockQuantity,
+          inStock: true,
+        };
+        const safeQty = clampCartQuantity(cartProduct, item.quantity || 1);
+        const existing = nextCart.find(cartItem => String(cartItem.id) === String(product.id));
+
+        if (existing) {
+          const hydrated = {
+            ...existing,
+            stockQuantity,
+            inStock: true,
+          };
+          existing.qty = clampCartQuantity(hydrated, Number(existing.qty || 0) + safeQty);
+          existing.price = cartProduct.price;
+          existing.name = cartProduct.name;
+          existing.image = cartProduct.image;
+          existing.stockQuantity = stockQuantity;
+          existing.inStock = true;
+        } else {
+          nextCart.push({ ...cartProduct, qty: safeQty });
+        }
+        addedCount += 1;
+      });
+
+      if (addedCount === 0) {
+        toast.error('كل منتجات هذا الطلب غير متوفرة حالياً', { id: toastId });
+        return;
+      }
+
+      localStorage.setItem('art_moment_cart', JSON.stringify(nextCart));
+      toast.success(
+        skippedCount > 0
+          ? `تمت إضافة المنتجات المتوفرة وتجاوز ${skippedCount} غير متوفر`
+          : 'تمت إضافة الطلب إلى السلة',
+        { id: toastId },
+      );
+      navigate('/store/cart');
+    } catch (err) {
+      console.error(err);
+      toast.error('تعذر إعادة الطلب حالياً', { id: toastId });
+    }
+  };
 
   const loadOrders = useCallback(async () => {
     const session = getCustomerSession();
@@ -706,7 +891,14 @@ export default function CustomerOrdersPage() {
             </div>
           </section>
         ) : orderId ? (
-          selectedOrder ? <OrderDetails order={selectedOrder} onReturnSubmitted={loadOrders} /> : null
+          selectedOrder ? (
+            <OrderDetails
+              order={selectedOrder}
+              onReturnSubmitted={loadOrders}
+              onReorder={handleReorder}
+              onDownloadReceipt={downloadReceipt}
+            />
+          ) : null
         ) : (
           <div className="space-y-6">
             <div className="grid sm:grid-cols-3 gap-4">
