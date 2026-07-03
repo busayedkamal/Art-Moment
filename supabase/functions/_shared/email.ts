@@ -10,7 +10,7 @@ type SendEmailInput = {
 
 export async function sendEmail({ to, subject, html, text, tags }: SendEmailInput) {
   const apiKey = Deno.env.get('RESEND_API_KEY');
-  const from = Deno.env.get('RESEND_FROM') || 'Art Moment <onboarding@resend.dev>';
+  const from = Deno.env.get('RESEND_FROM') || 'Art Moment <art.moment26@gmail.com>';
 
   if (!apiKey) {
     throw new Error('RESEND_API_KEY is missing.');

@@ -5,7 +5,7 @@ import {
   ArrowLeft, RotateCcw, Printer, AlertCircle,
   ShoppingBag, Phone, User, StickyNote, Image as ImageIcon,
   RefreshCw, Trash2, Edit3, Save, XCircle, Banknote, Wallet,
-  Mail, Send
+  Mail, Send, History
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -123,6 +123,16 @@ const MESSAGE_TYPE_LABELS = {
   template_general: 'إشعار عام',
 };
 
+const ACTIVITY_ACTION_LABELS = {
+  store_order_updated: 'تعديل الطلب',
+  store_order_deleted: 'حذف الطلب',
+  store_order_status_updated: 'تحديث الحالة',
+  store_order_payment_updated: 'تحديث الدفع',
+  store_order_shipping_updated: 'تحديث الشحن',
+  customer_notification_sent: 'إرسال إشعار',
+  customer_notification_failed: 'فشل إشعار',
+};
+
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
@@ -180,6 +190,10 @@ function getMessageStatusMeta(status) {
   return { label: status || 'مسجل', className: 'bg-amber-50 text-amber-700 border-amber-100' };
 }
 
+function getActivityActionLabel(action) {
+  return ACTIVITY_ACTION_LABELS[action] || action || 'نشاط إداري';
+}
+
 export default function StoreOrdersManagement() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -206,6 +220,8 @@ export default function StoreOrdersManagement() {
   const [templateSending, setTemplateSending] = useState(false);
   const [orderMessageLogs, setOrderMessageLogs] = useState([]);
   const [messageLogsLoading, setMessageLogsLoading] = useState(false);
+  const [orderActivityLogs, setOrderActivityLogs] = useState([]);
+  const [activityLogsLoading, setActivityLogsLoading] = useState(false);
 
   // ── Fetch orders list ──────────────────────────────────────────────────────
 
@@ -305,16 +321,47 @@ export default function StoreOrdersManagement() {
     }
   };
 
+  const fetchOrderActivityLogs = async (order) => {
+    if (!order?.id) {
+      setActivityLogsLoading(false);
+      setOrderActivityLogs([]);
+      return;
+    }
+
+    setActivityLogsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('admin_activity_logs')
+        .select('id, action, actor_email, entity_label, old_values, new_values, metadata, created_at')
+        .eq('entity_type', 'store_order')
+        .eq('entity_id', String(order.id))
+        .order('created_at', { ascending: false })
+        .limit(6);
+      if (error) {
+        if (/admin_activity_logs|schema cache|relation|does not exist/i.test(error.message || '')) return;
+        throw error;
+      }
+      setOrderActivityLogs(data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل تحميل سجل النشاط');
+    } finally {
+      setActivityLogsLoading(false);
+    }
+  };
+
   const openModal = async (order) => {
     setSelectedOrder(order);
     setOrderItems([]);
     setReturnRequests([]);
     setOrderMessageLogs([]);
+    setOrderActivityLogs([]);
     setSelectedTemplateKey(getSuggestedTemplateKey(order));
     setTemplateContext({});
     setItemsLoading(true);
     fetchReturnRequests(order.id);
     fetchOrderMessageLogs(order);
+    fetchOrderActivityLogs(order);
     try {
       const { data, error } = await supabase
         .from('store_order_items')
@@ -348,6 +395,8 @@ export default function StoreOrdersManagement() {
     setTemplateSending(false);
     setOrderMessageLogs([]);
     setMessageLogsLoading(false);
+    setOrderActivityLogs([]);
+    setActivityLogsLoading(false);
   };
 
   // ── WhatsApp tracking notification ────────────────────────────────────────
@@ -469,6 +518,7 @@ export default function StoreOrdersManagement() {
           template_context: templateContext,
         },
       });
+      fetchOrderActivityLogs(selectedOrder);
       toast.success('تم إرسال الإشعار للعميل', { id: toastId });
     } catch (err) {
       console.error(err);
@@ -577,6 +627,7 @@ export default function StoreOrdersManagement() {
         },
         newValues: safeEditForm,
       });
+      fetchOrderActivityLogs(selectedOrder);
       setSelectedOrder(updatedOrder);
       setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
       setIsEditing(false);
@@ -684,6 +735,7 @@ export default function StoreOrdersManagement() {
           total_amount: numericTotal,
         },
       });
+      fetchOrderActivityLogs(selectedOrder);
 
       setOrders(prev => prev.map(o => o.id === selectedOrder.id ? {
         ...o,
@@ -760,6 +812,7 @@ export default function StoreOrdersManagement() {
           status_label: STATUS_CONFIG[newStatus]?.label || newStatus,
         },
       });
+      fetchOrderActivityLogs(selectedOrder);
 
       suggestTemplateNotification(ORDER_TEMPLATE_BY_STATUS[newStatus], {
         order_status: STATUS_CONFIG[newStatus]?.label || newStatus,
@@ -1589,6 +1642,48 @@ export default function StoreOrdersManagement() {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* ── Admin Activity ── */}
+                <div className="bg-white rounded-2xl p-4 border border-[#D9A3AA]/15 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <h3 className="font-bold text-sm text-[#4A4A4A]/60 flex items-center gap-1.5">
+                      <History size={14} className="text-[#C5A059]" /> آخر نشاط إداري
+                    </h3>
+                    {orderActivityLogs.length > 0 && (
+                      <span className="text-[10px] font-bold text-[#4A4A4A]/40">
+                        {orderActivityLogs.length} أحداث
+                      </span>
+                    )}
+                  </div>
+
+                  {activityLogsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <div className="w-5 h-5 rounded-full border-4 border-[#C5A059]/25 border-t-[#C5A059] animate-spin" />
+                    </div>
+                  ) : orderActivityLogs.length === 0 ? (
+                    <p className="rounded-xl bg-[#F8F5F2] p-3 text-center text-xs text-[#4A4A4A]/40">
+                      لا يوجد نشاط إداري مسجل لهذا الطلب بعد.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {orderActivityLogs.slice(0, 4).map((log) => (
+                        <div key={log.id} className="rounded-xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="min-w-0 truncate text-xs font-black text-[#4A4A4A]">
+                              {getActivityActionLabel(log.action)}
+                            </p>
+                            <span className="shrink-0 text-[10px] font-bold text-[#4A4A4A]/45">
+                              {log.created_at ? new Date(log.created_at).toLocaleString('ar-SA') : '—'}
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate text-[10px] font-bold text-[#4A4A4A]/45">
+                            {log.actor_email || 'الحساب الإداري'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* ── FSM Action Buttons ── */}

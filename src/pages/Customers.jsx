@@ -6,7 +6,7 @@ import {
   Search, Users, Wallet, ShoppingBag, Sparkles, Crown,
   Phone, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
   Edit2, Check, Package, Trash2, ArrowUpDown, Mail, ShieldCheck,
-  RotateCcw, AlertTriangle, Tag, Megaphone, Send
+  RotateCcw, AlertTriangle, Tag, Megaphone, Send, History
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
 import { logAdminActivity } from "../utils/adminActivity";
@@ -30,7 +30,55 @@ const MESSAGE_TYPE_LABELS = {
   marketing_unsubscribe: 'إلغاء اشتراك',
   customer_account: 'حساب العميل',
   store_return_request: 'استرجاع',
+  template_order: 'إشعار طلب',
+  template_payment: 'إشعار دفع',
+  template_shipping: 'إشعار شحن',
+  template_return: 'إشعار استرجاع',
+  template_general: 'إشعار عام',
 };
+
+const ACTIVITY_ACTION_LABELS = {
+  customer_details_updated: 'تعديل بيانات العميل',
+  customer_data_deletion_reviewed: 'مراجعة حذف البيانات',
+  customer_wallet_balance_updated: 'تعديل رصيد العميل',
+  customer_deleted: 'حذف عميل',
+  marketing_campaign_sent: 'إرسال حملة تسويقية',
+};
+
+function CustomerActivityPanel({ logs = [], loading = false }) {
+  return (
+    <div className="bg-white/80 border border-[#C5A059]/15 rounded-xl p-3">
+      <div className="mb-2 flex items-center gap-2 text-xs font-black text-[#C5A059]">
+        <History size={13} /> آخر نشاط إداري
+      </div>
+      {loading ? (
+        <div className="flex justify-center py-3">
+          <Loader2 size={16} className="animate-spin text-[#C5A059]" />
+        </div>
+      ) : logs.length === 0 ? (
+        <p className="rounded-lg bg-[#F8F5F2] px-3 py-2 text-center text-[11px] font-bold text-[#4A4A4A]/40">
+          لا يوجد نشاط مسجل لهذا العميل.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {logs.slice(0, 3).map((log) => (
+            <div key={log.id} className="rounded-lg bg-[#F8F5F2] px-3 py-2 text-[11px]">
+              <div className="flex items-center justify-between gap-3">
+                <p className="truncate font-black text-[#4A4A4A]">
+                  {ACTIVITY_ACTION_LABELS[log.action] || log.action}
+                </p>
+                <span className="shrink-0 text-[#4A4A4A]/45">
+                  {log.created_at ? new Date(log.created_at).toLocaleDateString('en-GB') : '—'}
+                </span>
+              </div>
+              <p className="truncate text-[#4A4A4A]/45">{log.actor_email || 'الحساب الإداري'}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 async function getFunctionError(error) {
   try {
@@ -157,6 +205,8 @@ export default function Customers() {
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
   const [reviewingDeletionFor, setReviewingDeletionFor] = useState(null);
+  const [customerActivityLogs, setCustomerActivityLogs] = useState([]);
+  const [customerActivityLoading, setCustomerActivityLoading] = useState(false);
 
   const [editingBalanceId, setEditingBalanceId] = useState(null);
   const [editWalletBalance, setEditWalletBalance] = useState('');
@@ -596,6 +646,7 @@ export default function Customers() {
           has_store_account: Boolean(customer.customerId),
         },
       });
+      fetchCustomerActivityLogs(customer);
 
       toast.success("تم حفظ بيانات العميل بنجاح ✨");
       fetchData();
@@ -657,6 +708,7 @@ export default function Customers() {
           admin_status: customer.adminStatus === 'needs_followup' ? 'active' : (customer.adminStatus || 'active'),
         },
       });
+      fetchCustomerActivityLogs(customer);
 
       toast.success('تم توثيق مراجعة طلب حذف البيانات', { id: toastId });
       fetchData();
@@ -851,6 +903,7 @@ export default function Customers() {
           phone: customer.phone || '',
         },
       });
+      fetchCustomerActivityLogs(customer);
 
       toast.success('تم تعديل الرصيد بنجاح');
       setEditingBalanceId(null);
@@ -862,10 +915,39 @@ export default function Customers() {
     }
   };
 
+  const fetchCustomerActivityLogs = async (customer) => {
+    const ids = Array.from(new Set([customer.customerId, customer.cleanPhone].filter(Boolean).map(String)));
+    setCustomerActivityLogs([]);
+    if (ids.length === 0) return;
+
+    setCustomerActivityLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('admin_activity_logs')
+        .select('id, action, actor_email, entity_label, created_at')
+        .eq('entity_type', 'customer')
+        .in('entity_id', ids)
+        .order('created_at', { ascending: false })
+        .limit(6);
+      if (error) {
+        if (/admin_activity_logs|schema cache|relation|does not exist/i.test(error.message || '')) return;
+        throw error;
+      }
+      setCustomerActivityLogs(data || []);
+    } catch (error) {
+      console.error(error);
+      toast.error('فشل تحميل سجل نشاط العميل');
+    } finally {
+      setCustomerActivityLoading(false);
+    }
+  };
+
   const handleExpandRow = (customer) => {
     if (expandedCustomerId === customer.id) {
       setExpandedCustomerId(null);
       setEditingBalanceId(null);
+      setCustomerActivityLogs([]);
+      setCustomerActivityLoading(false);
     } else {
       setExpandedCustomerId(customer.id);
       setCustomerDetails({
@@ -873,6 +955,7 @@ export default function Customers() {
         notes: customer.adminNotes || customer.notes || '',
         adminStatus: customer.adminStatus || 'active',
       });
+      fetchCustomerActivityLogs(customer);
     }
   };
 
@@ -1488,6 +1571,7 @@ export default function Customers() {
                       </div>
                     </div>
                   )}
+                  <CustomerActivityPanel logs={customerActivityLogs} loading={customerActivityLoading} />
                   {/* العنوان والملاحظات */}
                   <div className="space-y-3">
                     <div>
@@ -1835,6 +1919,10 @@ export default function Customers() {
                                   )}
                                 </div>
                               )}
+
+                              <div className="mt-4">
+                                <CustomerActivityPanel logs={customerActivityLogs} loading={customerActivityLoading} />
+                              </div>
 
                               {/* بطاقة رصيد الباقات المفصّلة */}
                               {customer.packageBalance > 0 && (
