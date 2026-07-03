@@ -16,7 +16,8 @@ import {
   Package,
   ShoppingBag,
   Bell,
-  History
+  History,
+  ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -28,6 +29,7 @@ export default function Layout() {
 
   const navItems = [
     { path: '/app/dashboard', label: 'الرئيسية',   icon: <LayoutDashboard size={20} /> },
+    { path: '/app/tasks', label: 'مهام تحتاج إجراء', icon: <ClipboardList size={20} /> },
     { path: '/app/orders',    label: 'الطلبات',    icon: <ShoppingCart size={20} /> },
     { path: '/app/customers', label: 'العملاء',    icon: <Users size={20} /> },
     { path: '/app/reports',   label: 'التقارير',   icon: <FileBarChart size={20} /> },

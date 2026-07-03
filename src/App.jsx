@@ -20,6 +20,7 @@ import ProductManagement from './pages/ProductManagement.jsx'
 import StoreOrdersManagement from './pages/StoreOrdersManagement.jsx'
 import AdminNotifications from './pages/AdminNotifications.jsx'
 import AdminActivityLog from './pages/AdminActivityLog.jsx'
+import AdminActionTasks from './pages/AdminActionTasks.jsx'
 
 // صفحات لوحة التحكم
 import AdminLoginPage from './pages/AdminLoginPage.jsx'
@@ -90,6 +91,7 @@ function AppRoutes() {
         <Route path="store-orders" element={<StoreOrdersManagement />} />
         <Route path="notifications" element={<AdminNotifications />} />
         <Route path="activity" element={<AdminActivityLog />} />
+        <Route path="tasks" element={<AdminActionTasks />} />
       </Route>
 
       <Route path="*" element={<div className="min-h-screen flex items-center justify-center text-xl font-bold text-slate-400">الصفحة غير موجودة 404</div>} />

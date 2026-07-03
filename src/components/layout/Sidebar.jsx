@@ -12,6 +12,7 @@ import {
   Settings as SettingsIcon,
   Bell,
   History,
+  ClipboardList,
   LogOut,
 } from 'lucide-react';
 
@@ -67,6 +68,7 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-4 py-6 space-y-2">
         <NavItem to="/app" label="الرئيسية" icon={LayoutGrid} />
+        <NavItem to="/app/tasks" label="مهام تحتاج إجراء" icon={ClipboardList} />
         <NavItem to="/app/orders" label="الطلبات" icon={ShoppingCart} />
         <NavItem to="/app/customers" label="العملاء" icon={Users} />
         <NavItem to="/app/reports" label="التقارير" icon={FileText} />
