@@ -110,6 +110,18 @@ const TEMPLATE_CATEGORY_LABELS = {
   return: 'استرجاع',
 };
 
+const MESSAGE_TYPE_LABELS = {
+  marketing_campaign: 'حملة تسويقية',
+  marketing_unsubscribe: 'إلغاء اشتراك',
+  customer_account: 'حساب العميل',
+  store_return_request: 'استرجاع',
+  template_order: 'إشعار طلب',
+  template_payment: 'إشعار دفع',
+  template_shipping: 'إشعار شحن',
+  template_return: 'إشعار استرجاع',
+  template_general: 'إشعار عام',
+};
+
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
@@ -157,6 +169,16 @@ function getSuggestedTemplateKey(order) {
   return ORDER_TEMPLATE_BY_STATUS[order.status] || 'store_order_confirmation';
 }
 
+function getMessageStatusMeta(status) {
+  if (status === 'sent' || status === 'completed') {
+    return { label: 'مرسل', className: 'bg-emerald-50 text-emerald-700 border-emerald-100' };
+  }
+  if (status === 'failed') {
+    return { label: 'فشل', className: 'bg-red-50 text-red-600 border-red-100' };
+  }
+  return { label: status || 'مسجل', className: 'bg-amber-50 text-amber-700 border-amber-100' };
+}
+
 export default function StoreOrdersManagement() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -181,6 +203,8 @@ export default function StoreOrdersManagement() {
   const [selectedTemplateKey, setSelectedTemplateKey] = useState('');
   const [templateContext, setTemplateContext] = useState({});
   const [templateSending, setTemplateSending] = useState(false);
+  const [orderMessageLogs, setOrderMessageLogs] = useState([]);
+  const [messageLogsLoading, setMessageLogsLoading] = useState(false);
 
   // ── Fetch orders list ──────────────────────────────────────────────────────
 
@@ -251,14 +275,45 @@ export default function StoreOrdersManagement() {
     }
   };
 
+  const fetchOrderMessageLogs = async (order) => {
+    const customerId = order?.customer_id || order?.customer?.id;
+    setOrderMessageLogs([]);
+    if (!customerId) {
+      setMessageLogsLoading(false);
+      return;
+    }
+
+    setMessageLogsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('customer_message_logs')
+        .select('id, type, subject, body, status, error_message, sent_at, created_at, metadata')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(8);
+      if (error) {
+        if (/customer_message_logs|schema cache|relation|does not exist/i.test(error.message || '')) return;
+        throw error;
+      }
+      setOrderMessageLogs(data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل تحميل سجل الإشعارات');
+    } finally {
+      setMessageLogsLoading(false);
+    }
+  };
+
   const openModal = async (order) => {
     setSelectedOrder(order);
     setOrderItems([]);
     setReturnRequests([]);
+    setOrderMessageLogs([]);
     setSelectedTemplateKey(getSuggestedTemplateKey(order));
     setTemplateContext({});
     setItemsLoading(true);
     fetchReturnRequests(order.id);
+    fetchOrderMessageLogs(order);
     try {
       const { data, error } = await supabase
         .from('store_order_items')
@@ -290,6 +345,8 @@ export default function StoreOrdersManagement() {
     setSelectedTemplateKey('');
     setTemplateContext({});
     setTemplateSending(false);
+    setOrderMessageLogs([]);
+    setMessageLogsLoading(false);
   };
 
   // ── WhatsApp tracking notification ────────────────────────────────────────
@@ -394,6 +451,7 @@ export default function StoreOrdersManagement() {
         },
       });
       if (error) throw error;
+      await fetchOrderMessageLogs(selectedOrder);
       toast.success('تم إرسال الإشعار للعميل', { id: toastId });
     } catch (err) {
       console.error(err);
@@ -1355,6 +1413,59 @@ export default function StoreOrdersManagement() {
                       لا توجد قوالب مرتبطة بالطلبات مفعلة حالياً.
                     </p>
                   )}
+
+                  <div className="mt-4 border-t border-[#D9A3AA]/10 pt-4">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <p className="text-xs font-black text-[#4A4A4A]/60">سجل إشعارات العميل</p>
+                      {orderMessageLogs.length > 0 && (
+                        <span className="text-[10px] font-bold text-[#4A4A4A]/40">
+                          آخر {Math.min(orderMessageLogs.length, 8)}
+                        </span>
+                      )}
+                    </div>
+
+                    {messageLogsLoading ? (
+                      <div className="flex justify-center py-4">
+                        <div className="w-5 h-5 rounded-full border-4 border-[#D9A3AA]/25 border-t-[#D9A3AA] animate-spin" />
+                      </div>
+                    ) : orderMessageLogs.length === 0 ? (
+                      <p className="rounded-xl bg-[#F8F5F2] p-3 text-center text-xs text-[#4A4A4A]/40">
+                        لا توجد إشعارات مسجلة لهذا العميل حتى الآن.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {orderMessageLogs.slice(0, 4).map((log) => {
+                          const statusMeta = getMessageStatusMeta(log.status);
+                          return (
+                            <div key={log.id} className="rounded-xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="min-w-0 truncate text-xs font-black text-[#4A4A4A]">
+                                  {log.subject || MESSAGE_TYPE_LABELS[log.type] || log.type}
+                                </p>
+                                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${statusMeta.className}`}>
+                                  {statusMeta.label}
+                                </span>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-bold text-[#4A4A4A]/45">
+                                <span>{MESSAGE_TYPE_LABELS[log.type] || log.type}</span>
+                                <span>•</span>
+                                <span>
+                                  {log.sent_at || log.created_at
+                                    ? new Date(log.sent_at || log.created_at).toLocaleString('ar-SA')
+                                    : 'بدون تاريخ'}
+                                </span>
+                              </div>
+                              {log.error_message && (
+                                <p className="mt-2 rounded-lg bg-red-50 px-2 py-1 text-[10px] font-bold text-red-600">
+                                  {log.error_message}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* ── FSM Action Buttons ── */}
