@@ -10,6 +10,7 @@ import {
   FileText,
   Receipt,
   Settings as SettingsIcon,
+  Bell,
   LogOut,
 } from 'lucide-react';
 
@@ -69,6 +70,7 @@ export default function Sidebar() {
         <NavItem to="/app/customers" label="العملاء" icon={Users} />
         <NavItem to="/app/reports" label="التقارير" icon={FileText} />
         <NavItem to="/app/expenses" label="المصروفات" icon={Receipt} />
+        <NavItem to="/app/notifications" label="الإشعارات" icon={Bell} />
         <NavItem to="/app/settings" label="الإعدادات" icon={SettingsIcon} />
       </nav>
 
