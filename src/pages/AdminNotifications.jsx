@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import { logAdminActivity } from '../utils/adminActivity';
 
 const MESSAGE_TYPE_LABELS = {
   marketing_campaign: 'حملة تسويقية',
@@ -207,10 +208,47 @@ export default function AdminNotifications() {
       });
 
       if (error) throw new Error(await getFunctionError(error));
+      await logAdminActivity({
+        action: 'customer_notification_resent',
+        entityType: 'customer_message_log',
+        entityId: log.id,
+        entityLabel: log.subject || MESSAGE_TYPE_LABELS[log.type] || 'إشعار عميل',
+        oldValues: {
+          status: log.status,
+          error_message: log.error_message || '',
+        },
+        newValues: {
+          template_key: metadata.templateKey,
+          customer_id: log.customer_id,
+        },
+        metadata: {
+          source: 'admin_notifications',
+          original_log_id: log.id,
+          variables: metadata.variables || {},
+        },
+      });
       toast.success('تمت إعادة إرسال الإشعار', { id: toastId });
       fetchLogs();
     } catch (error) {
       console.error(error);
+      await logAdminActivity({
+        action: 'customer_notification_retry_failed',
+        entityType: 'customer_message_log',
+        entityId: log.id,
+        entityLabel: log.subject || MESSAGE_TYPE_LABELS[log.type] || 'إشعار عميل',
+        oldValues: {
+          status: log.status,
+          error_message: log.error_message || '',
+        },
+        newValues: {
+          template_key: metadata.templateKey || '',
+          customer_id: log.customer_id || '',
+        },
+        metadata: {
+          source: 'admin_notifications',
+          retry_error: error.message || 'retry_failed',
+        },
+      });
       toast.error(error.message || 'تعذرت إعادة الإرسال', { id: toastId });
     } finally {
       setRetryingId(null);

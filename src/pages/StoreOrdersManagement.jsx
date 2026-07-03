@@ -16,6 +16,7 @@ import {
   STORE_RETURN_TRANSITIONS,
   STORE_PAYMENT_STATUSES,
 } from '../utils/storeOrderStatus';
+import { logAdminActivity } from '../utils/adminActivity';
 
 // ─── FSM Configuration ────────────────────────────────────────────────────────
 
@@ -452,10 +453,40 @@ export default function StoreOrdersManagement() {
       });
       if (error) throw error;
       await fetchOrderMessageLogs(selectedOrder);
+      await logAdminActivity({
+        action: 'customer_notification_sent',
+        entityType: 'store_order',
+        entityId: selectedOrder.id,
+        entityLabel: `طلب #${String(selectedOrder.short_id || selectedOrder.id).slice(0, 6)}`,
+        newValues: {
+          template_key: selectedTemplateKey,
+          template_name: selectedMessageTemplate?.name || '',
+          customer_id: customerId || null,
+          customer_name: selectedOrder.customer_name || '',
+        },
+        metadata: {
+          source: 'store_order_details',
+          template_context: templateContext,
+        },
+      });
       toast.success('تم إرسال الإشعار للعميل', { id: toastId });
     } catch (err) {
       console.error(err);
       const message = await getFunctionErrorMessage(err);
+      await logAdminActivity({
+        action: 'customer_notification_failed',
+        entityType: 'store_order',
+        entityId: selectedOrder.id,
+        entityLabel: `طلب #${String(selectedOrder.short_id || selectedOrder.id).slice(0, 6)}`,
+        newValues: {
+          template_key: selectedTemplateKey,
+          customer_id: customerId || null,
+        },
+        metadata: {
+          source: 'store_order_details',
+          error_message: message,
+        },
+      });
       if (/missing_customer_email/i.test(message)) {
         toast.error('لا يوجد بريد إلكتروني محفوظ لهذا العميل', { id: toastId });
       } else if (/template_not_found/i.test(message)) {
@@ -479,6 +510,20 @@ export default function StoreOrdersManagement() {
     try {
       const { error } = await supabase.from('store_orders').delete().eq('id', selectedOrder.id);
       if (error) throw error;
+      await logAdminActivity({
+        action: 'store_order_deleted',
+        entityType: 'store_order',
+        entityId: selectedOrder.id,
+        entityLabel: `طلب #${String(selectedOrder.short_id || selectedOrder.id).slice(0, 6)}`,
+        oldValues: {
+          status: selectedOrder.status,
+          payment_status: selectedOrder.payment_status,
+          total_amount: selectedOrder.total_amount,
+          delivery_fee: selectedOrder.delivery_fee,
+          customer_name: selectedOrder.customer_name,
+          phone: selectedOrder.phone,
+        },
+      });
       setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
       toast.success('تم حذف الطلب بنجاح', { id: toastId });
       closeModal();
@@ -516,6 +561,22 @@ export default function StoreOrdersManagement() {
         .eq('id', selectedOrder.id);
       if (error) throw error;
       const updatedOrder = { ...selectedOrder, ...safeEditForm };
+      await logAdminActivity({
+        action: 'store_order_updated',
+        entityType: 'store_order',
+        entityId: selectedOrder.id,
+        entityLabel: `طلب #${String(selectedOrder.short_id || selectedOrder.id).slice(0, 6)}`,
+        oldValues: {
+          customer_name: selectedOrder.customer_name || '',
+          phone: selectedOrder.phone || '',
+          total_amount: selectedOrder.total_amount || 0,
+          city: selectedOrder.city || '',
+          district: selectedOrder.district || '',
+          street: selectedOrder.street || '',
+          notes: selectedOrder.notes || '',
+        },
+        newValues: safeEditForm,
+      });
       setSelectedOrder(updatedOrder);
       setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
       setIsEditing(false);
@@ -603,6 +664,27 @@ export default function StoreOrdersManagement() {
         toast.success('تم تحديث المدفوعات بنجاح');
       }
 
+      await logAdminActivity({
+        action: 'store_order_payment_updated',
+        entityType: 'store_order',
+        entityId: selectedOrder.id,
+        entityLabel: `طلب #${String(selectedOrder.short_id || selectedOrder.id).slice(0, 6)}`,
+        oldValues: {
+          amount_paid: Number(selectedOrder.amount_paid || 0),
+          payment_status: selectedOrder.payment_status || 'pending_payment',
+          refunded_amount: Number(selectedOrder.refunded_amount || 0),
+        },
+        newValues: {
+          amount_paid: finalPaid,
+          payment_status: finalPaymentStatus,
+          refunded_amount: finalRefunded,
+        },
+        metadata: {
+          excess_wallet_transfer: excessAmount,
+          total_amount: numericTotal,
+        },
+      });
+
       setOrders(prev => prev.map(o => o.id === selectedOrder.id ? {
         ...o,
         amount_paid: finalPaid,
@@ -658,6 +740,26 @@ export default function StoreOrdersManagement() {
       if (newStatus === 'shipped' && trackingNumber.trim()) {
         await sendTrackingWhatsApp(updated, trackingNumber.trim(), courierName);
       }
+
+      await logAdminActivity({
+        action: newStatus === 'shipped' ? 'store_order_shipping_updated' : 'store_order_status_updated',
+        entityType: 'store_order',
+        entityId: selectedOrder.id,
+        entityLabel: `طلب #${String(selectedOrder.short_id || selectedOrder.id).slice(0, 6)}`,
+        oldValues: {
+          status: selectedOrder.status,
+          tracking_number: selectedOrder.tracking_number || null,
+          courier_name: selectedOrder.courier_name || null,
+        },
+        newValues: {
+          status: updated.status,
+          tracking_number: updated.tracking_number || null,
+          courier_name: updated.courier_name || null,
+        },
+        metadata: {
+          status_label: STATUS_CONFIG[newStatus]?.label || newStatus,
+        },
+      });
 
       suggestTemplateNotification(ORDER_TEMPLATE_BY_STATUS[newStatus], {
         order_status: STATUS_CONFIG[newStatus]?.label || newStatus,
@@ -727,6 +829,27 @@ export default function StoreOrdersManagement() {
         setSelectedOrder(prev => ({ ...prev, ...orderPatch }));
         setOrders(prev => prev.map(order => order.id === selectedOrder.id ? { ...order, ...orderPatch } : order));
       }
+
+      await logAdminActivity({
+        action: newStatus === 'refunded' ? 'store_return_refund_updated' : 'store_return_status_updated',
+        entityType: 'store_return_request',
+        entityId: returnRequest.id,
+        entityLabel: `استرجاع #${String(returnRequest.id).slice(0, 8)}`,
+        oldValues: {
+          status: returnRequest.status,
+          approved_refund_amount: Number(returnRequest.approved_refund_amount || 0),
+          admin_note: returnRequest.admin_note || '',
+        },
+        newValues: {
+          status: updatedRequest?.status || newStatus,
+          approved_refund_amount: updatedRequest?.approvedRefundAmount ?? approvedRefundAmount,
+          admin_note: updatedRequest?.adminNote ?? adminNote,
+        },
+        metadata: {
+          store_order_id: selectedOrder.id,
+          order_patch: orderPatch,
+        },
+      });
 
       suggestTemplateNotification('return_status_update', {
         return_number: String(returnRequest.id).slice(0, 8),

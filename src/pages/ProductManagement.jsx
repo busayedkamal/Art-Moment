@@ -6,6 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import fallbackLogo from '../assets/logo.png';
+import { logAdminActivity } from '../utils/adminActivity';
 
 // ─── إعدادات الفئات ──────────────────────────────────────────────
 const CAT_CONFIG = {
@@ -50,6 +51,19 @@ const initialForm = {
   name: '', description: '', price: '', category: 'albums',
   image: null, hoverImage: null, sortOrder: 0, inStock: true, stockQuantity: 0, isBestSeller: false,
 };
+
+const auditProduct = (product = {}) => ({
+  name: product.name || '',
+  description: product.description || '',
+  price: Number(product.price || 0),
+  category: product.category || '',
+  sort_order: Number(product.sortOrder ?? product.sort_order ?? 0),
+  in_stock: product.inStock ?? product.in_stock ?? true,
+  stock_quantity: Number(product.stockQuantity ?? product.stock_quantity ?? 0),
+  is_best_seller: product.isBestSeller ?? product.is_best_seller ?? false,
+  has_image: Boolean(product.image),
+  has_hover_image: Boolean(product.hoverImage ?? product.hover_image),
+});
 
 export default function ProductManagement() {
   const [products,       setProducts]       = useState([]);
@@ -137,17 +151,35 @@ export default function ProductManagement() {
     setIsSaving(true);
     try {
       if (isEdit) {
+        const previousProduct = products.find(p => p.id === editId);
         const { error } = await supabase
           .from('products')
           .update(toDb(form))
           .eq('id', editId);
         if (error) throw error;
+        await logAdminActivity({
+          action: 'product_updated',
+          entityType: 'product',
+          entityId: editId,
+          entityLabel: form.name,
+          oldValues: auditProduct(previousProduct),
+          newValues: auditProduct(form),
+        });
         toast.success('تم التعديل بنجاح');
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('products')
-          .insert(toDb(form));
+          .insert(toDb(form))
+          .select('id')
+          .single();
         if (error) throw error;
+        await logAdminActivity({
+          action: 'product_created',
+          entityType: 'product',
+          entityId: data?.id,
+          entityLabel: form.name,
+          newValues: auditProduct(form),
+        });
         toast.success('تم إضافة المنتج بنجاح');
       }
       setIsModalOpen(false);
@@ -172,6 +204,15 @@ export default function ProductManagement() {
       toast.error('فشل في مزامنة المخزون');
       setProducts(ps => ps.map(p => p.id === product.id ? { ...p, inStock: product.inStock } : p));
     } else {
+      await logAdminActivity({
+        action: 'product_stock_status_updated',
+        entityType: 'product',
+        entityId: product.id,
+        entityLabel: product.name,
+        oldValues: { in_stock: product.inStock },
+        newValues: { in_stock: newStock },
+        metadata: { stock_quantity: product.stockQuantity },
+      });
       toast.success(newStock ? 'تم إعادة إتاحة المنتج' : 'تم تغيير الحالة إلى نفد');
     }
   };
@@ -186,6 +227,13 @@ export default function ProductManagement() {
         .delete()
         .eq('id', deleteTarget.id);
       if (error) throw error;
+      await logAdminActivity({
+        action: 'product_deleted',
+        entityType: 'product',
+        entityId: deleteTarget.id,
+        entityLabel: deleteTarget.name,
+        oldValues: auditProduct(deleteTarget),
+      });
       toast.success('تم حذف المنتج نهائياً');
       setIsDeleteModal(false);
       fetchProducts();

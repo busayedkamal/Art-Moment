@@ -9,6 +9,7 @@ import {
   RotateCcw, AlertTriangle, Tag, Megaphone, Send
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
+import { logAdminActivity } from "../utils/adminActivity";
 
 const CRM_STATUS_OPTIONS = [
   { value: 'active', label: 'نشط' },
@@ -574,6 +575,28 @@ export default function Customers() {
         if (customerError) throw customerError;
       }
 
+      await logAdminActivity({
+        action: 'customer_details_updated',
+        entityType: 'customer',
+        entityId: customer.customerId || customer.cleanPhone,
+        entityLabel: customer.name || customer.phone || 'عميل',
+        oldValues: {
+          address: customer.address || '',
+          notes: customer.adminNotes || customer.notes || '',
+          admin_status: customer.adminStatus || 'active',
+        },
+        newValues: {
+          address: customerDetails.address || '',
+          notes: customerDetails.notes || '',
+          admin_status: customerDetails.adminStatus || 'active',
+        },
+        metadata: {
+          phone: customer.phone || '',
+          clean_phone: customer.cleanPhone || '',
+          has_store_account: Boolean(customer.customerId),
+        },
+      });
+
       toast.success("تم حفظ بيانات العميل بنجاح ✨");
       fetchData();
     } catch (error) {
@@ -616,6 +639,24 @@ export default function Customers() {
         .eq('id', customer.customerId);
 
       if (error) throw error;
+
+      await logAdminActivity({
+        action: 'customer_data_deletion_reviewed',
+        entityType: 'customer',
+        entityId: customer.customerId,
+        entityLabel: customer.name || customer.phone || 'عميل',
+        oldValues: {
+          data_deletion_requested_at: customer.dataDeletionRequestedAt || null,
+          admin_status: customer.adminStatus || 'active',
+          admin_notes: existingNotes,
+        },
+        newValues: {
+          data_deletion_requested_at: null,
+          data_deletion_reviewed_at: reviewedAt,
+          data_deletion_review_note: note,
+          admin_status: customer.adminStatus === 'needs_followup' ? 'active' : (customer.adminStatus || 'active'),
+        },
+      });
 
       toast.success('تم توثيق مراجعة طلب حذف البيانات', { id: toastId });
       fetchData();
@@ -669,6 +710,22 @@ export default function Customers() {
       setCampaignResult(data);
       setCampaignForm({ subject: '', title: '', message: '' });
       setSelectedMarketingTemplateId('');
+      await logAdminActivity({
+        action: 'marketing_campaign_sent',
+        entityType: 'customer_message',
+        entityLabel: subject,
+        newValues: {
+          subject,
+          title,
+          recipients_count: customerIds.length,
+          sent: data?.sent || 0,
+          failed: data?.failed || 0,
+        },
+        metadata: {
+          campaign_id: data?.campaignId || null,
+          selected_template_id: selectedMarketingTemplateId || null,
+        },
+      });
       toast.success(`تم إرسال ${data?.sent || 0} رسالة`, { id: toastId });
       fetchData();
     } catch (error) {
@@ -718,6 +775,20 @@ export default function Customers() {
         }
       }
 
+      await logAdminActivity({
+        action: 'customer_deleted',
+        entityType: 'customer',
+        entityId: customer.customerId || customer.cleanPhone,
+        entityLabel: customer.name || customer.phone || 'عميل',
+        oldValues: {
+          phone: customer.phone || '',
+          clean_phone: customer.cleanPhone || '',
+          debt: Number(customer.debt || 0),
+          order_count: customer.orderIds?.size || 0,
+          wallet_balance: Number(customer.walletBalance || 0),
+        },
+      });
+
       toast.success('تم حذف العميل وجميع سجلاته بنجاح', { id: toastId });
       setExpandedCustomerId(null);
       fetchData();
@@ -765,6 +836,20 @@ export default function Customers() {
       await supabase.from('wallet_transactions').insert({
         wallet_id: walletId, type: 'manual_adjustment',
         amount_value: Math.abs(diff).toString(), points: 0
+      });
+
+      await logAdminActivity({
+        action: 'customer_wallet_balance_updated',
+        entityType: 'customer',
+        entityId: customer.customerId || customer.cleanPhone,
+        entityLabel: customer.name || customer.phone || 'عميل',
+        oldValues: { wallet_balance: oldBalance },
+        newValues: { wallet_balance: newBalance },
+        metadata: {
+          wallet_id: walletId,
+          diff,
+          phone: customer.phone || '',
+        },
       });
 
       toast.success('تم تعديل الرصيد بنجاح');
