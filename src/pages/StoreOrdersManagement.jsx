@@ -1,5 +1,6 @@
 // src/pages/StoreOrdersManagement.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Eye, Clock, CheckCircle, Package, Truck, X,
   ArrowLeft, RotateCcw, Printer, AlertCircle,
@@ -195,6 +196,7 @@ function getActivityActionLabel(action) {
 }
 
 export default function StoreOrdersManagement() {
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -222,6 +224,9 @@ export default function StoreOrdersManagement() {
   const [messageLogsLoading, setMessageLogsLoading] = useState(false);
   const [orderActivityLogs, setOrderActivityLogs] = useState([]);
   const [activityLogsLoading, setActivityLogsLoading] = useState(false);
+  const openedOrderParamRef = useRef('');
+  const openModalRef = useRef(null);
+  const focusedOrderId = searchParams.get('order') || '';
 
   // ── Fetch orders list ──────────────────────────────────────────────────────
 
@@ -377,6 +382,8 @@ export default function StoreOrdersManagement() {
     }
   };
 
+  openModalRef.current = openModal;
+
   const closeModal = () => {
     setSelectedOrder(null);
     setOrderItems([]);
@@ -398,6 +405,21 @@ export default function StoreOrdersManagement() {
     setOrderActivityLogs([]);
     setActivityLogsLoading(false);
   };
+
+  useEffect(() => {
+    if (!focusedOrderId || loading || openedOrderParamRef.current === focusedOrderId) return;
+
+    const focusedOrder = orders.find((order) => {
+      const id = String(order.id || '');
+      const shortId = String(order.short_id || '');
+      return id === focusedOrderId || shortId === focusedOrderId || id.slice(0, 6) === focusedOrderId;
+    });
+
+    if (focusedOrder) {
+      openedOrderParamRef.current = focusedOrderId;
+      openModalRef.current?.(focusedOrder);
+    }
+  }, [focusedOrderId, loading, orders]);
 
   // ── WhatsApp tracking notification ────────────────────────────────────────
 

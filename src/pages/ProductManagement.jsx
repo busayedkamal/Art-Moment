@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus, ExternalLink, Image as ImageIcon, Trash2, Edit3,
   Check, X, Loader2, Package, Frame, StickyNote, UploadCloud, Star
@@ -66,6 +67,7 @@ const auditProduct = (product = {}) => ({
 });
 
 export default function ProductManagement() {
+  const [searchParams] = useSearchParams();
   const [products,       setProducts]       = useState([]);
   const [isLoading,      setIsLoading]      = useState(true);
   const [catFilter,      setCatFilter]      = useState('all');
@@ -81,6 +83,8 @@ export default function ProductManagement() {
 
   const fileRef  = useRef(null);
   const hoverRef = useRef(null);
+  const openedProductParamRef = useRef('');
+  const focusedProductId = searchParams.get('product') || '';
 
   /* ── جلب المنتجات من Supabase ── */
   const fetchProducts = async () => {
@@ -139,6 +143,20 @@ export default function ProductManagement() {
   /* ── CRUD ── */
   const openAdd  = ()        => { setForm(initialForm); setIsEdit(false); setIsModalOpen(true); };
   const openEdit = (product) => { setForm({ ...product }); setEditId(product.id); setIsEdit(true); setIsModalOpen(true); };
+
+  useEffect(() => {
+    if (!focusedProductId || isLoading || openedProductParamRef.current === focusedProductId) return;
+
+    const focusedProduct = products.find((product) => String(product.id) === focusedProductId);
+    if (focusedProduct) {
+      openedProductParamRef.current = focusedProductId;
+      setCatFilter('all');
+      setForm({ ...focusedProduct });
+      setEditId(focusedProduct.id);
+      setIsEdit(true);
+      setIsModalOpen(true);
+    }
+  }, [focusedProductId, isLoading, products]);
 
   const saveProduct = async () => {
     if (!form.name || !form.price) return toast.error('يرجى تعبئة الحقول المطلوبة');

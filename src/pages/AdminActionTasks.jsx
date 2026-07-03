@@ -5,16 +5,20 @@ import {
   Bell,
   ClipboardList,
   CreditCard,
+  Edit3,
   ExternalLink,
+  Loader2,
   Package,
   RefreshCw,
   RotateCcw,
   Search,
+  Send,
   ShieldAlert,
   Truck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import { logAdminActivity } from '../utils/adminActivity';
 import {
   getPaymentState,
   getStoreOrderStatus,
@@ -116,6 +120,19 @@ function hasTrackingNumber(order) {
   return Boolean(String(order?.tracking_number || '').trim());
 }
 
+function getMetadata(log) {
+  return log?.metadata && typeof log.metadata === 'object' ? log.metadata : {};
+}
+
+async function getFunctionError(error) {
+  try {
+    const body = await error?.context?.clone?.().json?.();
+    return body?.error || error?.message;
+  } catch {
+    return error?.message;
+  }
+}
+
 async function safeQuery(label, queryBuilder) {
   try {
     const { data, error } = await queryBuilder;
@@ -146,7 +163,9 @@ function buildPaymentTasks(orders) {
         description: payment.description,
         statusLabel: payment.label,
         statusTone: payment.tone,
-        href: '/app/store-orders',
+        href: `/app/store-orders?order=${encodeURIComponent(order.id)}&task=payment`,
+        actionLabel: 'افتح الطلب',
+        actionIcon: ExternalLink,
         createdAt: order.created_at,
         updatedAt: order.updated_at,
         meta: [
@@ -177,7 +196,9 @@ function buildShippingTasks(orders) {
           : 'الطلب جاهز وينتظر تجهيز بيانات الشحن أو تسليمه.',
         statusLabel: orderStatus.label,
         statusTone: orderStatus.tone,
-        href: '/app/store-orders',
+        href: `/app/store-orders?order=${encodeURIComponent(order.id)}&task=shipping`,
+        actionLabel: missingTracking ? 'إضافة رقم التتبع' : 'افتح الشحن',
+        actionIcon: Truck,
         createdAt: order.created_at,
         updatedAt: order.updated_at,
         meta: [
@@ -203,7 +224,11 @@ function buildReturnTasks(returnRequests) {
         description: request.reason || returnStatus.description,
         statusLabel: returnStatus.label,
         statusTone: returnStatus.tone,
-        href: '/app/store-orders',
+        href: request.store_order_id
+          ? `/app/store-orders?order=${encodeURIComponent(request.store_order_id)}&return=${encodeURIComponent(request.id)}`
+          : '/app/store-orders',
+        actionLabel: 'راجع الاسترجاع',
+        actionIcon: RotateCcw,
         createdAt: request.created_at,
         updatedAt: request.updated_at,
         meta: [
@@ -219,24 +244,42 @@ function buildReturnTasks(returnRequests) {
 function buildNotificationTasks(logs) {
   return logs
     .filter((log) => log.status === 'failed')
-    .map((log) => ({
-      id: `notification-${log.id}`,
-      category: 'notifications',
-      priority: 'high',
-      title: log.subject || 'إشعار فشل إرساله',
-      description: log.error_message || 'توجد رسالة عميل فاشلة وتحتاج إعادة إرسال أو مراجعة القالب.',
-      statusLabel: 'فشل الإرسال',
-      statusTone: 'bg-red-50 text-red-600 border-red-100',
-      href: '/app/notifications',
-      createdAt: log.created_at,
-      updatedAt: log.sent_at,
-      meta: [
-        { label: 'النوع', value: log.type || 'غير محدد' },
-        { label: 'العميل', value: log.customer_id ? `#${String(log.customer_id).slice(0, 6)}` : 'غير محدد' },
-        { label: 'التاريخ', value: formatDate(log.created_at) },
-      ],
-      searchable: [log.subject, log.body, log.error_message, log.type, log.customer_id].join(' '),
-    }));
+    .map((log) => {
+      const metadata = getMetadata(log);
+      const canRetry = Boolean(metadata.templateKey && log.customer_id);
+
+      return {
+        id: `notification-${log.id}`,
+        category: 'notifications',
+        priority: 'high',
+        title: log.subject || 'إشعار فشل إرساله',
+        description: log.error_message || 'توجد رسالة عميل فاشلة وتحتاج إعادة إرسال أو مراجعة القالب.',
+        statusLabel: canRetry ? 'قابل للإرسال' : 'راجع السجل',
+        statusTone: canRetry ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-red-50 text-red-600 border-red-100',
+        href: `/app/notifications?log=${encodeURIComponent(log.id)}&status=failed`,
+        actionLabel: 'فتح السجل',
+        actionIcon: Bell,
+        directAction: canRetry ? {
+          type: 'retry_notification',
+          label: 'أعد الإرسال',
+          logId: log.id,
+          templateKey: metadata.templateKey,
+          customerId: log.customer_id,
+          variables: metadata.variables || {},
+          subject: log.subject || 'إشعار عميل',
+          messageType: log.type || 'template_general',
+          errorMessage: log.error_message || '',
+        } : null,
+        createdAt: log.created_at,
+        updatedAt: log.sent_at,
+        meta: [
+          { label: 'النوع', value: log.type || 'غير محدد' },
+          { label: 'العميل', value: log.customer_id ? `#${String(log.customer_id).slice(0, 6)}` : 'غير محدد' },
+          { label: 'التاريخ', value: formatDate(log.created_at) },
+        ],
+        searchable: [log.subject, log.body, log.error_message, log.type, log.customer_id].join(' '),
+      };
+    });
 }
 
 function buildInventoryTasks(products) {
@@ -255,7 +298,9 @@ function buildInventoryTasks(products) {
           : `الكمية المتبقية ${quantity} فقط، يفضل تحديث المخزون قريباً.`,
         statusLabel: unavailable ? 'نفد المخزون' : 'مخزون منخفض',
         statusTone: unavailable ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-700 border-amber-100',
-        href: '/app/products',
+        href: `/app/products?product=${encodeURIComponent(product.id)}`,
+        actionLabel: 'حدّث المخزون',
+        actionIcon: Edit3,
         createdAt: product.created_at,
         updatedAt: product.updated_at,
         meta: [
@@ -291,10 +336,12 @@ function StatCard({ label, value, icon: Icon, tone = 'neutral' }) {
   );
 }
 
-function TaskCard({ task }) {
+function TaskCard({ task, onRetryNotification, retryingTaskId }) {
   const category = CATEGORY_CONFIG[task.category] || CATEGORY_CONFIG.payment;
   const priority = PRIORITY_META[task.priority] || PRIORITY_META.low;
   const CategoryIcon = category.icon;
+  const ActionIcon = task.actionIcon || ExternalLink;
+  const isRetrying = retryingTaskId === task.id;
 
   return (
     <article className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 shadow-sm">
@@ -328,12 +375,25 @@ function TaskCard({ task }) {
           </div>
         </div>
 
-        <Link
-          to={task.href}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#4A4A4A] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#C5A059] transition-colors"
-        >
-          فتح المعالجة <ExternalLink size={15} />
-        </Link>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
+          {task.directAction?.type === 'retry_notification' && (
+            <button
+              type="button"
+              onClick={() => onRetryNotification(task)}
+              disabled={isRetrying}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#D9A3AA] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#C5A059] disabled:opacity-60 transition-colors"
+            >
+              {isRetrying ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              {task.directAction.label}
+            </button>
+          )}
+          <Link
+            to={task.href}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#4A4A4A] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#C5A059] transition-colors"
+          >
+            {task.actionLabel || 'فتح المعالجة'} <ActionIcon size={15} />
+          </Link>
+        </div>
       </div>
     </article>
   );
@@ -344,6 +404,7 @@ export default function AdminActionTasks() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [retryingTaskId, setRetryingTaskId] = useState(null);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -361,7 +422,7 @@ export default function AdminActionTasks() {
           .limit(150)),
         safeQuery('message logs', supabase
           .from('customer_message_logs')
-          .select('id, customer_id, type, subject, body, status, error_message, sent_at, created_at')
+          .select('id, customer_id, type, subject, body, status, error_message, metadata, sent_at, created_at')
           .eq('status', 'failed')
           .order('created_at', { ascending: false })
           .limit(150)),
@@ -392,6 +453,78 @@ export default function AdminActionTasks() {
       setLoading(false);
     }
   }, []);
+
+  const retryNotification = async (task) => {
+    const action = task.directAction;
+    if (!action?.templateKey || !action?.customerId) {
+      toast.error('هذه الرسالة غير مرتبطة بقالب قابل للإرسال');
+      return;
+    }
+
+    setRetryingTaskId(task.id);
+    const toastId = toast.loading('جاري إعادة إرسال الإشعار...');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const { error } = await supabase.functions.invoke('customer-marketing', {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: {
+          action: 'send_template',
+          templateKey: action.templateKey,
+          customerId: action.customerId,
+          variables: action.variables || {},
+        },
+      });
+
+      if (error) throw new Error(await getFunctionError(error));
+
+      await logAdminActivity({
+        action: 'customer_notification_resent',
+        entityType: 'customer_message_log',
+        entityId: action.logId,
+        entityLabel: action.subject || 'إشعار عميل',
+        oldValues: {
+          status: 'failed',
+          error_message: action.errorMessage || '',
+        },
+        newValues: {
+          template_key: action.templateKey,
+          customer_id: action.customerId,
+        },
+        metadata: {
+          source: 'admin_action_tasks',
+          original_log_id: action.logId,
+          variables: action.variables || {},
+        },
+      });
+
+      toast.success('تمت إعادة إرسال الإشعار', { id: toastId });
+      fetchTasks();
+    } catch (error) {
+      console.error(error);
+      await logAdminActivity({
+        action: 'customer_notification_retry_failed',
+        entityType: 'customer_message_log',
+        entityId: action.logId,
+        entityLabel: action.subject || 'إشعار عميل',
+        oldValues: {
+          status: 'failed',
+          error_message: action.errorMessage || '',
+        },
+        newValues: {
+          template_key: action.templateKey || '',
+          customer_id: action.customerId || '',
+        },
+        metadata: {
+          source: 'admin_action_tasks',
+          retry_error: error.message || 'retry_failed',
+        },
+      });
+      toast.error(error.message || 'تعذرت إعادة الإرسال', { id: toastId });
+    } finally {
+      setRetryingTaskId(null);
+    }
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -506,7 +639,12 @@ export default function AdminActionTasks() {
       ) : (
         <div className="space-y-3">
           {filteredTasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              onRetryNotification={retryNotification}
+              retryingTaskId={retryingTaskId}
+            />
           ))}
         </div>
       )}
