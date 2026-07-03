@@ -1,19 +1,29 @@
 // src/pages/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { 
   ShoppingBag, Banknote, Clock, Loader2, TrendingDown, 
-  AlertCircle, TrendingUp, ChevronRight, User, Calendar, FileText, MessageCircle, Wallet 
+  AlertCircle, TrendingUp, ChevronRight, Calendar, FileText, MessageCircle, Wallet,
+  ClipboardList, ShieldAlert, CreditCard, RotateCcw, Truck, Bell, Package, ArrowUpLeft
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import RiyalSign from '../components/RiyalSign';
+import { fetchAdminActionTasks, summarizeAdminActionTasks } from '../utils/adminActionTasks';
+
+const EMPTY_ACTION_TASK_STATS = {
+  total: 0,
+  high: 0,
+  payment: 0,
+  returns: 0,
+  shipping: 0,
+  notifications: 0,
+  inventory: 0,
+};
 
 export default function Dashboard() {
-  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalRevenue: 0,
@@ -26,6 +36,7 @@ export default function Dashboard() {
   });
   const [chartData, setChartData] = useState([]);
   const [recentNewOrders, setRecentNewOrders] = useState([]);
+  const [actionTaskStats, setActionTaskStats] = useState(EMPTY_ACTION_TASK_STATS);
   
   // حالة جديدة للمديونيات المستحقة (تم التسليم)
   const [unpaidDelivered, setUnpaidDelivered] = useState([]); 
@@ -85,6 +96,14 @@ export default function Dashboard() {
 
         if (walletsError) throw walletsError;
         if (transactionsError) throw transactionsError;
+
+        try {
+          const actionTasks = await fetchAdminActionTasks();
+          setActionTaskStats(summarizeAdminActionTasks(actionTasks));
+        } catch (taskError) {
+          console.error('Error loading action tasks:', taskError);
+          setActionTaskStats(EMPTY_ACTION_TASK_STATS);
+        }
 
         // دالة تطبيع رقم الهاتف (نفس منطق صفحة العملاء)
         const normalizePhone = (raw) => {
@@ -208,6 +227,44 @@ export default function Dashboard() {
   );
 
   const realNetProfit = stats.totalCashReceived + (stats.packagesTotal || 0) - stats.totalExpenses;
+  const hasUrgentActionTasks = actionTaskStats.high > 0;
+  const actionTaskShortcuts = [
+    {
+      label: 'الدفع',
+      value: actionTaskStats.payment,
+      icon: CreditCard,
+      href: '/app/tasks?filter=payment',
+      tone: 'bg-red-50 text-red-600 border-red-100',
+    },
+    {
+      label: 'الاسترجاع',
+      value: actionTaskStats.returns,
+      icon: RotateCcw,
+      href: '/app/tasks?filter=returns',
+      tone: 'bg-orange-50 text-orange-700 border-orange-100',
+    },
+    {
+      label: 'الشحن',
+      value: actionTaskStats.shipping,
+      icon: Truck,
+      href: '/app/tasks?filter=shipping',
+      tone: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+    },
+    {
+      label: 'الإشعارات',
+      value: actionTaskStats.notifications,
+      icon: Bell,
+      href: '/app/tasks?filter=notifications',
+      tone: 'bg-rose-50 text-rose-700 border-rose-100',
+    },
+    {
+      label: 'المخزون',
+      value: actionTaskStats.inventory,
+      icon: Package,
+      href: '/app/tasks?filter=inventory',
+      tone: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    },
+  ];
 
   return (
     <div className="w-full max-w-none space-y-5 lg:space-y-6 pb-12 text-[#4A4A4A]">
@@ -302,6 +359,76 @@ export default function Dashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Action Tasks Overview ── */}
+      <div className={`rounded-2xl border shadow-sm overflow-hidden ${
+        hasUrgentActionTasks
+          ? 'bg-red-50/70 border-red-100 shadow-red-100/60'
+          : 'bg-white border-slate-100'
+      }`}>
+        <div className="p-5 lg:p-6 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-start gap-4">
+            <div className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center border ${
+              hasUrgentActionTasks ? 'bg-white text-red-600 border-red-100' : 'bg-[#F8F5F2] text-[#D9A3AA] border-[#D9A3AA]/15'
+            }`}>
+              {hasUrgentActionTasks ? <ShieldAlert size={24} /> : <ClipboardList size={24} />}
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-black text-[#4A4A4A] text-lg">مهام تحتاج إجراء</h3>
+                {hasUrgentActionTasks && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-black text-red-600 border border-red-100">
+                    <ShieldAlert size={12} /> يوجد مهام عاجلة
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-[#4A4A4A]/55 mt-1">
+                متابعة الدفع، الاسترجاع، الشحن، الإشعارات الفاشلة، ومخزون المتجر من مكان واحد.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-[repeat(2,130px)_auto] xl:items-center">
+            <div className="rounded-2xl bg-white border border-[#D9A3AA]/10 p-4">
+              <p className="text-xs font-black text-[#4A4A4A]/45">كل المهام</p>
+              <p className="text-3xl font-black text-[#4A4A4A] mt-1">{actionTaskStats.total}</p>
+            </div>
+            <div className="rounded-2xl bg-white border border-red-100 p-4">
+              <p className="text-xs font-black text-red-400">عاجلة</p>
+              <p className="text-3xl font-black text-red-600 mt-1">{actionTaskStats.high}</p>
+            </div>
+            <Link
+              to="/app/tasks"
+              className="col-span-2 sm:col-span-1 inline-flex h-full min-h-[72px] items-center justify-center gap-2 rounded-2xl bg-[#4A4A4A] px-5 py-4 text-sm font-black text-white shadow-sm hover:bg-[#C5A059] transition-colors"
+            >
+              فتح مركز المهام <ArrowUpLeft size={16} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="border-t border-white/70 bg-white/70 p-4 lg:px-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            {actionTaskShortcuts.map((shortcut) => {
+              const Icon = shortcut.icon;
+              return (
+                <Link
+                  key={shortcut.label}
+                  to={shortcut.href}
+                  className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition-transform hover:-translate-y-0.5 ${shortcut.tone}`}
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <Icon size={16} className="shrink-0" />
+                    <span className="text-xs font-black truncate">{shortcut.label}</span>
+                  </span>
+                  <span className="rounded-full bg-white/75 min-w-7 h-7 px-2 flex items-center justify-center text-xs font-black">
+                    {shortcut.value}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* ── Chart + Debts ── */}
