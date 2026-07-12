@@ -12,7 +12,9 @@ import {
   LogIn,
   MapPin,
   MessageCircle,
+  Minus,
   Package,
+  Plus,
   ReceiptText,
   RefreshCw,
   RotateCcw,
@@ -223,9 +225,23 @@ function ReturnRequestPanel({ order, onSubmitted }) {
 
   const setItemQuantity = (item, value) => {
     const max = Number(item.quantity || 0);
-    const next = Math.min(max, Math.max(0, Number(value || 0)));
+    const next = Math.min(max, Math.max(0, Math.floor(Number(value || 0))));
     setQuantities((current) => ({ ...current, [item.id]: next }));
   };
+
+  const openReturnForm = () => {
+    if (order.items.length === 1) {
+      const [item] = order.items;
+      setQuantities({ [item.id]: Math.min(1, Number(item.quantity || 0)) });
+    }
+    setIsOpen(true);
+  };
+
+  const returnValidationMessage = selectedItems.length === 0
+    ? 'اختاري كمية منتج واحد على الأقل.'
+    : reason.trim().length < 3
+      ? 'اكتبي سبب الاسترجاع بوضوح.'
+      : 'الطلب جاهز للإرسال إلى الإدارة.';
 
   const submitReturnRequest = async () => {
     const session = getCustomerSession();
@@ -233,7 +249,7 @@ function ReturnRequestPanel({ order, onSubmitted }) {
       toast.error('سجلي الدخول أولاً لإرسال طلب الاسترجاع');
       return;
     }
-    if (!reason.trim() || selectedItems.length === 0) {
+    if (reason.trim().length < 3 || selectedItems.length === 0) {
       toast.error('اختاري المنتجات واكتبي سبب الاسترجاع');
       return;
     }
@@ -317,7 +333,7 @@ function ReturnRequestPanel({ order, onSubmitted }) {
           {!isOpen ? (
             <button
               type="button"
-              onClick={() => setIsOpen(true)}
+              onClick={openReturnForm}
               className="w-full py-3 rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/15 text-[#4A4A4A] font-black hover:bg-[#D9A3AA]/10 transition-colors flex items-center justify-center gap-2"
             >
               <RotateCcw size={17} /> طلب استرجاع
@@ -325,26 +341,53 @@ function ReturnRequestPanel({ order, onSubmitted }) {
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
-                    <div className="w-12 h-12 rounded-xl bg-white overflow-hidden shrink-0">
-                      {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-3 text-[#D9A3AA]/35" size={24} />}
+                <p className="text-xs font-black text-[#4A4A4A]/60">حددي الكمية المراد استرجاعها من كل منتج</p>
+                {order.items.map((item) => {
+                  const selectedQuantity = Number(quantities[item.id] || 0);
+                  const maxQuantity = Number(item.quantity || 0);
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex flex-wrap items-center gap-3 rounded-2xl border p-3 transition-colors ${
+                        selectedQuantity > 0
+                          ? 'bg-[#C5A059]/10 border-[#C5A059]/25'
+                          : 'bg-[#F8F5F2] border-[#D9A3AA]/10'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-white overflow-hidden shrink-0">
+                        {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-3 text-[#D9A3AA]/35" size={24} />}
+                      </div>
+                      <div className="flex-1 min-w-[140px]">
+                        <p className="text-sm font-black truncate">{item.name}</p>
+                        <p className="text-[11px] text-[#4A4A4A]/45">المتاح للاسترجاع: {maxQuantity}</p>
+                      </div>
+                      <div className="grid h-10 w-[116px] shrink-0 grid-cols-[36px_1fr_36px] items-center overflow-hidden rounded-xl border border-[#D9A3AA]/20 bg-white" dir="ltr">
+                        <button
+                          type="button"
+                          onClick={() => setItemQuantity(item, selectedQuantity - 1)}
+                          disabled={selectedQuantity <= 0}
+                          aria-label={`تقليل كمية ${item.name}`}
+                          className="flex h-full items-center justify-center text-[#4A4A4A] hover:bg-[#D9A3AA]/10 disabled:opacity-25"
+                        >
+                          <Minus size={15} />
+                        </button>
+                        <output className="text-center text-sm font-black text-[#4A4A4A]" aria-live="polite">
+                          {selectedQuantity}
+                        </output>
+                        <button
+                          type="button"
+                          onClick={() => setItemQuantity(item, selectedQuantity + 1)}
+                          disabled={selectedQuantity >= maxQuantity}
+                          aria-label={`زيادة كمية ${item.name}`}
+                          className="flex h-full items-center justify-center text-[#4A4A4A] hover:bg-[#D9A3AA]/10 disabled:opacity-25"
+                        >
+                          <Plus size={15} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-black truncate">{item.name}</p>
-                      <p className="text-[11px] text-[#4A4A4A]/45">المتاح للاسترجاع: {item.quantity}</p>
-                    </div>
-                    <input
-                      type="number"
-                      min="0"
-                      max={item.quantity}
-                      value={quantities[item.id] || 0}
-                      onChange={(event) => setItemQuantity(item, event.target.value)}
-                      className="w-16 rounded-xl border border-[#D9A3AA]/20 bg-white px-2 py-2 text-center font-black outline-none"
-                      dir="ltr"
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <textarea
@@ -373,6 +416,13 @@ function ReturnRequestPanel({ order, onSubmitted }) {
                 <span>{formatCurrency(requestedAmount)}</span>
               </div>
 
+              <p
+                className={`text-xs font-bold ${selectedItems.length > 0 && reason.trim().length >= 3 ? 'text-emerald-600' : 'text-amber-700'}`}
+                aria-live="polite"
+              >
+                {returnValidationMessage}
+              </p>
+
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -384,10 +434,10 @@ function ReturnRequestPanel({ order, onSubmitted }) {
                 <button
                   type="button"
                   onClick={submitReturnRequest}
-                  disabled={submitting || selectedItems.length === 0 || !reason.trim()}
+                  disabled={submitting}
                   className="py-3 rounded-2xl bg-[#4A4A4A] text-white font-black disabled:opacity-45 disabled:pointer-events-none flex items-center justify-center gap-2"
                 >
-                  <Send size={16} /> إرسال
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} {submitting ? 'جاري الإرسال' : 'إرسال'}
                 </button>
               </div>
             </div>

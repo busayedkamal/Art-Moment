@@ -20,7 +20,8 @@ supabase functions deploy customer-marketing
 
 ```bash
 supabase secrets set RESEND_API_KEY=your-resend-api-key
-supabase secrets set RESEND_FROM="Art Moment <hello@your-domain.com>"
+supabase secrets set RESEND_FROM="Art Moment <notifications@art-moment.com>"
+supabase secrets set RESEND_REPLY_TO=art.moment26@gmail.com
 supabase secrets set CUSTOMER_SESSION_SECRET=your-long-random-secret
 supabase secrets set RETURN_REQUEST_NOTIFY_EMAIL=admin@example.com
 supabase secrets set PUBLIC_SITE_URL=https://art-moment.com
@@ -28,6 +29,14 @@ supabase secrets set WHATSAPP_ENABLED=true
 supabase secrets set ULTRAMSG_INSTANCE_ID=your-instance-id
 supabase secrets set ULTRAMSG_TOKEN=your-token
 ```
+
+Before setting `RESEND_FROM`, add `art-moment.com` (or a sending subdomain such as
+`notifications.art-moment.com`) in Resend and complete its SPF and DKIM verification.
+Resend does not allow a Gmail address in the `from` field. The project Gmail address
+is kept in `RESEND_REPLY_TO` and as the administration notification recipient.
+
+The fallback sender `onboarding@resend.dev` is only for testing and can send to the
+email address that owns the Resend account. It cannot send production messages to customers.
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` must be available to the functions. If they are not already present in the project, add them as Supabase secrets before deploying.
 

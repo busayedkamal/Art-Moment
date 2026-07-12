@@ -301,9 +301,9 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('customer-auth error:', error);
-    const publicErrors = new Set(['email_send_failed']);
-    const message = error instanceof Error && publicErrors.has(error.message)
-      ? error.message
+    const isEmailFailure = error instanceof Error && error.message.startsWith('email_');
+    const message = isEmailFailure
+      ? 'email_send_failed'
       : 'auth_failed';
     return jsonResponse({ error: message }, 500);
   }

@@ -15,6 +15,7 @@ import {
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { logAdminActivity } from '../utils/adminActivity';
+import { getEmailErrorMessage, isEmailConfigurationError } from '../utils/emailErrors';
 
 const MESSAGE_TYPE_LABELS = {
   marketing_campaign: 'حملة تسويقية',
@@ -249,7 +250,7 @@ export default function AdminNotifications() {
           retry_error: error.message || 'retry_failed',
         },
       });
-      toast.error(error.message || 'تعذرت إعادة الإرسال', { id: toastId });
+      toast.error(getEmailErrorMessage(error.message), { id: toastId });
     } finally {
       setRetryingId(null);
     }
@@ -344,6 +345,8 @@ export default function AdminNotifications() {
             const metadata = getMetadata(log);
             const customer = customersById[log.customer_id] || {};
             const retryable = canRetry(log);
+            const readableError = getEmailErrorMessage(log.error_message);
+            const configurationError = isEmailConfigurationError(log.error_message);
 
             return (
               <article key={log.id} className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 shadow-sm">
@@ -371,9 +374,19 @@ export default function AdminNotifications() {
                       </p>
                     )}
                     {log.error_message && (
-                      <p className="mt-3 rounded-2xl bg-red-50 border border-red-100 px-3 py-2 text-xs font-bold text-red-600">
-                        {log.error_message}
-                      </p>
+                      <div className="mt-3 rounded-2xl bg-red-50 border border-red-100 px-3 py-2 text-xs font-bold text-red-600">
+                        <p>{readableError}</p>
+                        {configurationError && (
+                          <a
+                            href="https://resend.com/domains"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex text-[#4A4A4A] underline underline-offset-2"
+                          >
+                            فتح إعداد النطاق في Resend
+                          </a>
+                        )}
+                      </div>
                     )}
                   </div>
 

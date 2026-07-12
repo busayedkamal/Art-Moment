@@ -19,6 +19,7 @@ import {
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { logAdminActivity } from '../utils/adminActivity';
+import { getEmailErrorMessage } from '../utils/emailErrors';
 import {
   fetchAdminActionTasks,
   getFunctionError,
@@ -265,7 +266,7 @@ export default function AdminActionTasks() {
           retry_error: error.message || 'retry_failed',
         },
       });
-      toast.error(error.message || 'تعذرت إعادة الإرسال', { id: toastId });
+      toast.error(getEmailErrorMessage(error.message), { id: toastId });
     } finally {
       setRetryingTaskId(null);
     }

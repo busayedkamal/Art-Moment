@@ -18,6 +18,7 @@ import {
   STORE_PAYMENT_STATUSES,
 } from '../utils/storeOrderStatus';
 import { logAdminActivity } from '../utils/adminActivity';
+import { getEmailErrorMessage } from '../utils/emailErrors';
 
 // ─── FSM Configuration ────────────────────────────────────────────────────────
 
@@ -565,6 +566,8 @@ export default function StoreOrdersManagement() {
         toast.error('القالب غير متاح أو غير مفعل', { id: toastId });
       } else if (/unauthorized/i.test(message)) {
         toast.error('لا تملك صلاحية إرسال الإشعار', { id: toastId });
+      } else if (/^email_/i.test(message)) {
+        toast.error(getEmailErrorMessage(message), { id: toastId });
       } else {
         toast.error('تعذر إرسال الإشعار', { id: toastId });
       }
