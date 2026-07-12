@@ -142,10 +142,15 @@ function TaskCard({ task, onRetryNotification, retryingTaskId }) {
               <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-black ${task.statusTone}`}>
                 {task.statusLabel}
               </span>
+              {task.isOverdue && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-[11px] font-black text-red-600">
+                  <AlertTriangle size={11} /> متجاوزة للمهلة
+                </span>
+              )}
             </div>
             <h2 className="text-base font-black text-[#4A4A4A] truncate">{task.title}</h2>
             <p className="text-sm font-bold text-[#4A4A4A]/55 mt-1 leading-6">{task.description}</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {task.meta.map((item) => (
                 <div key={`${task.id}-${item.label}`} className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 px-3 py-2">
                   <p className="text-[10px] font-black text-[#4A4A4A]/40">{item.label}</p>
@@ -219,6 +224,7 @@ export default function AdminActionTasks() {
           templateKey: action.templateKey,
           customerId: action.customerId,
           variables: action.variables || {},
+          retryOfLogId: action.logId,
         },
       });
 
@@ -241,6 +247,8 @@ export default function AdminActionTasks() {
           source: 'admin_action_tasks',
           original_log_id: action.logId,
           variables: action.variables || {},
+          retry_count: Number(action.retryCount || 0) + 1,
+          retry_limit: Number(action.retryLimit || 0),
         },
       });
 
@@ -264,6 +272,8 @@ export default function AdminActionTasks() {
         metadata: {
           source: 'admin_action_tasks',
           retry_error: error.message || 'retry_failed',
+          retry_count: Number(action.retryCount || 0) + 1,
+          retry_limit: Number(action.retryLimit || 0),
         },
       });
       toast.error(getEmailErrorMessage(error.message), { id: toastId });

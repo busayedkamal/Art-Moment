@@ -7,6 +7,8 @@ const EMAIL_ERROR_MESSAGES = {
   email_rate_limited: 'تم تجاوز حد الإرسال المؤقت في Resend. حاولي مرة أخرى بعد قليل.',
   email_validation_failed: 'رفض Resend بيانات الرسالة. راجعي عنوان المرسل والبريد المستلم.',
   email_send_failed: 'رفض Resend إرسال الرسالة. راجعي نطاق المرسل في إعدادات Resend.',
+  notification_retry_limit_reached: 'بلغت الرسالة الحد الأقصى لمحاولات إعادة الإرسال.',
+  invalid_notification_retry: 'هذه الرسالة لم تعد متاحة لإعادة الإرسال. حدّثي السجل وحاولي من المحاولة الأحدث.',
 };
 
 export function getEmailErrorMessage(errorCode) {

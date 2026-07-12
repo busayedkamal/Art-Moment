@@ -188,7 +188,7 @@ function ReturnStatusBadge({ status }) {
   );
 }
 
-function ReturnRequestPanel({ order, onSubmitted }) {
+function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
@@ -199,9 +199,16 @@ function ReturnRequestPanel({ order, onSubmitted }) {
   const returnRequests = order.returnRequests || [];
   const latestRequest = returnRequests[0] || null;
   const hasActiveRequest = returnRequests.some((request) => !['rejected', 'refunded'].includes(request.status));
+  const returnWindowTimestamp = order.updatedAt || order.createdAt;
+  const returnWindowStartedAt = returnWindowTimestamp
+    ? new Date(returnWindowTimestamp).getTime()
+    : Number.NaN;
+  const returnWindowExpired = Number.isFinite(returnWindowStartedAt)
+    && Date.now() - returnWindowStartedAt > Number(returnWindowDays || 7) * 86400000;
   const canRequestReturn = !hasActiveRequest
     && order.items.length > 0
-    && !['cancelled', 'returned'].includes(order.status);
+    && !['cancelled', 'returned'].includes(order.status)
+    && !returnWindowExpired;
 
   useEffect(() => {
     setQuantities({});
@@ -282,7 +289,9 @@ function ReturnRequestPanel({ order, onSubmitted }) {
       toast.error(
         err.message === 'active_return_request_exists'
           ? 'يوجد طلب استرجاع نشط لهذا الطلب بالفعل'
-          : 'تعذر إرسال طلب الاسترجاع حالياً',
+          : err.message === 'return_window_expired'
+            ? `انتهت مهلة الاسترجاع المحددة بـ ${returnWindowDays} أيام`
+            : 'تعذر إرسال طلب الاسترجاع حالياً',
         { id: toastId },
       );
     } finally {
@@ -445,7 +454,9 @@ function ReturnRequestPanel({ order, onSubmitted }) {
         </>
       ) : !latestRequest ? (
         <p className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-4 text-xs font-bold text-[#4A4A4A]/55 leading-relaxed">
-          لا يتوفر طلب الاسترجاع لهذا الطلب حالياً. يمكن التواصل مع الدعم عند الحاجة.
+          {returnWindowExpired
+            ? `انتهت مهلة الاسترجاع لهذا الطلب بعد ${returnWindowDays} أيام من آخر تحديث.`
+            : 'لا يتوفر طلب الاسترجاع لهذا الطلب حالياً. يمكن التواصل مع الدعم عند الحاجة.'}
         </p>
       ) : null}
     </section>
@@ -555,7 +566,7 @@ function OrderCard({ order }) {
   );
 }
 
-function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt }) {
+function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt, returnWindowDays }) {
   const trackingUrl = getTrackingUrl(order);
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
   const remaining = Math.max(0, total - Number(order.amountPaid || 0));
@@ -714,7 +725,7 @@ function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt }
             </div>
           </section>
 
-          <ReturnRequestPanel order={order} onSubmitted={onReturnSubmitted} />
+          <ReturnRequestPanel order={order} onSubmitted={onReturnSubmitted} returnWindowDays={returnWindowDays} />
 
           <a
             href={`https://wa.me/966569663697?text=${encodeURIComponent(`مرحباً، أحتاج مساعدة بخصوص طلب المتجر #${order.shortId}`)}`}
@@ -739,6 +750,7 @@ export default function CustomerOrdersPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [returnWindowDays, setReturnWindowDays] = useState(7);
 
   const canLoadOrders = Boolean(customer?.sessionToken);
 
@@ -848,6 +860,7 @@ export default function CustomerOrdersPage() {
 
       setOrders(data?.orders || []);
       setSelectedOrder(orderId ? data?.order || null : null);
+      setReturnWindowDays(Number(data?.operationRules?.returnWindowDays || 7));
       if (orderId && !data?.order) setError('لم يتم العثور على هذا الطلب ضمن حسابك.');
     } catch (err) {
       console.error(err);
@@ -947,6 +960,7 @@ export default function CustomerOrdersPage() {
               onReturnSubmitted={loadOrders}
               onReorder={handleReorder}
               onDownloadReceipt={downloadReceipt}
+              returnWindowDays={returnWindowDays}
             />
           ) : null
         ) : (

@@ -5,9 +5,14 @@ import toast from 'react-hot-toast';
 import {
   Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle,
   Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle,
-  FileText, Edit3, XCircle, Mail
+  FileText, Edit3, XCircle, Mail, BellRing, Clock3, CreditCard, RotateCcw, Truck
 } from 'lucide-react';
 import RiyalSign from '../components/RiyalSign';
+import {
+  DEFAULT_OPERATION_RULES,
+  getOperationRulesPayload,
+  normalizeOperationRules,
+} from '../utils/operationRules';
 
 const emptyTemplateForm = {
   template_key: '',
@@ -53,6 +58,33 @@ function parseVariables(value) {
     .filter(Boolean);
 }
 
+function OperationRuleField({ icon, label, description, unit, value, onChange, min, max }) {
+  return (
+    <label className="grid gap-3 border-b border-[#D9A3AA]/10 py-4 last:border-b-0 sm:grid-cols-[44px_1fr_140px] sm:items-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F8F5F2] text-[#C5A059]">
+        {React.createElement(icon, { size: 19 })}
+      </span>
+      <span>
+        <span className="block text-sm font-black text-[#4A4A4A]">{label}</span>
+        <span className="mt-1 block text-xs leading-5 text-[#4A4A4A]/50">{description}</span>
+      </span>
+      <span className="flex h-11 items-center overflow-hidden rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] focus-within:border-[#C5A059]">
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step="1"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-full min-w-0 flex-1 bg-transparent px-3 text-center text-sm font-black outline-none"
+          dir="ltr"
+        />
+        <span className="border-r border-[#D9A3AA]/15 px-3 text-[11px] font-bold text-[#4A4A4A]/45">{unit}</span>
+      </span>
+    </label>
+  );
+}
+
 export default function Settings() {
   const [loading, setLoading] = useState(true);
   
@@ -86,6 +118,8 @@ export default function Settings() {
   const [templateForm, setTemplateForm] = useState(emptyTemplateForm);
   const [editingTemplateId, setEditingTemplateId] = useState(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [operationRules, setOperationRules] = useState(DEFAULT_OPERATION_RULES);
+  const [savingOperationRules, setSavingOperationRules] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -97,7 +131,12 @@ export default function Settings() {
       
       // 1. جلب الأسعار والإعدادات
       const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
-      if (settingsData) setPrices(settingsData);
+      if (settingsData) {
+        setPrices((current) => Object.fromEntries(
+          Object.keys(current).map((key) => [key, settingsData[key] ?? current[key]]),
+        ));
+        setOperationRules(normalizeOperationRules(settingsData));
+      }
 
       // 2. جلب المخزون
       const { data: inventoryData } = await supabase.from('inventory').select('*').order('id');
@@ -185,6 +224,29 @@ export default function Settings() {
       setCoupons(coupons.filter(c => c.id !== id));
       toast.success('تم الحذف');
     } catch { toast.error('فشل الحذف'); }
+  };
+
+  const updateOperationRule = (key, value) => {
+    setOperationRules((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSaveOperationRules = async (event) => {
+    event.preventDefault();
+    const payload = getOperationRulesPayload(operationRules);
+    setSavingOperationRules(true);
+    try {
+      const { error } = await supabase.from('settings').update(payload).eq('id', 1);
+      if (error) throw error;
+      setOperationRules(normalizeOperationRules(payload));
+      toast.success('تم حفظ قواعد التشغيل وتطبيقها على مركز المهام');
+    } catch (error) {
+      console.error(error);
+      toast.error(/column|schema cache/i.test(error?.message || '')
+        ? 'شغّل ملف SQL الخاص بقواعد التشغيل أولاً'
+        : 'تعذر حفظ قواعد التشغيل');
+    } finally {
+      setSavingOperationRules(false);
+    }
   };
 
   const editTemplate = (template) => {
@@ -302,7 +364,7 @@ export default function Settings() {
         </div>
         <div>
           <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">الإعدادات العامة</h1>
-          <p className="text-sm text-[#4A4A4A]/50">التحكم في الأسعار، المخزون، واتساب، وأكواد الخصم</p>
+          <p className="text-sm text-[#4A4A4A]/50">التحكم في قواعد التشغيل، الأسعار، المخزون، الرسائل، وأكواد الخصم</p>
         </div>
       </div>
 
@@ -460,7 +522,118 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* 3. قسم أكواد الخصم */}
+        {/* 3. قواعد التشغيل */}
+        <form onSubmit={handleSaveOperationRules} className="md:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-[#D9A3AA]/15 pb-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="flex items-center gap-2 font-black text-[#4A4A4A]">
+                <Clock3 size={20} className="text-[#C5A059]" /> قواعد التشغيل
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-[#4A4A4A]/50">
+                تحدد متى يظهر التنبيه، ومتى تتحول المهمة المتأخرة إلى عاجلة، وما الحدود المسموحة للعميل والإدارة.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOperationRules(DEFAULT_OPERATION_RULES)}
+              className="shrink-0 text-xs font-black text-[#4A4A4A]/55 hover:text-[#C5A059]"
+            >
+              استعادة القيم الافتراضية
+            </button>
+          </div>
+
+          <div className="grid gap-x-8 lg:grid-cols-2">
+            <OperationRuleField
+              icon={Package}
+              label="حد المخزون المنخفض"
+              description="يظهر المنتج في مركز المهام عندما تصل كميته إلى هذا الرقم أو أقل."
+              unit="قطعة"
+              min={0}
+              max={100000}
+              value={operationRules.lowStockThreshold}
+              onChange={(value) => updateOperationRule('lowStockThreshold', value)}
+            />
+            <OperationRuleField
+              icon={CreditCard}
+              label="مدة اعتبار الدفع متأخرًا"
+              description="بعدها يتحول طلب الدفع المعلّق إلى مهمة متجاوزة للمهلة."
+              unit="ساعة"
+              min={1}
+              max={720}
+              value={operationRules.paymentOverdueHours}
+              onChange={(value) => updateOperationRule('paymentOverdueHours', value)}
+            />
+            <OperationRuleField
+              icon={Truck}
+              label="مهلة إضافة رقم التتبع"
+              description="المدة المتاحة بعد جاهزية الطلب للشحن قبل ظهور تنبيه متأخر."
+              unit="ساعة"
+              min={1}
+              max={720}
+              value={operationRules.trackingDueHours}
+              onChange={(value) => updateOperationRule('trackingDueHours', value)}
+            />
+            <OperationRuleField
+              icon={RotateCcw}
+              label="مهلة مراجعة الاسترجاع"
+              description="المدة المستهدفة لمراجعة طلب الاسترجاع المفتوح وتحديث حالته."
+              unit="ساعة"
+              min={1}
+              max={720}
+              value={operationRules.returnReviewDueHours}
+              onChange={(value) => updateOperationRule('returnReviewDueHours', value)}
+            />
+            <OperationRuleField
+              icon={RotateCcw}
+              label="أيام السماح بالاسترجاع"
+              description="يرفض النظام طلب الاسترجاع بعد انتهاء هذه المدة من آخر تحديث للطلب."
+              unit="يوم"
+              min={1}
+              max={365}
+              value={operationRules.returnWindowDays}
+              onChange={(value) => updateOperationRule('returnWindowDays', value)}
+            />
+            <OperationRuleField
+              icon={BellRing}
+              label="حد إعادة إرسال الإشعار"
+              description="أقصى عدد لمحاولات إعادة إرسال الرسالة الفاشلة نفسها."
+              unit="محاولة"
+              min={0}
+              max={10}
+              value={operationRules.notificationRetryLimit}
+              onChange={(value) => updateOperationRule('notificationRetryLimit', value)}
+            />
+          </div>
+
+          <div className="mt-5 flex flex-col gap-4 border-t border-[#D9A3AA]/15 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex items-center justify-between gap-4 sm:justify-start">
+              <button
+                type="button"
+                onClick={() => updateOperationRule('overdueTasksUrgent', !operationRules.overdueTasksUrgent)}
+                className="text-[#D9A3AA]"
+                aria-label="تبديل تصعيد المهام المتأخرة"
+              >
+                {operationRules.overdueTasksUrgent
+                  ? <ToggleRight size={34} />
+                  : <ToggleLeft size={34} className="text-[#4A4A4A]/35" />}
+              </button>
+              <span>
+                <span className="block text-sm font-black">إظهار المهام المتجاوزة للمهلة كعاجلة</span>
+                <span className="mt-1 block text-xs text-[#4A4A4A]/45">ينعكس مباشرة على عدّاد المهام العاجلة والتنبيه في الرئيسية.</span>
+              </span>
+            </label>
+            <button
+              type="submit"
+              disabled={savingOperationRules}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-6 text-sm font-black text-white hover:bg-[#C5A059] disabled:opacity-60"
+            >
+              {savingOperationRules ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
+              حفظ قواعد التشغيل
+            </button>
+          </div>
+        </form>
+
+        {/* 4. قسم أكواد الخصم */}
         <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
           <h3 className="font-bold text-[#4A4A4A] mb-6 flex items-center gap-2"><Tag className="text-[#D9A3AA]"/> أكواد الخصم</h3>
           
@@ -535,7 +708,7 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* 4. قوالب الرسائل */}
+        {/* 5. قوالب الرسائل */}
         <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
             <div>

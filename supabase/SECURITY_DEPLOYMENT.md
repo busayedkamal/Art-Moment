@@ -113,6 +113,18 @@ For admin-managed customer message templates, also run:
 supabase/migrations/202607030004_customer_message_templates.sql
 ```
 
+For the admin audit trail, also run:
+
+```text
+supabase/migrations/202607030005_admin_activity_logs.sql
+```
+
+For configurable operational deadlines, stock alerts, return windows, and notification retries, also run:
+
+```text
+supabase/migrations/202607120001_operation_rules.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.

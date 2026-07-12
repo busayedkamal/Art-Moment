@@ -124,6 +124,19 @@ async function fetchCustomerBySession(supabase: ReturnType<typeof getServiceClie
   return customer as Record<string, unknown> | null;
 }
 
+async function getReturnWindowDays(supabase: ReturnType<typeof getServiceClient>) {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('return_window_days')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error && !/return_window_days|schema cache|column|does not exist/i.test(error.message || '')) {
+    throw error;
+  }
+  const parsed = Number(data?.return_window_days ?? 7);
+  return Number.isFinite(parsed) ? Math.min(365, Math.max(1, Math.round(parsed))) : 7;
+}
+
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);
   if (optionsResponse) return optionsResponse;
@@ -258,7 +271,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await supabase
       .from('store_orders')
-      .select('id, short_id, customer_id, customer_name, phone, status, total_amount, amount_paid, store_order_items(id, product_id, quantity, price_at_time, products(name, image))')
+      .select('id, short_id, customer_id, customer_name, phone, status, total_amount, amount_paid, created_at, updated_at, store_order_items(id, product_id, quantity, price_at_time, products(name, image))')
       .eq('id', orderId)
       .maybeSingle();
     if (orderError) throw orderError;
@@ -269,6 +282,16 @@ Deno.serve(async (req) => {
     if (!ownsById && !ownsByPhone) return jsonResponse({ error: 'unauthorized' }, 401);
     if (CLOSED_ORDER_STATUSES.has(String(order.status || ''))) {
       return jsonResponse({ error: 'return_not_available' }, 409);
+    }
+
+    const returnWindowDays = await getReturnWindowDays(supabase);
+    const returnWindowTimestamp = order.updated_at || order.created_at;
+    const returnWindowStartedAt = returnWindowTimestamp
+      ? new Date(returnWindowTimestamp).getTime()
+      : Number.NaN;
+    if (Number.isFinite(returnWindowStartedAt)
+      && Date.now() - returnWindowStartedAt > returnWindowDays * 86400000) {
+      return jsonResponse({ error: 'return_window_expired', returnWindowDays }, 409);
     }
 
     const { data: activeRequest, error: activeError } = await supabase

@@ -124,6 +124,19 @@ async function fetchReturnRequestsMap(
   }, new Map<string, Record<string, unknown>[]>());
 }
 
+async function getReturnWindowDays(supabase: ReturnType<typeof getServiceClient>) {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('return_window_days')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error && !/return_window_days|schema cache|column|does not exist/i.test(error.message || '')) {
+    throw error;
+  }
+  const parsed = Number(data?.return_window_days ?? 7);
+  return Number.isFinite(parsed) ? Math.min(365, Math.max(1, Math.round(parsed))) : 7;
+}
+
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);
   if (optionsResponse) return optionsResponse;
@@ -204,6 +217,7 @@ Deno.serve(async (req) => {
       ...order,
       store_return_requests: returnRequestsByOrder.get(String(order.id)) || [],
     }));
+    const returnWindowDays = await getReturnWindowDays(supabase);
 
     return jsonResponse({
       customer: {
@@ -214,6 +228,7 @@ Deno.serve(async (req) => {
       },
       orders: normalizedOrders,
       order: orderId ? normalizedOrders[0] || null : null,
+      operationRules: { returnWindowDays },
     });
   } catch (error) {
     console.error('customer-orders error:', error);

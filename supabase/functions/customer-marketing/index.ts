@@ -188,7 +188,101 @@ async function logMessage(
   supabase: ReturnType<typeof getServiceClient>,
   row: Record<string, unknown>,
 ) {
-  const { error } = await supabase.from('customer_message_logs').insert(row);
+  const { data, error } = await supabase
+    .from('customer_message_logs')
+    .insert(row)
+    .select('id')
+    .maybeSingle();
+  if (error && !/customer_message_logs|schema cache|relation|does not exist/i.test(error.message || '')) {
+    throw error;
+  }
+  return data as Record<string, unknown> | null;
+}
+
+async function getNotificationRetryContext(
+  supabase: ReturnType<typeof getServiceClient>,
+  retryOfLogId: unknown,
+) {
+  const { data: settings, error: settingsError } = await supabase
+    .from('settings')
+    .select('notification_retry_limit')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (settingsError && !/notification_retry_limit|schema cache|column|does not exist/i.test(settingsError.message || '')) {
+    throw settingsError;
+  }
+
+  const parsedLimit = Number(settings?.notification_retry_limit ?? 3);
+  const retryLimit = Number.isFinite(parsedLimit)
+    ? Math.min(10, Math.max(0, Math.round(parsedLimit)))
+    : 3;
+  const sourceLogId = cleanText(retryOfLogId, 80);
+
+  if (!sourceLogId) {
+    return {
+      allowed: true,
+      retryLimit,
+      retryCount: 0,
+      retryOfLogId: null,
+      originalMetadata: {} as Record<string, unknown>,
+    };
+  }
+
+  const { data: sourceLog, error: sourceError } = await supabase
+    .from('customer_message_logs')
+    .select('id, status, metadata')
+    .eq('id', sourceLogId)
+    .maybeSingle();
+  if (sourceError) throw sourceError;
+  if (!sourceLog || sourceLog.status !== 'failed') {
+    return {
+      allowed: false,
+      error: 'invalid_notification_retry',
+      retryLimit,
+      retryCount: 0,
+      retryOfLogId: sourceLogId,
+      originalMetadata: {} as Record<string, unknown>,
+    };
+  }
+
+  const originalMetadata = sourceLog.metadata && typeof sourceLog.metadata === 'object'
+    ? sourceLog.metadata as Record<string, unknown>
+    : {};
+  const parsedCount = Number(originalMetadata.retryCount ?? originalMetadata.retry_count ?? 0);
+  const currentRetryCount = Number.isFinite(parsedCount) ? Math.max(0, Math.round(parsedCount)) : 0;
+
+  return {
+    allowed: currentRetryCount < retryLimit,
+    error: currentRetryCount < retryLimit ? null : 'notification_retry_limit_reached',
+    retryLimit,
+    retryCount: currentRetryCount + 1,
+    retryOfLogId: sourceLogId,
+    originalMetadata,
+  };
+}
+
+async function closeRetriedLog(
+  supabase: ReturnType<typeof getServiceClient>,
+  retryContext: Awaited<ReturnType<typeof getNotificationRetryContext>>,
+  outcome: 'sent' | 'failed',
+  replacementLogId?: unknown,
+) {
+  if (!retryContext.retryOfLogId) return;
+
+  const { error } = await supabase
+    .from('customer_message_logs')
+    .update({
+      status: outcome === 'sent' ? 'completed' : 'skipped',
+      metadata: {
+        ...retryContext.originalMetadata,
+        retryOutcome: outcome,
+        retryResolvedAt: new Date().toISOString(),
+        replacementLogId: replacementLogId || null,
+      },
+    })
+    .eq('id', retryContext.retryOfLogId);
+
   if (error && !/customer_message_logs|schema cache|relation|does not exist/i.test(error.message || '')) {
     throw error;
   }
@@ -345,6 +439,15 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'invalid_template_request' }, 400);
       }
 
+      const retryContext = await getNotificationRetryContext(supabase, body?.retryOfLogId);
+      if (!retryContext.allowed) {
+        return jsonResponse({
+          error: retryContext.error || 'notification_retry_limit_reached',
+          retryCount: Math.max(0, retryContext.retryCount - 1),
+          retryLimit: retryContext.retryLimit,
+        }, 409);
+      }
+
       const { data: template, error: templateError } = await supabase
         .from('customer_message_templates')
         .select('id, template_key, name, category, subject, body, is_active')
@@ -410,7 +513,7 @@ Deno.serve(async (req) => {
           ],
         });
 
-        await logMessage(supabase, {
+        const sentLog = await logMessage(supabase, {
           customer_id: customer?.id || null,
           channel: 'email',
           type: `template_${activeTemplate.category || 'general'}`,
@@ -423,10 +526,14 @@ Deno.serve(async (req) => {
             templateKey: activeTemplate.template_key,
             templateName: activeTemplate.name,
             variables,
+            retryCount: retryContext.retryCount,
+            retryLimit: retryContext.retryLimit,
+            retryOfLogId: retryContext.retryOfLogId,
           },
         });
+        await closeRetriedLog(supabase, retryContext, 'sent', sentLog?.id);
       } catch (emailError) {
-        await logMessage(supabase, {
+        const failedLog = await logMessage(supabase, {
           customer_id: customer?.id || null,
           channel: 'email',
           type: `template_${activeTemplate.category || 'general'}`,
@@ -439,8 +546,12 @@ Deno.serve(async (req) => {
             templateKey: activeTemplate.template_key,
             templateName: activeTemplate.name,
             variables,
+            retryCount: retryContext.retryCount,
+            retryLimit: retryContext.retryLimit,
+            retryOfLogId: retryContext.retryOfLogId,
           },
         });
+        await closeRetriedLog(supabase, retryContext, 'failed', failedLog?.id);
         throw emailError;
       }
 

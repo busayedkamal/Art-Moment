@@ -16,6 +16,11 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { logAdminActivity } from '../utils/adminActivity';
 import { getEmailErrorMessage, isEmailConfigurationError } from '../utils/emailErrors';
+import {
+  DEFAULT_OPERATION_RULES,
+  getNotificationRetryCount,
+  normalizeOperationRules,
+} from '../utils/operationRules';
 
 const MESSAGE_TYPE_LABELS = {
   marketing_campaign: 'حملة تسويقية',
@@ -100,6 +105,7 @@ export default function AdminNotifications() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [retryingId, setRetryingId] = useState(null);
+  const [retryLimit, setRetryLimit] = useState(DEFAULT_OPERATION_RULES.notificationRetryLimit);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -110,6 +116,16 @@ export default function AdminNotifications() {
         .order('created_at', { ascending: false })
         .limit(250);
       if (error) throw error;
+
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('settings')
+        .select('notification_retry_limit')
+        .eq('id', 1)
+        .maybeSingle();
+      if (settingsError && !/notification_retry_limit|schema cache|column|does not exist/i.test(settingsError.message || '')) {
+        throw settingsError;
+      }
+      setRetryLimit(normalizeOperationRules(settingsData || {}).notificationRetryLimit);
 
       const rows = data || [];
       const customerIds = Array.from(new Set(rows.map((log) => log.customer_id).filter(Boolean)));
@@ -172,22 +188,37 @@ export default function AdminNotifications() {
       acc.total += 1;
       acc.failed += log.status === 'failed' ? 1 : 0;
       acc.sent += ['sent', 'completed'].includes(log.status) ? 1 : 0;
-      acc.retryable += getMetadata(log).templateKey && log.customer_id ? 1 : 0;
+      const metadata = getMetadata(log);
+      const canRetryLog = log.status === 'failed'
+        && metadata.templateKey
+        && log.customer_id
+        && getNotificationRetryCount(metadata) < retryLimit;
+      acc.retryable += canRetryLog ? 1 : 0;
       return acc;
     }, { total: 0, failed: 0, sent: 0, retryable: 0 });
-  }, [logs]);
+  }, [logs, retryLimit]);
 
   const canRetry = (log) => {
     const metadata = getMetadata(log);
-    return Boolean(metadata.templateKey && log.customer_id);
+    return Boolean(
+      log.status === 'failed'
+      && metadata.templateKey
+      && log.customer_id
+      && getNotificationRetryCount(metadata) < retryLimit
+    );
   };
 
   const retryMessage = async (log) => {
     const metadata = getMetadata(log);
     const customer = customersById[log.customer_id] || {};
 
+    const retryCount = getNotificationRetryCount(metadata);
     if (!metadata.templateKey) {
       toast.error('هذه الرسالة غير مرتبطة بقالب قابل لإعادة الإرسال');
+      return;
+    }
+    if (retryCount >= retryLimit) {
+      toast.error('بلغت الرسالة الحد الأقصى لمحاولات إعادة الإرسال');
       return;
     }
 
@@ -205,6 +236,7 @@ export default function AdminNotifications() {
           email: customer.email || '',
           customerName: customer.name || '',
           variables: metadata.variables || {},
+          retryOfLogId: log.id,
         },
       });
 
@@ -226,6 +258,8 @@ export default function AdminNotifications() {
           source: 'admin_notifications',
           original_log_id: log.id,
           variables: metadata.variables || {},
+          retry_count: retryCount + 1,
+          retry_limit: retryLimit,
         },
       });
       toast.success('تمت إعادة إرسال الإشعار', { id: toastId });
@@ -248,6 +282,8 @@ export default function AdminNotifications() {
         metadata: {
           source: 'admin_notifications',
           retry_error: error.message || 'retry_failed',
+          retry_count: retryCount + 1,
+          retry_limit: retryLimit,
         },
       });
       toast.error(getEmailErrorMessage(error.message), { id: toastId });
@@ -345,6 +381,7 @@ export default function AdminNotifications() {
             const metadata = getMetadata(log);
             const customer = customersById[log.customer_id] || {};
             const retryable = canRetry(log);
+            const retryCount = getNotificationRetryCount(metadata);
             const readableError = getEmailErrorMessage(log.error_message);
             const configurationError = isEmailConfigurationError(log.error_message);
 
@@ -362,6 +399,11 @@ export default function AdminNotifications() {
                       {metadata.templateName && (
                         <span className="rounded-full bg-[#D9A3AA]/10 px-3 py-1 text-[11px] font-bold text-[#4A4A4A]/60">
                           {metadata.templateName}
+                        </span>
+                      )}
+                      {log.status === 'failed' && metadata.templateKey && (
+                        <span className="rounded-full bg-[#F8F5F2] border border-[#D9A3AA]/10 px-3 py-1 text-[11px] font-bold text-[#4A4A4A]/55">
+                          المحاولات {retryCount}/{retryLimit}
                         </span>
                       )}
                     </div>
@@ -414,7 +456,11 @@ export default function AdminNotifications() {
                     onClick={() => retryMessage(log)}
                     disabled={retryingId === log.id || !retryable}
                     className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#4A4A4A] px-5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C5A059] disabled:opacity-45 disabled:hover:bg-[#4A4A4A]"
-                    title={retryable ? 'إعادة إرسال الإشعار' : 'لا يمكن إعادة الإرسال بدون قالب محفوظ وعميل مرتبط'}
+                    title={retryable
+                      ? 'إعادة إرسال الإشعار'
+                      : retryCount >= retryLimit
+                        ? 'بلغت الرسالة الحد الأقصى للمحاولات'
+                        : 'لا يمكن إعادة الإرسال بدون قالب محفوظ وعميل مرتبط'}
                   >
                     <Send size={15} />
                     {retryingId === log.id ? 'جاري الإرسال' : 'إعادة إرسال'}
