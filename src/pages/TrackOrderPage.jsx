@@ -11,6 +11,8 @@ import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import logo from '../assets/logo-art-moment.svg';
 import { getCustomerSession } from '../utils/customerSession';
+import OrderFinancialBreakdown from '../components/OrderFinancialBreakdown';
+import { getPrintOrderFinancials } from '../utils/orderFinancials';
 import {
   getPaymentState,
   getStoreOrderStatus,
@@ -298,13 +300,13 @@ export default function TrackOrderPage() {
 
             {ordersList.map(order => {
               const currentStep = getStepStatus(order.status);
-              const walletUsed = Number(order.wallet_used || 0);
               const storeTotal = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
               const storeRefunded = Number(order.refunded_amount || 0);
               const storeStatus = order.order_type === 'store' ? getStoreOrderStatus(order.status) : null;
+              const printFinancials = order.order_type === 'print' ? getPrintOrderFinancials(order) : null;
               const remaining = order.order_type === 'store'
                 ? storeTotal - Number(order.amount_paid || 0)
-                : Number(order.total_amount || 0) - Number(order.deposit || 0) - walletUsed;
+                : printFinancials.remainingAmount;
               const orderPayments = paymentsMap[order.id] || [];
 
               return (
@@ -457,19 +459,16 @@ export default function TrackOrderPage() {
                             {storeRefunded > 0 && <div className="flex justify-between items-center text-sm text-orange-600 px-2 bg-orange-50 py-1.5 rounded-lg"><span>المسترد</span><span className="font-bold dir-ltr">{storeRefunded.toFixed(2)}</span></div>}
                           </>
                         ) : (
-                          <>
-                            <div className="flex justify-between items-center text-sm px-1"><span>قيمة المنتجات</span><span className="font-bold">{Number(order.subtotal || 0).toFixed(2)}</span></div>
-                            {Number(order.delivery_fee || 0) > 0 && <div className="flex justify-between items-center text-sm px-1"><span className="flex items-center gap-1"><MapPin size={12}/> توصيل</span><span className="font-bold">{Number(order.delivery_fee).toFixed(2)}</span></div>}
-                            {Number(order.discount || 0) > 0 && <div className="flex justify-between items-center text-sm text-red-500 px-2 bg-red-50 py-1.5 rounded-lg"><span>خصم</span><span className="font-bold dir-ltr">-{Number(order.discount).toFixed(2)}</span></div>}
-                            {walletUsed > 0 && <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg"><span>دفع محفظة</span><span className="font-bold dir-ltr">-{walletUsed.toFixed(2)}</span></div>}
-                          </>
+                          <OrderFinancialBreakdown financials={printFinancials} variant="light" />
                         )}
                       </div>
 
-                      <div className="flex justify-between items-center mb-5 px-1 border-t border-[#D9A3AA]/20 pt-4">
-                        <span className="font-bold text-[#4A4A4A]">الإجمالي النهائي</span>
-                        <span className="font-black text-xl text-[#4A4A4A]">{(order.order_type === 'store' ? storeTotal : Number(order.total_amount || 0)).toFixed(2)} ر.س</span>
-                      </div>
+                      {order.order_type === 'store' && (
+                        <div className="flex justify-between items-center mb-5 px-1 border-t border-[#D9A3AA]/20 pt-4">
+                          <span className="font-bold text-[#4A4A4A]">الإجمالي النهائي</span>
+                          <span className="font-black text-xl text-[#4A4A4A]">{storeTotal.toFixed(2)} ر.س</span>
+                        </div>
+                      )}
 
                       {order.order_type === 'print' && orderPayments.length > 0 && (
                         <div className="mb-4 bg-[#F8F5F2] p-3 rounded-xl border border-[#D9A3AA]/10">

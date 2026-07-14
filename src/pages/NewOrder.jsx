@@ -196,7 +196,7 @@ export default function NewOrder() {
     const next = !usePoints;
     setUsePoints(next);
     setUsePackage(false);
-    if (next && wallet?.points_balance > 0) setPointsAmountInput(Math.min(Number(wallet.points_balance), Math.max(0, baseAfterCoupon)).toFixed(2));
+    if (next && wallet?.points_balance > 0) setPointsAmountInput(Math.min(Number(wallet.points_balance), Math.max(0, total)).toFixed(2));
     else setPointsAmountInput('');
   };
   const toggleUsePackage = () => {
@@ -225,20 +225,21 @@ export default function NewOrder() {
 
   let couponDiscountValue = 0;
   if (couponData) {
-    couponDiscountValue = couponData.discount_type === 'percent'
+    const calculatedCoupon = couponData.discount_type === 'percent'
       ? subtotal * (couponData.discount_amount / 100)
       : Number(couponData.discount_amount);
+    couponDiscountValue = Math.min(subtotal, Math.max(0, Math.round((calculatedCoupon + Number.EPSILON) * 100) / 100));
   }
 
-  const baseAfterCoupon = subtotal + Number(deliveryFee || 0) - couponDiscountValue - Number(manualDiscount || 0);
-
-  // حساب الخصم من النقاط (يأخذ المبلغ المُدخل أو الحد الأقصى)
-  let pointsDiscountValue = 0;
-  if (usePoints && wallet && wallet.points_balance > 0) {
-    const inputVal = Number(pointsAmountInput) || 0;
-    const maxPoints = Math.min(Number(wallet.points_balance), Math.max(0, baseAfterCoupon));
-    pointsDiscountValue = inputVal > 0 ? Math.min(inputVal, maxPoints) : maxPoints;
-  }
+  const grossAmount = subtotal + Number(deliveryFee || 0);
+  const directDiscountValue = Math.min(
+    Math.max(0, grossAmount - couponDiscountValue),
+    Math.max(0, Number(manualDiscount || 0)),
+  );
+  const baseAfterCoupon = Math.max(
+    0,
+    grossAmount - couponDiscountValue - directDiscountValue,
+  );
 
   // حساب الخصم من الباقات (يأخذ المبلغ المُدخل أو الحد الأقصى)
   let packageDiscountValue = 0;
@@ -248,8 +249,17 @@ export default function NewOrder() {
     packageDiscountValue = inputVal > 0 ? Math.min(inputVal, maxPkg) : maxPkg;
   }
 
-  const total = Math.max(0, baseAfterCoupon - pointsDiscountValue - packageDiscountValue);
-  const remaining = Math.max(0, total - Number(deposit || 0));
+  // الباقات خصم سعري، بينما النقاط وسيلة دفع لا تغيّر قيمة الطلب.
+  const total = Math.max(0, baseAfterCoupon - packageDiscountValue);
+
+  let pointsDiscountValue = 0;
+  if (usePoints && wallet && wallet.points_balance > 0) {
+    const inputVal = Number(pointsAmountInput) || 0;
+    const maxPoints = Math.min(Number(wallet.points_balance), total);
+    pointsDiscountValue = inputVal > 0 ? Math.min(inputVal, maxPoints) : maxPoints;
+  }
+
+  const remaining = Math.max(0, total - pointsDiscountValue - Number(deposit || 0));
 
   const checkCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -277,11 +287,19 @@ export default function NewOrder() {
         album_qty: Number(data.albumQty) || 0,
         album_price: Number(data.albumPrice) || 0,
         delivery_fee: Number(data.deliveryFee) || 0,
-        manual_discount: Number(data.manualDiscount) || 0,
+        financial_schema_version: 2,
+        direct_discount_amount: directDiscountValue,
+        coupon_discount_amount: couponDiscountValue,
+        coupon_code: couponData?.code || null,
+        package_discount_amount: packageDiscountValue,
+        points_used_amount: pointsDiscountValue,
+        photo_4x6_unit_price: Number(active4x6Price) || 0,
+        a4_unit_price: Number(settings.a4_price) || 0,
+        manual_discount: directDiscountValue + couponDiscountValue + packageDiscountValue,
         subtotal: subtotal,
         total_amount: total,
         deposit: Number(data.deposit) || 0,
-        wallet_used: pointsDiscountValue + packageDiscountValue, // إجمالي المبلغ المستخدم من المحفظة
+        wallet_used: pointsDiscountValue,
         notes: data.notes
           + (couponData ? ` | كوبون: ${couponData.code}` : '')
           + (isDynamicApplied ? ` | تسعير ذكي` : '')
@@ -648,7 +666,7 @@ export default function NewOrder() {
                         onChange={e => setPointsAmountInput(e.target.value)}
                         className="flex-1 text-center border border-violet-300 rounded-lg px-2 py-1.5 text-sm font-bold text-violet-700 bg-white outline-none focus:ring-2 ring-violet-300/40"
                       />
-                      <button type="button" onClick={() => setPointsAmountInput(Math.min(Number(wallet.points_balance), Math.max(0, baseAfterCoupon)).toFixed(2))}
+                      <button type="button" onClick={() => setPointsAmountInput(Math.min(Number(wallet.points_balance), Math.max(0, total)).toFixed(2))}
                         className="text-[10px] text-violet-600 bg-violet-100 hover:bg-violet-200 px-2 py-1 rounded-lg shrink-0 transition-colors">
                         الكل
                       </button>
@@ -666,8 +684,14 @@ export default function NewOrder() {
               )}
 
               <div className="pt-2 border-t border-[#D9A3AA]/20 flex justify-between text-lg font-bold text-[#4A4A4A]">
-                <span>الإجمالي</span><span>{total.toFixed(2)} <RiyalSign /></span>
+                <span>قيمة الطلب بعد الخصومات</span><span>{total.toFixed(2)} <RiyalSign /></span>
               </div>
+              {pointsDiscountValue > 0 && (
+                <div className="flex justify-between text-violet-700 font-bold">
+                  <span>مدفوع من رصيد النقاط</span>
+                  <span>- {pointsDiscountValue.toFixed(2)} <RiyalSign /></span>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 pt-4 border-t border-[#D9A3AA]/20">

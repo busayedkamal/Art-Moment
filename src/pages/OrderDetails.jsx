@@ -12,6 +12,8 @@ import {
 import logo from '../assets/logo-art-moment.svg';
 import logoPng from '../assets/logo.png';
 import RiyalSign from '../components/RiyalSign';
+import OrderFinancialBreakdown from '../components/OrderFinancialBreakdown';
+import { getPrintOrderFinancials, roundMoney } from '../utils/orderFinancials';
 
 const STATUS_CONFIG = {
   pending_verification: { label: 'انتظار التحقق', bgClass: 'bg-blue-100',    textClass: 'text-blue-700',    btnClass: 'bg-blue-600 hover:bg-blue-500 text-white',     icon: Clock },
@@ -65,7 +67,6 @@ export default function OrderDetails() {
   const [transactions, setTransactions] = useState([]);
   const [showPaymentInput, setShowPaymentInput] = useState(false);
   const [newPayment, setNewPayment] = useState({ amount: '', date: new Date().toISOString().split('T')[0] });
-  const [walletUsed, setWalletUsed] = useState(0);
 
   const [manualDiscount, setManualDiscount] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -208,10 +209,11 @@ export default function OrderDetails() {
           if (existPts) setPointsDiscountInput(existPts.amount_value?.toString() || '');
       }
 
-      setManualDiscount(Number(orderData.manual_discount || 0));
+      const initialFinancials = getPrintOrderFinancials(orderData, transData || []);
+      setManualDiscount(initialFinancials.directDiscount);
       setDeliveryFee(Number(orderData.delivery_fee || 0));
       setNotes(orderData.notes || '');
-      setWalletUsed(Number(orderData.wallet_used || 0));
+      setCouponCode(initialFinancials.couponCode || '');
 
       if (settingsData) {
         setAppSettings(settingsData);
@@ -496,6 +498,8 @@ export default function OrderDetails() {
   const recalculateAndSaveTotal = async (overrides = {}) => {
     try {
       let newSubtotal = Number(order.subtotal || 0);
+      let active4x6Price = Number(order.photo_4x6_unit_price || prices.photo4x6 || 0);
+      const activeA4Price = Number(order.a4_unit_price || prices.a4 || 0);
 
       // نحسب من جديد فقط إذا قمنا بتعديل محتويات الطلب (A4, 4x6, الخ)
       if ('a4_qty' in overrides || 'photo_4x6_qty' in overrides || 'album_qty' in overrides || 'album_price' in overrides) {
@@ -504,7 +508,7 @@ export default function OrderDetails() {
         const currentAlbumQty = overrides.album_qty ?? order.album_qty;
         const currentAlbumPrice = overrides.album_price ?? order.album_price;
         
-        let active4x6Price = prices.photo4x6;
+        active4x6Price = prices.photo4x6;
         if (appSettings?.is_dynamic_pricing_enabled) {
            const qty = Number(current4x6);
            if (qty > 0) {
@@ -519,34 +523,55 @@ export default function OrderDetails() {
         newSubtotal = productsTotal + albumsTotal;
       }
 
+      const currentFinancials = getPrintOrderFinancials(order, transactions);
       const currentDelivery = Number(overrides.delivery_fee ?? deliveryFee ?? 0);
-      const currentDiscount = Number(overrides.manual_discount ?? manualDiscount ?? 0);
-
-      // إجمالي قبل الخصم
       const theoreticalTotal = Math.max(0, newSubtotal + currentDelivery);
-      // نضمن عدم تجاوز الخصم للحد
-      const safeDiscount = Math.min(theoreticalTotal, Math.max(0, currentDiscount));
-
-      const newTotal = Math.max(0, theoreticalTotal - safeDiscount);
-      const isPaid = (Number(order.deposit || 0) + Number(overrides.wallet_used ?? walletUsed ?? 0)) >= newTotal;
+      const safeDirectDiscount = Math.min(
+        theoreticalTotal,
+        Math.max(0, Number(overrides.direct_discount_amount ?? currentFinancials.directDiscount ?? 0)),
+      );
+      const safeCouponDiscount = Math.min(
+        Math.max(0, theoreticalTotal - safeDirectDiscount),
+        Math.max(0, Number(overrides.coupon_discount_amount ?? currentFinancials.couponDiscount ?? 0)),
+      );
+      const safePackageDiscount = Math.min(
+        Math.max(0, theoreticalTotal - safeDirectDiscount - safeCouponDiscount),
+        Math.max(0, Number(overrides.package_discount_amount ?? currentFinancials.packageDiscount ?? 0)),
+      );
+      const totalPriceDiscount = roundMoney(safeDirectDiscount + safeCouponDiscount + safePackageDiscount);
+      const newTotal = Math.max(0, roundMoney(theoreticalTotal - totalPriceDiscount));
+      const safePointsUsed = Math.min(
+        newTotal,
+        Math.max(0, Number(overrides.points_used_amount ?? overrides.wallet_used ?? currentFinancials.pointsUsed ?? 0)),
+      );
+      const isPaid = (Number(order.deposit || 0) + safePointsUsed) >= newTotal;
 
       const updatedData = {
+        financial_schema_version: 2,
         a4_qty: overrides.a4_qty ?? order.a4_qty,
         photo_4x6_qty: overrides.photo_4x6_qty ?? order.photo_4x6_qty,
         album_qty: overrides.album_qty ?? order.album_qty,
         album_price: overrides.album_price ?? order.album_price,
+        photo_4x6_unit_price: active4x6Price,
+        a4_unit_price: activeA4Price,
         delivery_fee: currentDelivery,
-        manual_discount: safeDiscount,
+        direct_discount_amount: safeDirectDiscount,
+        coupon_discount_amount: safeCouponDiscount,
+        coupon_code: overrides.coupon_code ?? currentFinancials.couponCode,
+        package_discount_amount: safePackageDiscount,
+        points_used_amount: safePointsUsed,
+        manual_discount: totalPriceDiscount,
         subtotal: newSubtotal,
         total_amount: newTotal,
-        wallet_used: overrides.wallet_used ?? walletUsed,
+        wallet_used: safePointsUsed,
         payment_status: isPaid ? 'paid' : 'unpaid'
       };
 
-      await supabase.from('orders').update(updatedData).eq('id', id);
+      const { error: updateError } = await supabase.from('orders').update(updatedData).eq('id', id);
+      if (updateError) throw updateError;
       setOrder(prev => ({ ...prev, ...updatedData }));
       setDeliveryFee(currentDelivery);
-      setManualDiscount(safeDiscount);
+      setManualDiscount(safeDirectDiscount);
       return true;
     } catch (e) {
       toast.error('فشل الحساب');
@@ -571,11 +596,6 @@ export default function OrderDetails() {
         return toast.error('كود غير صالح');
       }
 
-      try {
-        await syncWalletSpend(0);
-      } catch {
-        // Wallet cleanup is best-effort when switching to coupon discount.
-      }
       setDiscountSource('discount');
 
       const currentSubtotal = Number(order.subtotal || 0);
@@ -585,12 +605,14 @@ export default function OrderDetails() {
           ? Math.ceil(currentSubtotal * (Number(coupon.discount_amount || 0) / 100))
           : Number(coupon.discount_amount || 0);
 
-      const success = await recalculateAndSaveTotal({ manual_discount: discountValue });
+      const success = await recalculateAndSaveTotal({
+        coupon_discount_amount: discountValue,
+        coupon_code: coupon.code,
+      });
 
       toast.dismiss(toastId);
       if (success) {
-        setManualDiscount(discountValue);
-        setCouponCode('');
+        setCouponCode(coupon.code);
 
         const noteMsg = `تم استخدام كوبون: ${coupon.code}`;
         if (!notes.includes(noteMsg)) {
@@ -610,8 +632,8 @@ export default function OrderDetails() {
   // ✅ تعديل: تحويل الفائض للمحفظة لمرة واحدة وموازنة الطلب
   const convertExcessToWallet = async () => {
     if (isConvertingExcess) return; // منع النقر المزدوج
-    
-    const excessAmount = Number(order.deposit || 0) + Number(order.wallet_used || 0) - Number(order.total_amount || 0);
+
+    const excessAmount = getPrintOrderFinancials(order, transactions).overpaidAmount;
     if (excessAmount <= 0) return;
 
     const cleanPhone = normalizePhone(order.phone);
@@ -732,10 +754,7 @@ export default function OrderDetails() {
 
     const toastId = toast.loading('تحديث الخصم...');
     try {
-      // الخصم العادي فقط — لا يمس المحافظ
-      await syncWalletSpend(0);
-      await syncPackageSpend(0);
-      const success = await recalculateAndSaveTotal({ manual_discount: discountValue });
+      const success = await recalculateAndSaveTotal({ direct_discount_amount: discountValue });
       toast.dismiss(toastId);
       if (success) toast.success('تم تحديث الخصم');
     } catch (e) {
@@ -754,8 +773,7 @@ export default function OrderDetails() {
     const toastId = toast.loading('تحديث الخصم...');
     try {
       await syncPackageSpend(discountValue);
-      await syncWalletSpend(0);
-      const success = await recalculateAndSaveTotal({ manual_discount: discountValue, wallet_used: 0 });
+      const success = await recalculateAndSaveTotal({ package_discount_amount: discountValue });
       toast.dismiss(toastId);
       if (success) { toast.success('تم خصم من رصيد الباقات ✅'); setDiscountSource('package'); }
     } catch (e) {
@@ -771,16 +789,12 @@ export default function OrderDetails() {
     const theoreticalTotal = Number(order.subtotal || 0) + Number(deliveryFee || 0);
     const discountValue = Math.min(inputVal, theoreticalTotal);
 
-    // النقاط تُعامَل كدفعة مالية (مثل الكاش)، لا تُقلّل total_amount
-    // manual_discount = خصم الكوبون القائم فقط (لا يتغير)
-    // wallet_used = المبلغ المدفوع من النقاط (يُطرح من المتبقي فقط)
-    const existingCouponDiscount = Number(order.manual_discount || 0);
-    // نستخدم order.wallet_used لا walletUsed (لأن الحالة المحلية قد لا تكون محدثة)
-    const existingWalletUsed = Number(order.wallet_used || 0);
+    const currentFinancials = getPrintOrderFinancials(order, transactions);
+    const existingWalletUsed = currentFinancials.pointsUsed;
 
     // الحد الأقصى للدفع من النقاط = المتبقي الفعلي (total - deposit - wallet_used الحالي)
     const currentRemaining = Math.max(0,
-      Number(order.total_amount || 0) - Number(order.deposit || 0) - existingWalletUsed
+      currentFinancials.totalAmount - currentFinancials.cashPaid - existingWalletUsed
     );
     const safeDiscount = Math.min(discountValue, currentRemaining);
     // إجمالي النقاط المستخدمة الجديد (مجموع، ليس إضافة)
@@ -789,13 +803,14 @@ export default function OrderDetails() {
     const toastId = toast.loading('تحديث الخصم...');
     try {
       await syncWalletSpend(newWalletTotal);   // syncWalletSpend تستقبل الإجمالي المطلوب
-      await syncPackageSpend(0);
-      const success = await recalculateAndSaveTotal({ manual_discount: existingCouponDiscount, wallet_used: newWalletTotal });
+      const success = await recalculateAndSaveTotal({
+        points_used_amount: newWalletTotal,
+        wallet_used: newWalletTotal,
+      });
       toast.dismiss(toastId);
       if (success) {
         toast.success('تم خصم من رصيد النقاط ✅');
         setDiscountSource('wallet');
-        setWalletUsed(newWalletTotal);
         setCustomerPointsBalance(prev => Math.max(0, prev - safeDiscount));
       }
     } catch (e) {
@@ -830,7 +845,8 @@ export default function OrderDetails() {
       if (error) throw error;
 
       const newTotalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0) + Number(newPayment.amount);
-      const isPaid = newTotalPaid >= Number(order.total_amount || 0);
+      const pointsPaid = getPrintOrderFinancials(order, transactions).pointsUsed;
+      const isPaid = newTotalPaid + pointsPaid >= Number(order.total_amount || 0);
 
       await supabase
         .from('orders')
@@ -853,13 +869,14 @@ export default function OrderDetails() {
       await supabase.from('order_payments').delete().eq('id', paymentId);
 
       const newTotalPaid = Number(order.deposit || 0) - Number(amount || 0);
+      const pointsPaid = getPrintOrderFinancials(order, transactions).pointsUsed;
       await supabase
         .from('orders')
-        .update({ deposit: newTotalPaid, payment_status: newTotalPaid >= Number(order.total_amount || 0) ? 'paid' : 'unpaid' })
+        .update({ deposit: newTotalPaid, payment_status: newTotalPaid + pointsPaid >= Number(order.total_amount || 0) ? 'paid' : 'unpaid' })
         .eq('id', id);
 
       setPayments(prev => prev.filter(p => p.id !== paymentId));
-      setOrder(prev => ({ ...prev, deposit: newTotalPaid, payment_status: newTotalPaid >= Number(order.total_amount || 0) ? 'paid' : 'unpaid' }));
+      setOrder(prev => ({ ...prev, deposit: newTotalPaid, payment_status: newTotalPaid + pointsPaid >= Number(order.total_amount || 0) ? 'paid' : 'unpaid' }));
       toast.success('تم الحذف');
     } catch {
       toast.error('فشل');
@@ -867,7 +884,8 @@ export default function OrderDetails() {
   };
 
   const markAsFullyPaid = async () => {
-    const remaining = Number(order.total_amount || 0) - Number(order.deposit || 0) - Number(order.wallet_used || 0);
+    const currentFinancials = getPrintOrderFinancials(order, transactions);
+    const remaining = currentFinancials.remainingAmount;
     if (remaining <= 0) return;
 
     try {
@@ -930,11 +948,8 @@ export default function OrderDetails() {
       ? '966' + cleanPhone.substring(1)
       : (cleanPhone.startsWith('966') ? cleanPhone : '966' + cleanPhone);
 
-    const remaining = (
-      Number(order.total_amount || 0) -
-      Number(order.deposit || 0) -
-      Number(order.wallet_used || 0)
-    ).toFixed(2);
+    const currentFinancials = getPrintOrderFinancials(order, transactions);
+    const remaining = currentFinancials.remainingAmount.toFixed(2);
 
     const siteLink = 'https://www.art-moment.com/track';
 
@@ -947,9 +962,8 @@ export default function OrderDetails() {
         `\nتابع طلبك وسجل طلباتك من هنا:\n${siteLink}`;
     } else if (type === 'invoice') {
       // المدفوع: "كامل" إذا المتبقي = 0، وإلا مجموع الدفعات النقدية
-      const totalPaidCash = Number(order.deposit || 0);
-      const totalPaidWallet = Number(order.wallet_used || 0);
-      const remainingNum = Number(order.total_amount || 0) - totalPaidCash - totalPaidWallet;
+      const totalPaidCash = currentFinancials.cashPaid;
+      const remainingNum = currentFinancials.remainingAmount;
       const paidDisplay = remainingNum <= 0.01
         ? 'كامل'
         : `${totalPaidCash.toFixed(2)} ريال`;
@@ -1170,7 +1184,8 @@ export default function OrderDetails() {
   if (loading) return <div className="p-10 text-center">جاري التحميل...</div>;
   if (!order) return <div className="p-10 text-center text-red-500">حدث خطأ</div>;
 
-  const remaining = Number(order.total_amount || 0) - Number(order.deposit || 0) - Number(order.wallet_used || 0);
+  const financials = getPrintOrderFinancials(order, transactions);
+  const remaining = roundMoney(financials.totalAmount - financials.paidAmount);
   const rewardAmount = calculateLoyaltyReward();
 
   return (
@@ -1592,8 +1607,7 @@ export default function OrderDetails() {
                       />
                       <button type="button"
                         onClick={() => {
-                          const remaining = Math.max(0, Number(order.total_amount || 0) - Number(order.deposit || 0) - Number(order.wallet_used || 0));
-                          setPointsDiscountInput(Math.min(customerPointsBalance, remaining).toFixed(2));
+                          setPointsDiscountInput(Math.min(customerPointsBalance, financials.remainingAmount).toFixed(2));
                         }}
                         className="text-[10px] text-violet-300 bg-violet-500/20 hover:bg-violet-500/30 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
                       <button onClick={handleSavePointsDiscount}
@@ -1625,40 +1639,7 @@ export default function OrderDetails() {
               {/* ════ العمود الأيسر: الإجماليات والدفع والإجراءات ══════════════ */}
               <div className="space-y-2 text-sm">
 
-                {/* الإجماليات */}
-                {(() => {
-                  const withDelivery = Number(order.subtotal || 0) + Number(deliveryFee || 0);
-                  const couponDiscount = Number(order.manual_discount || 0);
-                  const walletPayment = Number(order.wallet_used || 0);
-                  return (
-                    <>
-                      {couponDiscount > 0.01 ? (
-                        <>
-                          <div className="flex justify-between text-white/60 text-xs">
-                            <span>الإجمالي (مع التوصيل)</span>
-                            <span className="line-through">{withDelivery.toFixed(2)} <RiyalSign light /></span>
-                          </div>
-                          <div className="flex justify-between text-xs text-pink-300 bg-pink-500/10 border border-pink-400/20 rounded-lg px-2 py-1">
-                            <span className="flex items-center gap-1"><Tag size={10} /> خصم الكوبون</span>
-                            <span className="font-bold">-{couponDiscount.toFixed(2)} <RiyalSign light /></span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex justify-between text-white/60 text-xs">
-                          <span>الإجمالي (مع التوصيل)</span>
-                          <span>{withDelivery.toFixed(2)} <RiyalSign light /></span>
-                        </div>
-                      )}
-
-                      {walletPayment > 0.01 && (
-                        <div className="flex justify-between text-xs text-violet-300 bg-violet-500/10 border border-violet-400/20 rounded-lg px-2 py-1">
-                          <span className="flex items-center gap-1"><Wallet size={10} /> مدفوع من رصيد النقاط</span>
-                          <span className="font-bold">-{walletPayment.toFixed(2)} <RiyalSign light /></span>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                <OrderFinancialBreakdown financials={financials} variant="dark" />
 
                 {/* سجل المدفوعات */}
                 <div className="bg-white/10 rounded-xl p-2.5">
@@ -1714,25 +1695,25 @@ export default function OrderDetails() {
                     )}
                   </div>
 
-                  {Number(order.wallet_used || 0) > 0.01 ? (
+                  {financials.pointsUsed > 0.01 ? (
                     <>
                       <div className="flex justify-between border-t border-white/10 pt-1.5 mt-1.5">
                         <span className="text-[10px] text-[#4A4A4A]/55">مدفوع نقداً</span>
-                        <span className="font-bold text-[#D9A3AA] text-xs">{Number(order.deposit || 0).toFixed(2)}</span>
+                        <span className="font-bold text-[#D9A3AA] text-xs">{financials.cashPaid.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between mt-0.5">
                         <span className="text-[10px] text-violet-300/70">مدفوع من النقاط</span>
-                        <span className="font-bold text-violet-300 text-xs">{Number(order.wallet_used || 0).toFixed(2)}</span>
+                        <span className="font-bold text-violet-300 text-xs">{financials.pointsUsed.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between mt-0.5 border-t border-white/10 pt-1">
                         <span className="text-[10px] text-white/70">إجمالي المدفوع</span>
-                        <span className="font-bold text-white text-xs">{(Number(order.deposit || 0) + Number(order.wallet_used || 0)).toFixed(2)}</span>
+                        <span className="font-bold text-white text-xs">{financials.paidAmount.toFixed(2)}</span>
                       </div>
                     </>
                   ) : (
                     <div className="flex justify-between border-t border-white/10 pt-1.5 mt-1.5">
                       <span className="text-[10px] text-[#4A4A4A]/55">إجمالي المدفوع</span>
-                      <span className="font-bold text-[#D9A3AA] text-xs">{Number(order.deposit || 0).toFixed(2)}</span>
+                      <span className="font-bold text-[#D9A3AA] text-xs">{financials.cashPaid.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -1822,84 +1803,29 @@ export default function OrderDetails() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D9A3AA]/15">
-                {order.photo_4x6_qty > 0 && (
-                  <tr>
-                    <td className="py-2 px-2 text-xs font-medium">طباعة صور 4×6</td>
-                    <td className="py-2 px-2 text-center text-xs font-bold">{order.photo_4x6_qty}</td>
+                {financials.lineItems.map((item) => (
+                  <tr key={item.key}>
+                    <td className="py-2 px-2 text-xs font-medium">{item.label}</td>
+                    <td className="py-2 px-2 text-center text-xs font-bold">{item.quantity}</td>
                     <td className="py-2 px-2 text-left text-xs text-[#4A4A4A]/70">
-                       {/* عرض السعر الديناميكي إذا كان مطبقاً */}
-                       {Number(order.subtotal) > 0 ? (
-                          ((Number(order.photo_4x6_qty) * prices.photo4x6) === Number(order.subtotal) - (Number(order.a4_qty) * prices.a4) - (Number(order.album_qty) * Number(order.album_price))) ? prices.photo4x6 : 'تسعير ذكي'
-                       ) : prices.photo4x6}
+                      {item.unitPrice != null ? item.unitPrice.toFixed(2) : 'غير محفوظ'}
                     </td>
                     <td className="py-2 px-2 text-left text-xs font-bold">
-                       {Number(order.subtotal) > 0 ? (
-                          (Number(order.subtotal) - (Number(order.a4_qty) * prices.a4) - (Number(order.album_qty) * Number(order.album_price))).toFixed(2)
-                       ) : (order.photo_4x6_qty * prices.photo4x6).toFixed(2)}
+                      {item.lineTotal != null ? item.lineTotal.toFixed(2) : '—'}
                     </td>
                   </tr>
-                )}
-                {order.a4_qty > 0 && (
-                  <tr>
-                    <td className="py-2 px-2 text-xs font-medium">طباعة صور A4</td>
-                    <td className="py-2 px-2 text-center text-xs font-bold">{order.a4_qty}</td>
-                    <td className="py-2 px-2 text-left text-xs text-[#4A4A4A]/70">{prices.a4}</td>
-                    <td className="py-2 px-2 text-left text-xs font-bold">{(order.a4_qty * prices.a4).toFixed(2)}</td>
-                  </tr>
-                )}
-                {order.album_qty > 0 && (
-                  <tr>
-                    <td className="py-2 px-2 text-xs font-medium">ألبومات صور</td>
-                    <td className="py-2 px-2 text-center text-xs font-bold">{order.album_qty}</td>
-                    <td className="py-2 px-2 text-left text-xs text-[#4A4A4A]/70">{order.album_price}</td>
-                    <td className="py-2 px-2 text-left text-xs font-bold">{(order.album_qty * order.album_price).toFixed(2)}</td>
-                  </tr>
-                )}
+                ))}
               </tbody>
             </table>
 
             <div className="no-break flex justify-end mb-4">
-              <div className="w-64 space-y-2">
-                <div className="flex justify-between text-xs text-[#4A4A4A]/75 border-b border-[#D9A3AA]/15 pb-1">
-                  <span>المجموع الفرعي</span>
-                  <span className="font-bold">{Number(order.subtotal || 0).toFixed(2)}</span>
-                </div>
-                {Number(order.delivery_fee || 0) > 0 && (
-                  <div className="flex justify-between text-xs text-[#4A4A4A]/75 border-b border-[#D9A3AA]/15 pb-1">
-                    <span>التوصيل</span>
-                    <span className="font-bold">{Number(order.delivery_fee || 0).toFixed(2)}</span>
-                  </div>
-                )}
-                {/* خصم الكوبون فقط (إن وجد) */}
-                {Number(order.manual_discount || 0) > 0.01 && (
-                  <div className="flex justify-between text-xs text-red-600 border-b border-[#D9A3AA]/15 pb-1">
-                    <span>خصم الكوبون</span>
-                    <span>-{Number(order.manual_discount || 0).toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-black text-lg pt-1">
-                  <span>الإجمالي</span>
-                  <span>{Number(order.total_amount || 0).toFixed(2)} <RiyalSign /></span>
-                </div>
-                {/* المدفوع نقداً */}
-                <div className="flex justify-between text-xs pt-1 text-[#4A4A4A]/70">
-                  <span>المدفوع</span>
-                  <span className="font-bold">{Number(order.deposit || 0).toFixed(2)}</span>
-                </div>
-                {/* مدفوع من النقاط */}
-                {Number(order.wallet_used || 0) > 0.01 && (
-                  <div className="flex justify-between text-xs pt-1 text-violet-600">
-                    <span>مدفوع من النقاط</span>
-                    <span className="font-bold">-{Number(order.wallet_used || 0).toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-xs pt-1 border-t-2 border-[#4A4A4A]/35 mt-2">
-                  <span className="font-bold text-[#4A4A4A] mt-1">المتبقي</span>
-                  <span className={`font-black text-base mt-1 ${remaining > 0 ? 'text-red-600' : 'text-[#4A4A4A]'}`}>
-                    {remaining.toFixed(2)}
-                  </span>
-                </div>
-              </div>
+              <OrderFinancialBreakdown
+                financials={financials}
+                variant="print"
+                showItems={false}
+                showTitle={false}
+                className="w-72"
+              />
             </div>
 
             <div className="no-break text-center border-t border-[#D9A3AA]/15 pt-4">

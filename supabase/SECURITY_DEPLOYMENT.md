@@ -125,6 +125,12 @@ For configurable operational deadlines, stock alerts, return windows, and notifi
 supabase/migrations/202607120001_operation_rules.sql
 ```
 
+For explicit print-order discounts, points payments, coupon attribution, and historical unit-price snapshots, also run:
+
+```text
+supabase/migrations/202607130001_order_financial_breakdown.sql
+```
+
 4. Confirm these public flows still work:
 
 - Landing page pricing loads.
