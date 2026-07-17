@@ -7,7 +7,7 @@ import {
   ArrowRight, Printer, CheckCircle, Truck, Trash2,
   Banknote, FileText, User, Download,
   MessageCircle, X, Tag, Receipt, StickyNote, Plus, Wallet, Gift, Package,
-  Clock, RotateCcw, AlertCircle
+  Clock, RotateCcw, AlertCircle, Pencil, Save
 } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
 import logoPng from '../assets/logo.png';
@@ -79,6 +79,11 @@ export default function OrderDetails() {
   const [pointsDiscountInput, setPointsDiscountInput] = useState('');
   const [customerPointsBalance, setCustomerPointsBalance] = useState(0);
   const [walletSubscriptionId, setWalletSubscriptionId] = useState(''); // رقم الاشتراك (wallet id)
+  const [showFinancialEditor, setShowFinancialEditor] = useState(false);
+  const [savingFinancialEditor, setSavingFinancialEditor] = useState(false);
+  const [financialEdit, setFinancialEdit] = useState({
+    directDiscount: '', couponDiscount: '', couponCode: '', packageDiscount: '', pointsUsed: ''
+  });
 
   const [notes, setNotes] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -383,14 +388,18 @@ export default function OrderDetails() {
     const desired = Math.max(0, Number(desiredAmount || 0));
     const delta = desired - prevAmount;
 
-    if (delta > 0 && customerPackageBalance + 1e-9 < delta) {
-      throw new Error(`رصيد الباقات غير كافٍ. المتاح: ${customerPackageBalance.toFixed(2)}`);
+    const availablePackageBalance = Object.values(balanceByWallet)
+      .reduce((sum, balance) => sum + Math.max(0, Number(balance || 0)), 0);
+
+    if (delta > 0 && availablePackageBalance + 1e-9 < delta) {
+      throw new Error(`رصيد الباقات غير كافٍ. المتاح: ${availablePackageBalance.toFixed(2)}`);
     }
 
     if (desired <= 1e-9) {
       if (existingSpend) {
         await supabase.from('wallet_transactions').delete().eq('id', existingSpend.id);
         setTransactions(prev => prev.filter(t => t.id !== existingSpend.id));
+        setCustomerPackageBalance(prev => prev + prevAmount);
       }
       return;
     }
@@ -763,6 +772,84 @@ export default function OrderDetails() {
     }
   };
 
+  const openFinancialEditor = () => {
+    const current = getPrintOrderFinancials(order, transactions);
+    setFinancialEdit({
+      directDiscount: current.directDiscount.toFixed(2),
+      couponDiscount: current.couponDiscount.toFixed(2),
+      couponCode: current.couponCode || '',
+      packageDiscount: current.packageDiscount.toFixed(2),
+      pointsUsed: current.pointsUsed.toFixed(2),
+    });
+    setShowFinancialEditor(true);
+  };
+
+  const handleSaveFinancialBreakdown = async () => {
+    if (savingFinancialEditor) return;
+
+    const current = getPrintOrderFinancials(order, transactions);
+    const next = {
+      directDiscount: Number(financialEdit.directDiscount || 0),
+      couponDiscount: Number(financialEdit.couponDiscount || 0),
+      couponCode: financialEdit.couponCode.trim().toUpperCase(),
+      packageDiscount: Number(financialEdit.packageDiscount || 0),
+      pointsUsed: Number(financialEdit.pointsUsed || 0),
+    };
+    const numericValues = [next.directDiscount, next.couponDiscount, next.packageDiscount, next.pointsUsed];
+
+    if (numericValues.some(value => !Number.isFinite(value) || value < 0)) {
+      return toast.error('أدخل مبالغ صحيحة لا تقل عن صفر');
+    }
+
+    const priceDiscounts = roundMoney(next.directDiscount + next.couponDiscount + next.packageDiscount);
+    if (priceDiscounts > current.grossAmount + 0.01) {
+      return toast.error('مجموع خصومات السعر أكبر من إجمالي الطلب');
+    }
+
+    const totalAfterDiscounts = roundMoney(current.grossAmount - priceDiscounts);
+    if (next.pointsUsed > totalAfterDiscounts + 0.01) {
+      return toast.error('المبلغ المدفوع بالنقاط أكبر من قيمة الطلب بعد الخصومات');
+    }
+
+    const packageChanged = Math.abs(next.packageDiscount - current.packageDiscount) > 0.009;
+    const pointsChanged = Math.abs(next.pointsUsed - current.pointsUsed) > 0.009;
+    const toastId = toast.loading('جاري تصحيح الحساب...');
+    setSavingFinancialEditor(true);
+
+    try {
+      if (packageChanged) await syncPackageSpend(next.packageDiscount);
+      if (pointsChanged) await syncWalletSpend(next.pointsUsed);
+
+      const success = await recalculateAndSaveTotal({
+        direct_discount_amount: next.directDiscount,
+        coupon_discount_amount: next.couponDiscount,
+        coupon_code: next.couponCode,
+        package_discount_amount: next.packageDiscount,
+        points_used_amount: next.pointsUsed,
+        wallet_used: next.pointsUsed,
+      });
+      if (!success) throw new Error('تعذر حفظ تفاصيل الحساب');
+
+      setManualDiscount(next.directDiscount);
+      setCouponCode(next.couponCode);
+      setPackageDiscountInput(next.packageDiscount ? next.packageDiscount.toFixed(2) : '');
+      setPointsDiscountInput(next.pointsUsed ? next.pointsUsed.toFixed(2) : '');
+      if (pointsChanged) {
+        setCustomerPointsBalance(prev => Math.max(0, prev + current.pointsUsed - next.pointsUsed));
+      }
+      setShowFinancialEditor(false);
+      toast.dismiss(toastId);
+      toast.success('تم تصحيح تفصيل الحساب');
+    } catch (error) {
+      if (pointsChanged) await syncWalletSpend(current.pointsUsed).catch(() => {});
+      if (packageChanged) await syncPackageSpend(current.packageDiscount).catch(() => {});
+      toast.dismiss(toastId);
+      toast.error(error?.message || 'فشل تصحيح الحساب');
+    } finally {
+      setSavingFinancialEditor(false);
+    }
+  };
+
   const handleSavePackageDiscount = async () => {
     const inputVal = Number(packageDiscountInput) || 0;
     if (inputVal <= 0) return toast.error('أدخل مبلغاً صحيحاً');
@@ -1087,7 +1174,7 @@ export default function OrderDetails() {
   const handleExportPDF = async () => {
     const toastId = toast.loading('جاري إنشاء الفاتورة PDF...');
     try {
-      // انتظر تحميل كل الخطوط (Cairo وغيرها) قبل الالتقاط
+      // انتظر تحميل خط Tajawal قبل الالتقاط
       await document.fonts.ready;
 
       const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
@@ -1111,7 +1198,7 @@ export default function OrderDetails() {
           const s = clonedDoc.createElement('style');
           s.textContent = `
             #printable-invoice, #printable-invoice * {
-              font-family: 'Cairo', system-ui, -apple-system, "Segoe UI", sans-serif !important;
+              font-family: 'Tajawal', system-ui, -apple-system, "Segoe UI", sans-serif !important;
               direction: rtl !important;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
@@ -1187,6 +1274,9 @@ export default function OrderDetails() {
   const financials = getPrintOrderFinancials(order, transactions);
   const remaining = roundMoney(financials.totalAmount - financials.paidAmount);
   const rewardAmount = calculateLoyaltyReward();
+  const hasPotentialDuplicateDiscount = financials.directDiscount > 0
+    && financials.pointsUsed > 0
+    && Math.abs(financials.directDiscount - financials.pointsUsed) < 0.01;
 
   return (
     <>
@@ -1477,27 +1567,108 @@ export default function OrderDetails() {
           </div>
 
           {/* ══ بطاقة الحسابات ══════════════════════════════════════════════ */}
-          <div className="bg-[#4A4A4A] text-white p-6 rounded-2xl shadow-lg w-full flex flex-col mt-6">
+          <div className="bg-white text-[#4A4A4A] p-5 sm:p-6 rounded-2xl border border-[#D9A3AA]/25 shadow-[0_12px_35px_rgba(74,74,74,0.08)] w-full flex flex-col mt-6">
 
             {/* ── عنوان البطاقة ── */}
-            <h3 className="font-bold mb-5 flex items-center gap-2">
-              <Banknote size={18} className="text-[#D9A3AA]" /> الحسابات
-            </h3>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#D9A3AA]/20 pb-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D9A3AA]/15 text-[#B97882]">
+                  <Banknote size={19} />
+                </span>
+                <div>
+                  <h3 className="font-black text-[#393737]">الحسابات</h3>
+                  <p className="mt-0.5 text-[11px] text-[#4A4A4A]/55">تفصيل السعر والخصومات والمدفوعات</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={showFinancialEditor ? () => setShowFinancialEditor(false) : openFinancialEditor}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#C5A059]/35 bg-[#C5A059]/10 px-3 py-2 text-xs font-bold text-[#9E7D35] transition-colors hover:bg-[#C5A059]/20"
+              >
+                {showFinancialEditor ? <X size={14} /> : <Pencil size={14} />}
+                {showFinancialEditor ? 'إلغاء التعديل' : 'تعديل تفصيل الحساب'}
+              </button>
+            </div>
+
+            {hasPotentialDuplicateDiscount && !showFinancialEditor && (
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+                <div className="flex items-start gap-2 text-xs">
+                  <AlertCircle size={17} className="mt-0.5 shrink-0 text-amber-600" />
+                  <div>
+                    <p className="font-black">تنبيه: قد يكون مبلغ الخصم مكررًا</p>
+                    <p className="mt-0.5 text-amber-800/75">الخصم المباشر والنقاط يحملان المبلغ نفسه. راجع المصدر الصحيح قبل اعتماد الحساب.</p>
+                  </div>
+                </div>
+                <button type="button" onClick={openFinancialEditor} className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700">
+                  تصحيح الآن
+                </button>
+              </div>
+            )}
+
+            {showFinancialEditor && (
+              <div className="mb-6 rounded-2xl border border-[#C5A059]/30 bg-[#F8F5F2] p-4">
+                <div className="mb-4 flex items-start gap-2">
+                  <Pencil size={16} className="mt-0.5 shrink-0 text-[#C5A059]" />
+                  <div>
+                    <h4 className="text-sm font-black text-[#393737]">تصحيح مصادر الخصم والدفع</h4>
+                    <p className="mt-1 text-[11px] leading-5 text-[#4A4A4A]/60">ضع صفرًا لإزالة المصدر الخاطئ. عند تخفيض النقاط أو الباقة يُعاد الفرق إلى رصيد العميل تلقائيًا.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {[
+                    ['directDiscount', 'خصم مباشر'],
+                    ['couponDiscount', 'قيمة خصم الكود'],
+                    ['packageDiscount', 'خصم الباقة'],
+                    ['pointsUsed', 'مدفوع بالنقاط'],
+                  ].map(([key, label]) => (
+                    <label key={key} className="block">
+                      <span className="mb-1.5 block text-[11px] font-bold text-[#4A4A4A]/70">{label}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={financialEdit[key]}
+                        onChange={event => setFinancialEdit(prev => ({ ...prev, [key]: event.target.value }))}
+                        className="w-full rounded-xl border border-[#D9A3AA]/30 bg-white px-3 py-2 text-center text-sm font-bold text-[#393737] outline-none transition focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/15"
+                      />
+                    </label>
+                  ))}
+                  <label className="block">
+                    <span className="mb-1.5 block text-[11px] font-bold text-[#4A4A4A]/70">اسم كود الخصم</span>
+                    <input
+                      type="text"
+                      value={financialEdit.couponCode}
+                      onChange={event => setFinancialEdit(prev => ({ ...prev, couponCode: event.target.value }))}
+                      placeholder="بدون كود"
+                      className="w-full rounded-xl border border-[#D9A3AA]/30 bg-white px-3 py-2 text-center text-sm font-bold uppercase text-[#393737] outline-none transition focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/15"
+                    />
+                  </label>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button type="button" onClick={() => setShowFinancialEditor(false)} className="rounded-xl border border-[#D9A3AA]/25 bg-white px-4 py-2 text-xs font-bold text-[#4A4A4A] hover:bg-[#D9A3AA]/10">
+                    إلغاء
+                  </button>
+                  <button type="button" onClick={handleSaveFinancialBreakdown} disabled={savingFinancialEditor} className="inline-flex items-center gap-1.5 rounded-xl bg-[#4A4A4A] px-4 py-2 text-xs font-bold text-white hover:bg-[#393737] disabled:opacity-50">
+                    <Save size={14} /> {savingFinancialEditor ? 'جارٍ الحفظ...' : 'حفظ التصحيح'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── المحتوى في عمودين ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6 items-start">
 
               {/* ════ العمود الأيمن: المدخلات والخصومات ════════════════════════ */}
-              <div className="space-y-2 text-sm border-b border-white/10 pb-6 lg:border-b-0 lg:pb-0 lg:border-l lg:border-white/10 lg:pl-6">
+              <div className="space-y-3 text-sm border-b border-[#D9A3AA]/20 pb-6 lg:border-b-0 lg:pb-0 lg:border-l lg:border-[#D9A3AA]/20 lg:pl-6">
 
                 {/* الإجمالي قبل الخصم */}
-                <div className="flex justify-between text-[#4A4A4A]/55 text-xs">
+                <div className="flex justify-between rounded-lg bg-[#F8F5F2] px-3 py-2 text-[#4A4A4A]/65 text-xs">
                   <span>الإجمالي قبل الخصم والتوصيل</span>
                   <span>{Number(order.subtotal || 0).toFixed(2)}</span>
                 </div>
 
                 {/* التوصيل */}
-                <div className="flex justify-between items-center text-white/75 text-xs">
+                <div className="flex justify-between items-center text-[#4A4A4A]/75 text-xs px-1">
                   <span>التوصيل</span>
                   {isEditingDelivery ? (
                     <div className="flex gap-1">
@@ -1505,7 +1676,7 @@ export default function OrderDetails() {
                         type="number"
                         value={deliveryFee}
                         onChange={e => setDeliveryFee(Number(e.target.value))}
-                        className="w-12 bg-[#3b3b3b] border rounded text-center text-xs"
+                        className="w-16 rounded-lg border border-[#D9A3AA]/30 bg-[#F8F5F2] px-2 py-1 text-center text-xs text-[#393737] outline-none focus:border-[#C5A059]"
                       />
                       <button onClick={handleSaveDelivery} className="text-[#D9A3AA] text-xs">ok</button>
                     </div>
@@ -1515,15 +1686,15 @@ export default function OrderDetails() {
                 </div>
 
                 {/* خصم إضافي */}
-                <div className="flex justify-between items-center text-white/70 text-xs">
-                  <span className="flex items-center gap-1"><Tag size={11} /> خصم إضافي</span>
+                <div className="flex justify-between items-center text-[#4A4A4A]/75 text-xs px-1">
+                  <span className="flex items-center gap-1"><Tag size={11} /> خصم مباشر</span>
                   <div className="flex gap-1 items-center">
                     <input
                       type="number" min="0"
                       value={manualDiscount}
                       onChange={e => setManualDiscount(Number(e.target.value))}
                       onKeyDown={e => e.key === 'Enter' && handleSaveDiscount()}
-                      className="w-14 bg-[#3b3b3b] border border-white/15 rounded-lg text-center text-xs font-bold text-white focus:border-[#D9A3AA] outline-none py-0.5"
+                      className="w-16 bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-lg text-center text-xs font-bold text-[#393737] focus:border-[#C5A059] outline-none py-1"
                     />
                     <button onClick={handleSaveDiscount}
                       className="text-[10px] text-[#D9A3AA] bg-[#D9A3AA]/15 hover:bg-[#D9A3AA]/30 px-2 py-0.5 rounded-lg transition-colors">
@@ -1533,85 +1704,85 @@ export default function OrderDetails() {
                 </div>
 
                 {/* خصم من رصيد الباقات */}
-                <div className={`rounded-xl border overflow-hidden transition-all ${customerPackageBalance <= 0 ? 'opacity-50' : ''} ${discountSource === 'package' ? 'border-orange-400/50' : 'border-white/10'}`}>
+                <div className={`rounded-xl border overflow-hidden transition-all ${customerPackageBalance <= 0 ? 'opacity-55' : ''} ${discountSource === 'package' ? 'border-[#C5A059]/55' : 'border-[#D9A3AA]/20'}`}>
                   <button type="button"
                     disabled={customerPackageBalance <= 0}
                     onClick={() => customerPackageBalance > 0 && setDiscountSource(discountSource === 'package' ? 'discount' : 'package')}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${customerPackageBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'package' ? 'bg-orange-500/20' : 'bg-white/5 hover:bg-orange-500/10'}`}>
+                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${customerPackageBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'package' ? 'bg-[#C5A059]/12' : 'bg-[#F8F5F2] hover:bg-[#C5A059]/10'}`}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'package' ? 'bg-orange-400 border-orange-400' : 'border-orange-400/40'}`}>
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'package' ? 'bg-[#C5A059] border-[#C5A059]' : 'border-[#C5A059]/45'}`}>
                         {discountSource === 'package' && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                       </div>
                       <div className="text-right">
-                        <span className="text-[11px] font-bold text-orange-300 flex items-center gap-1">
+                        <span className="text-[11px] font-bold text-[#9E7D35] flex items-center gap-1">
                           <Package size={10} /> رصيد الباقات
                         </span>
-                        <span className="text-[10px] text-orange-300/60">المتاح: {customerPackageBalance.toFixed(2)} <RiyalSign light /></span>
+                        <span className="text-[10px] text-[#4A4A4A]/55">المتاح: {customerPackageBalance.toFixed(2)} <RiyalSign /></span>
                       </div>
                     </div>
                     {discountSource === 'package' && Number(packageDiscountInput) > 0 && (
-                      <span className="text-orange-300 font-black text-xs bg-orange-500/20 px-1.5 py-0.5 rounded">
-                        -{Number(packageDiscountInput).toFixed(2)} <RiyalSign light />
+                      <span className="text-[#9E7D35] font-black text-xs bg-[#C5A059]/15 px-1.5 py-0.5 rounded">
+                        -{Number(packageDiscountInput).toFixed(2)} <RiyalSign />
                       </span>
                     )}
                   </button>
                   {discountSource === 'package' && (
-                    <div className="bg-orange-500/10 border-t border-orange-400/20 px-3 py-1.5 flex items-center gap-2">
-                      <span className="text-[11px] text-orange-300/80 shrink-0">المبلغ:</span>
+                    <div className="bg-[#C5A059]/8 border-t border-[#C5A059]/20 px-3 py-1.5 flex items-center gap-2">
+                      <span className="text-[11px] text-[#9E7D35] shrink-0">المبلغ:</span>
                       <input
                         type="number" min="0.01" max={customerPackageBalance} step="0.01"
                         value={packageDiscountInput}
                         onChange={e => setPackageDiscountInput(e.target.value)}
-                        className="flex-1 text-center border border-orange-400/40 rounded-lg px-2 py-1 text-xs font-bold text-orange-200 bg-[#3b3b3b] outline-none focus:ring-2 ring-orange-400/30"
+                        className="flex-1 text-center border border-[#C5A059]/35 rounded-lg px-2 py-1 text-xs font-bold text-[#393737] bg-white outline-none focus:ring-2 ring-[#C5A059]/20"
                       />
                       <button type="button"
                         onClick={() => setPackageDiscountInput(Math.min(customerPackageBalance, Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2))}
-                        className="text-[10px] text-orange-300 bg-orange-500/20 hover:bg-orange-500/30 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
+                        className="text-[10px] text-[#9E7D35] bg-[#C5A059]/15 hover:bg-[#C5A059]/25 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
                       <button onClick={handleSavePackageDiscount}
-                        className="text-[10px] text-white bg-orange-500 hover:bg-orange-400 px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
+                        className="text-[10px] text-white bg-[#C5A059] hover:bg-[#A8893C] px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
                     </div>
                   )}
                 </div>
 
                 {/* خصم من رصيد النقاط */}
-                <div className={`rounded-xl border overflow-hidden transition-all ${customerPointsBalance <= 0 ? 'opacity-50' : ''} ${discountSource === 'wallet' ? 'border-violet-400/50' : 'border-white/10'}`}>
+                <div className={`rounded-xl border overflow-hidden transition-all ${customerPointsBalance <= 0 ? 'opacity-55' : ''} ${discountSource === 'wallet' ? 'border-[#D9A3AA]/70' : 'border-[#D9A3AA]/20'}`}>
                   <button type="button"
                     disabled={customerPointsBalance <= 0}
                     onClick={() => customerPointsBalance > 0 && setDiscountSource(discountSource === 'wallet' ? 'discount' : 'wallet')}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${customerPointsBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'wallet' ? 'bg-violet-500/20' : 'bg-white/5 hover:bg-violet-500/10'}`}>
+                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${customerPointsBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'wallet' ? 'bg-[#D9A3AA]/15' : 'bg-[#F8F5F2] hover:bg-[#D9A3AA]/10'}`}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'wallet' ? 'bg-violet-400 border-violet-400' : 'border-violet-400/40'}`}>
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'wallet' ? 'bg-[#D9A3AA] border-[#D9A3AA]' : 'border-[#D9A3AA]/55'}`}>
                         {discountSource === 'wallet' && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                       </div>
                       <div className="text-right">
-                        <span className="text-[11px] font-bold text-violet-300 flex items-center gap-1">
+                        <span className="text-[11px] font-bold text-[#B97882] flex items-center gap-1">
                           <Wallet size={10} /> رصيد النقاط
                         </span>
-                        <span className="text-[10px] text-violet-300/60">المتاح: {customerPointsBalance.toFixed(2)} <RiyalSign light /></span>
+                        <span className="text-[10px] text-[#4A4A4A]/55">المتاح: {customerPointsBalance.toFixed(2)} <RiyalSign /></span>
                       </div>
                     </div>
                     {discountSource === 'wallet' && Number(pointsDiscountInput) > 0 && (
-                      <span className="text-violet-300 font-black text-xs bg-violet-500/20 px-1.5 py-0.5 rounded">
-                        -{Number(pointsDiscountInput).toFixed(2)} <RiyalSign light />
+                      <span className="text-[#B97882] font-black text-xs bg-[#D9A3AA]/15 px-1.5 py-0.5 rounded">
+                        -{Number(pointsDiscountInput).toFixed(2)} <RiyalSign />
                       </span>
                     )}
                   </button>
                   {discountSource === 'wallet' && (
-                    <div className="bg-violet-500/10 border-t border-violet-400/20 px-3 py-1.5 flex items-center gap-2">
-                      <span className="text-[11px] text-violet-300/80 shrink-0">المبلغ:</span>
+                    <div className="bg-[#D9A3AA]/8 border-t border-[#D9A3AA]/20 px-3 py-1.5 flex items-center gap-2">
+                      <span className="text-[11px] text-[#B97882] shrink-0">المبلغ:</span>
                       <input
                         type="number" min="0.01" max={customerPointsBalance} step="0.01"
                         value={pointsDiscountInput}
                         onChange={e => setPointsDiscountInput(e.target.value)}
-                        className="flex-1 text-center border border-violet-400/40 rounded-lg px-2 py-1 text-xs font-bold text-violet-200 bg-[#3b3b3b] outline-none focus:ring-2 ring-violet-400/30"
+                        className="flex-1 text-center border border-[#D9A3AA]/40 rounded-lg px-2 py-1 text-xs font-bold text-[#393737] bg-white outline-none focus:ring-2 ring-[#D9A3AA]/20"
                       />
                       <button type="button"
                         onClick={() => {
                           setPointsDiscountInput(Math.min(customerPointsBalance, financials.remainingAmount).toFixed(2));
                         }}
-                        className="text-[10px] text-violet-300 bg-violet-500/20 hover:bg-violet-500/30 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
+                        className="text-[10px] text-[#B97882] bg-[#D9A3AA]/15 hover:bg-[#D9A3AA]/25 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
                       <button onClick={handleSavePointsDiscount}
-                        className="text-[10px] text-white bg-violet-500 hover:bg-violet-400 px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
+                        className="text-[10px] text-white bg-[#D9A3AA] hover:bg-[#C48A92] px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
                     </div>
                   )}
                 </div>
@@ -1621,7 +1792,7 @@ export default function OrderDetails() {
                   <select
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
-                    className="flex-1 bg-[#3b3b3b] border border-white/15 rounded px-2 py-1 text-white text-xs outline-none appearance-none"
+                    className="flex-1 bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-lg px-2 py-1.5 text-[#393737] text-xs outline-none appearance-none focus:border-[#C5A059]"
                   >
                     <option value="">كود خصم</option>
                     {activeCoupons.map((coupon) => (
@@ -1630,7 +1801,7 @@ export default function OrderDetails() {
                       </option>
                     ))}
                   </select>
-                  <button onClick={applyCoupon} className="bg-[#4A4A4A]/70 hover:bg-[#4A4A4A]/85 px-2 py-1 rounded text-xs text-white">
+                  <button onClick={applyCoupon} className="bg-[#4A4A4A] hover:bg-[#393737] px-3 py-1.5 rounded-lg text-xs text-white">
                     تطبيق
                   </button>
                 </div>
@@ -1639,12 +1810,12 @@ export default function OrderDetails() {
               {/* ════ العمود الأيسر: الإجماليات والدفع والإجراءات ══════════════ */}
               <div className="space-y-2 text-sm">
 
-                <OrderFinancialBreakdown financials={financials} variant="dark" />
+                <OrderFinancialBreakdown financials={financials} variant="light" />
 
                 {/* سجل المدفوعات */}
-                <div className="bg-white/10 rounded-xl p-2.5">
-                  <div className="flex justify-between items-center mb-1.5 border-b border-white/10 pb-1.5">
-                    <span className="text-[#D9A3AA] font-bold text-xs">سجل المدفوعات</span>
+                <div className="bg-[#F8F5F2] border border-[#D9A3AA]/15 rounded-xl p-3">
+                  <div className="flex justify-between items-center mb-2 border-b border-[#D9A3AA]/20 pb-2">
+                    <span className="text-[#B97882] font-bold text-xs">سجل المدفوعات</span>
                     <button
                       onClick={() => setShowPaymentInput(!showPaymentInput)}
                       className="text-[10px] bg-[#D9A3AA]/20 text-[#D9A3AA]/85 px-2 py-0.5 rounded hover:bg-[#D9A3AA]/40 flex items-center gap-1"
@@ -1659,14 +1830,14 @@ export default function OrderDetails() {
                         type="date"
                         value={newPayment.date}
                         onChange={e => setNewPayment({ ...newPayment, date: e.target.value })}
-                        className="w-24 bg-[#3b3b3b] border border-white/15 rounded text-xs px-1 text-white"
+                        className="w-28 bg-white border border-[#D9A3AA]/25 rounded-lg text-xs px-2 py-1 text-[#393737]"
                       />
                       <input
                         type="number"
                         placeholder="المبلغ"
                         value={newPayment.amount}
                         onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
-                        className="flex-1 bg-[#3b3b3b] border border-white/15 rounded text-xs px-2 text-white"
+                        className="flex-1 bg-white border border-[#D9A3AA]/25 rounded-lg text-xs px-2 py-1 text-[#393737]"
                       />
                       <button onClick={handleAddPayment} className="bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white px-2 rounded text-xs">
                         حفظ
@@ -1679,10 +1850,10 @@ export default function OrderDetails() {
                       <p className="text-[10px] text-[#4A4A4A]/70 text-center py-1">لا توجد دفعات مسجلة</p>
                     ) : (
                       payments.map((p) => (
-                        <div key={p.id} className="flex justify-between items-center text-xs bg-[#3b3b3b]/50 px-2 py-1 rounded group">
+                        <div key={p.id} className="flex justify-between items-center text-xs bg-white border border-[#D9A3AA]/10 px-2 py-1.5 rounded-lg group">
                           <span className="font-mono text-[#4A4A4A]/55 text-[10px]">{new Date(p.payment_date).toLocaleDateString('en-GB')}</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-white">{p.amount}</span>
+                            <span className="font-bold text-[#393737]">{p.amount}</span>
                             <button
                               onClick={() => handleDeletePayment(p.id, p.amount)}
                               className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-300"
@@ -1697,21 +1868,21 @@ export default function OrderDetails() {
 
                   {financials.pointsUsed > 0.01 ? (
                     <>
-                      <div className="flex justify-between border-t border-white/10 pt-1.5 mt-1.5">
+                      <div className="flex justify-between border-t border-[#D9A3AA]/15 pt-1.5 mt-1.5">
                         <span className="text-[10px] text-[#4A4A4A]/55">مدفوع نقداً</span>
                         <span className="font-bold text-[#D9A3AA] text-xs">{financials.cashPaid.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between mt-0.5">
-                        <span className="text-[10px] text-violet-300/70">مدفوع من النقاط</span>
-                        <span className="font-bold text-violet-300 text-xs">{financials.pointsUsed.toFixed(2)}</span>
+                        <span className="text-[10px] text-[#B97882]">مدفوع من النقاط</span>
+                        <span className="font-bold text-[#B97882] text-xs">{financials.pointsUsed.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between mt-0.5 border-t border-white/10 pt-1">
-                        <span className="text-[10px] text-white/70">إجمالي المدفوع</span>
-                        <span className="font-bold text-white text-xs">{financials.paidAmount.toFixed(2)}</span>
+                      <div className="flex justify-between mt-0.5 border-t border-[#D9A3AA]/15 pt-1">
+                        <span className="text-[10px] text-[#4A4A4A]/70">إجمالي المدفوع</span>
+                        <span className="font-bold text-[#393737] text-xs">{financials.paidAmount.toFixed(2)}</span>
                       </div>
                     </>
                   ) : (
-                    <div className="flex justify-between border-t border-white/10 pt-1.5 mt-1.5">
+                    <div className="flex justify-between border-t border-[#D9A3AA]/15 pt-1.5 mt-1.5">
                       <span className="text-[10px] text-[#4A4A4A]/55">إجمالي المدفوع</span>
                       <span className="font-bold text-[#D9A3AA] text-xs">{financials.cashPaid.toFixed(2)}</span>
                     </div>
@@ -1720,19 +1891,19 @@ export default function OrderDetails() {
 
                 {/* كاش باك */}
                 {rewardAmount > 0 && (
-                  <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                  <div className="p-2.5 bg-[#C5A059]/10 border border-[#C5A059]/30 rounded-xl">
                     <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-amber-400 text-[11px] font-bold flex items-center gap-1"><Gift size={11} /> كاش باك مستحق للمحفظة</span>
-                      <span className="text-amber-300 font-bold text-xs">{rewardAmount.toFixed(2)} ريال</span>
+                      <span className="text-[#9E7D35] text-[11px] font-bold flex items-center gap-1"><Gift size={11} /> كاش باك مستحق للمحفظة</span>
+                      <span className="text-[#9E7D35] font-bold text-xs">{rewardAmount.toFixed(2)} ريال</span>
                     </div>
                     {isLoyaltyAdded ? (
-                      <div className="text-[10px] text-center bg-amber-500/20 text-amber-200 py-1 rounded flex items-center justify-center gap-1">
+                      <div className="text-[10px] text-center bg-[#C5A059]/15 text-[#9E7D35] py-1 rounded flex items-center justify-center gap-1">
                         <CheckCircle size={9} /> تم الإضافة للمحفظة
                       </div>
                     ) : (
                       <button
                         onClick={handleAddLoyaltyPoints}
-                        className="w-full bg-amber-600 hover:bg-amber-500 text-white text-[11px] py-1 rounded transition-colors"
+                        className="w-full bg-[#C5A059] hover:bg-[#A8893C] text-white text-[11px] py-1 rounded transition-colors"
                       >
                         إضافة لرصيد العميل
                       </button>
@@ -1742,13 +1913,13 @@ export default function OrderDetails() {
 
                 {/* المتبقي + أزرار الإجراء */}
                 <div className="flex items-center gap-2">
-                  <div className={`flex-1 p-2 rounded-xl text-center border ${remaining <= 0 ? 'bg-[#D9A3AA]/20 text-[#D9A3AA]/85 border-[#D9A3AA]/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}`}>
+                  <div className={`flex-1 p-2 rounded-xl text-center border ${remaining <= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
                     <span className="text-[10px] block">المتبقي</span>
                     <span className="text-base font-black leading-none">{remaining <= 0 ? 'خالص ✅' : remaining.toFixed(2)}</span>
                   </div>
 
                   {remaining > 0 && (
-                    <button onClick={markAsFullyPaid} className="flex-1 py-2 bg-white text-[#4A4A4A] rounded-xl font-bold text-xs hover:bg-[#F8F5F2] transition-colors">
+                    <button onClick={markAsFullyPaid} className="flex-1 py-2 bg-[#4A4A4A] text-white rounded-xl font-bold text-xs hover:bg-[#393737] transition-colors">
                       سداد كامل
                     </button>
                   )}

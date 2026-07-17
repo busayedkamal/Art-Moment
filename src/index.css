@@ -13,7 +13,7 @@ html {
 ═══════════════════════════════════════════════════ */
 body {
   margin: 0;
-  font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Tajawal', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #F8F5F2;   /* Off-white — خلفية التطبيق الأساسية */
   color: #4A4A4A;         /* Charcoal Grey — النص الأساسي */
 }
@@ -314,7 +314,7 @@ body {
     padding: 0;
     background: #ffffff;
     direction: rtl;
-    font-family: 'Cairo', system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: 'Tajawal', system-ui, -apple-system, "Segoe UI", sans-serif;
   }
 
   /* الكرت الرئيسي للفاتورة */

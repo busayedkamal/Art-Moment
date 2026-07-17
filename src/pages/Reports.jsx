@@ -482,7 +482,7 @@ export default function Reports() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(74,74,74,0.08)"/>
                 <XAxis dataKey="name" tick={{fontSize: 11, fill: 'rgba(74,74,74,0.60)'}} axisLine={false} tickLine={false}/>
                 <YAxis tick={{fontSize: 11, fill: 'rgba(74,74,74,0.60)'}} axisLine={false} tickLine={false}/>
-                <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(74,74,74,0.12)', fontFamily: 'Cairo, sans-serif'}}/>
+                <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(74,74,74,0.12)', fontFamily: 'Tajawal, sans-serif'}}/>
                 <Area type="monotone" dataKey="revenue"  name="الدخل"       stroke="#10b981" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2.5} dot={false}/>
                 <Area type="monotone" dataKey="expenses" name="المصروفات"   stroke="#ef4444" fillOpacity={1} fill="url(#colorExp)" strokeWidth={2}   dot={false}/>
               </AreaChart>

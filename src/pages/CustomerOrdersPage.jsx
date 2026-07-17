@@ -89,8 +89,9 @@ function buildReceiptHtml(order) {
     <head>
       <meta charset="utf-8" />
       <title>إيصال طلب #${escapeHtml(order.shortId)}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
       <style>
-        body { font-family: Arial, sans-serif; background:#F8F5F2; color:#4A4A4A; margin:0; padding:32px; }
+        body { font-family:'Tajawal', Arial, sans-serif; background:#F8F5F2; color:#4A4A4A; margin:0; padding:32px; }
         .receipt { max-width:760px; margin:auto; background:#fff; border:1px solid #ead8da; border-radius:24px; padding:28px; }
         h1 { margin:0 0 8px; font-size:28px; }
         .muted { color:#888; font-size:13px; }

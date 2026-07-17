@@ -5,11 +5,11 @@ import RiyalSign from './RiyalSign';
 const THEMES = {
   light: {
     root: 'text-[#4A4A4A]',
-    muted: 'text-[#4A4A4A]/55',
-    row: 'border-[#D9A3AA]/15',
-    discount: 'text-emerald-700 bg-emerald-50',
-    payment: 'text-violet-700 bg-violet-50',
-    final: 'border-[#4A4A4A]/15',
+    muted: 'text-[#4A4A4A]/60',
+    row: 'border-[#D9A3AA]/20',
+    discount: 'text-[#9E7D35] bg-[#C5A059]/10 border border-[#C5A059]/20',
+    payment: 'text-[#B97882] bg-[#D9A3AA]/12 border border-[#D9A3AA]/20',
+    final: 'border-[#D9A3AA]/30',
   },
   dark: {
     root: 'text-white',
