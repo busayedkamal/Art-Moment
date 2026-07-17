@@ -323,7 +323,7 @@ export default function LandingPage() {
   const activePkg = packages[activePackage];
 
   return (
-    <div className="art-page min-h-screen font-sans relative overflow-x-hidden selection:bg-[#D9A3AA] selection:text-white" dir="rtl">
+    <div className="art-page min-h-screen font-[Tajawal] relative overflow-x-hidden selection:bg-[#D9A3AA] selection:text-white" dir="rtl">
 
       {/* Toast notification */}
       {toastMsg && (

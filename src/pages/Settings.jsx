@@ -140,7 +140,9 @@ export default function Settings() {
 
       // 2. جلب المخزون
       const { data: inventoryData } = await supabase.from('inventory').select('*').order('id');
-      if (inventoryData) setInventory(inventoryData);
+      if (inventoryData) {
+        setInventory(inventoryData.filter(item => !/ألبوم|البوم|album/i.test(String(item.item_name || ''))));
+      }
 
       // 3. جلب الكوبونات
       const { data: couponsData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });

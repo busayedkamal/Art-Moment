@@ -1274,6 +1274,7 @@ export default function OrderDetails() {
   const financials = getPrintOrderFinancials(order, transactions);
   const remaining = roundMoney(financials.totalAmount - financials.paidAmount);
   const rewardAmount = calculateLoyaltyReward();
+  const hasLegacyAlbum = Number(order.album_qty || 0) > 0;
   const hasPotentialDuplicateDiscount = financials.directDiscount > 0
     && financials.pointsUsed > 0
     && Math.abs(financials.directDiscount - financials.pointsUsed) < 0.01;
@@ -1523,35 +1524,37 @@ export default function OrderDetails() {
                 </div>
               </div>
 
-              <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100 mb-4 flex gap-2 text-center text-sm">
-                <div className="flex-1">
-                  <span className="block text-[10px] text-[#4A4A4A]/55">عدد الألبومات</span>
-                  {isEditingProduction ? (
-                    <input
-                      type="number"
-                      value={productionData.album_qty}
-                      onChange={e => setProductionData({ ...productionData, album_qty: e.target.value })}
-                      className="w-full text-center border rounded"
-                    />
-                  ) : (
-                    <b>{order.album_qty}</b>
-                  )}
-                </div>
+              {hasLegacyAlbum && (
+                <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100 mb-4 flex gap-2 text-center text-sm">
+                  <div className="flex-1">
+                    <span className="block text-[10px] text-[#4A4A4A]/55">عدد الألبومات (طلب سابق)</span>
+                    {isEditingProduction ? (
+                      <input
+                        type="number"
+                        value={productionData.album_qty}
+                        onChange={e => setProductionData({ ...productionData, album_qty: e.target.value })}
+                        className="w-full text-center border rounded"
+                      />
+                    ) : (
+                      <b>{order.album_qty}</b>
+                    )}
+                  </div>
 
-                <div className="flex-1">
-                  <span className="block text-[10px] text-[#4A4A4A]/55">سعر الألبوم</span>
-                  {isEditingProduction ? (
-                    <input
-                      type="number"
-                      value={productionData.album_price}
-                      onChange={e => setProductionData({ ...productionData, album_price: e.target.value })}
-                      className="w-full text-center border rounded"
-                    />
-                  ) : (
-                    <b>{order.album_price}</b>
-                  )}
+                  <div className="flex-1">
+                    <span className="block text-[10px] text-[#4A4A4A]/55">سعر الألبوم</span>
+                    {isEditingProduction ? (
+                      <input
+                        type="number"
+                        value={productionData.album_price}
+                        onChange={e => setProductionData({ ...productionData, album_price: e.target.value })}
+                        className="w-full text-center border rounded"
+                      />
+                    ) : (
+                      <b>{order.album_price}</b>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <textarea
                 className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-2 text-sm focus:outline-none h-20"

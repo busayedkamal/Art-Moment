@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
 const ACTION_LABELS = {
+  manual_store_order_created: 'إنشاء طلب متجر يدوي',
   store_order_updated: 'تعديل طلب متجر',
   store_order_deleted: 'حذف طلب متجر',
   store_order_status_updated: 'تحديث حالة طلب',

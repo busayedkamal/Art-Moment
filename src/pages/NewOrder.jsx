@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import RiyalSign from '../components/RiyalSign';
 import {
-  Loader2, Tag, BookOpen, Percent, MinusCircle,
+  Loader2, Tag, Percent, MinusCircle,
   Crown, AlertTriangle, Sparkles, Wallet, Coins, MapPin, User, Phone, Package
 } from 'lucide-react';
 
@@ -50,7 +50,7 @@ export default function NewOrder() {
       customerName: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
       source: 'الهفوف', sourceOther: '',
       a4Qty: 0, photo4x6Qty: 0, deliveryFee: 0, deposit: 0, notes: '',
-      albumQty: 0, albumPrice: 0, manualDiscount: 0
+      manualDiscount: 0
     }
   });
 
@@ -58,8 +58,8 @@ export default function NewOrder() {
   const phoneWatcher = watch('phone');
   const nameWatcher = watch('customerName');
   const currentCity = watch('source');
-  const [a4Qty, photo4x6Qty, albumQty, albumPrice, deliveryFee, deposit, manualDiscount] = watch([
-    'a4Qty', 'photo4x6Qty', 'albumQty', 'albumPrice', 'deliveryFee', 'deposit', 'manualDiscount'
+  const [a4Qty, photo4x6Qty, deliveryFee, deposit, manualDiscount] = watch([
+    'a4Qty', 'photo4x6Qty', 'deliveryFee', 'deposit', 'manualDiscount'
   ]);
 
   const normalizePhone = (raw) => {
@@ -78,7 +78,11 @@ export default function NewOrder() {
         if (settingsData) { setSettings(settingsData); setValue('deliveryFee', settingsData.delivery_fee_default); }
 
         const { data: invData } = await supabase.from('inventory').select('*');
-        if (invData) { setInventory(invData); setLowStockItems(invData.filter(item => item.quantity <= item.threshold)); }
+        if (invData) {
+          const printInventory = invData.filter(item => !/ألبوم|البوم|album/i.test(String(item.item_name || '')));
+          setInventory(printInventory);
+          setLowStockItems(printInventory.filter(item => item.quantity <= item.threshold));
+        }
 
         const { data: couponsData } = await supabase.from('coupons').select('*').eq('is_active', true);
         if (couponsData) setActiveCoupons(couponsData);
@@ -220,8 +224,7 @@ export default function NewOrder() {
   }
 
   const subtotal = (Number(a4Qty || 0) * settings.a4_price)
-    + (Number(photo4x6Qty || 0) * active4x6Price)
-    + (Number(albumQty || 0) * Number(albumPrice || 0));
+    + (Number(photo4x6Qty || 0) * active4x6Price);
 
   let couponDiscountValue = 0;
   if (couponData) {
@@ -284,8 +287,8 @@ export default function NewOrder() {
         source_other: data.sourceOther,
         a4_qty: Number(data.a4Qty) || 0,
         photo_4x6_qty: Number(data.photo4x6Qty) || 0,
-        album_qty: Number(data.albumQty) || 0,
-        album_price: Number(data.albumPrice) || 0,
+        album_qty: 0,
+        album_price: 0,
         delivery_fee: Number(data.deliveryFee) || 0,
         financial_schema_version: 2,
         direct_discount_amount: directDiscountValue,
@@ -372,10 +375,6 @@ export default function NewOrder() {
       if (cleanData.photo_4x6_qty > 0) {
         const item = inventory.find(i => i.item_name === 'ورق 4x6');
         if (item) updates.push(supabase.from('inventory').update({ quantity: item.quantity - cleanData.photo_4x6_qty }).eq('id', item.id));
-      }
-      if (cleanData.album_qty > 0) {
-        const item = inventory.find(i => i.item_name === 'ألبومات');
-        if (item) updates.push(supabase.from('inventory').update({ quantity: item.quantity - cleanData.album_qty }).eq('id', item.id));
       }
       if (updates.length > 0) await Promise.all(updates);
 
@@ -548,17 +547,6 @@ export default function NewOrder() {
               <div className="flex justify-between text-[#4A4A4A]/80">
                 <span>صور (A4 + 4x6)</span>
                 <span>{((Number(a4Qty || 0) * settings.a4_price) + (Number(photo4x6Qty || 0) * active4x6Price)).toFixed(2)}</span>
-              </div>
-
-              <div className="bg-[#F8F5F2] p-3 rounded-lg border border-[#D9A3AA]/20">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-[#C5A059] font-bold"><BookOpen size={14} /> <span>إضافة ألبوم</span></div>
-                  <span className="text-[10px] text-slate-400">مخزون: {inventory.find(i => i.item_name === 'ألبومات')?.quantity || '-'}</span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1"><input type="number" min="0" {...register('albumQty')} className="w-full bg-white border border-[#D9A3AA]/30 rounded px-2 py-1 text-center outline-none focus:border-[#C5A059]" placeholder="العدد" /></div>
-                  <div className="flex-1"><input type="number" min="0" {...register('albumPrice')} className="w-full bg-white border border-[#D9A3AA]/30 rounded px-2 py-1 text-center outline-none focus:border-[#C5A059]" placeholder="السعر" /></div>
-                </div>
               </div>
 
               <div className="flex justify-between items-center text-[#4A4A4A]/80 pt-2">

@@ -18,6 +18,7 @@ import StorePaymentResult from './pages/StorePaymentResult.jsx'
 import MarketingUnsubscribePage from './pages/MarketingUnsubscribePage.jsx'
 import ProductManagement from './pages/ProductManagement.jsx'
 import StoreOrdersManagement from './pages/StoreOrdersManagement.jsx'
+import ManualStoreOrder from './pages/ManualStoreOrder.jsx'
 import AdminNotifications from './pages/AdminNotifications.jsx'
 import AdminActivityLog from './pages/AdminActivityLog.jsx'
 import AdminActionTasks from './pages/AdminActionTasks.jsx'
@@ -89,6 +90,7 @@ function AppRoutes() {
         <Route path="settings" element={<Settings />} />
         <Route path="products" element={<ProductManagement />} />
         <Route path="store-orders" element={<StoreOrdersManagement />} />
+        <Route path="store-orders/new" element={<ManualStoreOrder />} />
         <Route path="notifications" element={<AdminNotifications />} />
         <Route path="activity" element={<AdminActivityLog />} />
         <Route path="tasks" element={<AdminActionTasks />} />

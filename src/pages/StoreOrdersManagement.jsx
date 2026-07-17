@@ -1,12 +1,12 @@
 // src/pages/StoreOrdersManagement.jsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Eye, Clock, CheckCircle, Package, Truck, X,
   ArrowLeft, RotateCcw, Printer, AlertCircle,
   ShoppingBag, Phone, User, StickyNote, Image as ImageIcon,
   RefreshCw, Trash2, Edit3, Save, XCircle, Banknote, Wallet,
-  Mail, Send, History
+  Mail, Send, History, Plus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -126,6 +126,7 @@ const MESSAGE_TYPE_LABELS = {
 };
 
 const ACTIVITY_ACTION_LABELS = {
+  manual_store_order_created: 'إنشاء طلب يدوي',
   store_order_updated: 'تعديل الطلب',
   store_order_deleted: 'حذف الطلب',
   store_order_status_updated: 'تحديث الحالة',
@@ -197,6 +198,7 @@ function getActivityActionLabel(action) {
 }
 
 export default function StoreOrdersManagement() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -998,12 +1000,21 @@ export default function StoreOrdersManagement() {
           </h1>
           <p className="text-sm text-[#4A4A4A]/50 mt-0.5">إدارة الطلبات الواردة من متجر لحظة فن</p>
         </div>
-        <button
-          onClick={fetchOrders}
-          className="flex items-center gap-2 bg-white border border-[#D9A3AA]/25 px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#D9A3AA]/5 transition-colors shadow-sm"
-        >
-          <RefreshCw size={15} /> تحديث
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/app/store-orders/new')}
+            className="flex items-center gap-2 rounded-xl bg-[#4A4A4A] px-4 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C5A059]"
+          >
+            <Plus size={15} /> طلب يدوي جديد
+          </button>
+          <button
+            onClick={fetchOrders}
+            className="flex items-center gap-2 bg-white border border-[#D9A3AA]/25 px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#D9A3AA]/5 transition-colors shadow-sm"
+          >
+            <RefreshCw size={15} /> تحديث
+          </button>
+        </div>
       </div>
 
       {/* ── Financial Summary Cards ── */}
