@@ -228,14 +228,19 @@ export default function StoreIndex() {
   };
 
   return (
-    <div className="art-page min-h-screen font-sans relative overflow-x-hidden" dir="rtl">
+    <div className="art-page min-h-screen font-[Tajawal] relative overflow-x-hidden" dir="rtl">
 
       {/* Navbar */}
       <header className={`sticky top-0 z-50 art-nav transition-all duration-300 ${scrolled ? 'art-nav-scrolled' : ''}`}>
         <div className="art-shell h-20 flex items-center justify-between">
 
           <div className="flex items-center gap-1 sm:gap-3">
-            <button className="md:hidden p-1 -mr-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            <button
+              className="md:hidden p-1 -mr-2 text-[#4A4A4A]"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+              title={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+            >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <Link to="/" className="flex items-center gap-2 sm:gap-3">

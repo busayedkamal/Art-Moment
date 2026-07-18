@@ -358,7 +358,12 @@ export default function LandingPage() {
 
           {/* Right Side: Mobile Menu + Logo */}
           <div className="flex items-center gap-1 sm:gap-3">
-            <button className="md:hidden p-1 -mr-2 text-[#4A4A4A]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            <button
+              className="md:hidden p-1 -mr-2 text-[#4A4A4A]"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+              title={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+            >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <div className="flex items-center gap-2 sm:gap-3">

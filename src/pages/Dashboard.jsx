@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import RiyalSign from '../components/RiyalSign';
 import { fetchAdminActionTasks, summarizeAdminActionTasks } from '../utils/adminActionTasks';
+import { getTotalAvailablePoints } from '../utils/walletBalances';
 
 const EMPTY_ACTION_TASK_STATS = {
   total: 0,
@@ -71,7 +72,7 @@ export default function Dashboard() {
         // 3. جلب رصيد المحافظ
         const { data: wallets, error: walletsError } = await supabase
           .from('wallets')
-          .select('phone, points_balance')
+          .select('id, phone, points_balance')
           .order('id', { ascending: true }); // الأحدث (id أعلى) يفوز عند التكرار
 
         // 3b. جلب طلبات المتجر لدمجها في الإجماليات
@@ -105,15 +106,6 @@ export default function Dashboard() {
           setActionTaskStats(EMPTY_ACTION_TASK_STATS);
         }
 
-        // دالة تطبيع رقم الهاتف (نفس منطق صفحة العملاء)
-        const normalizePhone = (raw) => {
-          if (!raw) return '';
-          let p = String(raw).replace(/\D/g, '');
-          if (p.startsWith('966')) p = p.slice(3);
-          if (p.startsWith('0')) p = p.slice(1);
-          return p;
-        };
-
         // --- الحسابات العامة ---
         const totalOrders = orders.length;
         const totalRevenue = orders.reduce((acc, order) => acc + (order.total_amount || 0), 0);
@@ -134,15 +126,8 @@ export default function Dashboard() {
           .reduce((sum, o) => sum + ((o.total_amount || 0) - (o.deposit || 0) - Number(o.wallet_used || 0)), 0);
         const totalExpenses = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
 
-        // إزالة التكرار: نحسب رصيداً واحداً لكل رقم هاتف (الأحدث يفوز)
-        // نتجاهل المحافظ بدون رقم هاتف (مثل المحفظة الإدارية)
-        const walletByPhone = {};
-        (wallets || []).forEach(w => {
-          const key = normalizePhone(w.phone);
-          if (!key) return;
-          walletByPhone[key] = Number(w.points_balance || 0);
-        });
-        const totalPointsBalance = Object.values(walletByPhone).reduce((acc, v) => acc + v, 0);
+        // رصيد واحد لكل جوال، مع تجاهل المحافظ الإدارية والمحافظ القديمة المكررة.
+        const totalPointsBalance = getTotalAvailablePoints(wallets || []);
         const packagesCreditsAdded = (packageTransactions || [])
           .filter(pt => pt.type === 'package_charge' || pt.type === 'package_add')
           .reduce((acc, pt) => acc + Number(pt.points || 0), 0);
@@ -443,7 +428,7 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-3 text-xs text-[#4A4A4A]/50">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>مبيعات</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#C5A059] inline-block"></span>مصروفات</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>مصروفات</span>
             </div>
           </div>
           <div className="h-64 w-full dir-ltr">
@@ -454,7 +439,7 @@ export default function Dashboard() {
                 <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#94a3b8'}} width={40}/>
                 <RechartsTooltip cursor={{fill: '#f8fafc', radius: 8}} contentStyle={{borderRadius: '14px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', padding: '10px 16px'}}/>
                 <Bar dataKey="sales" name="المبيعات" fill="#10b981" radius={[6, 6, 0, 0]} barSize={22}/>
-                <Bar dataKey="expenses" name="المصروفات" fill="#C5A059" radius={[6, 6, 0, 0]} barSize={22}/>
+                <Bar dataKey="expenses" name="المصروفات" fill="#EF4444" radius={[6, 6, 0, 0]} barSize={22}/>
               </BarChart>
             </ResponsiveContainer>
           </div>

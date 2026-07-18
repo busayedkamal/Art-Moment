@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
 import { logAdminActivity } from "../utils/adminActivity";
+import { getPreferredWallets } from "../utils/walletBalances";
 
 const CRM_STATUS_OPTIONS = [
   { value: 'active', label: 'نشط' },
@@ -337,7 +338,7 @@ export default function Customers() {
       });
 
       const walletMap = new Map();
-      (walletsData || []).forEach(w => {
+      getPreferredWallets(walletsData || []).forEach(w => {
         const key = normalizePhone(w.phone); // 9 أرقام
         const keyWithZero = key.length === 9 ? '0' + key : key; // 10 أرقام
         const entry = {
@@ -348,14 +349,12 @@ export default function Customers() {
           notes: w.notes || '',
           subscriptionCode: w.subscription_code || null
         };
-        // إذا وُجدت محفظتان بنفس الرقم، احتفظ بالتي تحتوي أعلى رصيد
-        const setIfBetter = (mapKey) => {
+        const setWallet = (mapKey) => {
           if (!mapKey) return;
-          const existing = walletMap.get(mapKey);
-          if (!existing || entry.balance > existing.balance) walletMap.set(mapKey, entry);
+          walletMap.set(mapKey, entry);
         };
-        setIfBetter(key);
-        if (keyWithZero !== key) setIfBetter(keyWithZero);
+        setWallet(key);
+        if (keyWithZero !== key) setWallet(keyWithZero);
       });
 
       const map = {};
@@ -396,7 +395,7 @@ export default function Customers() {
 
       // ثانياً: العملاء الذين لديهم محافظ فقط (شحن باقة بدون طلبات سابقة)
       // نستخرج اسمهم من حقل notes بصيغة "اسم العميل: XXX"
-      (walletsData || []).forEach(w => {
+      getPreferredWallets(walletsData || []).forEach(w => {
         if (!w.phone) return;
         const clean = normalizePhone(w.phone);
         const withZero = clean.length === 9 ? '0' + clean : clean;

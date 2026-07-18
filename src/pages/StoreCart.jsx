@@ -280,7 +280,7 @@ export default function StoreCart() {
 
   if (isSubmitted) {
     return (
-      <div className="art-page min-h-screen font-sans flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
+      <div className="art-page min-h-screen font-[Tajawal] flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
         <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center shadow-sm mb-6 animate-in zoom-in duration-500">
           <CheckCircle size={40} />
         </div>
@@ -309,7 +309,7 @@ export default function StoreCart() {
 
   if (cart.length === 0) {
     return (
-      <div className="art-page min-h-screen font-sans flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
+      <div className="art-page min-h-screen font-[Tajawal] flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-[#D9A3AA]/30">
           <ShoppingBag size={40} />
         </div>
@@ -323,7 +323,7 @@ export default function StoreCart() {
   }
 
   return (
-    <div className="art-page min-h-screen font-sans text-[#4A4A4A] pb-24" dir="rtl">
+    <div className="art-page min-h-screen font-[Tajawal] text-[#4A4A4A] pb-24" dir="rtl">
       {/* Header */}
       <header className="art-nav art-nav-scrolled sticky top-0 z-40 px-4 h-16 flex items-center justify-between">
         <Link to="/store" className="flex items-center gap-2 text-[#4A4A4A]/60 hover:text-[#D9A3AA] text-sm font-bold transition-colors">

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Plus, Search, Filter, ChevronRight, Loader2, FileText,
-  ArrowUpDown, ArrowUp, ArrowDown, Calendar, Banknote
+  ArrowUpDown, ArrowUp, ArrowDown, Calendar, Banknote, X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
@@ -80,6 +80,13 @@ export default function Orders() {
     setSortConfig({ key, direction });
   };
 
+  const mobileSortValue = `${sortConfig.key}:${sortConfig.direction}`;
+
+  const handleMobileSort = (value) => {
+    const [key, direction] = value.split(':');
+    setSortConfig({ key, direction });
+  };
+
   const SortableHeader = ({ label, sortKey }) => {
     const isActive = sortConfig.key === sortKey;
     return (
@@ -137,15 +144,51 @@ export default function Orders() {
 
       {/* Search & Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" size={17} />
-          <input
-            type="text"
-            placeholder="بحث باسم العميل، الجوال، أو رقم الطلب..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#D9A3AA]/40 text-sm placeholder:text-[#4A4A4A]/40 bg-[#F8F5F2]/50"
-          />
+        <div className="flex flex-1 gap-2 min-w-0">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" size={17} />
+            <input
+              type="text"
+              placeholder="بحث باسم العميل، الجوال، أو رقم الطلب..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#D9A3AA]/40 text-sm placeholder:text-[#4A4A4A]/40 bg-[#F8F5F2]/50"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 inline-flex items-center justify-center rounded-full text-[#4A4A4A]/45 hover:text-[#D9A3AA] hover:bg-white transition-colors"
+                aria-label="مسح البحث"
+                title="مسح البحث"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+
+          <label
+            className="md:hidden relative w-11 h-11 shrink-0 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-[#F8F5F2]/50 text-[#4A4A4A]/70"
+            title="فرز الطلبات"
+          >
+            <ArrowUpDown size={18} />
+            <span className="sr-only">فرز الطلبات</span>
+            <select
+              value={mobileSortValue}
+              onChange={(event) => handleMobileSort(event.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              aria-label="فرز الطلبات"
+            >
+              <option value="created_at:desc">الأحدث أولاً</option>
+              <option value="created_at:asc">الأقدم أولاً</option>
+              <option value="id:asc">رقم الطلب</option>
+              <option value="customer_name:asc">اسم العميل</option>
+              <option value="status:asc">حالة الطلب</option>
+              <option value="total_amount:desc">المبلغ: الأعلى</option>
+              <option value="total_amount:asc">المبلغ: الأقل</option>
+              <option value="remaining:desc">المديونية: الأعلى</option>
+            </select>
+          </label>
         </div>
         <div className="flex gap-2">
           <button

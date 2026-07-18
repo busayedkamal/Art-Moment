@@ -14,6 +14,7 @@ import logoPng from '../assets/logo.png';
 import RiyalSign from '../components/RiyalSign';
 import OrderFinancialBreakdown from '../components/OrderFinancialBreakdown';
 import { getPrintOrderFinancials, roundMoney } from '../utils/orderFinancials';
+import { choosePreferredWallet } from '../utils/walletBalances';
 
 const STATUS_CONFIG = {
   pending_verification: { label: 'انتظار التحقق', bgClass: 'bg-blue-100',    textClass: 'text-blue-700',    btnClass: 'bg-blue-600 hover:bg-blue-500 text-white',     icon: Clock },
@@ -129,10 +130,10 @@ export default function OrderDetails() {
     return data || [];
   };
 
-  // ✅ يُرجع أول محفظة (للاستخدام في عمليات النقاط التي تحتاج wallet واحدة)
+  // ✅ يُرجع المحفظة الفعلية عند وجود سجلات قديمة مكررة لنفس الجوال.
   const findWalletByPhone = async (rawPhone) => {
     const wallets = await findAllWalletsByPhone(rawPhone);
-    return wallets.length > 0 ? wallets[0] : null;
+    return choosePreferredWallet(wallets);
   };
 
   async function fetchOrderAndSettings() {
@@ -180,17 +181,16 @@ export default function OrderDetails() {
       const hasPkgRedeem = (transData || []).some(t => t.type === 'package_redeem');
       setDiscountSource(hasPkgRedeem ? 'package' : hasWalletSpend ? 'wallet' : 'discount');
 
-      // جلب رصيد الباقات والنقاط للعميل — نجمع من كل المحافظ المطابقة
+      // جلب رصيد الباقات والنقاط للعميل مع عدم جمع المحافظ القديمة المكررة.
       if (orderData.phone) {
         const allWallets = await findAllWalletsByPhone(orderData.phone);
         const allWalletIds = allWallets.map(w => w.id);
+        const preferredWallet = choosePreferredWallet(allWallets);
 
-        // رصيد النقاط = مجموع points_balance من كل المحافظ
-        const totalPoints = allWallets.reduce((sum, w) => sum + Number(w.points_balance || 0), 0);
-        setCustomerPointsBalance(totalPoints);
+        setCustomerPointsBalance(Number(preferredWallet?.points_balance || 0));
 
         // رقم الاشتراك من حقل subscription_code في جدول wallets
-        if (allWallets.length > 0) setWalletSubscriptionId(allWallets[0].subscription_code || '');
+        setWalletSubscriptionId(preferredWallet?.subscription_code || '');
 
         // رصيد الباقات = من wallet_transactions لكل المحافظ
         if (allWalletIds.length > 0) {
@@ -282,9 +282,9 @@ export default function OrderDetails() {
     let wallet;
     if (existingSpend) {
       wallet = allWallets.find(w => w.id === existingSpend.wallet_id)
-        || allWallets.reduce((best, w) => Number(w.points_balance || 0) > Number(best.points_balance || 0) ? w : best, allWallets[0]);
+        || choosePreferredWallet(allWallets);
     } else {
-      wallet = allWallets.reduce((best, w) => Number(w.points_balance || 0) > Number(best.points_balance || 0) ? w : best, allWallets[0]);
+      wallet = choosePreferredWallet(allWallets);
     }
 
     const prevAmount = existingSpend ? Number(existingSpend.amount_value || 0) : 0;

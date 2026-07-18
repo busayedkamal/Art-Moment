@@ -14,6 +14,7 @@ import { format, isValid, subMonths, isBefore } from 'date-fns';
 import RiyalSign from '../components/RiyalSign';
 import { arSA } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { getTotalAvailablePoints } from '../utils/walletBalances';
 
 export default function Reports() {
   const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ export default function Reports() {
         const { data: paymentsData } = await supabase.from('order_payments').select('*');
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
-        const { data: walletsData } = await supabase.from('wallets').select('phone, points_balance').order('id', { ascending: true });
+        const { data: walletsData } = await supabase.from('wallets').select('id, phone, points_balance').order('id', { ascending: true });
         // نجلب شحن الباقات واستخدامها
         const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('*').in('type', ['package_charge', 'package_add', 'package_redeem']);
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
@@ -172,24 +173,7 @@ export default function Reports() {
     const churnedList = Object.values(customerLastOrder).filter(c => isBefore(c.date, threeMonthsAgo)).slice(0, 5);
 
     // حساب أرصدة المحافظ — نُطبّع رقم الهاتف ونُزيل التكرار (نفس منطق صفحة العملاء)
-    const normalizePhone = (raw) => {
-      if (!raw) return '';
-      let p = String(raw).replace(/\D/g, '');
-      if (p.startsWith('966')) p = p.slice(3);
-      if (p.startsWith('0')) p = p.slice(1);
-      return p;
-    };
-    // إذا وُجدت محفظتان لنفس الرقم، نختار صاحبة أعلى رصيد (نفس منطق صفحة العملاء)
-    const walletByPhone = {};
-    wallets.forEach(w => {
-      const key = normalizePhone(w.phone);
-      if (!key) return;
-      const bal = Number(w.points_balance || 0);
-      if (walletByPhone[key] === undefined || bal > walletByPhone[key]) {
-        walletByPhone[key] = bal;
-      }
-    });
-    totalPointsBalance = Object.values(walletByPhone).reduce((acc, v) => acc + v, 0);
+    totalPointsBalance = getTotalAvailablePoints(wallets);
     
     // إجمالي مبالغ الباقات المشحونة (المبلغ المدفوع الفعلي = ربح مباشر فوري)
     const packagesCharged = packageTransactions
@@ -323,6 +307,72 @@ export default function Reports() {
     { name: 'صور A4', value: customerInsights.totalA4 },
     { name: 'الألبومات', value: customerInsights.totalAlbums }
   ].filter(d => d.value > 0), [customerInsights]);
+
+  const monthlyDetails = useMemo(() => (
+    analytics.monthlyData.slice().reverse().map((row) => {
+      const monthPayments = payments.filter(p => p.payment_date?.startsWith(row.name));
+      const monthExpenses = expenses.filter(e => (e.date || e.created_at)?.startsWith(row.name));
+
+      const incomeByCustomer = monthPayments.reduce((acc, payment) => {
+        const order = orders.find(item => item.id === payment.order_id);
+        const customerName = order?.customer_name || 'عميل غير معروف';
+        acc[customerName] = (acc[customerName] || 0) + Number(payment.amount || 0);
+        return acc;
+      }, {});
+
+      const expensesByCategory = monthExpenses.reduce((acc, expense) => {
+        const category = expense.title || 'غير مصنف';
+        acc[category] = (acc[category] || 0) + Number(expense.amount || 0);
+        return acc;
+      }, {});
+
+      return { ...row, incomeByCustomer, expensesByCategory };
+    })
+  ), [analytics.monthlyData, expenses, orders, payments]);
+
+  const renderMonthBreakdown = (row, compact = false) => (
+    <div className={`grid grid-cols-1 md:grid-cols-2 ${compact ? 'gap-0' : 'gap-6'}`}>
+      <section className={compact ? 'py-4' : 'bg-white p-5 rounded-xl border border-emerald-100 shadow-sm'}>
+        <h4 className="font-bold text-emerald-700 mb-4 text-xs flex items-center gap-2 pb-2 border-b border-emerald-100">
+          <TrendingUp size={16}/> مصادر الدخل (العملاء)
+        </h4>
+        {Object.keys(row.incomeByCustomer).length > 0 ? (
+          <ul className="space-y-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+            {Object.entries(row.incomeByCustomer)
+              .sort((a, b) => b[1] - a[1])
+              .map(([name, amount]) => (
+                <li key={name} className="flex justify-between items-center gap-3 text-sm border-b border-emerald-50 pb-2 last:border-0 last:pb-0">
+                  <span className="text-[#4A4A4A]/80 font-medium truncate">{name}</span>
+                  <span className="font-bold text-emerald-600 whitespace-nowrap">{amount.toLocaleString()} <RiyalSign /></span>
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-[#4A4A4A]/40 text-center py-2">لا توجد دفعات مسجلة</p>
+        )}
+      </section>
+
+      <section className={compact ? 'py-4 border-t border-red-100' : 'bg-white p-5 rounded-xl border border-red-100 shadow-sm'}>
+        <h4 className="font-bold text-red-600 mb-4 text-xs flex items-center gap-2 pb-2 border-b border-red-100">
+          <TrendingDown size={16}/> بنود المصروفات
+        </h4>
+        {Object.keys(row.expensesByCategory).length > 0 ? (
+          <ul className="space-y-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+            {Object.entries(row.expensesByCategory)
+              .sort((a, b) => b[1] - a[1])
+              .map(([category, amount]) => (
+                <li key={category} className="flex justify-between items-center gap-3 text-sm border-b border-red-50 pb-2 last:border-0 last:pb-0">
+                  <span className="text-[#4A4A4A]/80 font-medium truncate">{category}</span>
+                  <span className="font-bold text-red-500 whitespace-nowrap">{amount.toLocaleString()} <RiyalSign /></span>
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-[#4A4A4A]/40 text-center py-2">لا توجد مصروفات مسجلة</p>
+        )}
+      </section>
+    </div>
+  );
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-32">
@@ -651,7 +701,7 @@ export default function Reports() {
                   </p>
                   
                   <div className="mt-3 pt-3 border-t border-amber-200/50 flex justify-between items-center text-xs font-bold text-amber-800">
-                    <span>اقترح عليهم ألبوماً واكسب:</span>
+                    <span>اقترحي عليهم ألبوماً واكسبي:</span>
                     <span className="bg-amber-200 px-2 py-1 rounded-md text-amber-900">+{potentialRevenue} <RiyalSign /></span>
                   </div>
                 </div>
@@ -686,7 +736,55 @@ export default function Reports() {
       {/* ✅ جدول التفاصيل الشهرية الديناميكي ✅ */}
       <div className="bg-white rounded-2xl border border-[#D9A3AA]/15 overflow-hidden">
         <div className="p-4 border-b border-[#D9A3AA]/10 bg-[#F8F5F2]/50"><h3 className="font-bold text-[#4A4A4A]/80 text-sm">التفاصيل الشهرية</h3></div>
-        <div className="overflow-x-auto">
+        <div className="md:hidden p-3 space-y-3">
+          {monthlyDetails.map((row) => {
+            const isExpanded = expandedMonth === row.name;
+            const monthLabel = isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name;
+
+            return (
+              <article key={row.name} className="rounded-xl border border-[#D9A3AA]/15 bg-white overflow-hidden shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setExpandedMonth(isExpanded ? null : row.name)}
+                  className="w-full p-4 text-right"
+                  aria-expanded={isExpanded}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <span className="font-black text-sm text-[#4A4A4A]">{monthLabel}</span>
+                    <span className={`w-7 h-7 inline-flex items-center justify-center rounded-full text-[#D9A3AA] bg-[#D9A3AA]/10 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                      <ChevronDown size={15} />
+                    </span>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-5 gap-y-4 text-xs">
+                    <div>
+                      <dt className="text-[#4A4A4A]/45 mb-1">الدخل</dt>
+                      <dd className="font-black text-emerald-600">{row.revenue.toLocaleString()} <RiyalSign /></dd>
+                    </div>
+                    <div>
+                      <dt className="text-[#4A4A4A]/45 mb-1">المصروفات</dt>
+                      <dd className="font-black text-red-500">{row.expenses.toLocaleString()} <RiyalSign /></dd>
+                    </div>
+                    <div>
+                      <dt className="text-[#4A4A4A]/45 mb-1">الصافي</dt>
+                      <dd className={`font-black ${(row.profit || 0) >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{(row.profit || 0).toLocaleString()} <RiyalSign /></dd>
+                    </div>
+                    <div>
+                      <dt className="text-[#4A4A4A]/45 mb-1">الطلبات</dt>
+                      <dd className="font-black text-[#4A4A4A]">{row.orders}</dd>
+                    </div>
+                  </dl>
+                </button>
+                {isExpanded && (
+                  <div className="px-4 border-t border-[#D9A3AA]/10 bg-[#F8F5F2]/35 animate-in slide-in-from-top-2 fade-in duration-300">
+                    {renderMonthBreakdown(row, true)}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-right text-sm min-w-[500px]">
           <thead className="bg-[#F8F5F2] text-[#4A4A4A]/60">
             <tr>
@@ -698,25 +796,7 @@ export default function Reports() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#D9A3AA]/10">
-            {analytics.monthlyData.slice().reverse().map((row) => {
-              
-              const monthPayments = payments.filter(p => p.payment_date?.startsWith(row.name));
-              const monthExpenses = expenses.filter(e => e.date?.startsWith(row.name));
-
-              const incomeByCustomer = monthPayments.reduce((acc, curr) => {
-                const order = orders.find(o => o.id === curr.order_id);
-                const customerName = order ? order.customer_name : 'عميل غير معروف';
-                acc[customerName] = (acc[customerName] || 0) + Number(curr.amount);
-                return acc;
-              }, {});
-
-              // ✅ التعديل هنا: قراءة 'title' بدلاً من 'category'
-              const expensesByCategory = monthExpenses.reduce((acc, curr) => {
-                const cat = curr.title || 'غير مصنف';
-                acc[cat] = (acc[cat] || 0) + Number(curr.amount);
-                return acc;
-              }, {});
-
+            {monthlyDetails.map((row) => {
               const isExpanded = expandedMonth === row.name;
 
               return (
@@ -740,48 +820,8 @@ export default function Reports() {
                   {isExpanded && (
                     <tr className="bg-[#F8F5F2]/40 border-b-2 border-[#D9A3AA]/20">
                       <td colSpan="5" className="p-0">
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2 fade-in duration-300">
-                          
-                          <div className="bg-white p-5 rounded-xl border border-emerald-100 shadow-sm">
-                            <h4 className="font-bold text-emerald-700 mb-4 text-xs flex items-center gap-2 pb-2 border-b border-emerald-50">
-                              <TrendingUp size={16}/> مصادر الدخل (العملاء)
-                            </h4>
-                            {Object.keys(incomeByCustomer).length > 0 ? (
-                              <ul className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                {Object.entries(incomeByCustomer)
-                                  .sort((a, b) => b[1] - a[1]) 
-                                  .map(([name, amount], idx) => (
-                                  <li key={idx} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-                                    <span className="text-[#4A4A4A]/80 font-medium">{name}</span>
-                                    <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{amount.toLocaleString()} <RiyalSign /></span>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-xs text-[#4A4A4A]/40 text-center py-2">لا توجد دفعات مسجلة</p>
-                            )}
-                          </div>
-
-                          <div className="bg-white p-5 rounded-xl border border-red-100 shadow-sm">
-                            <h4 className="font-bold text-red-600 mb-4 text-xs flex items-center gap-2 pb-2 border-b border-red-50">
-                              <TrendingDown size={16}/> بنود المصروفات
-                            </h4>
-                            {Object.keys(expensesByCategory).length > 0 ? (
-                              <ul className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                {Object.entries(expensesByCategory)
-                                  .sort((a, b) => b[1] - a[1])
-                                  .map(([category, amount], idx) => (
-                                  <li key={idx} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-                                    <span className="text-[#4A4A4A]/80 font-medium">{category}</span>
-                                    <span className="font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md">{amount.toLocaleString()} <RiyalSign /></span>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-xs text-[#4A4A4A]/40 text-center py-2">لا توجد مصروفات مسجلة</p>
-                            )}
-                          </div>
-
+                        <div className="p-6 animate-in slide-in-from-top-2 fade-in duration-300">
+                          {renderMonthBreakdown(row)}
                         </div>
                       </td>
                     </tr>

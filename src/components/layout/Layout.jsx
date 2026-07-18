@@ -125,13 +125,15 @@ export default function Layout() {
 
         {/* هيدر الجوال فقط */}
         <header className="md:hidden sticky top-0 z-40 flex items-center justify-between bg-white border-b border-[#D9A3AA]/20 px-4 py-3 shadow-sm">
-          <span className="font-bold text-[#4A4A4A]">لوحة التحكم</span>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="p-2 text-[#4A4A4A]/80 hover:bg-[#F8F5F2] rounded-lg transition-colors"
+            aria-label="فتح القائمة الجانبية"
+            title="فتح القائمة"
           >
             <Menu size={24} />
           </button>
+          <span className="font-bold text-[#4A4A4A]">لوحة التحكم</span>
         </header>
 
         {/* محتوى الصفحة */}
