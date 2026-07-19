@@ -46,6 +46,20 @@ const VALID_TRANSITIONS = {
   done:     ['delivered', 'ready_for_delivery'],
 };
 
+const paymentAmountFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+function escapeLabelHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 export default function OrderDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -916,14 +930,15 @@ export default function OrderDetails() {
 
   // --- إضافة دفعة ---
   const handleAddPayment = async () => {
-    if (!newPayment.amount || Number(newPayment.amount) <= 0) return toast.error('مبلغ غير صحيح');
+    const paymentAmount = roundMoney(Number(newPayment.amount));
+    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) return toast.error('مبلغ غير صحيح');
 
     try {
       const { data: payData, error } = await supabase
         .from('order_payments')
         .insert([{
           order_id: id,
-          amount: Number(newPayment.amount),
+          amount: paymentAmount,
           payment_date: newPayment.date
         }])
         .select()
@@ -931,7 +946,9 @@ export default function OrderDetails() {
 
       if (error) throw error;
 
-      const newTotalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0) + Number(newPayment.amount);
+      const newTotalPaid = roundMoney(
+        payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) + paymentAmount,
+      );
       const pointsPaid = getPrintOrderFinancials(order, transactions).pointsUsed;
       const isPaid = newTotalPaid + pointsPaid >= Number(order.total_amount || 0);
 
@@ -950,12 +967,16 @@ export default function OrderDetails() {
     }
   };
 
-  const handleDeletePayment = async (paymentId, amount) => {
+  const handleDeletePayment = async (paymentId) => {
     if (!window.confirm('حذف؟')) return;
     try {
       await supabase.from('order_payments').delete().eq('id', paymentId);
 
-      const newTotalPaid = Number(order.deposit || 0) - Number(amount || 0);
+      const newTotalPaid = Math.max(0, roundMoney(
+        payments
+          .filter((payment) => payment.id !== paymentId)
+          .reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
+      ));
       const pointsPaid = getPrintOrderFinancials(order, transactions).pointsUsed;
       await supabase
         .from('orders')
@@ -1168,7 +1189,75 @@ export default function OrderDetails() {
   };
 
   const handlePrint = () => { setTimeout(() => window.print(), 100); };
-  const handlePrintLabel = () => { };
+  const handlePrintLabel = () => {
+    const labelWindow = window.open('', 'art-moment-order-label', 'width=760,height=900');
+    if (!labelWindow) {
+      toast.error('تعذر فتح الملصق. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى.');
+      return;
+    }
+
+    const orderNumber = String(order?.id || id || '').slice(0, 8);
+    const statusLabel = STATUS_CONFIG[order?.status]?.label || order?.status || 'غير محدد';
+    const deliveryDate = order?.delivery_date
+      ? new Date(order.delivery_date).toLocaleDateString('ar-SA')
+      : 'غير محدد';
+    const logoUrl = new URL(logo, window.location.href).href;
+
+    labelWindow.document.write(`<!doctype html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="utf-8" />
+          <title>ملصق الطلب ${escapeLabelHtml(orderNumber)}</title>
+          <style>
+            @page { size: 100mm 150mm; margin: 7mm; }
+            * { box-sizing: border-box; }
+            body { margin: 0; color: #4A4A4A; font-family: Tajawal, Arial, sans-serif; }
+            .label { min-height: 136mm; border: 2px solid #D9A3AA; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+            .brand { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E9D7D9; padding-bottom: 12px; }
+            .brand img { width: 54px; height: 54px; object-fit: contain; }
+            h1 { margin: 0; font-size: 23px; }
+            .order-number { color: #B0873F; font-size: 25px; font-weight: 900; direction: ltr; text-align: right; }
+            .customer { background: #F8F5F2; border-radius: 12px; padding: 14px; }
+            .customer strong { display: block; font-size: 23px; margin-bottom: 5px; }
+            .phone { font-size: 18px; font-weight: 800; direction: ltr; text-align: right; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            .field { border: 1px solid #E9D7D9; border-radius: 10px; padding: 10px; }
+            .field span { display: block; color: #8F8585; font-size: 11px; margin-bottom: 4px; }
+            .field b { font-size: 15px; }
+            .notes { flex: 1; white-space: pre-wrap; }
+            .footer { text-align: center; color: #9A8F8F; font-size: 11px; border-top: 1px dashed #D9A3AA; padding-top: 8px; }
+            @media print { .label { break-inside: avoid; } }
+          </style>
+        </head>
+        <body>
+          <main class="label">
+            <div class="brand">
+              <div><h1>لحظة فن</h1><div>ملصق تسليم الطلب</div></div>
+              <img src="${escapeLabelHtml(logoUrl)}" alt="لحظة فن" />
+            </div>
+            <div>
+              <div>رقم الطلب</div>
+              <div class="order-number">#${escapeLabelHtml(orderNumber)}</div>
+            </div>
+            <section class="customer">
+              <strong>${escapeLabelHtml(order?.customer_name || 'عميل لحظة فن')}</strong>
+              <div class="phone">${escapeLabelHtml(order?.phone || 'بدون رقم جوال')}</div>
+            </section>
+            <div class="grid">
+              <div class="field"><span>موعد التسليم</span><b>${escapeLabelHtml(deliveryDate)}</b></div>
+              <div class="field"><span>حالة الطلب</span><b>${escapeLabelHtml(statusLabel)}</b></div>
+              <div class="field"><span>صور 4×6</span><b>${escapeLabelHtml(order?.photo_4x6_qty || 0)}</b></div>
+              <div class="field"><span>صور A4</span><b>${escapeLabelHtml(order?.a4_qty || 0)}</b></div>
+            </div>
+            <div class="field notes"><span>ملاحظات الطلب</span><b>${escapeLabelHtml(order?.notes || 'لا توجد ملاحظات')}</b></div>
+            <div class="footer">Art Moment · art-moment.com</div>
+          </main>
+        </body>
+      </html>`);
+    labelWindow.document.close();
+    labelWindow.focus();
+    window.setTimeout(() => labelWindow.print(), 350);
+  };
 
   // ✅ تصدير الفاتورة PDF بحجم A5
   const handleExportPDF = async () => {
@@ -1820,10 +1909,16 @@ export default function OrderDetails() {
                   <div className="flex justify-between items-center mb-2 border-b border-[#D9A3AA]/20 pb-2">
                     <span className="text-[#B97882] font-bold text-xs">سجل المدفوعات</span>
                     <button
-                      onClick={() => setShowPaymentInput(!showPaymentInput)}
-                      className="text-[10px] bg-[#D9A3AA]/20 text-[#D9A3AA]/85 px-2 py-0.5 rounded hover:bg-[#D9A3AA]/40 flex items-center gap-1"
+                      onClick={() => {
+                        if (showPaymentInput) {
+                          setNewPayment({ amount: '', date: new Date().toISOString().split('T')[0] });
+                        }
+                        setShowPaymentInput(!showPaymentInput);
+                      }}
+                      className={`text-[10px] px-2 py-0.5 rounded flex items-center gap-1 transition-colors ${showPaymentInput ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-[#D9A3AA]/20 text-[#D9A3AA]/85 hover:bg-[#D9A3AA]/40'}`}
                     >
-                      <Plus size={10} /> إضافة
+                      {showPaymentInput ? <X size={10} /> : <Plus size={10} />}
+                      {showPaymentInput ? 'إلغاء' : 'إضافة'}
                     </button>
                   </div>
 
@@ -1837,6 +1932,9 @@ export default function OrderDetails() {
                       />
                       <input
                         type="number"
+                        min="0.01"
+                        step="0.01"
+                        inputMode="decimal"
                         placeholder="المبلغ"
                         value={newPayment.amount}
                         onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
@@ -1856,9 +1954,9 @@ export default function OrderDetails() {
                         <div key={p.id} className="flex justify-between items-center text-xs bg-white border border-[#D9A3AA]/10 px-2 py-1.5 rounded-lg group">
                           <span className="font-mono text-[#4A4A4A]/55 text-[10px]">{new Date(p.payment_date).toLocaleDateString('en-GB')}</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-[#393737]">{p.amount}</span>
+                            <span className="font-bold text-[#393737]">{paymentAmountFormatter.format(Number(p.amount || 0))}</span>
                             <button
-                              onClick={() => handleDeletePayment(p.id, p.amount)}
+                              onClick={() => handleDeletePayment(p.id)}
                               className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-300"
                             >
                               <X size={11} />

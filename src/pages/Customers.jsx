@@ -1229,6 +1229,7 @@ export default function Customers() {
         || (c.phone || "").toLowerCase().includes(q)
         || (c.email || "").toLowerCase().includes(q)
         || (c.cleanPhone || "").toLowerCase().includes(q)
+        || (c.subscriptionCode || "").toLowerCase().includes(q)
       ));
     }
     data = [...data].sort((a, b) => {
@@ -1363,7 +1364,7 @@ export default function Customers() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="بحث بالاسم أو الجوال أو البريد..."
+              placeholder="بحث بالاسم أو الجوال أو البريد أو رقم الاشتراك..."
               className="w-full border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 pr-9 outline-none focus:border-[#D9A3AA] focus:ring-2 focus:ring-[#D9A3AA]/20 text-sm bg-[#F8F5F2]/40"
             />
           </div>

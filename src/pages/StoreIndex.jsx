@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -12,10 +12,11 @@ import {
 import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
   Menu, X, Download, AlertCircle, ShoppingBag, Plus,
-  ChevronRight, ChevronLeft, ArrowLeft, Sparkles, User, LogOut, Package, Wallet,
+  ArrowLeft, Sparkles, User, LogOut, Package, Wallet,
   ArrowUpDown
 } from 'lucide-react';
 import CustomerAuthModal from '../components/CustomerAuthModal';
+import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from '../utils/customerAuthPrompt';
 
 import logo from '../assets/logo-art-moment.svg';
 import fallbackLogo from '../assets/logo.png';
@@ -46,11 +47,17 @@ export default function StoreIndex() {
   const [cart, setCart]                     = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled]             = useState(false);
-  const [currentPage, setCurrentPage]       = useState(1);
+  const [columnCount, setColumnCount]       = useState(() => {
+    if (typeof window === 'undefined') return 4;
+    if (window.innerWidth >= 1280) return 4;
+    if (window.innerWidth >= 768) return 3;
+    return 2;
+  });
+  const [visibleCount, setVisibleCount]     = useState(columnCount);
+  const [hasStartedScrolling, setHasStartedScrolling] = useState(false);
+  const loadMoreRef = useRef(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen]         = useState(false);
-  const itemsPerPage = 12;
-
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable]   = useState(false);
   const [isIOS, setIsIOS]                   = useState(false);
@@ -61,6 +68,33 @@ export default function StoreIndex() {
 
   useEffect(() => {
     setCustomer(getCustomerSession());
+  }, []);
+
+  useEffect(() => {
+    if (!shouldAutoOpenCustomerAuth()) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      markCustomerAuthPromptShown();
+      setIsAuthModalOpen(true);
+    }, 1200);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
+    const updateColumnCount = () => {
+      const nextCount = window.innerWidth >= 1280 ? 4 : window.innerWidth >= 768 ? 3 : 2;
+      setColumnCount(nextCount);
+    };
+    const markScrollingStarted = () => {
+      if (window.scrollY > 80) setHasStartedScrolling(true);
+    };
+
+    window.addEventListener('resize', updateColumnCount);
+    window.addEventListener('scroll', markScrollingStarted, { passive: true, once: true });
+    return () => {
+      window.removeEventListener('resize', updateColumnCount);
+      window.removeEventListener('scroll', markScrollingStarted);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -180,18 +214,25 @@ export default function StoreIndex() {
     });
   }, [products, activeCategory, searchQ, sortMode]);
 
-  useEffect(() => { setCurrentPage(1); }, [activeCategory, searchQ, sortMode]);
+  useEffect(() => {
+    setVisibleCount(columnCount);
+  }, [activeCategory, searchQ, sortMode, columnCount]);
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const currentProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+  const hasMoreProducts = visibleCount < filteredProducts.length;
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasMoreProducts || !hasStartedScrolling) return undefined;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0]?.isIntersecting) return;
+      setVisibleCount((current) => Math.min(current + (columnCount * 2), filteredProducts.length));
+    }, { rootMargin: '240px 0px' });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [columnCount, filteredProducts.length, hasMoreProducts, hasStartedScrolling]);
 
   useEffect(() => {
     document.body.style.overflow = isModalOpen ? 'hidden' : 'auto';
@@ -406,7 +447,7 @@ export default function StoreIndex() {
                 إعادة المحاولة
               </button>
             </div>
-          ) : currentProducts.length === 0 ? (
+          ) : visibleProducts.length === 0 ? (
             <div className="col-span-full text-center py-20 text-[#4A4A4A]/60">
               <p className="font-black text-lg mb-4">لا توجد منتجات مطابقة لبحثك</p>
               {(searchQ || activeCategory !== 'all') && (
@@ -423,7 +464,7 @@ export default function StoreIndex() {
               )}
             </div>
           ) : (
-            currentProducts.map(product => {
+            visibleProducts.map((product, productIndex) => {
               const productQty = getProductQty(product.id);
               const canAddProduct = canAddProductToCart(product, productQty);
               const productAvailable = isProductAvailable(product);
@@ -432,7 +473,8 @@ export default function StoreIndex() {
               <div
                 key={product.id}
                 onClick={() => { if (productAvailable) { setSelectedProduct(product); setIsModalOpen(true); } }}
-                className={`art-product-card p-3 sm:p-4 lg:p-5 group flex flex-col relative overflow-hidden ${productAvailable ? 'cursor-pointer' : 'opacity-80 cursor-not-allowed'}`}
+                className={`art-product-card p-3 sm:p-4 lg:p-5 group flex flex-col relative overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500 ${productAvailable ? 'cursor-pointer' : 'opacity-80 cursor-not-allowed'}`}
+                style={{ animationDelay: `${Math.min(productIndex % (columnCount * 2), 5) * 70}ms` }}
               >
 
                 <div className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${productAvailable ? 'group-hover:scale-105' : 'grayscale'}`}>
@@ -495,45 +537,16 @@ export default function StoreIndex() {
           )}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-white border border-[#D9A3AA]/20 text-[#4A4A4A] hover:bg-[#F8F5F2] disabled:opacity-50 transition-colors"
-            >
-              <ChevronRight size={18} />
-            </button>
-
-            <div className="flex items-center gap-1.5" dir="ltr">
-              {[...Array(totalPages)].map((_, i) => {
-                const page = i + 1;
-                return (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${
-                      currentPage === page
-                        ? 'bg-[#4A4A4A] text-white shadow-md'
-                        : 'bg-white border border-[#D9A3AA]/20 text-[#4A4A4A] hover:bg-[#F8F5F2]'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
+        <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center mt-2" aria-live="polite">
+          {hasMoreProducts ? (
+            <div className="flex items-center gap-2 text-xs font-bold text-[#4A4A4A]/45">
+              <span className="h-2 w-2 rounded-full bg-[#D9A3AA] animate-pulse" />
+              مرري لعرض المزيد
             </div>
-
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-white border border-[#D9A3AA]/20 text-[#4A4A4A] hover:bg-[#F8F5F2] disabled:opacity-50 transition-colors"
-            >
-              <ChevronLeft size={18} />
-            </button>
-          </div>
-        )}
+          ) : filteredProducts.length > columnCount ? (
+            <span className="text-xs font-bold text-[#4A4A4A]/35">تم عرض جميع المنتجات</span>
+          ) : null}
+        </div>
       </main>
 
       {/* Floating Cart Button */}
@@ -547,6 +560,7 @@ export default function StoreIndex() {
 
       <CustomerAuthModal
         isOpen={isAuthModalOpen}
+        initialMode="signup"
         onClose={() => {
           setIsAuthModalOpen(false);
           setCustomer(getCustomerSession());

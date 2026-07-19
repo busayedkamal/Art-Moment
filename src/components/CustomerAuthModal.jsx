@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowRight,
   Check,
@@ -21,8 +21,8 @@ import {
 } from '../utils/customerSession';
 
 const errorMessages = {
-  customer_exists: 'رقم الجوال أو البريد الإلكتروني مسجل مسبقاً. سجلي الدخول بدلاً من إنشاء حساب جديد.',
-  email_send_failed: 'تعذر إرسال كود الاسترداد الآن. تأكدي من إعدادات البريد وحاولي مرة أخرى.',
+  customer_exists: 'رقم الجوال أو البريد الإلكتروني مسجل مسبقاً. سجل الدخول بدلاً من إنشاء حساب جديد.',
+  email_send_failed: 'تعذر إرسال كود الاسترداد الآن. تأكد من إعدادات البريد وحاول مرة أخرى.',
   invalid_credentials: 'بيانات الدخول غير صحيحة.',
   invalid_reset_code: 'كود الاسترداد غير صحيح أو انتهت صلاحيته.',
 };
@@ -72,16 +72,20 @@ function getTitle(mode) {
 }
 
 function getSubtitle(mode) {
-  if (mode === 'signup') return 'احفظي بياناتك وطلباتك القادمة في حساب واحد.';
-  if (mode === 'forgot') return 'أدخلي رقم الجوال أو البريد المرتبط بحسابك لإرسال كود الاسترداد.';
-  if (mode === 'reset') return 'أدخلي الكود المرسل إلى بريدك ثم اختاري كلمة مرور جديدة.';
-  return 'ادخلي برقم الجوال أو البريد الإلكتروني لمتابعة طلباتك.';
+  if (mode === 'signup') return 'احفظ بياناتك وطلباتك القادمة في حساب واحد.';
+  if (mode === 'forgot') return 'أدخل رقم الجوال أو البريد المرتبط بحسابك لإرسال كود الاسترداد.';
+  if (mode === 'reset') return 'أدخل الكود المرسل إلى بريدك ثم اختر كلمة مرور جديدة.';
+  return 'ادخل برقم الجوال أو البريد الإلكتروني لمتابعة طلباتك.';
 }
 
-export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/store' }) {
-  const [mode, setMode] = useState('login');
+export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/store', initialMode = 'signup' }) {
+  const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
+
+  useEffect(() => {
+    if (isOpen) setMode(initialMode);
+  }, [initialMode, isOpen]);
 
   if (!isOpen) return null;
 
@@ -187,7 +191,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
   const requestPasswordReset = async () => {
     const identifier = formData.identifier.trim();
     if (!identifier) {
-      toast.error('أدخلي رقم الجوال أو البريد الإلكتروني أولاً.');
+      toast.error('أدخل رقم الجوال أو البريد الإلكتروني أولاً.');
       return;
     }
 

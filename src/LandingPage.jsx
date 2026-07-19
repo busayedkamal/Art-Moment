@@ -22,6 +22,7 @@ import {
   User, LogOut
 } from 'lucide-react';
 import CustomerAuthModal from './components/CustomerAuthModal';
+import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from './utils/customerAuthPrompt';
 
 import promoVideo from './assets/printing-quality.mp4';
 import logo from './assets/logo-art-moment.svg';
@@ -109,6 +110,16 @@ export default function LandingPage() {
 
   useEffect(() => {
     setCustomer(getCustomerSession());
+  }, []);
+
+  useEffect(() => {
+    if (!shouldAutoOpenCustomerAuth()) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      markCustomerAuthPromptShown();
+      setIsAuthModalOpen(true);
+    }, 1200);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const handleLogout = () => {
@@ -1237,6 +1248,7 @@ export default function LandingPage() {
 
       <CustomerAuthModal
         isOpen={isAuthModalOpen}
+        initialMode="signup"
         onClose={() => {
           setIsAuthModalOpen(false);
           setCustomer(getCustomerSession());

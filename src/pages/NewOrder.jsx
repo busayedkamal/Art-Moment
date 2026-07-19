@@ -49,7 +49,7 @@ export default function NewOrder() {
     defaultValues: {
       customerName: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
       source: 'الهفوف', sourceOther: '',
-      a4Qty: 0, photo4x6Qty: 0, deliveryFee: 0, deposit: 0, notes: '',
+      a4Qty: '', photo4x6Qty: '', deliveryFee: 0, deposit: 0, notes: '',
       manualDiscount: 0
     }
   });
