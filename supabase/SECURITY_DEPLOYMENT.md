@@ -14,6 +14,7 @@ supabase functions deploy track-order
 supabase functions deploy store-return-requests
 supabase functions deploy customer-account
 supabase functions deploy customer-marketing
+supabase functions deploy telegram-bot --no-verify-jwt
 ```
 
 2. Set secrets for server-side email and WhatsApp sending:
@@ -130,6 +131,44 @@ For explicit print-order discounts, points payments, coupon attribution, and his
 ```text
 supabase/migrations/202607130001_order_financial_breakdown.sql
 ```
+
+For the Telegram administration bot chat registry and webhook deduplication, also run:
+
+```text
+supabase/migrations/202607190001_telegram_bot.sql
+```
+
+## Telegram bot setup
+
+The bot token must never be committed or placed in a Vite environment variable. Store it only in Supabase Secrets. The webhook secret may contain letters, numbers, `_`, and `-`.
+
+PowerShell setup without writing the token into the repository:
+
+```powershell
+$BotToken = Read-Host "Telegram bot token"
+$WebhookSecret = Read-Host "Telegram webhook secret"
+$ProjectRef = "your-project-ref"
+
+npx supabase secrets set "TELEGRAM_BOT_TOKEN=$BotToken" "TELEGRAM_WEBHOOK_SECRET=$WebhookSecret" --project-ref $ProjectRef
+npx supabase functions deploy telegram-bot --no-verify-jwt --project-ref $ProjectRef
+
+$WebhookUrl = "https://$ProjectRef.supabase.co/functions/v1/telegram-bot"
+$Body = @{
+  url = $WebhookUrl
+  secret_token = $WebhookSecret
+  allowed_updates = @("message")
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri "https://api.telegram.org/bot$BotToken/setWebhook" -ContentType "application/json" -Body $Body
+```
+
+Send `/start` to the bot. It returns the Telegram chat id without exposing database data. Activate that single administration chat:
+
+```powershell
+npx supabase secrets set "TELEGRAM_ADMIN_CHAT_ID=the-chat-id-returned-by-start" --project-ref $ProjectRef
+```
+
+Then use `/status` for the operational summary, `/orders` for recent print and store orders, and `/help` for the command list. Other chat ids remain registered but cannot read project data unless explicitly activated in `telegram_bot_chats`.
 
 4. Confirm these public flows still work:
 

@@ -77,6 +77,7 @@ VITE_SUPABASE_ANON_KEY="your-anon-key"
 - `customer-auth`: تسجيل/دخول العميل بدون كشف `password_hash`.
 - `store-checkout`: إنشاء طلب المتجر والمحفظة من جهة الخادم.
 - `track-order`: تتبع الطلب وسجل العميل بدون فتح جداول الطلبات والمحافظ للمتصفح.
+- `telegram-bot`: بوت تشغيل خاص بالإدارة لقراءة ملخص المهام وآخر الطلبات من خلال Webhook آمن.
 
 ### ملفات SQL المهمة
 
@@ -98,6 +99,7 @@ supabase functions deploy public-settings
 supabase functions deploy customer-auth
 supabase functions deploy store-checkout
 supabase functions deploy track-order
+supabase functions deploy telegram-bot --no-verify-jwt
 ```
 
 أسرار WhatsApp والخدمة يجب أن تكون في Supabase Secrets، وليس داخل الواجهة:
@@ -113,6 +115,7 @@ supabase secrets set ULTRAMSG_TOKEN=your-token
 - لا تفتح جداول `wallets`, `wallet_transactions`, `orders`, `store_orders`, `customers`, `settings` للـ `anon`.
 - قراءة المنتجات العامة مسموحة، والكتابة عليها للإدارة فقط.
 - إرسال WhatsApp يجب أن يبقى من Edge Function أو خدمة خلفية.
+- توكن تيليجرام وسر الـ Webhook يبقيان في Supabase Secrets ولا يوضعان في الواجهة أو المستودع.
 - بعد إضافة صف في `admin_users` يصبح الوصول الإداري محصورًا على المديرين المسجلين.
 
 ## ملاحظات تطوير

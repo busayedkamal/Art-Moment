@@ -7,7 +7,7 @@ import {
   ArrowRight, Printer, CheckCircle, Truck, Trash2,
   Banknote, FileText, User, Download,
   MessageCircle, X, Tag, Receipt, StickyNote, Plus, Wallet, Gift, Package,
-  Clock, RotateCcw, AlertCircle, Pencil, Save
+  Clock, RotateCcw, AlertCircle, Pencil, Save, Loader2
 } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
 import logoPng from '../assets/logo.png';
@@ -118,6 +118,8 @@ export default function OrderDetails() {
   const [isConvertingExcess, setIsConvertingExcess] = useState(false);
 
   const [statusHistory, setStatusHistory] = useState([]);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   useEffect(() => {
     fetchOrderAndSettings();
@@ -1101,39 +1103,26 @@ export default function OrderDetails() {
     );
   };
 
-  const updateStatus = async (newStatus) => {
-    const dateField = `date_${newStatus}`;
-    const now = new Date().toISOString();
-    try {
-      await supabase.from('orders').update({ status: newStatus, [dateField]: now }).eq('id', id);
-
-      setOrder(prev => {
-        const updated = { ...prev, status: newStatus, [dateField]: now };
-        if (newStatus === 'delivered') sendAutoWhatsAppMessage(updated);
-        return updated;
-      });
-
-      toast.success('تم التحديث');
-    } catch {
-      toast.error('فشل');
-    }
-  };
-
   const handleStatusChange = async (newStatus) => {
+    if (!newStatus || newStatus === order.status || isUpdatingStatus) return;
+
     const oldStatus = order.status;
     const toastId = toast.loading('جاري تحديث الحالة...');
+    setIsUpdatingStatus(true);
     try {
       const now = new Date().toISOString();
       const dateField = `date_${newStatus}`;
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('orders')
         .update({ status: newStatus, [dateField]: now })
         .eq('id', id);
+      if (updateError) throw updateError;
 
-      await supabase
+      const { error: historyError } = await supabase
         .from('order_status_history')
         .insert({ order_id: id, old_status: oldStatus, new_status: newStatus, created_at: now });
+      if (historyError) console.error('Order status history insert failed:', historyError);
 
       setOrder(prev => {
         const updated = { ...prev, status: newStatus, [dateField]: now };
@@ -1147,6 +1136,7 @@ export default function OrderDetails() {
         .eq('order_id', id)
         .order('created_at', { ascending: false });
       setStatusHistory(historyData || []);
+      setPendingStatus(null);
 
       toast.dismiss(toastId);
       toast.success(`تم تغيير الحالة إلى: ${STATUS_CONFIG[newStatus]?.label || newStatus}`);
@@ -1154,6 +1144,8 @@ export default function OrderDetails() {
       toast.dismiss(toastId);
       toast.error('فشل تحديث الحالة');
       console.error(err);
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -1446,14 +1438,51 @@ export default function OrderDetails() {
                     return (
                       <button
                         key={nextStatus}
-                        onClick={() => handleStatusChange(nextStatus)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-sm ${cfg.btnClass}`}
+                        type="button"
+                        onClick={() => setPendingStatus(nextStatus)}
+                        disabled={isUpdatingStatus}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${cfg.btnClass} ${pendingStatus === nextStatus ? 'ring-2 ring-offset-2 ring-[#C5A059]' : ''}`}
                       >
                         {Icon && <Icon size={14} />} {cfg.label}
                       </button>
                     );
                   })}
                 </div>
+                {pendingStatus && (() => {
+                  const currentConfig = STATUS_CONFIG[order.status] || { label: order.status };
+                  const nextConfig = STATUS_CONFIG[pendingStatus] || { label: pendingStatus };
+                  return (
+                    <div className="mt-4 rounded-xl border border-[#C5A059]/35 bg-[#F8F5F2] p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs font-bold text-[#4A4A4A]">تأكيد تغيير حالة الطلب</p>
+                          <p className="mt-1 text-xs text-[#4A4A4A]/60">
+                            من <span className="font-bold">{currentConfig.label}</span> إلى <span className="font-bold text-[#C5A059]">{nextConfig.label}</span>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPendingStatus(null)}
+                            disabled={isUpdatingStatus}
+                            className="min-h-10 rounded-lg border border-[#D9A3AA]/30 bg-white px-4 text-xs font-bold text-[#4A4A4A] disabled:opacity-50"
+                          >
+                            إلغاء
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleStatusChange(pendingStatus)}
+                            disabled={isUpdatingStatus}
+                            className="flex min-h-10 items-center gap-2 rounded-lg bg-[#4A4A4A] px-4 text-xs font-bold text-white transition-colors hover:bg-[#C5A059] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isUpdatingStatus ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle size={15} />}
+                            {isUpdatingStatus ? 'جاري الحفظ' : 'تأكيد التغيير'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

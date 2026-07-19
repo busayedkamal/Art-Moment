@@ -13,7 +13,7 @@ import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
   Menu, X, Download, AlertCircle, ShoppingBag, Plus,
   ArrowLeft, Sparkles, User, LogOut, Package, Wallet,
-  ArrowUpDown
+  ArrowUpDown, ChevronDown
 } from 'lucide-react';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from '../utils/customerAuthPrompt';
@@ -54,8 +54,8 @@ export default function StoreIndex() {
     return 2;
   });
   const [visibleCount, setVisibleCount]     = useState(columnCount);
-  const [hasStartedScrolling, setHasStartedScrolling] = useState(false);
   const loadMoreRef = useRef(null);
+  const lastRevealAtRef = useRef(0);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen]         = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -85,15 +85,10 @@ export default function StoreIndex() {
       const nextCount = window.innerWidth >= 1280 ? 4 : window.innerWidth >= 768 ? 3 : 2;
       setColumnCount(nextCount);
     };
-    const markScrollingStarted = () => {
-      if (window.scrollY > 80) setHasStartedScrolling(true);
-    };
 
     window.addEventListener('resize', updateColumnCount);
-    window.addEventListener('scroll', markScrollingStarted, { passive: true, once: true });
     return () => {
       window.removeEventListener('resize', updateColumnCount);
-      window.removeEventListener('scroll', markScrollingStarted);
     };
   }, []);
 
@@ -216,23 +211,39 @@ export default function StoreIndex() {
 
   useEffect(() => {
     setVisibleCount(columnCount);
+    lastRevealAtRef.current = 0;
   }, [activeCategory, searchQ, sortMode, columnCount]);
 
   const visibleProducts = filteredProducts.slice(0, visibleCount);
   const hasMoreProducts = visibleCount < filteredProducts.length;
 
+  const revealNextProductRow = useCallback(() => {
+    setVisibleCount((current) => Math.min(current + columnCount, filteredProducts.length));
+  }, [columnCount, filteredProducts.length]);
+
   useEffect(() => {
     const target = loadMoreRef.current;
-    if (!target || !hasMoreProducts || !hasStartedScrolling) return undefined;
+    if (!target || !hasMoreProducts) return undefined;
 
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries[0]?.isIntersecting) return;
-      setVisibleCount((current) => Math.min(current + (columnCount * 2), filteredProducts.length));
-    }, { rootMargin: '240px 0px' });
+    const maybeRevealNextRow = () => {
+      const rect = target.getBoundingClientRect();
+      if (rect.top > window.innerHeight + 140) return;
 
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [columnCount, filteredProducts.length, hasMoreProducts, hasStartedScrolling]);
+      const now = Date.now();
+      if (now - lastRevealAtRef.current < 450) return;
+      lastRevealAtRef.current = now;
+      revealNextProductRow();
+    };
+
+    window.addEventListener('scroll', maybeRevealNextRow, { passive: true });
+    window.addEventListener('touchmove', maybeRevealNextRow, { passive: true });
+    window.addEventListener('wheel', maybeRevealNextRow, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', maybeRevealNextRow);
+      window.removeEventListener('touchmove', maybeRevealNextRow);
+      window.removeEventListener('wheel', maybeRevealNextRow);
+    };
+  }, [hasMoreProducts, revealNextProductRow]);
 
   useEffect(() => {
     document.body.style.overflow = isModalOpen ? 'hidden' : 'auto';
@@ -539,10 +550,17 @@ export default function StoreIndex() {
 
         <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center mt-2" aria-live="polite">
           {hasMoreProducts ? (
-            <div className="flex items-center gap-2 text-xs font-bold text-[#4A4A4A]/45">
-              <span className="h-2 w-2 rounded-full bg-[#D9A3AA] animate-pulse" />
-              مرري لعرض المزيد
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                lastRevealAtRef.current = Date.now();
+                revealNextProductRow();
+              }}
+              className="flex min-h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold text-[#4A4A4A]/60 transition-colors hover:bg-white hover:text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-[#D9A3AA]/40"
+            >
+              <ChevronDown size={16} className="text-[#D9A3AA]" />
+              عرض المزيد
+            </button>
           ) : filteredProducts.length > columnCount ? (
             <span className="text-xs font-bold text-[#4A4A4A]/35">تم عرض جميع المنتجات</span>
           ) : null}
