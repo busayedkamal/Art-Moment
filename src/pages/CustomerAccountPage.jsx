@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
+  Award,
   Bell,
   CheckCircle,
   Home,
@@ -98,6 +99,7 @@ function Field({ label, icon: Icon, children }) {
 export default function CustomerAccountPage() {
   const [session, setSession] = useState(() => getCustomerSession());
   const [profile, setProfile] = useState(emptyProfile);
+  const [rewards, setRewards] = useState(null);
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -139,6 +141,7 @@ export default function CustomerAccountPage() {
     try {
       const data = await invokeAccount('get');
       setProfile(customerToProfile(data.customer));
+      setRewards(data.rewards || null);
       updateCustomerSession({
         name: data.customer?.name,
         email: data.customer?.email,
@@ -506,6 +509,61 @@ export default function CustomerAccountPage() {
             </form>
 
             <aside className="space-y-6">
+              <section className="rounded-[2rem] bg-white border border-[#C5A059]/25 p-5 sm:p-6 shadow-sm overflow-hidden relative">
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#D9A3AA] via-[#C5A059] to-[#4A4A4A]" />
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-black text-[#C5A059]">مكافآت لحظة فن</p>
+                    <h2 className="mt-1 text-xl font-black">رصيد النقاط</h2>
+                  </div>
+                  <span className="h-11 w-11 rounded-xl bg-[#C5A059]/10 text-[#C5A059] flex items-center justify-center">
+                    <Award size={21} />
+                  </span>
+                </div>
+
+                <div className="mt-5 rounded-2xl bg-[#F8F5F2] p-4">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-3xl font-black text-[#4A4A4A]" dir="ltr">
+                        {Number(rewards?.points || 0).toLocaleString()}
+                      </p>
+                      <p className="mt-1 text-xs font-bold text-[#4A4A4A]/55">نقطة متاحة</p>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-lg font-black text-[#B97882]" dir="ltr">
+                        {Number(rewards?.valueSar || 0).toFixed(2)} ر.س
+                      </p>
+                      <p className="text-[10px] text-[#4A4A4A]/45">القيمة الحالية</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-xl border border-[#D9A3AA]/15 p-3">
+                    <p className="text-[#4A4A4A]/50">بدء الاستبدال</p>
+                    <p className="mt-1 font-black">{Number(rewards?.minimumRedemptionPoints || 500).toLocaleString()} نقطة</p>
+                  </div>
+                  <div className="rounded-xl border border-[#D9A3AA]/15 p-3">
+                    <p className="text-[#4A4A4A]/50">صلاحية النقاط</p>
+                    <p className="mt-1 font-black">{Number(rewards?.expiryMonths || 4)} أشهر</p>
+                  </div>
+                </div>
+
+                {Number(rewards?.storeCreditSar || 0) > 0 && (
+                  <div className="mt-3 flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-3 text-xs text-emerald-700">
+                    <span className="font-bold">رصيد متجر مستقل</span>
+                    <strong dir="ltr">{Number(rewards.storeCreditSar).toFixed(2)} ر.س</strong>
+                  </div>
+                )}
+
+                {Number(rewards?.expiringSoonPoints || 0) > 0 && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-700">
+                    <strong>{Number(rewards.expiringSoonPoints).toLocaleString()} نقطة</strong> تنتهي خلال 30 يوماً
+                    {rewards.nextExpiryAt ? `، أقربها ${new Date(rewards.nextExpiryAt).toLocaleDateString('ar-SA')}` : ''}.
+                  </div>
+                )}
+              </section>
+
               <form onSubmit={changePassword} className="rounded-[2rem] bg-white border border-[#D9A3AA]/15 p-5 sm:p-6 shadow-sm">
                 <h2 className="text-xl font-black flex items-center gap-2 mb-5">
                   <Lock size={20} className="text-[#C5A059]" /> كلمة المرور

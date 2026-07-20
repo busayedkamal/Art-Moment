@@ -1,3 +1,9 @@
+import {
+  DEFAULT_REWARD_RULES,
+  getWalletRewardPoints,
+  pointsToRewardValue,
+} from './rewardPoints';
+
 export function normalizeWalletPhone(rawPhone) {
   let phone = String(rawPhone || '').replace(/\D/g, '');
   if (phone.startsWith('00966')) phone = phone.slice(5);
@@ -6,8 +12,8 @@ export function normalizeWalletPhone(rawPhone) {
   return phone;
 }
 
-function walletBalance(wallet) {
-  return Number(wallet?.points_balance || 0);
+function walletBalance(wallet, rules = DEFAULT_REWARD_RULES) {
+  return getWalletRewardPoints(wallet, rules);
 }
 
 function walletId(wallet) {
@@ -15,11 +21,11 @@ function walletId(wallet) {
   return Number.isFinite(id) ? id : 0;
 }
 
-export function choosePreferredWallet(wallets = []) {
+export function choosePreferredWallet(wallets = [], rules = DEFAULT_REWARD_RULES) {
   return wallets.reduce((preferred, wallet) => {
     if (!preferred) return wallet;
 
-    const balanceDifference = walletBalance(wallet) - walletBalance(preferred);
+    const balanceDifference = walletBalance(wallet, rules) - walletBalance(preferred, rules);
     if (balanceDifference > 0) return wallet;
     if (balanceDifference < 0) return preferred;
 
@@ -27,7 +33,7 @@ export function choosePreferredWallet(wallets = []) {
   }, null);
 }
 
-export function getPreferredWallets(wallets = []) {
+export function getPreferredWallets(wallets = [], rules = DEFAULT_REWARD_RULES) {
   const walletsByPhone = new Map();
 
   wallets.forEach((wallet) => {
@@ -35,13 +41,22 @@ export function getPreferredWallets(wallets = []) {
     if (!phone) return;
 
     const current = walletsByPhone.get(phone);
-    walletsByPhone.set(phone, choosePreferredWallet([current, wallet].filter(Boolean)));
+    walletsByPhone.set(phone, choosePreferredWallet([current, wallet].filter(Boolean), rules));
   });
 
   return [...walletsByPhone.values()];
 }
 
-export function getTotalAvailablePoints(wallets = []) {
-  return getPreferredWallets(wallets)
-    .reduce((total, wallet) => total + walletBalance(wallet), 0);
+export function getTotalRewardPoints(wallets = [], rules = DEFAULT_REWARD_RULES) {
+  return getPreferredWallets(wallets, rules)
+    .reduce((total, wallet) => total + walletBalance(wallet, rules), 0);
+}
+
+export function getTotalRewardValue(wallets = [], rules = DEFAULT_REWARD_RULES) {
+  return pointsToRewardValue(getTotalRewardPoints(wallets, rules), rules);
+}
+
+// Backward-compatible monetary total for the existing dashboard/report callers.
+export function getTotalAvailablePoints(wallets = [], rules = DEFAULT_REWARD_RULES) {
+  return getTotalRewardValue(wallets, rules);
 }

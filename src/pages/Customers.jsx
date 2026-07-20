@@ -11,6 +11,7 @@ import {
 import RiyalSign from "../components/RiyalSign";
 import { logAdminActivity } from "../utils/adminActivity";
 import { getPreferredWallets } from "../utils/walletBalances";
+import { getWalletRewardPoints, normalizeRewardRules, pointsToRewardValue } from "../utils/rewardPoints";
 
 const CRM_STATUS_OPTIONS = [
   { value: 'active', label: 'نشط' },
@@ -260,8 +261,15 @@ export default function Customers() {
       // 2) المحافظ (رصيد النقاط)
       const { data: walletsData, error: walletsError } = await supabase
         .from('wallets')
-        .select('id, phone, points_balance, address, notes, subscription_code');
+        .select('id, phone, points_balance, reward_points_balance, store_credit_balance, address, notes, subscription_code');
       if (walletsError) throw walletsError;
+
+      const { data: rewardSettings } = await supabase
+        .from('settings')
+        .select('reward_point_value, reward_expiry_months')
+        .eq('id', 1)
+        .maybeSingle();
+      const rewardRules = normalizeRewardRules(rewardSettings || {});
 
       // توليد كود اشتراك للمحافظ التي ليس لها كود (مرة واحدة تلقائياً)
       const walletsNeedCode = (walletsData || []).filter(w => w.phone && !w.subscription_code);
@@ -338,12 +346,14 @@ export default function Customers() {
       });
 
       const walletMap = new Map();
-      getPreferredWallets(walletsData || []).forEach(w => {
+      getPreferredWallets(walletsData || [], rewardRules).forEach(w => {
         const key = normalizePhone(w.phone); // 9 أرقام
         const keyWithZero = key.length === 9 ? '0' + key : key; // 10 أرقام
         const entry = {
           id: w.id,
-          balance: Number(w.points_balance || 0),
+          rewardPoints: getWalletRewardPoints(w, rewardRules),
+          balance: pointsToRewardValue(getWalletRewardPoints(w, rewardRules), rewardRules),
+          storeCredit: Number(w.store_credit_balance || 0),
           packageBalance: Math.max(0, packageBalanceByWalletId[w.id] || 0),
           address: w.address || '',
           notes: w.notes || '',
@@ -395,7 +405,7 @@ export default function Customers() {
 
       // ثانياً: العملاء الذين لديهم محافظ فقط (شحن باقة بدون طلبات سابقة)
       // نستخرج اسمهم من حقل notes بصيغة "اسم العميل: XXX"
-      getPreferredWallets(walletsData || []).forEach(w => {
+      getPreferredWallets(walletsData || [], rewardRules).forEach(w => {
         if (!w.phone) return;
         const clean = normalizePhone(w.phone);
         const withZero = clean.length === 9 ? '0' + clean : clean;
@@ -411,7 +421,7 @@ export default function Customers() {
 
         // تحقق أن هذه المحفظة لها رصيد باقات فعلاً (ليست محفظة فارغة)
         const hasPkgBalance = (packageBalanceByWalletId[w.id] || 0) > 0;
-        const hasPoints = Number(w.points_balance || 0) > 0;
+        const hasPoints = getWalletRewardPoints(w, rewardRules) > 0;
         if (!hasPkgBalance && !hasPoints) return; // تجاهل المحافظ الفارغة تماماً
 
         map[clean] = {
@@ -538,6 +548,8 @@ export default function Customers() {
         const walletData = walletMap.get(cleanKey) || walletMap.get(cleanWithZero) || null;
 
         const walletBalance = walletData ? walletData.balance : 0;
+        const rewardPoints = walletData ? walletData.rewardPoints : 0;
+        const storeCredit = walletData ? walletData.storeCredit : 0;
         const packageBalance = walletData ? walletData.packageBalance : 0;
         const address = walletData ? walletData.address : '';
         const notes = walletData ? walletData.notes : '';
@@ -554,6 +566,8 @@ export default function Customers() {
         const customer = {
           ...c,
           walletBalance,
+          rewardPoints,
+          storeCredit,
           packageBalance,
           address,
           notes,
@@ -855,8 +869,12 @@ export default function Customers() {
     if (!customer.cleanPhone) return toast.error("لا يمكن تعديل رصيد عميل بدون رقم هاتف");
     setIsSavingBalance(true);
     try {
-      const newBalance = Number(editWalletBalance);
-      const oldBalance = Number(customer.walletBalance || 0);
+      const parsedBalance = Number(editWalletBalance);
+      if (!Number.isFinite(parsedBalance) || parsedBalance < 0) {
+        throw new Error('invalid_reward_points');
+      }
+      const newBalance = Math.round(parsedBalance);
+      const oldBalance = Math.round(Number(customer.rewardPoints || 0));
       const diff = newBalance - oldBalance;
 
       if (diff === 0) { setEditingBalanceId(null); setIsSavingBalance(false); return; }
@@ -867,35 +885,36 @@ export default function Customers() {
       const allFormats = [withZero, digits, '966' + digits, '+966' + digits];
 
       const { data: walletsFound } = await supabase
-        .from('wallets').select('id, points_balance').in('phone', allFormats);
+        .from('wallets').select('id, reward_points_balance, points_balance').in('phone', allFormats);
 
       let walletId;
       if (walletsFound && walletsFound.length > 0) {
         // اختر المحفظة ذات أعلى رصيد (توافقاً مع ما يُعرض للمستخدم)
         const bestWallet = walletsFound.reduce((best, w) =>
-          Number(w.points_balance || 0) > Number(best.points_balance || 0) ? w : best,
+          Number(w.reward_points_balance || 0) > Number(best.reward_points_balance || 0) ? w : best,
           walletsFound[0]
         );
         walletId = bestWallet.id;
-        await supabase.from('wallets').update({ points_balance: newBalance }).eq('id', walletId);
       } else {
         const { data: newW } = await supabase.from('wallets')
-          .insert([{ phone: withZero, points_balance: newBalance }]).select().single();
+          .insert([{ phone: withZero, points_balance: 0, reward_points_balance: 0, store_credit_balance: 0 }]).select().single();
         walletId = newW.id;
       }
 
-      await supabase.from('wallet_transactions').insert({
-        wallet_id: walletId, type: 'manual_adjustment',
-        amount_value: Math.abs(diff).toString(), points: 0
+      const { error: adjustmentError } = await supabase.rpc('adjust_reward_points', {
+        p_wallet_id: walletId,
+        p_points_delta: diff,
+        p_reason: 'تعديل يدوي من صفحة العملاء',
       });
+      if (adjustmentError) throw adjustmentError;
 
       await logAdminActivity({
         action: 'customer_wallet_balance_updated',
         entityType: 'customer',
         entityId: customer.customerId || customer.cleanPhone,
         entityLabel: customer.name || customer.phone || 'عميل',
-        oldValues: { wallet_balance: oldBalance },
-        newValues: { wallet_balance: newBalance },
+        oldValues: { reward_points: oldBalance },
+        newValues: { reward_points: newBalance },
         metadata: {
           wallet_id: walletId,
           diff,
@@ -904,7 +923,7 @@ export default function Customers() {
       });
       fetchCustomerActivityLogs(customer);
 
-      toast.success('تم تعديل الرصيد بنجاح');
+      toast.success('تم تعديل رصيد النقاط بنجاح');
       setEditingBalanceId(null);
       fetchData();
     } catch {
@@ -1315,8 +1334,8 @@ export default function Customers() {
             <Wallet size={13} /> رصيد النقاط
           </div>
           <div className="text-3xl font-black text-[#4A4A4A]">
-            {customersData.reduce((sum, c) => sum + (Number(c.walletBalance || 0)), 0).toFixed(1)}
-            <span className="text-sm font-normal text-[#4A4A4A]/40 mr-1"><RiyalSign /></span>
+            {customersData.reduce((sum, c) => sum + Number(c.rewardPoints || 0), 0).toLocaleString()}
+            <span className="text-sm font-normal text-[#4A4A4A]/40 mr-1">نقطة</span>
           </div>
         </div>
         <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
@@ -1459,9 +1478,9 @@ export default function Customers() {
                         <Package size={9} className="inline ml-0.5"/> {customer.packageBalance.toFixed(1)} <RiyalSign size="0.8em" />
                       </span>
                     )}
-                    {customer.walletBalance > 0.5 && (
+                    {customer.rewardPoints > 0 && (
                       <span className="text-[10px] font-bold bg-violet-50 text-violet-600 border border-violet-100 px-2 py-0.5 rounded-lg">
-                        {customer.walletBalance.toFixed(1)} <RiyalSign size="0.8em" />
+                        {Number(customer.rewardPoints).toLocaleString()} نقطة
                       </span>
                     )}
                   </div>
@@ -1628,8 +1647,8 @@ export default function Customers() {
               <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('packageBalance')}>
                 <div className="flex items-center justify-center gap-2">رصيد الباقات <ArrowUpDown size={12} className={sortBy === 'packageBalance' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
               </th>
-              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('walletBalance')}>
-                <div className="flex items-center justify-center gap-2">رصيد النقاط <ArrowUpDown size={12} className={sortBy === 'walletBalance' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('rewardPoints')}>
+                <div className="flex items-center justify-center gap-2">رصيد النقاط <ArrowUpDown size={12} className={sortBy === 'rewardPoints' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
               </th>
               <th className="px-6 py-4 text-left">إجراءات</th>
             </tr>
@@ -1725,9 +1744,9 @@ export default function Customers() {
 
                       {/* عمود رصيد النقاط */}
                       <td className="px-6 py-4 text-center">
-                        {customer.walletBalance > 0.5 ? (
+                        {customer.rewardPoints > 0 ? (
                           <span className="bg-violet-50 border border-violet-100 text-violet-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px]">
-                            {customer.walletBalance.toFixed(1)} <RiyalSign />
+                            {Number(customer.rewardPoints).toLocaleString()} نقطة
                           </span>
                         ) : (
                           <span className="text-[#4A4A4A]/30 text-xs font-bold">—</span>
@@ -1799,7 +1818,7 @@ export default function Customers() {
                                   {editingBalanceId === customer.id ? (
                                     <div className="mt-1 animate-in fade-in">
                                       <div className="flex items-center gap-1 mb-1">
-                                        <span className="text-[10px] font-bold text-[#4A4A4A]">المحفظة:</span>
+                                        <span className="text-[10px] font-bold text-[#4A4A4A]">النقاط:</span>
                                         <input
                                           type="number"
                                           value={editWalletBalance}
@@ -1819,12 +1838,14 @@ export default function Customers() {
                                   ) : (
                                     <>
                                       <span className="font-bold text-[#4A4A4A] text-[11px] mt-1 block leading-tight">
-                                        نقاط: <span className="text-violet-600">{Number(customer.walletBalance || 0).toFixed(1)}</span><br />
+                                        نقاط: <span className="text-violet-600">{Number(customer.rewardPoints || 0).toLocaleString()}</span>
+                                        <span className="text-[#4A4A4A]/40"> ({Number(customer.walletBalance || 0).toFixed(2)} ر.س)</span><br />
+                                        رصيد متجر: <span className="text-emerald-600">{Number(customer.storeCredit || 0).toFixed(2)} ر.س</span><br />
                                         باقات: <span className="text-amber-600">{Number(customer.packageBalance || 0).toFixed(1)}</span><br />
                                         مديونية: <span className="text-red-500">{Number(customer.debt || 0).toFixed(1)}</span>
                                       </span>
                                       <button
-                                        onClick={() => { setEditingBalanceId(customer.id); setEditWalletBalance(customer.walletBalance || 0); }}
+                                        onClick={() => { setEditingBalanceId(customer.id); setEditWalletBalance(customer.rewardPoints || 0); }}
                                         className="absolute top-2 left-2 p-1 bg-white border border-[#D9A3AA]/20 rounded shadow-sm text-[#4A4A4A]/50 hover:text-[#D9A3AA] opacity-0 group-hover:opacity-100 transition-opacity"
                                         title="تعديل رصيد النقاط"
                                       >

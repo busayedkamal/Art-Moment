@@ -12,7 +12,8 @@ import {
 } from 'recharts';
 import RiyalSign from '../components/RiyalSign';
 import { fetchAdminActionTasks, summarizeAdminActionTasks } from '../utils/adminActionTasks';
-import { getTotalAvailablePoints } from '../utils/walletBalances';
+import { getTotalRewardPoints, getTotalRewardValue } from '../utils/walletBalances';
+import { normalizeRewardRules } from '../utils/rewardPoints';
 
 const EMPTY_ACTION_TASK_STATS = {
   total: 0,
@@ -72,21 +73,28 @@ export default function Dashboard() {
         // 3. جلب رصيد المحافظ
         const { data: wallets, error: walletsError } = await supabase
           .from('wallets')
-          .select('id, phone, points_balance')
+          .select('id, phone, points_balance, reward_points_balance')
           .order('id', { ascending: true }); // الأحدث (id أعلى) يفوز عند التكرار
+
+        const { data: rewardSettings } = await supabase
+          .from('settings')
+          .select('reward_program_enabled, reward_point_value')
+          .eq('id', 1)
+          .maybeSingle();
 
         // 3b. جلب طلبات المتجر لدمجها في الإجماليات
         const { data: storeOrders } = await supabase
           .from('store_orders')
-          .select('total_amount, amount_paid');
+          .select('total_amount, amount_paid, points_used_amount');
 
         let storeSalesAmount = 0, storePaidAmount = 0, storeDebtAmount = 0;
         (storeOrders || []).forEach(order => {
           const total = Number(order.total_amount || 0);
           const paid  = Number(order.amount_paid  || 0);
+          const pointsPaid = Number(order.points_used_amount || 0);
           storeSalesAmount += total;
           storePaidAmount  += paid;
-          storeDebtAmount  += Math.max(0, total - paid);
+          storeDebtAmount  += Math.max(0, total - paid - pointsPaid);
         });
 
         // 4. جلب معاملات الباقات لحساب رصيد الباقات بشكل منفصل
@@ -127,7 +135,9 @@ export default function Dashboard() {
         const totalExpenses = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
 
         // رصيد واحد لكل جوال، مع تجاهل المحافظ الإدارية والمحافظ القديمة المكررة.
-        const totalPointsBalance = getTotalAvailablePoints(wallets || []);
+        const rewardRules = normalizeRewardRules(rewardSettings || {});
+        const totalPointsBalance = getTotalRewardPoints(wallets || [], rewardRules);
+        const totalWalletBalance = getTotalRewardValue(wallets || [], rewardRules);
         const packagesCreditsAdded = (packageTransactions || [])
           .filter(pt => pt.type === 'package_charge' || pt.type === 'package_add')
           .reduce((acc, pt) => acc + Number(pt.points || 0), 0);
@@ -136,7 +146,6 @@ export default function Dashboard() {
           .reduce((acc, pt) => acc + Number(pt.amount_value || 0), 0);
         const packagesTotal = Math.max(0, packagesCreditsAdded - packagesRedeemed);
         const totalPackageBalance = packagesTotal;
-        const totalWalletBalance = totalPointsBalance;
         
         const pendingOrders = orders.filter(o => o.status === 'printing' || o.status === 'new').length;
         const newOrdersCount = orders.filter(o => o.status === 'new').length;
@@ -297,8 +306,8 @@ export default function Dashboard() {
               <Banknote size={15} className="text-orange-400"/>
             </div>
           </div>
-          <p className="text-2xl font-black text-orange-500">{stats.totalPointsBalance.toLocaleString()}</p>
-          <span className="text-xs text-[#4A4A4A]/40">ريال (خصومات مكتسبة)</span>
+          <p className="text-2xl font-black text-orange-500">{Number(stats.totalPointsBalance || 0).toLocaleString()} نقطة</p>
+          <span className="text-xs text-[#4A4A4A]/40">تعادل {Number(stats.totalWalletBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ريال</span>
         </div>
 
         {/* المديونية */}

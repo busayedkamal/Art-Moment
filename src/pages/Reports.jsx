@@ -14,7 +14,8 @@ import { format, isValid, subMonths, isBefore } from 'date-fns';
 import RiyalSign from '../components/RiyalSign';
 import { arSA } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { getTotalAvailablePoints } from '../utils/walletBalances';
+import { getTotalRewardPoints, getTotalRewardValue } from '../utils/walletBalances';
+import { normalizeRewardRules } from '../utils/rewardPoints';
 
 export default function Reports() {
   const [loading, setLoading] = useState(true);
@@ -34,12 +35,12 @@ export default function Reports() {
         const { data: paymentsData } = await supabase.from('order_payments').select('*');
         const { data: ordersData } = await supabase.from('orders').select('*');
         const { data: expensesData } = await supabase.from('expenses').select('*');
-        const { data: walletsData } = await supabase.from('wallets').select('id, phone, points_balance').order('id', { ascending: true });
+        const { data: walletsData } = await supabase.from('wallets').select('id, phone, points_balance, reward_points_balance').order('id', { ascending: true });
         // نجلب شحن الباقات واستخدامها
         const { data: packageTransactionsData } = await supabase.from('wallet_transactions').select('*').in('type', ['package_charge', 'package_add', 'package_redeem']);
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 1).single();
 
-        const { data: storeOrdersData } = await supabase.from('store_orders').select('total_amount, amount_paid');
+        const { data: storeOrdersData } = await supabase.from('store_orders').select('total_amount, amount_paid, points_used_amount');
         setStoreOrders(storeOrdersData || []);
         setPayments(paymentsData || []);
         setOrders(ordersData || []);
@@ -173,7 +174,8 @@ export default function Reports() {
     const churnedList = Object.values(customerLastOrder).filter(c => isBefore(c.date, threeMonthsAgo)).slice(0, 5);
 
     // حساب أرصدة المحافظ — نُطبّع رقم الهاتف ونُزيل التكرار (نفس منطق صفحة العملاء)
-    totalPointsBalance = getTotalAvailablePoints(wallets);
+    const rewardRules = normalizeRewardRules(settings);
+    totalPointsBalance = getTotalRewardPoints(wallets, rewardRules);
     
     // إجمالي مبالغ الباقات المشحونة (المبلغ المدفوع الفعلي = ربح مباشر فوري)
     const packagesCharged = packageTransactions
@@ -194,7 +196,7 @@ export default function Reports() {
     // نستخدم points (الرصيد الكامل مع المكافأة) للمقارنة مع ما تم استخدامه
     const packagesTotal = Math.max(0, packagesCreditsAdded - packagesRedeemed);
     
-    const totalWalletBalance = totalPointsBalance;
+    const totalWalletBalance = getTotalRewardValue(wallets, rewardRules);
 
     // ✅ النقد الفعلي = deposit مسقوف بـ (total - wallet_used)
     // يمنع احتساب مبالغ النقاط ضمن الإيرادات النقدية في حال سُجّل الدفع قبل تطبيق النقاط
@@ -236,10 +238,11 @@ export default function Reports() {
     return storeOrders.reduce((acc, order) => {
       const total = Number(order.total_amount || 0);
       const paid  = Number(order.amount_paid  || 0);
+      const pointsPaid = Number(order.points_used_amount || 0);
       return {
         sales: acc.sales + total,
         paid:  acc.paid  + paid,
-        debt:  acc.debt  + Math.max(0, total - paid),
+        debt:  acc.debt  + Math.max(0, total - paid - pointsPaid),
       };
     }, { sales: 0, paid: 0, debt: 0 });
   }, [storeOrders]);
@@ -448,8 +451,8 @@ export default function Reports() {
               <Wallet size={15}/>
             </div>
           </div>
-          <h3 className="text-2xl font-black text-orange-500">{analytics.totals.totalPointsBalance.toLocaleString()}</h3>
-          <span className="text-xs text-[#4A4A4A]/40">ريال (خصم مستقبلي)</span>
+          <h3 className="text-2xl font-black text-orange-500">{Number(analytics.totals.totalPointsBalance || 0).toLocaleString()} نقطة</h3>
+          <span className="text-xs text-[#4A4A4A]/40">تعادل {Number(analytics.totals.totalWalletBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ريال</span>
         </div>
 
         {/* الربح الكامل مع الديون */}

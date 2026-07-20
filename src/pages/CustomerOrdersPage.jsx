@@ -72,7 +72,8 @@ function escapeHtml(value) {
 
 function buildReceiptHtml(order) {
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
-  const remaining = Math.max(0, total - Number(order.amountPaid || 0));
+  const pointsUsedAmount = Number(order.pointsUsedAmount || 0);
+  const remaining = Math.max(0, total - Number(order.amountPaid || 0) - pointsUsedAmount);
   const discount = Number(order.discountAmount || 0);
   const subtotal = Number(order.subtotalAmount ?? order.totalAmount ?? 0);
   const itemsRows = (order.items || []).map(item => `
@@ -126,7 +127,8 @@ function buildReceiptHtml(order) {
           <div class="line"><span>المنتجات قبل الخصم</span><strong>${formatCurrency(subtotal)}</strong></div>
           ${discount > 0 ? `<div class="line"><span>${order.couponCode ? `كوبون ${escapeHtml(order.couponCode)}` : 'خصم'}</span><strong>-${formatCurrency(discount)}</strong></div>` : ''}
           <div class="line"><span>الشحن</span><strong>${Number(order.deliveryFee || 0) > 0 ? formatCurrency(order.deliveryFee) : 'يحدد لاحقاً'}</strong></div>
-          <div class="line"><span>المدفوع</span><strong>${formatCurrency(order.amountPaid)}</strong></div>
+          <div class="line"><span>المدفوع نقداً</span><strong>${formatCurrency(order.amountPaid)}</strong></div>
+          ${pointsUsedAmount > 0 ? `<div class="line"><span>مدفوع بالنقاط (${Number(order.rewardPointsUsed || 0).toLocaleString()} نقطة)</span><strong>${formatCurrency(pointsUsedAmount)}</strong></div>` : ''}
           <div class="line final"><span>المتبقي</span><strong>${remaining > 0 ? formatCurrency(remaining) : 'لا يوجد'}</strong></div>
         </div>
       </main>
@@ -507,7 +509,13 @@ function OrderTimeline({ status }) {
 
 function OrderCard({ order }) {
   const itemsPreview = order.items?.slice(0, 3) || [];
-  const remaining = Math.max(0, Number(order.totalAmount || 0) + Number(order.deliveryFee || 0) - Number(order.amountPaid || 0));
+  const remaining = Math.max(
+    0,
+    Number(order.totalAmount || 0)
+      + Number(order.deliveryFee || 0)
+      - Number(order.amountPaid || 0)
+      - Number(order.pointsUsedAmount || 0),
+  );
 
   return (
     <Link
@@ -570,7 +578,7 @@ function OrderCard({ order }) {
 function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt, returnWindowDays }) {
   const trackingUrl = getTrackingUrl(order);
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
-  const remaining = Math.max(0, total - Number(order.amountPaid || 0));
+  const remaining = Math.max(0, total - Number(order.amountPaid || 0) - Number(order.pointsUsedAmount || 0));
   const refunded = Number(order.refundedAmount || 0);
   const subtotalBeforeDiscount = Number(order.subtotalAmount ?? order.totalAmount ?? 0);
   const discountAmount = Number(order.discountAmount || 0);
@@ -679,9 +687,21 @@ function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt, 
                 <span className="font-bold">{Number(order.deliveryFee || 0) > 0 ? formatCurrency(order.deliveryFee) : 'يحدد لاحقاً'}</span>
               </div>
               <div className="flex justify-between text-emerald-600">
-                <span>المدفوع</span>
+                <span>المدفوع نقداً</span>
                 <span className="font-bold">{formatCurrency(order.amountPaid)}</span>
               </div>
+              {Number(order.pointsUsedAmount || 0) > 0 && (
+                <div className="flex justify-between text-[#B97882]">
+                  <span>مدفوع بالنقاط ({Number(order.rewardPointsUsed || 0).toLocaleString()} نقطة)</span>
+                  <span className="font-bold">{formatCurrency(order.pointsUsedAmount)}</span>
+                </div>
+              )}
+              {Number(order.rewardPointsEarned || 0) > 0 && (
+                <div className="flex justify-between text-[#9E7D35]">
+                  <span>نقاط مكتسبة من الطلب</span>
+                  <span className="font-bold">+{Number(order.rewardPointsEarned).toLocaleString()} نقطة</span>
+                </div>
+              )}
               {refunded > 0 && (
                 <div className="flex justify-between text-orange-600">
                   <span>المسترد</span>

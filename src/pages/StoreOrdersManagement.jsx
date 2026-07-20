@@ -460,12 +460,15 @@ export default function StoreOrdersManagement() {
 
   const buildTemplateVariables = (order = selectedOrder, extra = {}) => {
     const total = Number(order?.total_amount || 0) + Number(order?.delivery_fee || 0);
-    const paid = Number(order?.amount_paid || 0);
+    const cashPaid = Number(order?.amount_paid || 0);
+    const pointsPaid = Number(order?.points_used_amount || 0);
+    const paid = cashPaid + pointsPaid;
     const refunded = Number(order?.refunded_amount || 0);
     const payment = getPaymentState({
       totalAmount: order?.total_amount,
       deliveryFee: order?.delivery_fee,
       amountPaid: order?.amount_paid,
+      pointsUsedAmount: order?.points_used_amount,
       refundedAmount: order?.refunded_amount,
       paymentStatus: order?.payment_status,
     });
@@ -476,6 +479,9 @@ export default function StoreOrdersManagement() {
       total_amount: total.toFixed(2),
       remaining_amount: Math.max(0, total - paid).toFixed(2),
       paid_amount: paid.toFixed(2),
+      cash_paid_amount: cashPaid.toFixed(2),
+      points_paid_amount: pointsPaid.toFixed(2),
+      reward_points_used: Number(order?.reward_points_used || 0).toFixed(0),
       refunded_amount: refunded.toFixed(2),
       payment_method: getStorePaymentMethod(order?.payment_method),
       payment_status: payment.label,
@@ -670,6 +676,8 @@ export default function StoreOrdersManagement() {
   const savePayment = async () => {
     try {
       const numericTotal = Number(selectedOrder.total_amount || 0) + Number(selectedOrder.delivery_fee || 0);
+      const pointsPaid = Number(selectedOrder.points_used_amount || 0);
+      const cashDue = Math.max(0, numericTotal - pointsPaid);
       const numericPaidInput = Number(editAmountPaid || 0);
       const numericRefundInput = Math.max(0, Number(editRefundedAmount || 0));
 
@@ -680,27 +688,28 @@ export default function StoreOrdersManagement() {
         totalAmount: selectedOrder.total_amount,
         deliveryFee: selectedOrder.delivery_fee,
         amountPaid: selectedOrder.amount_paid,
+        pointsUsedAmount: selectedOrder.points_used_amount,
         refundedAmount: selectedOrder.refunded_amount,
         paymentStatus: selectedOrder.payment_status,
       }).code;
 
-      if (numericPaidInput > numericTotal) {
-        excessAmount = numericPaidInput - numericTotal;
-        finalPaid    = numericTotal;
+      if (numericPaidInput > cashDue) {
+        excessAmount = numericPaidInput - cashDue;
+        finalPaid    = cashDue;
 
         const confirmed = window.confirm(
-          `المبلغ المدخل (${numericPaidInput} ر.س) أكبر من قيمة الطلب (${numericTotal} ر.س).\n\nهل تريد سداد الطلب بالكامل وتحويل الفائض (${excessAmount} ر.س) إلى محفظة العميل كـ رصيد إضافي؟`
+          `المبلغ المدخل (${numericPaidInput} ر.س) أكبر من المتبقي النقدي (${cashDue} ر.س).\n\nهل تريد سداد الطلب بالكامل وتحويل الفائض (${excessAmount} ر.س) إلى رصيد إضافي للعميل؟`
         );
         if (!confirmed) return;
       }
 
-      if (finalPaymentStatus === 'paid' && finalPaid < numericTotal) {
-        finalPaid = numericTotal;
+      if (finalPaymentStatus === 'paid' && finalPaid < cashDue) {
+        finalPaid = cashDue;
       }
 
       if (finalPaymentStatus === 'full_refund') {
         finalRefunded = numericTotal;
-        if (finalPaid < numericTotal) finalPaid = numericTotal;
+        if (finalPaid < cashDue) finalPaid = cashDue;
       }
 
       if (finalPaymentStatus === 'partial_refund' && finalRefunded <= 0) {
@@ -732,9 +741,15 @@ export default function StoreOrdersManagement() {
 
         const { data: wallet } = await supabase.from('wallets').select('*').or(phoneQ).maybeSingle();
         if (wallet) {
-          const newBalance = Number(wallet.points_balance || 0) + excessAmount;
-          await supabase.from('wallets').update({ points_balance: newBalance }).eq('id', wallet.id);
-          toast.success(`تم سداد الطلب وإضافة الفائض (${excessAmount} ر.س) لمحفظة العميل.`);
+          const { error: creditError } = await supabase.rpc('adjust_store_credit', {
+            p_wallet_id: wallet.id,
+            p_amount_delta: excessAmount,
+            p_reason: 'فائض دفعة طلب متجر',
+            p_source_type: 'store_order',
+            p_source_id: selectedOrder.id,
+          });
+          if (creditError) throw creditError;
+          toast.success(`تم سداد الطلب وإضافة الفائض (${excessAmount} ر.س) إلى رصيد المتجر المستقل.`);
         } else {
           toast.error('تم سداد الطلب، لكن لم يُعثر على محفظة مسجلة للعميل.');
         }
@@ -952,6 +967,7 @@ export default function StoreOrdersManagement() {
       totalAmount: order.total_amount,
       deliveryFee: order.delivery_fee,
       amountPaid: order.amount_paid,
+      pointsUsedAmount: order.points_used_amount,
       refundedAmount: order.refunded_amount,
       paymentStatus: order.payment_status,
     });
@@ -973,7 +989,7 @@ export default function StoreOrdersManagement() {
   const { totalOrdersValue, totalPaidValue, totalRemainingValue } = useMemo(() => {
     return orders.reduce((acc, order) => {
       const total = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
-      const paid  = Number(order.amount_paid  || 0);
+      const paid  = Number(order.amount_paid  || 0) + Number(order.points_used_amount || 0);
       return {
         totalOrdersValue:   acc.totalOrdersValue   + total,
         totalPaidValue:     acc.totalPaidValue     + paid,
@@ -1328,7 +1344,12 @@ export default function StoreOrdersManagement() {
                               />
                               <button
                                 onClick={() => {
-                                  setEditAmountPaid(Number(selectedOrder.total_amount || 0) + Number(selectedOrder.delivery_fee || 0));
+                                  setEditAmountPaid(Math.max(
+                                    0,
+                                    Number(selectedOrder.total_amount || 0)
+                                      + Number(selectedOrder.delivery_fee || 0)
+                                      - Number(selectedOrder.points_used_amount || 0),
+                                  ));
                                   setEditPaymentStatus('paid');
                                   setEditRefundedAmount(0);
                                 }}
@@ -1346,8 +1367,13 @@ export default function StoreOrdersManagement() {
                           ) : (
                             <div className="flex flex-wrap items-center gap-3">
                               <span className="font-black text-emerald-600">
-                                مدفوع: {Number(selectedOrder.amount_paid || 0).toFixed(2)} ر.س
+                                مدفوع نقداً: {Number(selectedOrder.amount_paid || 0).toFixed(2)} ر.س
                               </span>
+                              {Number(selectedOrder.points_used_amount || 0) > 0 && (
+                                <span className="font-black text-[#B97882]">
+                                  نقاط: {Number(selectedOrder.reward_points_used || 0).toLocaleString()} ({Number(selectedOrder.points_used_amount || 0).toFixed(2)} ر.س)
+                                </span>
+                              )}
                               {Number(selectedOrder.refunded_amount || 0) > 0 && (
                                 <span className="font-black text-orange-600">
                                   مسترد: {Number(selectedOrder.refunded_amount || 0).toFixed(2)} ر.س
@@ -1362,6 +1388,7 @@ export default function StoreOrdersManagement() {
                                     totalAmount: selectedOrder.total_amount,
                                     deliveryFee: selectedOrder.delivery_fee,
                                     amountPaid: selectedOrder.amount_paid,
+                                    pointsUsedAmount: selectedOrder.points_used_amount,
                                     refundedAmount: selectedOrder.refunded_amount,
                                     paymentStatus: selectedOrder.payment_status,
                                   });

@@ -27,7 +27,11 @@ function getStockRpcErrorMessage(error: { message?: string } | null) {
   return 'stock_reservation_failed';
 }
 
-async function sendWhatsAppConfirmation(order: Record<string, unknown>, customerPin: string) {
+async function sendWhatsAppConfirmation(
+  order: Record<string, unknown>,
+  customerPin: string,
+  rewards?: { points?: number; value?: number },
+) {
   const enabled = Deno.env.get('WHATSAPP_ENABLED') === 'true';
   const instanceId = Deno.env.get('ULTRAMSG_INSTANCE_ID');
   const token = Deno.env.get('ULTRAMSG_TOKEN');
@@ -38,11 +42,16 @@ async function sendWhatsAppConfirmation(order: Record<string, unknown>, customer
   const customerName = String(order.customer_name || 'عميلنا العزيز');
   const orderNumber = String(order.short_id || order.id).slice(0, 6);
   const totalAmount = Number(order.total_amount || 0).toFixed(2);
+  const rewardLine = Number(rewards?.points || 0) > 0
+    ? `النقاط المستخدمة: *${Number(rewards?.points || 0)} نقطة* (${Number(rewards?.value || 0).toFixed(2)} ريال)\n`
+    : '';
   const message =
     `مرحباً *${customerName}*\n\n` +
     `تم استلام طلبك من متجر لحظة فن بنجاح.\n` +
     `رقم الطلب: *#${orderNumber}*\n` +
     `الإجمالي: *${totalAmount} ريال*\n` +
+    rewardLine +
+    `المتبقي للدفع: *${Math.max(0, Number(totalAmount) - Number(rewards?.value || 0)).toFixed(2)} ريال*\n` +
     `رمز التتبع (PIN): *${customerPin}*\n\n` +
     `طلبك الآن بانتظار التأكيد. شكراً لاختيارك لحظة فن.`;
 
@@ -53,10 +62,18 @@ async function sendWhatsAppConfirmation(order: Record<string, unknown>, customer
   });
 }
 
-function orderEmailHtml(order: Record<string, unknown>, customerPin: string, coupon?: { discountValue?: unknown } | null) {
+function orderEmailHtml(
+  order: Record<string, unknown>,
+  customerPin: string,
+  coupon?: { discountValue?: unknown } | null,
+  rewards?: { points?: number; value?: number },
+) {
   const orderNumber = String(order.short_id || order.id).slice(0, 6);
   const totalAmount = Number(order.total_amount || 0).toFixed(2);
   const discount = Number(coupon?.discountValue || 0);
+  const rewardPoints = Number(rewards?.points || 0);
+  const rewardValue = Number(rewards?.value || 0);
+  const amountDue = Math.max(0, Number(totalAmount) - rewardValue);
   return `
     <div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8;color:#4A4A4A;background:#F8F5F2;padding:28px">
       <div style="max-width:560px;margin:auto;background:#fff;border:1px solid #ead8da;border-radius:24px;padding:28px">
@@ -67,6 +84,8 @@ function orderEmailHtml(order: Record<string, unknown>, customerPin: string, cou
           <p style="margin:0">رقم الطلب: <strong>#${orderNumber}</strong></p>
           <p style="margin:6px 0 0">الإجمالي: <strong>${totalAmount} ريال</strong></p>
           ${discount > 0 ? `<p style="margin:6px 0 0;color:#059669">الخصم: <strong>${discount.toFixed(2)} ريال</strong></p>` : ''}
+          ${rewardPoints > 0 ? `<p style="margin:6px 0 0;color:#B97882">مدفوع بالنقاط: <strong>${rewardPoints} نقطة (${rewardValue.toFixed(2)} ريال)</strong></p>` : ''}
+          <p style="margin:6px 0 0">المتبقي للدفع: <strong>${amountDue.toFixed(2)} ريال</strong></p>
           <p style="margin:6px 0 0">رمز التتبع: <strong>${customerPin}</strong></p>
         </div>
         <p style="font-size:13px;color:#777;margin:0">يمكنك متابعة الطلب من صفحة طلباتي داخل المتجر.</p>
@@ -87,12 +106,16 @@ Deno.serve(async (req) => {
   let createdOrderId: string | null = null;
   let stockReserved = false;
   let reservedStockItems: Array<{ product_id: number; quantity: number }> = [];
+  let redeemedRewardPoints = false;
+  let rewardWalletId: number | null = null;
+  let rewardOrderValue = 0;
 
   try {
     const body = await req.json();
     const customer = body?.customer || {};
     const payment = body?.payment || {};
     const couponCode = body?.couponCode;
+    const requestedRewardPoints = Math.max(0, Math.floor(Number(body?.rewardPoints || 0)));
     const items = Array.isArray(body?.items) ? body.items : [];
     let phone = normalizeSaudiPhone(customer.phone);
     const allowedPaymentMethods = new Set(['bank_transfer', 'cash_on_delivery', 'card', 'wallet', 'manual', 'other']);
@@ -169,30 +192,76 @@ Deno.serve(async (req) => {
     const coupon = await calculateStoreCouponDiscount(supabase, couponCode, subtotal);
     const discountAmount = Number(coupon?.discountValue || 0);
     const finalTotal = Math.max(0, Number((subtotal - discountAmount).toFixed(2)));
+    rewardOrderValue = finalTotal;
     const variants = phoneVariants(phone);
 
-    const { data: existingWallet, error: walletError } = await supabase
+    const { data: matchingWallets, error: walletError } = await supabase
       .from('wallets')
-      .select('id, subscription_code')
-      .in('phone', variants)
-      .limit(1)
-      .maybeSingle();
+      .select('id, subscription_code, reward_points_balance, points_balance')
+      .in('phone', variants);
 
     if (walletError) throw walletError;
 
+    const existingWallet = (matchingWallets || []).sort((left, right) => {
+      const leftPoints = Number(left.reward_points_balance ?? Math.round(Number(left.points_balance || 0) / 0.01));
+      const rightPoints = Number(right.reward_points_balance ?? Math.round(Number(right.points_balance || 0) / 0.01));
+      return rightPoints - leftPoints || Number(right.id || 0) - Number(left.id || 0);
+    })[0];
+
     let customerPin = existingWallet?.subscription_code;
+    let activeWallet = existingWallet;
     if (!existingWallet) {
       customerPin = generatePin();
-      const { error: createWalletError } = await supabase
+      const { data: createdWallet, error: createWalletError } = await supabase
         .from('wallets')
         .insert({
           phone,
           subscription_code: customerPin,
           points_balance: 0,
+          reward_points_balance: 0,
           total_spent: 0,
-        });
+        })
+        .select('id, subscription_code, reward_points_balance, points_balance')
+        .single();
       if (createWalletError) throw createWalletError;
+      activeWallet = createdWallet;
     }
+
+    const { data: rewardSettings, error: rewardSettingsError } = await supabase
+      .from('settings')
+      .select('reward_program_enabled, reward_point_value, reward_minimum_redemption_points, reward_maximum_redemption_percent')
+      .eq('id', 1)
+      .maybeSingle();
+    if (rewardSettingsError) throw rewardSettingsError;
+
+    const pointValue = Number(rewardSettings?.reward_point_value || 0.01);
+    const minimumRedemptionPoints = Number(rewardSettings?.reward_minimum_redemption_points || 500);
+    const maximumRedemptionPercent = Number(rewardSettings?.reward_maximum_redemption_percent || 25);
+    const availableRewardPoints = Number(activeWallet?.reward_points_balance
+      ?? Math.round(Number(activeWallet?.points_balance || 0) / pointValue));
+    const maximumRewardPoints = Math.max(0, Math.min(
+      availableRewardPoints,
+      Math.floor((finalTotal * maximumRedemptionPercent / 100) / pointValue),
+    ));
+
+    if (requestedRewardPoints > 0) {
+      if (!verifiedCustomerId) return jsonResponse({ error: 'reward_login_required' }, 401);
+      if (rewardSettings?.reward_program_enabled === false) {
+        return jsonResponse({ error: 'reward_program_disabled' }, 409);
+      }
+      if (requestedRewardPoints < minimumRedemptionPoints) {
+        return jsonResponse({ error: 'reward_minimum_redemption_not_met' }, 409);
+      }
+      if (requestedRewardPoints > availableRewardPoints) {
+        return jsonResponse({ error: 'reward_points_balance_insufficient' }, 409);
+      }
+      if (requestedRewardPoints > maximumRewardPoints) {
+        return jsonResponse({ error: 'reward_redemption_limit_exceeded' }, 409);
+      }
+    }
+
+    const pointsUsedAmount = Number((requestedRewardPoints * pointValue).toFixed(2));
+    rewardWalletId = Number(activeWallet?.id || 0) || null;
 
     const orderPayload: Record<string, unknown> = {
       customer_name: String(customer.name || verifiedCustomerName || 'عميل المتجر').trim(),
@@ -202,6 +271,8 @@ Deno.serve(async (req) => {
       coupon_code: coupon?.code || null,
       total_amount: finalTotal,
       amount_paid: 0,
+      reward_points_used: requestedRewardPoints,
+      points_used_amount: pointsUsedAmount,
       delivery_fee: 0,
       payment_status: 'pending_payment',
       payment_method: paymentMethod,
@@ -237,6 +308,10 @@ Deno.serve(async (req) => {
       .select('id, short_id, customer_name, phone, total_amount')
       .single();
 
+    if (orderInsert.error && /reward_points_used|points_used_amount/i.test(orderInsert.error.message || '')) {
+      throw new Error('reward_points_migration_required');
+    }
+
     if (orderInsert.error && /customer_id|payment_status|payment_method|payment_reference|payment_failed_reason|refunded_amount|payment_updated_at|schema cache|column/i.test(orderInsert.error.message || '')) {
       if (/customer_id/i.test(orderInsert.error.message || '')) delete orderPayload.customer_id;
       if (/subtotal_amount|discount_amount|coupon_code|schema cache|column/i.test(orderInsert.error.message || '')) {
@@ -271,11 +346,27 @@ Deno.serve(async (req) => {
       })));
 
     if (itemsError) throw itemsError;
+
+    if (requestedRewardPoints > 0 && rewardWalletId) {
+      const { error: rewardError } = await supabase.rpc('set_reward_points_redemption', {
+        p_wallet_id: rewardWalletId,
+        p_source_type: 'store_order',
+        p_source_id: order.id,
+        p_requested_points: requestedRewardPoints,
+        p_order_value: finalTotal,
+      });
+      if (rewardError) throw rewardError;
+      redeemedRewardPoints = true;
+    }
+
     stockReserved = false;
     createdOrderId = null;
 
     try {
-      await sendWhatsAppConfirmation(order, String(customerPin));
+      await sendWhatsAppConfirmation(order, String(customerPin), {
+        points: requestedRewardPoints,
+        value: pointsUsedAmount,
+      });
     } catch (notifyError) {
       console.error('store checkout notification error:', notifyError);
     }
@@ -285,8 +376,8 @@ Deno.serve(async (req) => {
         await sendEmail({
           to: verifiedCustomerEmail,
           subject: `تم استلام طلبك #${String(order.short_id || order.id).slice(0, 6)} - لحظة فن`,
-          html: orderEmailHtml(order, String(customerPin), coupon),
-          text: `تم استلام طلبك من لحظة فن. رقم الطلب: #${String(order.short_id || order.id).slice(0, 6)}. الإجمالي: ${Number(order.total_amount || 0).toFixed(2)} ريال. رمز التتبع: ${customerPin}.`,
+          html: orderEmailHtml(order, String(customerPin), coupon, { points: requestedRewardPoints, value: pointsUsedAmount }),
+          text: `تم استلام طلبك من لحظة فن. رقم الطلب: #${String(order.short_id || order.id).slice(0, 6)}. الإجمالي: ${Number(order.total_amount || 0).toFixed(2)} ريال. مدفوع بالنقاط: ${requestedRewardPoints} نقطة (${pointsUsedAmount.toFixed(2)} ريال). المتبقي للدفع: ${Math.max(0, Number(order.total_amount || 0) - pointsUsedAmount).toFixed(2)} ريال. رمز التتبع: ${customerPin}.`,
           tags: [{ name: 'type', value: 'store_order_confirmation' }],
         });
       } catch (emailError) {
@@ -300,7 +391,7 @@ Deno.serve(async (req) => {
         await sendEmail({
           to: adminEmail,
           subject: `طلب متجر جديد #${String(order.short_id || order.id).slice(0, 6)}`,
-          html: orderEmailHtml(order, String(customerPin), coupon),
+          html: orderEmailHtml(order, String(customerPin), coupon, { points: requestedRewardPoints, value: pointsUsedAmount }),
           text: `طلب متجر جديد #${String(order.short_id || order.id).slice(0, 6)} بقيمة ${Number(order.total_amount || 0).toFixed(2)} ريال.`,
           tags: [{ name: 'type', value: 'store_order_admin_notification' }],
         });
@@ -317,11 +408,24 @@ Deno.serve(async (req) => {
         subtotal_amount: subtotal,
         discount_amount: discountAmount,
         coupon_code: coupon?.code || null,
+        reward_points_used: requestedRewardPoints,
+        points_used_amount: pointsUsedAmount,
+        amount_due: Number((finalTotal - pointsUsedAmount).toFixed(2)),
       },
       customer_pin: customerPin,
     });
   } catch (error) {
     console.error('store-checkout error:', error);
+    if (redeemedRewardPoints && rewardWalletId && createdOrderId) {
+      const { error: restoreRewardError } = await supabase.rpc('set_reward_points_redemption', {
+        p_wallet_id: rewardWalletId,
+        p_source_type: 'store_order',
+        p_source_id: createdOrderId,
+        p_requested_points: 0,
+        p_order_value: rewardOrderValue,
+      });
+      if (restoreRewardError) console.error('store-checkout reward restore error:', restoreRewardError);
+    }
     if (stockReserved && reservedStockItems.length > 0) {
       const { error: restoreError } = await supabase.rpc('restore_store_stock', {
         items: reservedStockItems,
@@ -338,8 +442,10 @@ Deno.serve(async (req) => {
     }
 
     const message = error instanceof Error ? error.message : 'checkout_failed';
-    const status = ['product_unavailable', 'product_out_of_stock'].includes(message)
+    const status = ['product_unavailable', 'product_out_of_stock', 'reward_points_balance_insufficient', 'reward_redemption_limit_exceeded', 'reward_minimum_redemption_not_met'].includes(message)
       ? 409
+      : message === 'reward_points_migration_required'
+        ? 503
       : ['empty_cart', 'invalid_stock_items', 'not_authorized'].includes(message)
         ? 400
         : 500;

@@ -66,7 +66,7 @@ export function getStoreOrderStepIndex(status) {
 
 export function getPaymentState(order) {
   const total = Number(order?.totalAmount || 0) + Number(order?.deliveryFee || 0);
-  const paid = Number(order?.amountPaid || 0);
+  const paid = Number(order?.amountPaid || 0) + Number(order?.pointsUsedAmount ?? order?.points_used_amount ?? 0);
   const refunded = Number(order?.refundedAmount ?? order?.refunded_amount ?? 0);
   const explicitStatus = order?.paymentStatus || order?.payment_status;
 

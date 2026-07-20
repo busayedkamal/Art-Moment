@@ -18,14 +18,37 @@ async function fetchCustomerStats(
 ) {
   const { data: walletsFound, error: walletsError } = await supabase
     .from('wallets')
-    .select('id, points_balance')
+    .select('id, points_balance, reward_points_balance')
     .in('phone', variants);
 
   if (walletsError) throw walletsError;
 
   const wallets = walletsFound || [];
   const walletIds = wallets.map((wallet: Record<string, unknown>) => wallet.id);
-  const points = wallets.reduce((sum: number, wallet: Record<string, unknown>) => sum + Number(wallet.points_balance || 0), 0);
+  const { data: rewardSettings, error: rewardSettingsError } = await supabase
+    .from('settings')
+    .select('reward_point_value, reward_expiry_months')
+    .eq('id', 1)
+    .maybeSingle();
+  if (rewardSettingsError) throw rewardSettingsError;
+  const pointValue = Number(rewardSettings?.reward_point_value || 0.01);
+  const preferredWallet = [...wallets].sort((left, right) => {
+    const leftPoints = Number(left.reward_points_balance ?? Math.round(Number(left.points_balance || 0) / pointValue));
+    const rightPoints = Number(right.reward_points_balance ?? Math.round(Number(right.points_balance || 0) / pointValue));
+    return rightPoints - leftPoints || Number(right.id || 0) - Number(left.id || 0);
+  })[0];
+  let refreshedWallet = preferredWallet;
+  if (preferredWallet?.id) {
+    await supabase.rpc('expire_reward_points', { p_wallet_id: preferredWallet.id });
+    const { data } = await supabase
+      .from('wallets')
+      .select('id, points_balance, reward_points_balance')
+      .eq('id', preferredWallet.id)
+      .maybeSingle();
+    refreshedWallet = data || preferredWallet;
+  }
+  const points = Number(refreshedWallet?.reward_points_balance
+    ?? Math.round(Number(refreshedWallet?.points_balance || 0) / pointValue));
 
   let packages = 0;
   if (walletIds.length > 0) {
@@ -55,13 +78,15 @@ async function fetchCustomerStats(
 
   storeOrders.forEach((order) => {
     const total = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
-    const paid = Number(order.amount_paid || 0);
+    const paid = Number(order.amount_paid || 0) + Number(order.points_used_amount || 0);
     totalPayments += paid;
     totalDebt += Math.max(0, total - paid);
   });
 
   return {
     points,
+    pointsValue: Number((points * pointValue).toFixed(2)),
+    pointsExpiryMonths: Number(rewardSettings?.reward_expiry_months || 4),
     packages: Math.max(0, packages),
     totalPayments,
     totalDebt,

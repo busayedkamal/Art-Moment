@@ -99,6 +99,88 @@ async function fetchCustomer(
   return data as Record<string, unknown> | null;
 }
 
+async function fetchRewardSummary(
+  supabase: ReturnType<typeof getServiceClient>,
+  phone: unknown,
+) {
+  const normalizedPhone = normalizeSaudiPhone(phone);
+  if (!isValidSaudiMobile(normalizedPhone)) return null;
+
+  const { data: settings, error: settingsError } = await supabase
+    .from('settings')
+    .select('reward_program_enabled, reward_point_value, reward_minimum_redemption_points, reward_maximum_redemption_percent, reward_expiry_months')
+    .eq('id', 1)
+    .maybeSingle();
+  if (settingsError) throw settingsError;
+
+  const { data: wallets, error: walletError } = await supabase
+    .from('wallets')
+    .select('id, reward_points_balance, points_balance, store_credit_balance')
+    .in('phone', phoneVariants(normalizedPhone));
+  if (walletError) throw walletError;
+
+  const wallet = (wallets || []).sort((left, right) => {
+    const leftPoints = Number(left.reward_points_balance ?? Math.round(Number(left.points_balance || 0) / 0.01));
+    const rightPoints = Number(right.reward_points_balance ?? Math.round(Number(right.points_balance || 0) / 0.01));
+    return rightPoints - leftPoints || Number(right.id || 0) - Number(left.id || 0);
+  })[0];
+
+  const pointValue = Number(settings?.reward_point_value || 0.01);
+  if (!wallet) {
+    return {
+      enabled: settings?.reward_program_enabled !== false,
+      points: 0,
+      pointValue,
+      valueSar: 0,
+      storeCreditSar: 0,
+      minimumRedemptionPoints: Number(settings?.reward_minimum_redemption_points || 500),
+      maximumRedemptionPercent: Number(settings?.reward_maximum_redemption_percent || 25),
+      expiryMonths: Number(settings?.reward_expiry_months || 4),
+      expiringSoonPoints: 0,
+      nextExpiryAt: null,
+    };
+  }
+
+  await supabase.rpc('expire_reward_points', { p_wallet_id: wallet.id });
+
+  const { data: refreshedWallet, error: refreshedWalletError } = await supabase
+    .from('wallets')
+    .select('reward_points_balance, points_balance, store_credit_balance')
+    .eq('id', wallet.id)
+    .single();
+  if (refreshedWalletError) throw refreshedWalletError;
+
+  const inThirtyDays = new Date();
+  inThirtyDays.setDate(inThirtyDays.getDate() + 30);
+  const { data: expiringLots, error: expiringError } = await supabase
+    .from('wallet_transactions')
+    .select('reward_points_remaining, reward_expires_at')
+    .eq('wallet_id', wallet.id)
+    .gt('reward_points_remaining', 0)
+    .gt('reward_expires_at', new Date().toISOString())
+    .lte('reward_expires_at', inThirtyDays.toISOString())
+    .order('reward_expires_at', { ascending: true });
+  if (expiringError) throw expiringError;
+
+  const points = Number(refreshedWallet.reward_points_balance
+    ?? Math.round(Number(refreshedWallet.points_balance || 0) / pointValue));
+  return {
+    enabled: settings?.reward_program_enabled !== false,
+    points,
+    pointValue,
+    valueSar: Number((points * pointValue).toFixed(2)),
+    storeCreditSar: Number(refreshedWallet.store_credit_balance || 0),
+    minimumRedemptionPoints: Number(settings?.reward_minimum_redemption_points || 500),
+    maximumRedemptionPercent: Number(settings?.reward_maximum_redemption_percent || 25),
+    expiryMonths: Number(settings?.reward_expiry_months || 4),
+    expiringSoonPoints: (expiringLots || []).reduce(
+      (sum, lot) => sum + Number(lot.reward_points_remaining || 0),
+      0,
+    ),
+    nextExpiryAt: expiringLots?.[0]?.reward_expires_at || null,
+  };
+}
+
 async function ensureUniqueProfile(
   supabase: ReturnType<typeof getServiceClient>,
   customerId: unknown,
@@ -192,7 +274,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get') {
-      return jsonResponse({ customer: safeCustomer(customer) });
+      const rewards = await fetchRewardSummary(supabase, customer.phone);
+      return jsonResponse({ customer: safeCustomer(customer), rewards });
     }
 
     if (action === 'update_profile') {

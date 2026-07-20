@@ -24,7 +24,7 @@ supabase secrets set RESEND_API_KEY=your-resend-api-key
 supabase secrets set RESEND_FROM="Art Moment <notifications@art-moment.com>"
 supabase secrets set RESEND_REPLY_TO=art.moment26@gmail.com
 supabase secrets set CUSTOMER_SESSION_SECRET=your-long-random-secret
-supabase secrets set RETURN_REQUEST_NOTIFY_EMAIL=admin@example.com
+supabase secrets set RETURN_REQUEST_NOTIFY_EMAIL=art.moment26@gmail.com
 supabase secrets set PUBLIC_SITE_URL=https://art-moment.com
 supabase secrets set WHATSAPP_ENABLED=true
 supabase secrets set ULTRAMSG_INSTANCE_ID=your-instance-id
@@ -138,6 +138,27 @@ For the Telegram administration bot chat registry and webhook deduplication, als
 supabase/migrations/202607190001_telegram_bot.sql
 ```
 
+For the unified reward-points ledger, four-month expiry, redemption limits, signup bonus,
+refund reconciliation, and separate non-reward store credit, run:
+
+```text
+supabase/migrations/202607190002_reward_points_program.sql
+```
+
+After this migration, redeploy the functions that read or change rewards:
+
+```bash
+supabase functions deploy customer-account
+supabase functions deploy customer-orders
+supabase functions deploy store-checkout
+supabase functions deploy store-return-requests
+supabase functions deploy track-order
+```
+
+The default policy is 2 points per eligible paid SAR, 100 points = 1 SAR,
+a 500-point redemption minimum, a 25% per-order maximum, and expiry after 4 months.
+Each earned lot expires independently; package credit and store credit do not use this expiry.
+
 ## Telegram bot setup
 
 The bot token must never be committed or placed in a Vite environment variable. Store it only in Supabase Secrets. The webhook secret may contain letters, numbers, `_`, and `-`.
@@ -145,9 +166,23 @@ The bot token must never be committed or placed in a Vite environment variable. 
 PowerShell setup without writing the token into the repository:
 
 ```powershell
-$BotToken = Read-Host "Telegram bot token"
-$WebhookSecret = Read-Host "Telegram webhook secret"
-$ProjectRef = "your-project-ref"
+$BotToken = (Read-Host "Telegram bot token from BotFather").Trim()
+$WebhookSecret = [guid]::NewGuid().ToString("N")
+$ProjectRef = "dftmbamuyupgzpqfoixl"
+
+if ([string]::IsNullOrWhiteSpace($BotToken)) {
+  throw "Telegram bot token is empty. Run the BotToken assignment again."
+}
+if ($BotToken -notmatch '^\d+:[A-Za-z0-9_-]+$') {
+  throw "Telegram bot token format is invalid. Copy the full token from BotFather without the word bot."
+}
+
+# Telegram must recognize the token before any secret or webhook is saved.
+$BotInfo = Invoke-RestMethod -Method Get -Uri "https://api.telegram.org/bot$BotToken/getMe"
+if (-not $BotInfo.ok) {
+  throw "Telegram rejected the bot token. Create or copy a fresh token from BotFather."
+}
+Write-Host "Telegram token verified for @$($BotInfo.result.username)"
 
 npx supabase secrets set "TELEGRAM_BOT_TOKEN=$BotToken" "TELEGRAM_WEBHOOK_SECRET=$WebhookSecret" --project-ref $ProjectRef
 npx supabase functions deploy telegram-bot --no-verify-jwt --project-ref $ProjectRef
@@ -157,9 +192,12 @@ $Body = @{
   url = $WebhookUrl
   secret_token = $WebhookSecret
   allowed_updates = @("message")
+  drop_pending_updates = $true
 } | ConvertTo-Json
 
-Invoke-RestMethod -Method Post -Uri "https://api.telegram.org/bot$BotToken/setWebhook" -ContentType "application/json" -Body $Body
+$WebhookResult = Invoke-RestMethod -Method Post -Uri "https://api.telegram.org/bot$BotToken/setWebhook" -ContentType "application/json" -Body $Body
+$WebhookResult
+Invoke-RestMethod -Method Get -Uri "https://api.telegram.org/bot$BotToken/getWebhookInfo"
 ```
 
 Send `/start` to the bot. It returns the Telegram chat id without exposing database data. Activate that single administration chat:

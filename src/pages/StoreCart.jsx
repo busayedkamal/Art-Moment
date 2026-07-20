@@ -39,6 +39,9 @@ export default function StoreCart() {
   const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
+  const [rewardSummary, setRewardSummary] = useState(null);
+  const [useRewardPoints, setUseRewardPoints] = useState(false);
+  const [rewardPointsInput, setRewardPointsInput] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +103,7 @@ export default function StoreCart() {
           setSavedAddresses(addresses);
           if (data?.customer?.name) setName(data.customer.name);
           if (data?.customer?.phone) setPhone(data.customer.phone);
+          setRewardSummary(data?.rewards || null);
 
           const firstAddress = addresses[0];
           if (firstAddress) {
@@ -181,6 +185,23 @@ export default function StoreCart() {
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (Number(item.qty) || 0)), 0);
   const discountAmount = Math.min(subtotal, Number(appliedCoupon?.discountValue || 0));
   const finalTotal = Math.max(0, subtotal - discountAmount);
+  const rewardPointValue = Number(rewardSummary?.pointValue || 0.01);
+  const availableRewardPoints = Math.max(0, Number(rewardSummary?.points || 0));
+  const minimumRewardPoints = Math.max(0, Number(rewardSummary?.minimumRedemptionPoints || 500));
+  const maximumRewardPercent = Math.max(0, Number(rewardSummary?.maximumRedemptionPercent || 25));
+  const maximumRewardPoints = Math.max(0, Math.min(
+    availableRewardPoints,
+    Math.floor((finalTotal * maximumRewardPercent / 100) / rewardPointValue),
+  ));
+  const requestedRewardPoints = useRewardPoints
+    ? Math.max(0, Math.floor(Number(rewardPointsInput) || 0))
+    : 0;
+  const displayedRewardPoints = Math.min(requestedRewardPoints, maximumRewardPoints);
+  const rewardDiscountValue = Number((displayedRewardPoints * rewardPointValue).toFixed(2));
+  const payableTotal = Math.max(0, Number((finalTotal - rewardDiscountValue).toFixed(2)));
+  const canUseRewardPoints = rewardSummary?.enabled !== false
+    && availableRewardPoints >= minimumRewardPoints
+    && maximumRewardPoints >= minimumRewardPoints;
 
   const applyCoupon = async () => {
     const code = couponCode.trim();
@@ -234,6 +255,20 @@ export default function StoreCart() {
       toast.error(`كمية ${exceededItem.name} أعلى من المتوفر`);
       return;
     }
+    if (useRewardPoints) {
+      if (!getCustomerSession()?.sessionToken) {
+        toast.error('سجّلي الدخول أولاً لاستخدام النقاط');
+        return;
+      }
+      if (requestedRewardPoints < minimumRewardPoints) {
+        toast.error(`الحد الأدنى للاستبدال ${minimumRewardPoints.toLocaleString()} نقطة`);
+        return;
+      }
+      if (requestedRewardPoints > maximumRewardPoints) {
+        toast.error(`الحد الأعلى لهذا الطلب ${maximumRewardPoints.toLocaleString()} نقطة`);
+        return;
+      }
+    }
 
     setIsSubmitting(true);
     const toastId = toast.loading('جاري إرسال الطلب...');
@@ -260,6 +295,7 @@ export default function StoreCart() {
             method: paymentMethod,
           },
           couponCode: appliedCoupon?.code || null,
+          rewardPoints: requestedRewardPoints,
         },
       });
 
@@ -272,7 +308,14 @@ export default function StoreCart() {
       setIsSubmitted(true);
     } catch (error) {
       console.error('Checkout Error:', error);
-      toast.error('حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.', { id: toastId });
+      const checkoutMessages = {
+        reward_points_balance_insufficient: 'رصيد النقاط غير كافٍ. حدّثي الصفحة ثم حاولي مجدداً.',
+        reward_redemption_limit_exceeded: `الحد الأعلى لهذا الطلب ${maximumRewardPoints.toLocaleString()} نقطة.`,
+        reward_minimum_redemption_not_met: `الحد الأدنى للاستبدال ${minimumRewardPoints.toLocaleString()} نقطة.`,
+        reward_program_disabled: 'استخدام النقاط متوقف مؤقتاً.',
+        reward_points_migration_required: 'نظام النقاط قيد التحديث. حاولي بعد قليل.',
+      };
+      toast.error(checkoutMessages[error.message] || 'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.', { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
@@ -463,14 +506,83 @@ export default function StoreCart() {
                   <span className="font-bold">-{discountAmount.toFixed(2)} ر.س</span>
                 </div>
               )}
+              {rewardSummary && (
+                <div className="rounded-2xl border border-[#D9A3AA]/20 bg-[#D9A3AA]/[0.06] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="flex items-center gap-2 text-xs font-black text-[#4A4A4A]">
+                        <Wallet size={14} className="text-[#D9A3AA]" /> نقاط لحظة فن
+                      </p>
+                      <p className="mt-1 text-[10px] text-[#4A4A4A]/55">
+                        {availableRewardPoints.toLocaleString()} نقطة = {Number(rewardSummary.valueSar || 0).toFixed(2)} ر.س
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!canUseRewardPoints}
+                      onClick={() => {
+                        const next = !useRewardPoints;
+                        setUseRewardPoints(next);
+                        setRewardPointsInput(next ? String(maximumRewardPoints) : '');
+                      }}
+                      className={`h-8 rounded-lg px-3 text-[11px] font-black transition-colors ${
+                        useRewardPoints
+                          ? 'bg-[#D9A3AA] text-white'
+                          : canUseRewardPoints
+                            ? 'bg-white text-[#B97882] border border-[#D9A3AA]/25'
+                            : 'bg-white/70 text-[#4A4A4A]/30 cursor-not-allowed'
+                      }`}
+                    >
+                      {useRewardPoints ? 'إلغاء الاستخدام' : 'استخدام النقاط'}
+                    </button>
+                  </div>
+                  {useRewardPoints ? (
+                    <div className="mt-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={minimumRewardPoints}
+                          max={maximumRewardPoints}
+                          step="1"
+                          value={rewardPointsInput}
+                          onChange={(event) => setRewardPointsInput(event.target.value.replace(/\D/g, ''))}
+                          className="min-w-0 flex-1 rounded-xl border border-[#D9A3AA]/20 bg-white px-3 py-2 text-center text-sm font-black outline-none focus:border-[#D9A3AA]"
+                          dir="ltr"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setRewardPointsInput(String(maximumRewardPoints))}
+                          className="rounded-xl bg-white px-3 text-[11px] font-black text-[#B97882] border border-[#D9A3AA]/20"
+                        >
+                          الحد الأعلى
+                        </button>
+                      </div>
+                      <div className="mt-2 flex justify-between text-[10px] text-[#4A4A4A]/50">
+                        <span>الحد الأدنى {minimumRewardPoints.toLocaleString()} نقطة</span>
+                        <span>خصم {rewardDiscountValue.toFixed(2)} ر.س</span>
+                      </div>
+                    </div>
+                  ) : !canUseRewardPoints ? (
+                    <p className="mt-2 text-[10px] text-[#4A4A4A]/45">
+                      يبدأ الاستخدام من {minimumRewardPoints.toLocaleString()} نقطة وبحد أقصى {maximumRewardPercent}% من الطلب.
+                    </p>
+                  ) : null}
+                </div>
+              )}
+              {rewardDiscountValue > 0 && (
+                <div className="flex justify-between text-sm text-[#B97882]">
+                  <span>مدفوع بالنقاط ({displayedRewardPoints.toLocaleString()})</span>
+                  <span className="font-bold">-{rewardDiscountValue.toFixed(2)} ر.س</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-[#4A4A4A]/60">تكلفة الشحن</span>
                 <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded font-bold">تُحدد عبر واتساب</span>
               </div>
             </div>
             <div className="flex justify-between items-center">
-              <span className="font-black text-lg">الإجمالي</span>
-              <span className="font-black text-2xl text-[#D9A3AA]">{finalTotal.toFixed(2)} <span className="text-sm">ر.س</span></span>
+              <span className="font-black text-lg">المتبقي للدفع</span>
+              <span className="font-black text-2xl text-[#D9A3AA]">{payableTotal.toFixed(2)} <span className="text-sm">ر.س</span></span>
             </div>
           </div>
 

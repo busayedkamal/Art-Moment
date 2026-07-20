@@ -15,6 +15,14 @@ import RiyalSign from '../components/RiyalSign';
 import OrderFinancialBreakdown from '../components/OrderFinancialBreakdown';
 import { getPrintOrderFinancials, roundMoney } from '../utils/orderFinancials';
 import { choosePreferredWallet } from '../utils/walletBalances';
+import {
+  calculateEarnedRewardPoints,
+  getRewardRedemptionLimit,
+  getWalletRewardPoints,
+  normalizeRewardRules,
+  pointsToRewardValue,
+  rewardValueToPoints,
+} from '../utils/rewardPoints';
 
 const STATUS_CONFIG = {
   pending_verification: { label: 'انتظار التحقق', bgClass: 'bg-blue-100',    textClass: 'text-blue-700',    btnClass: 'bg-blue-600 hover:bg-blue-500 text-white',     icon: Clock },
@@ -69,13 +77,6 @@ export default function OrderDetails() {
   const [appSettings, setAppSettings] = useState(null);
   const [prices, setPrices] = useState({ a4: 0, photo4x6: 0 });
 
-  // --- إعدادات نقاط الولاء ---
-  const LOYALTY_RATES = {
-    photo4x6: 0.03,
-    a4: 0.75,
-    album: 0.75
-  };
-
   const CITIES = ['الرميلة', 'المبرز', 'الهفوف', 'الدمام', 'الخبر', 'العمران', 'أخرى'];
 
   const [payments, setPayments] = useState([]);
@@ -93,6 +94,7 @@ export default function OrderDetails() {
   const [packageDiscountInput, setPackageDiscountInput] = useState('');
   const [pointsDiscountInput, setPointsDiscountInput] = useState('');
   const [customerPointsBalance, setCustomerPointsBalance] = useState(0);
+  const [customerRewardPoints, setCustomerRewardPoints] = useState(0);
   const [walletSubscriptionId, setWalletSubscriptionId] = useState(''); // رقم الاشتراك (wallet id)
   const [showFinancialEditor, setShowFinancialEditor] = useState(false);
   const [savingFinancialEditor, setSavingFinancialEditor] = useState(false);
@@ -193,7 +195,7 @@ export default function OrderDetails() {
       setTransactions(transData || []);
 
       // تحديد مصدر الخصم الحالي
-      const hasWalletSpend = (transData || []).some(t => t.type === 'redeem');
+      const hasWalletSpend = (transData || []).some(t => ['redeem', 'reward_points_redeem'].includes(t.type));
       const hasPkgRedeem = (transData || []).some(t => t.type === 'package_redeem');
       setDiscountSource(hasPkgRedeem ? 'package' : hasWalletSpend ? 'wallet' : 'discount');
 
@@ -203,7 +205,10 @@ export default function OrderDetails() {
         const allWalletIds = allWallets.map(w => w.id);
         const preferredWallet = choosePreferredWallet(allWallets);
 
-        setCustomerPointsBalance(Number(preferredWallet?.points_balance || 0));
+        const activeRewardRules = normalizeRewardRules(settingsData || {});
+        const availableRewardPoints = getWalletRewardPoints(preferredWallet, activeRewardRules);
+        setCustomerRewardPoints(availableRewardPoints);
+        setCustomerPointsBalance(pointsToRewardValue(availableRewardPoints, activeRewardRules));
 
         // رقم الاشتراك من حقل subscription_code في جدول wallets
         setWalletSubscriptionId(preferredWallet?.subscription_code || '');
@@ -225,9 +230,13 @@ export default function OrderDetails() {
 
           // تعيين المبالغ الأولية من الحركات الموجودة على هذا الطلب
           const existPkg = (transData || []).find(t => t.type === 'package_redeem');
-          const existPts = (transData || []).find(t => t.type === 'redeem');
+          const existPts = (transData || []).find(t => ['redeem', 'reward_points_redeem'].includes(t.type));
           if (existPkg) setPackageDiscountInput(existPkg.amount_value?.toString() || '');
-          if (existPts) setPointsDiscountInput(existPts.amount_value?.toString() || '');
+          if (existPts) {
+            const usedPoints = Math.abs(Number(existPts.reward_points_delta || 0))
+              || rewardValueToPoints(existPts.amount_value, activeRewardRules);
+            setPointsDiscountInput(String(usedPoints));
+          }
       }
 
       const initialFinancials = getPrintOrderFinancials(orderData, transData || []);
@@ -270,99 +279,53 @@ export default function OrderDetails() {
   }
 
   const calculateLoyaltyReward = () => {
-    if (!order) return 0;
-    const reward4x6 = (order.photo_4x6_qty || 0) * LOYALTY_RATES.photo4x6;
-    const rewardA4 = (order.a4_qty || 0) * LOYALTY_RATES.a4;
-    const rewardAlbum = (order.album_qty || 0) * LOYALTY_RATES.album;
-    return reward4x6 + rewardA4 + rewardAlbum;
+    const rewardRules = normalizeRewardRules(appSettings || {});
+    if (!order || !rewardRules.enabled) return { points: 0, value: 0, eligibleAmount: 0 };
+    const currentFinancials = getPrintOrderFinancials(order, transactions);
+    const eligibleAmount = Math.max(0, Math.min(
+      currentFinancials.cashPaid,
+      currentFinancials.totalAmount - currentFinancials.deliveryFee - currentFinancials.pointsUsed,
+    ));
+    const points = calculateEarnedRewardPoints(eligibleAmount, rewardRules);
+    return {
+      points,
+      value: pointsToRewardValue(points, rewardRules),
+      eligibleAmount: roundMoney(eligibleAmount),
+    };
   };
 
-  const isLoyaltyAdded = transactions.some(t => t.type === 'loyalty_earn');
+  const isLoyaltyAdded = transactions.some(t => ['loyalty_earn', 'reward_points_earn'].includes(t.type))
+    || Number(order?.reward_points_earned || 0) > 0;
 
   // ✅ مزامنة خصم المحفظة (redeem) مع رصيد العميل — فرق التغيير فقط
   const syncWalletSpend = async (desiredAmount) => {
     const allWallets = await findAllWalletsByPhone(order?.phone);
     if (allWallets.length === 0) throw new Error('لا توجد محفظة لهذا العميل');
+    const rewardRules = normalizeRewardRules(appSettings || {});
+    const wallet = choosePreferredWallet(allWallets, rewardRules);
+    const desired = Math.max(0, Number(desiredAmount || 0));
+    const requestedPoints = rewardValueToPoints(desired, rewardRules);
+    const currentFinancials = getPrintOrderFinancials(order, transactions);
+    const orderValue = Math.max(0, currentFinancials.totalAmount - currentFinancials.deliveryFee);
 
-    // نجلب المعاملة الموجودة أولاً لمعرفة المحفظة المستخدمة سابقاً
-    const { data: existingSpend, error: spendError } = await supabase
+    const { data: result, error } = await supabase.rpc('set_reward_points_redemption', {
+      p_wallet_id: wallet.id,
+      p_source_type: 'print_order',
+      p_source_id: id,
+      p_requested_points: requestedPoints,
+      p_order_value: orderValue,
+    });
+    if (error) throw error;
+
+    const { data: refreshedTransactions, error: refreshError } = await supabase
       .from('wallet_transactions')
       .select('*')
-      .eq('order_id', id)
-      .eq('type', 'redeem')
-      .maybeSingle();
-
-    if (spendError) throw spendError;
-
-    // اختر المحفظة: إن وجدت معاملة سابقة استخدم نفس المحفظة، وإلا اختر صاحبة أعلى رصيد نقاط
-    let wallet;
-    if (existingSpend) {
-      wallet = allWallets.find(w => w.id === existingSpend.wallet_id)
-        || choosePreferredWallet(allWallets);
-    } else {
-      wallet = choosePreferredWallet(allWallets);
-    }
-
-    const prevAmount = existingSpend ? Number(existingSpend.amount_value || 0) : 0;
-    const desired = Math.max(0, Number(desiredAmount || 0));
-    const delta = desired - prevAmount;
-
-    const currentBalance = Number(wallet.points_balance || 0);
-
-    if (delta > 0 && currentBalance + 1e-9 < delta) {
-      throw new Error(`رصيد المحفظة غير كافٍ. المتاح: ${currentBalance.toFixed(2)}`);
-    }
-
-    if (Math.abs(delta) > 1e-9) {
-      const newBalance = currentBalance - delta;
-      const { error: updWalletErr } = await supabase
-        .from('wallets')
-        .update({ points_balance: newBalance })
-        .eq('id', wallet.id);
-      if (updWalletErr) throw updWalletErr;
-    }
-
-    if (desired <= 1e-9) {
-      if (existingSpend) {
-        const { error: delErr } = await supabase
-          .from('wallet_transactions')
-          .delete()
-          .eq('id', existingSpend.id);
-
-        if (delErr) throw delErr;
-        setTransactions(prev => prev.filter(t => t.id !== existingSpend.id));
-      }
-      return;
-    }
-
-    if (existingSpend) {
-      const { data: updated, error: updErr } = await supabase
-        .from('wallet_transactions')
-        .update({ amount_value: desired, created_at: new Date().toISOString() })
-        .eq('id', existingSpend.id)
-        .select()
-        .single();
-
-      if (updErr) throw updErr;
-      setTransactions(prev => prev.map(t => (t.id === updated.id ? updated : t)));
-      return;
-    }
-
-    const { data: created, error: insErr } = await supabase
-      .from('wallet_transactions')
-      .insert({
-        wallet_id: wallet.id,
-        order_id: id,
-        type: 'redeem',
-        points: 0,
-        amount_value: desired,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (insErr) throw insErr;
-    setTransactions(prev => [...prev, created]);
+      .eq('order_id', id);
+    if (refreshError) throw refreshError;
+    setTransactions(refreshedTransactions || []);
+    setCustomerRewardPoints(Number(result?.balancePoints || 0));
+    setCustomerPointsBalance(Number(result?.balanceValue || 0));
+    return result;
   };
 
   // ✅ مزامنة خصم رصيد الباقات (package_redeem)
@@ -448,71 +411,50 @@ export default function OrderDetails() {
 
   // --- إضافة نقاط الولاء ---
   const handleAddLoyaltyPoints = async () => {
-    const rewardAmount = Number(calculateLoyaltyReward() || 0);
-    if (rewardAmount <= 0) return toast.error('لا يوجد كميات تستحق النقاط');
+    const reward = calculateLoyaltyReward();
+    if (order.status !== 'delivered' || order.payment_status !== 'paid') {
+      return toast.error('تُضاف النقاط بعد اكتمال الدفع وتسليم الطلب');
+    }
+    if (reward.points <= 0) return toast.error('لا يوجد مبلغ مدفوع مؤهل للنقاط');
 
     const cleanPhone = normalizePhone(order.phone);
     if (!cleanPhone) return toast.error('لا يوجد رقم جوال صالح للعميل');
 
     const toastId = toast.loading('جاري التحقق والإضافة...');
     try {
-      const { data: existing } = await supabase
-        .from('wallet_transactions')
-        .select('id')
-        .eq('order_id', id)
-        .eq('type', 'loyalty_earn')
-        .maybeSingle();
-
-      if (existing) {
-        toast.dismiss(toastId);
-        return toast.error('تمت إضافة النقاط لهذا الطلب مسبقاً!');
-      }
-
-      let { data: wallet, error: walletError } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('phone', cleanPhone)
-        .maybeSingle();
-
-      if (walletError) throw walletError;
+      const rewardRules = normalizeRewardRules(appSettings || {});
+      const existingWallets = await findAllWalletsByPhone(cleanPhone);
+      let wallet = choosePreferredWallet(existingWallets, rewardRules);
 
       if (!wallet) {
         const { data: newWallet, error: createError } = await supabase
           .from('wallets')
-          .insert([{ phone: cleanPhone, points_balance: 0 }])
+          .insert([{ phone: cleanPhone, points_balance: 0, reward_points_balance: 0 }])
           .select()
           .single();
         if (createError) throw createError;
         wallet = newWallet;
       }
 
-      const newBalance = Number(wallet.points_balance || 0) + rewardAmount;
+      const { data: result, error: rewardError } = await supabase.rpc('reconcile_reward_points_award', {
+        p_wallet_id: wallet.id,
+        p_source_type: 'print_order',
+        p_source_id: id,
+        p_eligible_amount: reward.eligibleAmount,
+        p_description: 'طلب طباعة مدفوع ومكتمل',
+      });
+      if (rewardError) throw rewardError;
 
-      const { error: updateError } = await supabase
-        .from('wallets')
-        .update({ points_balance: newBalance })
-        .eq('id', wallet.id);
-
-      if (updateError) throw updateError;
-
-      const { data: newTrans, error: transError } = await supabase
+      const { data: refreshedTransactions } = await supabase
         .from('wallet_transactions')
-        .insert({
-          wallet_id: wallet.id,
-          order_id: id,
-          type: 'loyalty_earn',
-          points: 0,
-          amount_value: rewardAmount,
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (transError) throw transError;
-
-      setTransactions(prev => [...prev, newTrans]);
+        .select('*')
+        .eq('order_id', id);
+      setTransactions(refreshedTransactions || []);
+      setCustomerRewardPoints(Number(result?.balancePoints || 0));
+      setCustomerPointsBalance(Number(result?.balanceValue || 0));
+      setOrder((current) => ({ ...current, reward_points_earned: reward.points }));
       toast.dismiss(toastId);
-      toast.success(`تم إضافة ${rewardAmount.toFixed(2)} ريال رصيد ولاء!`);
+      toast.success(`تم احتساب ${reward.points.toLocaleString()} نقطة`);
     } catch (err) {
       toast.dismiss(toastId);
       toast.error(`فشل العملية: ${err.message}`);
@@ -680,31 +622,21 @@ export default function OrderDetails() {
       if (!wallet) {
         const { data: newWallet, error: createError } = await supabase
           .from('wallets')
-          .insert([{ phone: cleanPhone, points_balance: 0 }])
+          .insert([{ phone: cleanPhone, points_balance: 0, reward_points_balance: 0, store_credit_balance: 0 }])
           .select()
           .single();
         if (createError) throw createError;
         wallet = newWallet;
       }
 
-      await supabase
-        .from('wallets')
-        .update({ points_balance: Number(wallet.points_balance || 0) + excessAmount })
-        .eq('id', wallet.id);
-
-      const { data: newTrans } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          wallet_id: wallet.id,
-          order_id: id,
-          type: 'deposit_excess',
-          amount_value: excessAmount,
-          points: 0
-        })
-        .select()
-        .single();
-
-      if (newTrans) setTransactions(prev => [...prev, newTrans]);
+      const { error: creditError } = await supabase.rpc('adjust_store_credit', {
+        p_wallet_id: wallet.id,
+        p_amount_delta: excessAmount,
+        p_reason: 'فائض دفعة طلب طباعة',
+        p_source_type: 'print_order',
+        p_source_id: id,
+      });
+      if (creditError) throw creditError;
 
       // 2. إضافة دفعة سالبة للطلب لضبط المتبقي ليكون 0 (حتى يختفي الزر)
       const { data: payData, error: payError } = await supabase
@@ -730,7 +662,7 @@ export default function OrderDetails() {
       setOrder(prev => ({ ...prev, deposit: newTotalPaid }));
 
       toast.dismiss(toastId);
-      toast.success('تم تحويل الفائض للمحفظة وتصفير حساب الطلب');
+      toast.success('تم تحويل الفائض إلى رصيد متجر مستقل وتصفير حساب الطلب');
     } catch (err) {
       toast.dismiss(toastId);
       console.error(err);
@@ -886,35 +818,36 @@ export default function OrderDetails() {
   };
 
   const handleSavePointsDiscount = async () => {
-    const inputVal = Number(pointsDiscountInput) || 0;
-    if (inputVal <= 0) return toast.error('أدخل مبلغاً صحيحاً');
-    if (inputVal > customerPointsBalance + 0.01) return toast.error(`رصيد النقاط غير كافٍ. المتاح: ${customerPointsBalance.toFixed(2)}`);
-    const theoreticalTotal = Number(order.subtotal || 0) + Number(deliveryFee || 0);
-    const discountValue = Math.min(inputVal, theoreticalTotal);
-
+    const requestedPoints = Math.floor(Number(pointsDiscountInput) || 0);
+    if (requestedPoints <= 0) return toast.error('أدخل عدد نقاط صحيحاً');
+    const rewardRules = normalizeRewardRules(appSettings || {});
     const currentFinancials = getPrintOrderFinancials(order, transactions);
-    const existingWalletUsed = currentFinancials.pointsUsed;
-
-    // الحد الأقصى للدفع من النقاط = المتبقي الفعلي (total - deposit - wallet_used الحالي)
-    const currentRemaining = Math.max(0,
-      currentFinancials.totalAmount - currentFinancials.cashPaid - existingWalletUsed
-    );
-    const safeDiscount = Math.min(discountValue, currentRemaining);
-    // إجمالي النقاط المستخدمة الجديد (مجموع، ليس إضافة)
-    const newWalletTotal = existingWalletUsed + safeDiscount;
+    const existingUsedPoints = rewardValueToPoints(currentFinancials.pointsUsed, rewardRules);
+    const availableForThisOrder = customerRewardPoints + existingUsedPoints;
+    const eligibleOrderValue = Math.max(0, currentFinancials.totalAmount - currentFinancials.deliveryFee);
+    const redemptionLimit = getRewardRedemptionLimit(eligibleOrderValue, availableForThisOrder, rewardRules);
+    if (requestedPoints < rewardRules.minimumRedemptionPoints) {
+      return toast.error(`الحد الأدنى للاستبدال ${rewardRules.minimumRedemptionPoints.toLocaleString()} نقطة`);
+    }
+    if (requestedPoints > availableForThisOrder) {
+      return toast.error(`رصيد النقاط غير كافٍ. المتاح للطلب: ${availableForThisOrder.toLocaleString()} نقطة`);
+    }
+    if (requestedPoints > redemptionLimit.maximumPoints) {
+      return toast.error(`الحد الأعلى لهذا الطلب ${redemptionLimit.maximumPoints.toLocaleString()} نقطة`);
+    }
+    const newWalletTotal = pointsToRewardValue(requestedPoints, rewardRules);
 
     const toastId = toast.loading('تحديث الخصم...');
     try {
-      await syncWalletSpend(newWalletTotal);   // syncWalletSpend تستقبل الإجمالي المطلوب
+      await syncWalletSpend(newWalletTotal);
       const success = await recalculateAndSaveTotal({
         points_used_amount: newWalletTotal,
         wallet_used: newWalletTotal,
       });
       toast.dismiss(toastId);
       if (success) {
-        toast.success('تم خصم من رصيد النقاط ✅');
+        toast.success(`تم استخدام ${requestedPoints.toLocaleString()} نقطة`);
         setDiscountSource('wallet');
-        setCustomerPointsBalance(prev => Math.max(0, prev - safeDiscount));
       }
     } catch (e) {
       toast.dismiss(toastId);
@@ -1087,7 +1020,7 @@ export default function OrderDetails() {
         `المتبقي: *${Math.max(0, remainingNum).toFixed(2)}* ريال\n\n` +
         `🎁 *تفاصيل حسابك:*\n` +
         `رقم الاشتراك: *${walletSubscriptionId || 'غير مسجل'}*\n` +
-        `رصيد النقاط: *${customerPointsBalance.toFixed(2)}* نقطة\n` +
+        `رصيد النقاط: *${customerRewardPoints.toLocaleString()}* نقطة (${customerPointsBalance.toFixed(2)} ريال)\n` +
         `رصيد الباقات: *${customerPackageBalance.toFixed(2)}* ريال\n\n` +
         `تابع طلبكِ من هنا:\n${siteLink}`;
     } else if (type === 'location') {
@@ -1354,7 +1287,16 @@ export default function OrderDetails() {
 
   const financials = getPrintOrderFinancials(order, transactions);
   const remaining = roundMoney(financials.totalAmount - financials.paidAmount);
-  const rewardAmount = calculateLoyaltyReward();
+  const rewardRules = normalizeRewardRules(appSettings || {});
+  const rewardPreview = calculateLoyaltyReward();
+  const existingRewardPointsUsed = rewardValueToPoints(financials.pointsUsed, rewardRules);
+  const availableRewardPointsForOrder = customerRewardPoints + existingRewardPointsUsed;
+  const rewardRedemptionLimit = getRewardRedemptionLimit(
+    Math.max(0, financials.totalAmount - financials.deliveryFee),
+    availableRewardPointsForOrder,
+    rewardRules,
+  );
+  const earnedRewardTransaction = transactions.find((transaction) => transaction.type === 'reward_points_earn');
   const hasLegacyAlbum = Number(order.album_qty || 0) > 0;
   const hasPotentialDuplicateDiscount = financials.directDiscount > 0
     && financials.pointsUsed > 0
@@ -1866,11 +1808,11 @@ export default function OrderDetails() {
                 </div>
 
                 {/* خصم من رصيد النقاط */}
-                <div className={`rounded-xl border overflow-hidden transition-all ${customerPointsBalance <= 0 ? 'opacity-55' : ''} ${discountSource === 'wallet' ? 'border-[#D9A3AA]/70' : 'border-[#D9A3AA]/20'}`}>
+                <div className={`rounded-xl border overflow-hidden transition-all ${availableRewardPointsForOrder <= 0 ? 'opacity-55' : ''} ${discountSource === 'wallet' ? 'border-[#D9A3AA]/70' : 'border-[#D9A3AA]/20'}`}>
                   <button type="button"
-                    disabled={customerPointsBalance <= 0}
-                    onClick={() => customerPointsBalance > 0 && setDiscountSource(discountSource === 'wallet' ? 'discount' : 'wallet')}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${customerPointsBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'wallet' ? 'bg-[#D9A3AA]/15' : 'bg-[#F8F5F2] hover:bg-[#D9A3AA]/10'}`}>
+                    disabled={availableRewardPointsForOrder <= 0}
+                    onClick={() => availableRewardPointsForOrder > 0 && setDiscountSource(discountSource === 'wallet' ? 'discount' : 'wallet')}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${availableRewardPointsForOrder <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'wallet' ? 'bg-[#D9A3AA]/15' : 'bg-[#F8F5F2] hover:bg-[#D9A3AA]/10'}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'wallet' ? 'bg-[#D9A3AA] border-[#D9A3AA]' : 'border-[#D9A3AA]/55'}`}>
                         {discountSource === 'wallet' && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
@@ -1879,31 +1821,39 @@ export default function OrderDetails() {
                         <span className="text-[11px] font-bold text-[#B97882] flex items-center gap-1">
                           <Wallet size={10} /> رصيد النقاط
                         </span>
-                        <span className="text-[10px] text-[#4A4A4A]/55">المتاح: {customerPointsBalance.toFixed(2)} <RiyalSign /></span>
+                        <span className="text-[10px] text-[#4A4A4A]/55">
+                          المتاح: {customerRewardPoints.toLocaleString()} نقطة = {customerPointsBalance.toFixed(2)} <RiyalSign />
+                        </span>
                       </div>
                     </div>
                     {discountSource === 'wallet' && Number(pointsDiscountInput) > 0 && (
                       <span className="text-[#B97882] font-black text-xs bg-[#D9A3AA]/15 px-1.5 py-0.5 rounded">
-                        -{Number(pointsDiscountInput).toFixed(2)} <RiyalSign />
+                        -{Number(pointsDiscountInput || 0).toLocaleString()} نقطة
                       </span>
                     )}
                   </button>
                   {discountSource === 'wallet' && (
                     <div className="bg-[#D9A3AA]/8 border-t border-[#D9A3AA]/20 px-3 py-1.5 flex items-center gap-2">
-                      <span className="text-[11px] text-[#B97882] shrink-0">المبلغ:</span>
+                      <span className="text-[11px] text-[#B97882] shrink-0">النقاط:</span>
                       <input
-                        type="number" min="0.01" max={customerPointsBalance} step="0.01"
+                        type="number" min="0" max={rewardRedemptionLimit.maximumPoints} step="1"
                         value={pointsDiscountInput}
-                        onChange={e => setPointsDiscountInput(e.target.value)}
+                        onChange={e => setPointsDiscountInput(e.target.value.replace(/\D/g, ''))}
                         className="flex-1 text-center border border-[#D9A3AA]/40 rounded-lg px-2 py-1 text-xs font-bold text-[#393737] bg-white outline-none focus:ring-2 ring-[#D9A3AA]/20"
                       />
                       <button type="button"
                         onClick={() => {
-                          setPointsDiscountInput(Math.min(customerPointsBalance, financials.remainingAmount).toFixed(2));
+                          setPointsDiscountInput(String(rewardRedemptionLimit.maximumPoints));
                         }}
                         className="text-[10px] text-[#B97882] bg-[#D9A3AA]/15 hover:bg-[#D9A3AA]/25 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
                       <button onClick={handleSavePointsDiscount}
                         className="text-[10px] text-white bg-[#D9A3AA] hover:bg-[#C48A92] px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
+                    </div>
+                  )}
+                  {discountSource === 'wallet' && (
+                    <div className="flex flex-wrap justify-between gap-1 border-t border-[#D9A3AA]/15 bg-white px-3 py-1.5 text-[9px] text-[#4A4A4A]/50">
+                      <span>الحد الأدنى {rewardRules.minimumRedemptionPoints.toLocaleString()} نقطة</span>
+                      <span>الحد الأعلى {rewardRedemptionLimit.maximumPoints.toLocaleString()} نقطة ({rewardRedemptionLimit.maximumValue.toFixed(2)} ريال)</span>
                     </div>
                   )}
                 </div>
@@ -2020,22 +1970,29 @@ export default function OrderDetails() {
                 </div>
 
                 {/* كاش باك */}
-                {rewardAmount > 0 && (
+                {rewardPreview.points > 0 && (
                   <div className="p-2.5 bg-[#C5A059]/10 border border-[#C5A059]/30 rounded-xl">
                     <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-[#9E7D35] text-[11px] font-bold flex items-center gap-1"><Gift size={11} /> كاش باك مستحق للمحفظة</span>
-                      <span className="text-[#9E7D35] font-bold text-xs">{rewardAmount.toFixed(2)} ريال</span>
+                      <span className="text-[#9E7D35] text-[11px] font-bold flex items-center gap-1"><Gift size={11} /> نقاط الطلب</span>
+                      <span className="text-[#9E7D35] font-bold text-xs">{rewardPreview.points.toLocaleString()} نقطة</span>
+                    </div>
+                    <div className="mb-1.5 flex justify-between text-[9px] text-[#4A4A4A]/55">
+                      <span>على مبلغ مؤهل {rewardPreview.eligibleAmount.toFixed(2)} ريال</span>
+                      <span>القيمة {rewardPreview.value.toFixed(2)} ريال</span>
                     </div>
                     {isLoyaltyAdded ? (
                       <div className="text-[10px] text-center bg-[#C5A059]/15 text-[#9E7D35] py-1 rounded flex items-center justify-center gap-1">
-                        <CheckCircle size={9} /> تم الإضافة للمحفظة
+                        <CheckCircle size={9} /> أضيفت للنقاط{earnedRewardTransaction?.reward_expires_at ? ` حتى ${new Date(earnedRewardTransaction.reward_expires_at).toLocaleDateString('ar-SA')}` : ''}
                       </div>
                     ) : (
                       <button
                         onClick={handleAddLoyaltyPoints}
+                        disabled={order.status !== 'delivered' || order.payment_status !== 'paid'}
                         className="w-full bg-[#C5A059] hover:bg-[#A8893C] text-white text-[11px] py-1 rounded transition-colors"
                       >
-                        إضافة لرصيد العميل
+                        {order.status === 'delivered' && order.payment_status === 'paid'
+                          ? 'احتساب نقاط الطلب'
+                          : 'تُضاف بعد الدفع والتسليم'}
                       </button>
                     )}
                   </div>

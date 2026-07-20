@@ -9,6 +9,13 @@ import {
   Loader2, Tag, Percent, MinusCircle,
   Crown, AlertTriangle, Sparkles, Wallet, Coins, MapPin, User, Phone, Package
 } from 'lucide-react';
+import { choosePreferredWallet } from '../utils/walletBalances';
+import {
+  getRewardRedemptionLimit,
+  getWalletRewardPoints,
+  normalizeRewardRules,
+  pointsToRewardValue,
+} from '../utils/rewardPoints';
 
 export default function NewOrder() {
   const navigate = useNavigate();
@@ -22,7 +29,6 @@ export default function NewOrder() {
     tier_3_price: 1
   });
 
-  const POINTS_EXCHANGE_RATE = 10;
   const CITIES = ['الهفوف', 'المبرز', 'القرى', 'الدمام', 'الخبر', 'الرميلة', 'أخرى'];
 
   const [couponCode, setCouponCode] = useState('');
@@ -37,7 +43,7 @@ export default function NewOrder() {
   const [usePoints, setUsePoints] = useState(false);
   const [usePackage, setUsePackage] = useState(false);
   const [packageAmountInput, setPackageAmountInput] = useState(''); // مبلغ جزئي من الباقات
-  const [pointsAmountInput, setPointsAmountInput] = useState('');   // مبلغ جزئي من النقاط
+  const [pointsAmountInput, setPointsAmountInput] = useState('');   // عدد النقاط المراد استخدامه
   const [checkingLoyalty, setCheckingLoyalty] = useState(false);
 
   const [previousCustomers, setPreviousCustomers] = useState([]);
@@ -158,7 +164,7 @@ export default function NewOrder() {
             '+966' + withZero, '00966' + stripped]);
 
         // نجمع كل المحافظ المطابقة
-        const data = allWallets && allWallets.length > 0 ? allWallets[0] : null;
+        const data = choosePreferredWallet(allWallets || [], normalizeRewardRules(settings));
         const allWalletIds = (allWallets || []).map(w => w.id);
 
         if (data) {
@@ -181,7 +187,7 @@ export default function NewOrder() {
         } else {
           // عميل جديد: لا محفظة، لكن ممكن يكون له رصيد باقات تم شحنه من Orders
           // نبحث في wallet_transactions عبر الـ wallet الذي قد يكون أُنشئ بشكل مختلف
-          setWallet({ points_balance: 0, total_spent: 0, isNew: true });
+          setWallet({ points_balance: 0, reward_points_balance: 0, total_spent: 0, isNew: true });
           setWalletId(null);
           setPackageBalance(0);
         }
@@ -193,14 +199,14 @@ export default function NewOrder() {
     };
     const timeoutId = setTimeout(fetchWalletData, 500);
     return () => clearTimeout(timeoutId);
-  }, [phoneWatcher]);
+  }, [phoneWatcher, settings]);
 
   // عند تفعيل أحد الخيارين، يُلغى الآخر تلقائياً
   const toggleUsePoints = () => {
     const next = !usePoints;
     setUsePoints(next);
     setUsePackage(false);
-    if (next && wallet?.points_balance > 0) setPointsAmountInput(Math.min(Number(wallet.points_balance), Math.max(0, total)).toFixed(2));
+    if (next && rewardRedemptionLimit.canRedeem) setPointsAmountInput(String(rewardRedemptionLimit.maximumPoints));
     else setPointsAmountInput('');
   };
   const toggleUsePackage = () => {
@@ -255,11 +261,15 @@ export default function NewOrder() {
   // الباقات خصم سعري، بينما النقاط وسيلة دفع لا تغيّر قيمة الطلب.
   const total = Math.max(0, baseAfterCoupon - packageDiscountValue);
 
+  const rewardRules = normalizeRewardRules(settings);
+  const walletRewardPoints = getWalletRewardPoints(wallet, rewardRules);
+  const rewardRedemptionLimit = getRewardRedemptionLimit(total, walletRewardPoints, rewardRules);
   let pointsDiscountValue = 0;
-  if (usePoints && wallet && wallet.points_balance > 0) {
-    const inputVal = Number(pointsAmountInput) || 0;
-    const maxPoints = Math.min(Number(wallet.points_balance), total);
-    pointsDiscountValue = inputVal > 0 ? Math.min(inputVal, maxPoints) : maxPoints;
+  let pointsUsedCount = 0;
+  if (usePoints && walletRewardPoints > 0) {
+    const inputPoints = Math.max(0, Math.floor(Number(pointsAmountInput) || 0));
+    pointsUsedCount = Math.min(inputPoints, rewardRedemptionLimit.maximumPoints);
+    pointsDiscountValue = pointsToRewardValue(pointsUsedCount, rewardRules);
   }
 
   const remaining = Math.max(0, total - pointsDiscountValue - Number(deposit || 0));
@@ -278,6 +288,14 @@ export default function NewOrder() {
   const onSubmit = async (data) => {
     try {
       const cleanPhone = normalizePhone(data.phone);
+      if (usePoints) {
+        if (pointsUsedCount < rewardRules.minimumRedemptionPoints) {
+          throw new Error(`الحد الأدنى للاستبدال ${rewardRules.minimumRedemptionPoints.toLocaleString()} نقطة`);
+        }
+        if (pointsUsedCount > rewardRedemptionLimit.maximumPoints) {
+          throw new Error(`الحد الأعلى لهذا الطلب ${rewardRedemptionLimit.maximumPoints.toLocaleString()} نقطة`);
+        }
+      }
 
       const cleanData = {
         customer_name: data.customerName,
@@ -296,6 +314,7 @@ export default function NewOrder() {
         coupon_code: couponData?.code || null,
         package_discount_amount: packageDiscountValue,
         points_used_amount: pointsDiscountValue,
+        reward_points_used: pointsUsedCount,
         photo_4x6_unit_price: Number(active4x6Price) || 0,
         a4_unit_price: Number(settings.a4_price) || 0,
         manual_discount: directDiscountValue + couponDiscountValue + packageDiscountValue,
@@ -306,7 +325,7 @@ export default function NewOrder() {
         notes: data.notes
           + (couponData ? ` | كوبون: ${couponData.code}` : '')
           + (isDynamicApplied ? ` | تسعير ذكي` : '')
-          + (pointsDiscountValue > 0 ? ` | خصم نقاط: ${pointsDiscountValue.toFixed(2)} ريال` : '')
+          + (pointsDiscountValue > 0 ? ` | دفع بالنقاط: ${pointsUsedCount} نقطة (${pointsDiscountValue.toFixed(2)} ريال)` : '')
           + (packageDiscountValue > 0 ? ` | خصم باقات: ${packageDiscountValue.toFixed(2)} ريال` : ''),
         status: 'new',
         payment_status: remaining <= 0.5 ? 'paid' : 'unpaid'
@@ -335,7 +354,7 @@ export default function NewOrder() {
             currentWalletId = foundWallets[0].id;
           } else {
             const { data: newWallet } = await supabase.from('wallets')
-              .insert([{ phone: cleanWithZero, points_balance: 0, total_spent: 0 }]).select().single();
+              .insert([{ phone: cleanWithZero, points_balance: 0, reward_points_balance: 0, total_spent: 0 }]).select().single();
             currentWallet = newWallet;
             currentWalletId = newWallet?.id;
           }
@@ -344,15 +363,14 @@ export default function NewOrder() {
         if (currentWallet && currentWalletId) {
           // خصم رصيد النقاط
           if (pointsDiscountValue > 0) {
-            const newPointsBalance = Number(currentWallet.points_balance) - pointsDiscountValue;
-            await supabase.from('wallet_transactions').insert({
-              wallet_id: currentWalletId, order_id: orderResult.id,
-              type: 'redeem', points: 0, amount_value: pointsDiscountValue
+            const { error: rewardError } = await supabase.rpc('set_reward_points_redemption', {
+              p_wallet_id: currentWalletId,
+              p_source_type: 'print_order',
+              p_source_id: orderResult.id,
+              p_requested_points: pointsUsedCount,
+              p_order_value: total,
             });
-            await supabase.from('wallets').update({
-              points_balance: newPointsBalance,
-              total_spent: Number(currentWallet.total_spent) + Number(total)
-            }).eq('id', currentWalletId);
+            if (rewardError) throw rewardError;
           }
 
           // خصم رصيد الباقات (يُسجّل كـ package_redeem)
@@ -424,14 +442,15 @@ export default function NewOrder() {
             <div className="flex justify-between items-start mb-6">
               <h3 className="font-bold text-slate-800">بيانات العميل</h3>
               {/* بادجات الأرصدة - تظهر حتى للعميل الجديد إذا كان له رصيد */}
-              {wallet && (packageBalance > 0 || (wallet.points_balance > 0 && !wallet.isNew)) && (
+              {wallet && (packageBalance > 0 || (walletRewardPoints > 0 && !wallet.isNew)) && (
                 <div className="flex items-center gap-2 flex-wrap">
-                  {!wallet.isNew && wallet.points_balance > 0 && (
+                  {!wallet.isNew && walletRewardPoints > 0 && (
                     <div className="bg-gradient-to-r from-violet-500 to-violet-400 text-white px-3 py-1.5 rounded-xl shadow-md flex items-center gap-2 animate-in zoom-in">
                       <Coins size={14} className="text-white/80" />
                       <div>
                         <div className="text-[9px] text-white/70 font-bold uppercase leading-none">النقاط</div>
-                        <div className="text-sm font-black leading-none mt-0.5">{Number(wallet.points_balance).toFixed(2)}</div>
+                        <div className="text-sm font-black leading-none mt-0.5">{walletRewardPoints.toLocaleString()}</div>
+                        <div className="text-[8px] text-white/70 mt-1">{pointsToRewardValue(walletRewardPoints, rewardRules).toFixed(2)} ريال</div>
                       </div>
                     </div>
                   )}
@@ -623,38 +642,43 @@ export default function NewOrder() {
                 </div>
               )}
 
-              {/* خيار رصيد النقاط */}
-              {wallet && !wallet.isNew && wallet.points_balance > 0 && (
+              {/* الدفع من رصيد النقاط */}
+              {wallet && !wallet.isNew && walletRewardPoints > 0 && (
                 <div className={`rounded-xl border transition-all overflow-hidden ${usePoints ? 'border-violet-300' : 'border-[#D9A3AA]/20'}`}>
-                  <button type="button" onClick={toggleUsePoints}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${usePoints ? 'bg-violet-50' : 'bg-[#F8F5F2] hover:bg-violet-50/50'}`}>
+                  <button type="button" onClick={toggleUsePoints} disabled={!rewardRedemptionLimit.canRedeem}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${!rewardRedemptionLimit.canRedeem ? 'cursor-not-allowed opacity-60' : ''} ${usePoints ? 'bg-violet-50' : 'bg-[#F8F5F2] hover:bg-violet-50/50'}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${usePoints ? 'bg-violet-500 border-violet-500' : 'border-violet-300'}`}>
                         {usePoints && <div className="w-2 h-2 bg-white rounded-full" />}
                       </div>
                       <div>
                         <span className="text-xs font-bold text-violet-800 flex items-center gap-1">
-                          <Coins size={11} /> خصم من رصيد النقاط
+                          <Coins size={11} /> الدفع من رصيد النقاط
                         </span>
-                        <span className="text-[10px] text-violet-600/70 block">المتاح: {Number(wallet.points_balance).toFixed(2)} <RiyalSign /></span>
+                        <span className="text-[10px] text-violet-600/70 block">
+                          المتاح: {walletRewardPoints.toLocaleString()} نقطة = {pointsToRewardValue(walletRewardPoints, rewardRules).toFixed(2)} <RiyalSign />
+                        </span>
+                        {!rewardRedemptionLimit.canRedeem && (
+                          <span className="text-[9px] text-violet-500/70 block">يبدأ الاستخدام من {rewardRules.minimumRedemptionPoints.toLocaleString()} نقطة</span>
+                        )}
                       </div>
                     </div>
                     {usePoints && (
                       <span className="text-violet-700 font-black text-sm bg-violet-100 px-2 py-0.5 rounded-lg">
-                        -{pointsDiscountValue.toFixed(2)} <RiyalSign />
+                        -{pointsUsedCount.toLocaleString()} نقطة
                       </span>
                     )}
                   </button>
                   {usePoints && (
                     <div className="bg-violet-50/50 border-t border-violet-200/50 px-3 py-2 flex items-center gap-3">
-                      <span className="text-[11px] text-violet-700 shrink-0">المبلغ:</span>
+                      <span className="text-[11px] text-violet-700 shrink-0">النقاط:</span>
                       <input
-                        type="number" min="0.01" max={wallet.points_balance} step="0.01"
+                        type="number" min={rewardRules.minimumRedemptionPoints} max={rewardRedemptionLimit.maximumPoints} step="1"
                         value={pointsAmountInput}
-                        onChange={e => setPointsAmountInput(e.target.value)}
+                        onChange={e => setPointsAmountInput(e.target.value.replace(/\D/g, ''))}
                         className="flex-1 text-center border border-violet-300 rounded-lg px-2 py-1.5 text-sm font-bold text-violet-700 bg-white outline-none focus:ring-2 ring-violet-300/40"
                       />
-                      <button type="button" onClick={() => setPointsAmountInput(Math.min(Number(wallet.points_balance), Math.max(0, total)).toFixed(2))}
+                      <button type="button" onClick={() => setPointsAmountInput(String(rewardRedemptionLimit.maximumPoints))}
                         className="text-[10px] text-violet-600 bg-violet-100 hover:bg-violet-200 px-2 py-1 rounded-lg shrink-0 transition-colors">
                         الكل
                       </button>
@@ -676,7 +700,7 @@ export default function NewOrder() {
               </div>
               {pointsDiscountValue > 0 && (
                 <div className="flex justify-between text-violet-700 font-bold">
-                  <span>مدفوع من رصيد النقاط</span>
+                  <span>مدفوع بالنقاط ({pointsUsedCount.toLocaleString()} نقطة)</span>
                   <span>- {pointsDiscountValue.toFixed(2)} <RiyalSign /></span>
                 </div>
               )}

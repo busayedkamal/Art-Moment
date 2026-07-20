@@ -53,6 +53,7 @@ function StorePaymentBadge({ order }) {
     totalAmount: order.total_amount,
     deliveryFee: order.delivery_fee,
     amountPaid: order.amount_paid,
+    pointsUsedAmount: order.points_used_amount,
     paymentStatus: order.payment_status,
     refundedAmount: order.refunded_amount,
   });
@@ -197,7 +198,7 @@ export default function TrackOrderPage() {
   };
 
   return (
-    <div className="art-page min-h-screen flex flex-col items-center py-10 px-4 relative font-sans text-[#4A4A4A]" dir="rtl">
+    <div className="art-page min-h-screen flex flex-col items-center py-10 px-4 relative font-[Tajawal] text-[#4A4A4A]" dir="rtl">
       <Toaster position="top-center" />
 
       <Link to="/" className="absolute top-6 right-6 flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-[#D9A3AA]/20 shadow-sm text-[#4A4A4A] hover:text-[#D9A3AA] transition-colors font-bold text-sm z-10">
@@ -283,8 +284,9 @@ export default function TrackOrderPage() {
                        <span className="font-black text-violet-600 dir-ltr text-xl">{(customerStats.packages || 0).toFixed(2)}</span>
                     </div>
                     <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
-                       <span className="font-bold text-emerald-600/60 block mb-1 text-[10px]">رصيد النقاط (كاش باك)</span>
-                       <span className="font-black text-emerald-600 dir-ltr text-xl">{(customerStats.points || 0).toFixed(2)}</span>
+                       <span className="font-bold text-emerald-600/60 block mb-1 text-[10px]">رصيد النقاط</span>
+                       <span className="font-black text-emerald-600 dir-ltr text-xl">{Number(customerStats.points || 0).toLocaleString()} نقطة</span>
+                       <span className="mt-1 block text-[9px] text-emerald-700/55">تعادل {Number(customerStats.pointsValue || 0).toFixed(2)} ريال · الصلاحية {Number(customerStats.pointsExpiryMonths || 4)} أشهر</span>
                     </div>
                     <div className="bg-[#F8F5F2] rounded-xl p-3 border border-[#D9A3AA]/10">
                        <span className="font-bold text-blue-600/60 block mb-1 text-[10px]">المدفوعات الكلية</span>
@@ -305,7 +307,7 @@ export default function TrackOrderPage() {
               const storeStatus = order.order_type === 'store' ? getStoreOrderStatus(order.status) : null;
               const printFinancials = order.order_type === 'print' ? getPrintOrderFinancials(order) : null;
               const remaining = order.order_type === 'store'
-                ? storeTotal - Number(order.amount_paid || 0)
+                ? storeTotal - Number(order.amount_paid || 0) - Number(order.points_used_amount || 0)
                 : printFinancials.remainingAmount;
               const orderPayments = paymentsMap[order.id] || [];
 
@@ -455,7 +457,9 @@ export default function TrackOrderPage() {
                             {Number(order.discount_amount || 0) > 0 && <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg"><span>{order.coupon_code ? `كوبون ${order.coupon_code}` : 'خصم'}</span><span className="font-bold dir-ltr">-{Number(order.discount_amount).toFixed(2)}</span></div>}
                             <div className="flex justify-between items-center text-sm px-1"><span>المنتجات بعد الخصم</span><span className="font-bold">{Number(order.total_amount || 0).toFixed(2)}</span></div>
                             {Number(order.delivery_fee || 0) > 0 && <div className="flex justify-between items-center text-sm px-1"><span className="flex items-center gap-1"><MapPin size={12}/> توصيل</span><span className="font-bold">{Number(order.delivery_fee).toFixed(2)}</span></div>}
-                            {Number(order.amount_paid || 0) > 0 && <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg"><span>المدفوع</span><span className="font-bold dir-ltr">-{Number(order.amount_paid).toFixed(2)}</span></div>}
+                            {Number(order.amount_paid || 0) > 0 && <div className="flex justify-between items-center text-sm text-emerald-600 px-2 bg-emerald-50 py-1.5 rounded-lg"><span>المدفوع نقداً</span><span className="font-bold dir-ltr">-{Number(order.amount_paid).toFixed(2)}</span></div>}
+                            {Number(order.points_used_amount || 0) > 0 && <div className="flex justify-between items-center text-sm text-[#B97882] px-2 bg-[#D9A3AA]/10 py-1.5 rounded-lg"><span>مدفوع بالنقاط ({Number(order.reward_points_used || 0).toLocaleString()} نقطة)</span><span className="font-bold dir-ltr">-{Number(order.points_used_amount).toFixed(2)}</span></div>}
+                            {Number(order.reward_points_earned || 0) > 0 && <div className="flex justify-between items-center text-sm text-[#9E7D35] px-2 bg-[#C5A059]/10 py-1.5 rounded-lg"><span>نقاط مكتسبة</span><span className="font-bold dir-ltr">+{Number(order.reward_points_earned).toLocaleString()} نقطة</span></div>}
                             {storeRefunded > 0 && <div className="flex justify-between items-center text-sm text-orange-600 px-2 bg-orange-50 py-1.5 rounded-lg"><span>المسترد</span><span className="font-bold dir-ltr">{storeRefunded.toFixed(2)}</span></div>}
                           </>
                         ) : (

@@ -193,12 +193,13 @@ Deno.serve(async (req) => {
 
       const { data: order, error: orderError } = await supabase
         .from('store_orders')
-        .select('id, total_amount, delivery_fee, amount_paid, payment_status, refunded_amount')
+        .select('id, phone, total_amount, delivery_fee, amount_paid, payment_status, refunded_amount, reward_points_used, points_used_amount')
         .eq('id', existingRequest.store_order_id)
         .maybeSingle();
       if (orderError) throw orderError;
 
       let orderPatch: Record<string, unknown> | null = null;
+      let rewardRestoration: Record<string, unknown> | null = null;
       if (order) {
         const { data: refundRequests, error: refundError } = await supabase
           .from('store_return_requests')
@@ -228,6 +229,40 @@ Deno.serve(async (req) => {
           .update(orderPatch)
           .eq('id', order.id);
         if (orderUpdateError) throw orderUpdateError;
+
+        const originalRewardPoints = Math.max(0, Number(order.reward_points_used || 0));
+        if (originalRewardPoints > 0) {
+          const refundRatio = orderTotal > 0 ? Math.min(1, totalRefunded / orderTotal) : 0;
+          const pointsStillApplied = Math.max(0, Math.round(originalRewardPoints * (1 - refundRatio)));
+          const variants = phoneVariants(order.phone);
+          const { data: wallets, error: walletError } = await supabase
+            .from('wallets')
+            .select('id, reward_points_balance, points_balance')
+            .in('phone', variants);
+          if (walletError) throw walletError;
+
+          const rewardWallet = (wallets || []).sort((left, right) => (
+            Number(right.reward_points_balance || 0) - Number(left.reward_points_balance || 0)
+            || Number(right.id || 0) - Number(left.id || 0)
+          ))[0];
+
+          if (!rewardWallet) throw new Error('reward_wallet_not_found');
+          const { data: rewardResult, error: rewardError } = await supabase.rpc('set_reward_points_redemption', {
+            p_wallet_id: rewardWallet.id,
+            p_source_type: 'store_order',
+            p_source_id: order.id,
+            p_requested_points: pointsStillApplied,
+            p_order_value: Number(order.total_amount || 0),
+          });
+          if (rewardError) throw rewardError;
+
+          rewardRestoration = {
+            originalPoints: originalRewardPoints,
+            restoredPoints: originalRewardPoints - pointsStillApplied,
+            remainingAppliedPoints: pointsStillApplied,
+            result: rewardResult,
+          };
+        }
       }
 
       if (body?.notifyCustomer === true && existingRequest.customer_id) {
@@ -253,6 +288,7 @@ Deno.serve(async (req) => {
       return jsonResponse({
         returnRequest: normalizeReturnRequest(updatedRequest as Record<string, unknown>),
         orderPatch,
+        rewardRestoration,
       });
     }
 
