@@ -70,6 +70,8 @@ function normalizeOrder(order: Record<string, unknown>) {
     amountPaid: Number(order.amount_paid || 0),
     rewardPointsUsed: Number(order.reward_points_used || 0),
     pointsUsedAmount: Number(order.points_used_amount || 0),
+    rewardPointsRestored: Number(order.reward_points_restored || 0),
+    pointsRestoredAmount: Number(order.points_restored_amount || 0),
     rewardPointsEarned: Number(order.reward_points_earned || 0),
     deliveryFee: Number(order.delivery_fee || 0),
     paymentStatus: order.payment_status || null,

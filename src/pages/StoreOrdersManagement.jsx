@@ -1374,6 +1374,11 @@ export default function StoreOrdersManagement() {
                                   نقاط: {Number(selectedOrder.reward_points_used || 0).toLocaleString()} ({Number(selectedOrder.points_used_amount || 0).toFixed(2)} ر.س)
                                 </span>
                               )}
+                              {Number(selectedOrder.points_restored_amount || 0) > 0 && (
+                                <span className="font-black text-emerald-600">
+                                  نقاط مستعادة: {Number(selectedOrder.reward_points_restored || 0).toLocaleString()} (+{Number(selectedOrder.points_restored_amount || 0).toFixed(2)} ر.س)
+                                </span>
+                              )}
                               {Number(selectedOrder.refunded_amount || 0) > 0 && (
                                 <span className="font-black text-orange-600">
                                   مسترد: {Number(selectedOrder.refunded_amount || 0).toFixed(2)} ر.س

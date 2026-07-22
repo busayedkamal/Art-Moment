@@ -159,6 +159,21 @@ The default policy is 2 points per eligible paid SAR, 100 points = 1 SAR,
 a 500-point redemption minimum, a 25% per-order maximum, and expiry after 4 months.
 Each earned lot expires independently; package credit and store credit do not use this expiry.
 
+If the initial reward migration was already applied, run the reward hardening migration next:
+
+```text
+supabase/migrations/202607220001_reward_points_program_hardening.sql
+```
+
+It ties earning to actual payment coverage, reconciles mixed cash/points refunds,
+records restored points, validates the first completed purchase bonus, and preserves
+all legacy package transaction types. Redeploy these functions afterward:
+
+```bash
+supabase functions deploy customer-orders
+supabase functions deploy store-return-requests
+```
+
 ## Telegram bot setup
 
 The bot token must never be committed or placed in a Vite environment variable. Store it only in Supabase Secrets. The webhook secret may contain letters, numbers, `_`, and `-`.

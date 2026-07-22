@@ -212,10 +212,11 @@ Deno.serve(async (req) => {
           return sum + Number(item.approved_refund_amount || item.requested_refund_amount || 0);
         }, 0);
 
-        const orderTotal = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
+        const productTotal = Number(order.total_amount || 0);
+        const orderTotal = productTotal + Number(order.delivery_fee || 0);
         const paid = Number(order.amount_paid || 0);
         const nextPaymentStatus = totalRefunded > 0
-          ? (orderTotal > 0 && totalRefunded >= orderTotal ? 'full_refund' : 'partial_refund')
+          ? (productTotal > 0 && totalRefunded >= productTotal ? 'full_refund' : 'partial_refund')
           : (paid >= orderTotal && orderTotal > 0 ? 'paid' : paid > 0 ? 'awaiting_review' : 'pending_payment');
 
         orderPatch = {
@@ -232,7 +233,7 @@ Deno.serve(async (req) => {
 
         const originalRewardPoints = Math.max(0, Number(order.reward_points_used || 0));
         if (originalRewardPoints > 0) {
-          const refundRatio = orderTotal > 0 ? Math.min(1, totalRefunded / orderTotal) : 0;
+          const refundRatio = productTotal > 0 ? Math.min(1, totalRefunded / productTotal) : 0;
           const pointsStillApplied = Math.max(0, Math.round(originalRewardPoints * (1 - refundRatio)));
           const variants = phoneVariants(order.phone);
           const { data: wallets, error: walletError } = await supabase

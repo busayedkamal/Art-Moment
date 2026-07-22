@@ -73,6 +73,7 @@ function escapeHtml(value) {
 function buildReceiptHtml(order) {
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
   const pointsUsedAmount = Number(order.pointsUsedAmount || 0);
+  const pointsRestoredAmount = Number(order.pointsRestoredAmount || 0);
   const remaining = Math.max(0, total - Number(order.amountPaid || 0) - pointsUsedAmount);
   const discount = Number(order.discountAmount || 0);
   const subtotal = Number(order.subtotalAmount ?? order.totalAmount ?? 0);
@@ -129,6 +130,7 @@ function buildReceiptHtml(order) {
           <div class="line"><span>الشحن</span><strong>${Number(order.deliveryFee || 0) > 0 ? formatCurrency(order.deliveryFee) : 'يحدد لاحقاً'}</strong></div>
           <div class="line"><span>المدفوع نقداً</span><strong>${formatCurrency(order.amountPaid)}</strong></div>
           ${pointsUsedAmount > 0 ? `<div class="line"><span>مدفوع بالنقاط (${Number(order.rewardPointsUsed || 0).toLocaleString()} نقطة)</span><strong>${formatCurrency(pointsUsedAmount)}</strong></div>` : ''}
+          ${pointsRestoredAmount > 0 ? `<div class="line"><span>نقاط مستعادة (${Number(order.rewardPointsRestored || 0).toLocaleString()} نقطة)</span><strong>+${formatCurrency(pointsRestoredAmount)}</strong></div>` : ''}
           <div class="line final"><span>المتبقي</span><strong>${remaining > 0 ? formatCurrency(remaining) : 'لا يوجد'}</strong></div>
         </div>
       </main>
@@ -694,6 +696,12 @@ function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt, 
                 <div className="flex justify-between text-[#B97882]">
                   <span>مدفوع بالنقاط ({Number(order.rewardPointsUsed || 0).toLocaleString()} نقطة)</span>
                   <span className="font-bold">{formatCurrency(order.pointsUsedAmount)}</span>
+                </div>
+              )}
+              {Number(order.pointsRestoredAmount || 0) > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>نقاط مستعادة ({Number(order.rewardPointsRestored || 0).toLocaleString()} نقطة)</span>
+                  <span className="font-bold">+{formatCurrency(order.pointsRestoredAmount)}</span>
                 </div>
               )}
               {Number(order.rewardPointsEarned || 0) > 0 && (

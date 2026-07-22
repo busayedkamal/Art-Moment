@@ -26,8 +26,24 @@ alter table public.wallet_transactions
   add column if not exists reward_eligible_amount numeric(12, 2),
   add column if not exists reward_expires_at timestamptz,
   add column if not exists reward_source_type text,
-  add column if not exists reward_source_id uuid,
+  add column if not exists reward_source_id text,
   add column if not exists reward_metadata jsonb not null default '{}'::jsonb;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'wallet_transactions'
+      and column_name = 'reward_source_id'
+      and data_type <> 'text'
+  ) then
+    alter table public.wallet_transactions
+      alter column reward_source_id type text
+      using reward_source_id::text;
+  end if;
+end $$;
 
 alter table public.orders
   add column if not exists reward_points_earned bigint not null default 0,
@@ -81,6 +97,34 @@ set reward_points_balance = round(coalesce(points_balance, 0) / 0.01)::bigint,
     reward_points_updated_at = coalesce(reward_points_updated_at, now())
 where reward_points_balance = 0
   and coalesce(points_balance, 0) <> 0;
+
+alter table public.wallet_transactions
+  drop constraint if exists wallet_transactions_type_check;
+
+alter table public.wallet_transactions
+  add constraint wallet_transactions_type_check
+  check (
+    type in (
+      'earn',
+      'redeem',
+      'loyalty_earn',
+      'manual_adjustment',
+      'deposit_excess',
+      'package_add',
+      'package_charge',
+      'package_redeem',
+      'reward_points_migration',
+      'reward_points_expire',
+      'reward_points_earn',
+      'reward_signup_bonus',
+      'reward_signup_bonus_reversed',
+      'reward_signup_bonus_reversal',
+      'reward_points_restore',
+      'reward_points_redeem',
+      'reward_points_adjustment',
+      'store_credit_adjustment'
+    )
+  );
 
 insert into public.wallet_transactions (
   wallet_id,
@@ -234,7 +278,7 @@ $$;
 create or replace function public.reconcile_reward_points_award(
   p_wallet_id bigint,
   p_source_type text,
-  p_source_id uuid,
+  p_source_id text,
   p_eligible_amount numeric,
   p_description text default null
 )
@@ -420,7 +464,7 @@ $$;
 create or replace function public.set_reward_points_redemption(
   p_wallet_id bigint,
   p_source_type text,
-  p_source_id uuid,
+  p_source_id text,
   p_requested_points bigint,
   p_order_value numeric
 )
@@ -597,7 +641,7 @@ create or replace function public.adjust_store_credit(
   p_amount_delta numeric,
   p_reason text default null,
   p_source_type text default null,
-  p_source_id uuid default null
+  p_source_id text default null
 )
 returns jsonb
 language plpgsql
@@ -773,7 +817,7 @@ begin
   perform public.set_reward_points_redemption(
     wallet_id,
     'print_order',
-    new.id,
+    new.id::text,
     redemption_points,
     greatest(coalesce(new.total_amount, 0), 0)
   );
@@ -794,7 +838,7 @@ begin
   result := public.reconcile_reward_points_award(
     wallet_id,
     'print_order',
-    new.id,
+    new.id::text,
     eligible_amount,
     'طلب طباعة مدفوع ومكتمل'
   );
@@ -838,7 +882,7 @@ begin
     perform public.set_reward_points_redemption(
       wallet_id,
       'store_order',
-      new.id,
+      new.id::text,
       redemption_points,
       greatest(coalesce(new.total_amount, 0), 0)
     );
@@ -857,7 +901,7 @@ begin
   result := public.reconcile_reward_points_award(
     wallet_id,
     'store_order',
-    new.id,
+    new.id::text,
     eligible_amount,
     'طلب متجر مدفوع ومكتمل'
   );
@@ -902,16 +946,16 @@ grant select on public.reward_points_expiring_soon to authenticated;
 revoke all on function public.find_reward_wallet(text) from public;
 revoke all on function public.expire_reward_points_internal(bigint) from public;
 revoke all on function public.expire_reward_points(bigint) from public;
-revoke all on function public.reconcile_reward_points_award(bigint, text, uuid, numeric, text) from public;
-revoke all on function public.set_reward_points_redemption(bigint, text, uuid, bigint, numeric) from public;
+revoke all on function public.reconcile_reward_points_award(bigint, text, text, numeric, text) from public;
+revoke all on function public.set_reward_points_redemption(bigint, text, text, bigint, numeric) from public;
 revoke all on function public.adjust_reward_points(bigint, bigint, text) from public;
-revoke all on function public.adjust_store_credit(bigint, numeric, text, text, uuid) from public;
+revoke all on function public.adjust_store_credit(bigint, numeric, text, text, text) from public;
 
 grant execute on function public.expire_reward_points(bigint) to authenticated, service_role;
-grant execute on function public.reconcile_reward_points_award(bigint, text, uuid, numeric, text) to authenticated, service_role;
-grant execute on function public.set_reward_points_redemption(bigint, text, uuid, bigint, numeric) to authenticated, service_role;
+grant execute on function public.reconcile_reward_points_award(bigint, text, text, numeric, text) to authenticated, service_role;
+grant execute on function public.set_reward_points_redemption(bigint, text, text, bigint, numeric) to authenticated, service_role;
 grant execute on function public.adjust_reward_points(bigint, bigint, text) to authenticated, service_role;
-grant execute on function public.adjust_store_credit(bigint, numeric, text, text, uuid) to authenticated, service_role;
+grant execute on function public.adjust_store_credit(bigint, numeric, text, text, text) to authenticated, service_role;
 
 do $$
 begin
