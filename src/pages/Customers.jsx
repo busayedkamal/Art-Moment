@@ -9,6 +9,7 @@ import {
   RotateCcw, AlertTriangle, Tag, Megaphone, Send, History
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
+import { RewardPointsSummary } from "../components/RewardPointsSummary";
 import { logAdminActivity } from "../utils/adminActivity";
 import { getPreferredWallets } from "../utils/walletBalances";
 import { getWalletRewardPoints, normalizeRewardRules, pointsToRewardValue } from "../utils/rewardPoints";
@@ -37,6 +38,8 @@ const MESSAGE_TYPE_LABELS = {
   template_shipping: 'إشعار شحن',
   template_return: 'إشعار استرجاع',
   template_general: 'إشعار عام',
+  reward_points_expiry_30: 'تنبيه انتهاء النقاط خلال 30 يوماً',
+  reward_points_expiry_7: 'تنبيه انتهاء النقاط خلال 7 أيام',
 };
 
 const ACTIVITY_ACTION_LABELS = {
@@ -89,6 +92,26 @@ async function getFunctionError(error) {
   } catch {
     return error?.message;
   }
+}
+
+async function fetchAllRewardTransactions() {
+  const pageSize = 1000;
+  const transactions = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('wallet_transactions')
+      .select('id, wallet_id, type, reward_points_delta, reward_points_remaining, reward_point_value, reward_expires_at, reward_source_type, reward_source_id, created_at')
+      .neq('reward_points_delta', 0)
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+    transactions.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return transactions;
 }
 
 const SEGMENT_META = {
@@ -213,6 +236,7 @@ export default function Customers() {
   const [editingBalanceId, setEditingBalanceId] = useState(null);
   const [editWalletBalance, setEditWalletBalance] = useState('');
   const [isSavingBalance, setIsSavingBalance] = useState(false);
+  const [sendingRewardReminderFor, setSendingRewardReminderFor] = useState(null);
 
   const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -266,7 +290,7 @@ export default function Customers() {
 
       const { data: rewardSettings } = await supabase
         .from('settings')
-        .select('reward_point_value, reward_expiry_months')
+        .select('reward_program_enabled, reward_points_per_riyal, reward_point_value, reward_minimum_redemption_points, reward_maximum_redemption_percent, reward_expiry_months, reward_signup_bonus_enabled, reward_signup_bonus_points')
         .eq('id', 1)
         .maybeSingle();
       const rewardRules = normalizeRewardRules(rewardSettings || {});
@@ -284,6 +308,9 @@ export default function Customers() {
         .from('wallet_transactions')
         .select('wallet_id, type, points, amount_value')
         .in('type', ['package_charge', 'package_redeem']);
+
+      await supabase.rpc('expire_reward_points', { p_wallet_id: null });
+      const rewardTransactionsData = await fetchAllRewardTransactions();
 
       const { data: storeCustomersData, error: storeCustomersError } = await supabase
         .from('customers')
@@ -346,6 +373,12 @@ export default function Customers() {
       });
 
       const walletMap = new Map();
+      const rewardTransactionsByWallet = new Map();
+      (rewardTransactionsData || []).forEach(transaction => {
+        const list = rewardTransactionsByWallet.get(transaction.wallet_id) || [];
+        list.push(transaction);
+        rewardTransactionsByWallet.set(transaction.wallet_id, list);
+      });
       getPreferredWallets(walletsData || [], rewardRules).forEach(w => {
         const key = normalizePhone(w.phone); // 9 أرقام
         const keyWithZero = key.length === 9 ? '0' + key : key; // 10 أرقام
@@ -555,6 +588,54 @@ export default function Customers() {
         const notes = walletData ? walletData.notes : '';
         const subscriptionCode = walletData ? walletData.subscriptionCode : null;
         const walletId = walletData ? walletData.id : null;
+        const rewardTransactions = walletId ? (rewardTransactionsByWallet.get(walletId) || []) : [];
+        const activeRewardLots = rewardTransactions
+          .filter(transaction => Number(transaction.reward_points_remaining || 0) > 0
+            && new Date(transaction.reward_expires_at || 0).getTime() > Date.now())
+          .map(transaction => ({
+            id: transaction.id,
+            points: Number(transaction.reward_points_remaining || 0),
+            valueSar: Number((Number(transaction.reward_points_remaining || 0) * Number(transaction.reward_point_value || rewardRules.pointValue || 0.01)).toFixed(2)),
+            expiresAt: transaction.reward_expires_at,
+            daysRemaining: Math.max(0, Math.ceil((new Date(transaction.reward_expires_at).getTime() - Date.now()) / 86400000)),
+            sourceType: transaction.reward_source_type || null,
+            sourceId: transaction.reward_source_id || null,
+            earnedAt: transaction.created_at,
+          }))
+          .sort((left, right) => new Date(left.expiresAt).getTime() - new Date(right.expiresAt).getTime());
+        const rewardSum = (types, positive = false) => rewardTransactions.reduce((sum, transaction) => {
+          if (!types.includes(transaction.type)) return sum;
+          const delta = Number(transaction.reward_points_delta || 0);
+          return sum + (positive ? Math.max(0, delta) : Math.abs(Math.min(0, delta)));
+        }, 0);
+        const rewardDetails = {
+          enabled: rewardRules.enabled,
+          points: rewardPoints,
+          pointValue: Number(rewardRules.pointValue || 0.01),
+          valueSar: walletBalance,
+          pointsPerRiyal: rewardRules.pointsPerRiyal,
+          minimumRedemptionPoints: rewardRules.minimumRedemptionPoints,
+          maximumRedemptionPercent: rewardRules.maximumRedemptionPercent,
+          expiryMonths: rewardRules.expiryMonths,
+          earnedPointsTotal: rewardSum(['reward_points_earn', 'reward_signup_bonus'], true),
+          redeemedPointsTotal: rewardSum(['reward_points_redeem', 'redeem']),
+          restoredPointsTotal: rewardSum(['reward_points_restore'], true),
+          expiredPointsTotal: rewardSum(['reward_points_expire']),
+          expiring7DaysPoints: activeRewardLots.filter(lot => lot.daysRemaining <= 7).reduce((sum, lot) => sum + lot.points, 0),
+          expiring30DaysPoints: activeRewardLots.filter(lot => lot.daysRemaining <= 30).reduce((sum, lot) => sum + lot.points, 0),
+          nextExpiryAt: activeRewardLots[0]?.expiresAt || null,
+          nextExpiryInDays: activeRewardLots[0]?.daysRemaining ?? null,
+          expiringLots: activeRewardLots,
+          activities: rewardTransactions.slice(0, 12).map(transaction => ({
+            id: transaction.id,
+            type: transaction.type,
+            pointsDelta: Number(transaction.reward_points_delta || 0),
+            expiresAt: transaction.reward_expires_at,
+            sourceType: transaction.reward_source_type,
+            sourceId: transaction.reward_source_id,
+            createdAt: transaction.created_at,
+          })),
+        };
         const debt = Number(c.debt || 0);
         const netBalance = walletBalance - debt;
         const printOrdersCount = c.orderIds?.size || 0;
@@ -573,6 +654,7 @@ export default function Customers() {
           notes,
           subscriptionCode,
           walletId,
+          rewardDetails,
           debt,
           netBalance,
           printOrdersCount,
@@ -930,6 +1012,37 @@ export default function Customers() {
       toast.error('حدث خطأ أثناء تعديل الرصيد');
     } finally {
       setIsSavingBalance(false);
+    }
+  };
+
+  const handleSendRewardExpiryReminder = async (customer) => {
+    if (!customer.customerId || !customer.email) {
+      toast.error('يلزم وجود حساب متجر وبريد إلكتروني لإرسال التنبيه');
+      return;
+    }
+    setSendingRewardReminderFor(customer.id);
+    const toastId = toast.loading('جاري إرسال تنبيه النقاط...');
+    try {
+      const { data, error } = await supabase.functions.invoke('reward-expiry-notifications', {
+        body: { mode: 'manual', customerId: customer.customerId },
+      });
+      if (error) throw new Error(await getFunctionError(error));
+      if (!data?.sent) throw new Error(data?.results?.[0]?.error || 'email_send_failed');
+      toast.success('تم إرسال تنبيه النقاط وتسجيله في سجل المراسلات', { id: toastId });
+      await fetchData();
+    } catch (error) {
+      console.error(error);
+      const message = String(error?.message || '');
+      toast.error(
+        message.includes('no_expiring_reward_points')
+          ? 'لا توجد حالياً نقاط لها تاريخ انتهاء قادم.'
+          : message.includes('customer_email_missing')
+            ? 'لا يوجد بريد إلكتروني مسجل للعميل.'
+            : 'تعذر إرسال تنبيه النقاط حالياً.',
+        { id: toastId },
+      );
+    } finally {
+      setSendingRewardReminderFor(null);
     }
   };
 
@@ -1551,6 +1664,22 @@ export default function Customers() {
                       </span>
                     </div>
                   </div>
+                  <RewardPointsSummary
+                    rewards={customer.rewardDetails}
+                    compact
+                    embedded
+                    actions={(
+                      <button
+                        type="button"
+                        onClick={() => handleSendRewardExpiryReminder(customer)}
+                        disabled={sendingRewardReminderFor === customer.id || !customer.email || !customer.rewardDetails?.nextExpiryAt}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-3 py-2 text-xs font-black text-white disabled:opacity-40"
+                      >
+                        {sendingRewardReminderFor === customer.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                        إرسال تنبيه الانتهاء
+                      </button>
+                    )}
+                  />
                   {/* تعديل الباقة */}
                   {customer.packageBalance > 0 && (
                     <button onClick={(e) => openEditPkgModal(customer, e)}
@@ -1873,6 +2002,24 @@ export default function Customers() {
                                   <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">قيمة العميل</span>
                                   <span className="font-black text-[#4A4A4A] text-lg">{Number(customer.lifetimeValue || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
                                 </div>
+                              </div>
+
+                              <div className="mt-4">
+                                <RewardPointsSummary
+                                  rewards={customer.rewardDetails}
+                                  embedded
+                                  actions={(
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSendRewardExpiryReminder(customer)}
+                                      disabled={sendingRewardReminderFor === customer.id || !customer.email || !customer.rewardDetails?.nextExpiryAt}
+                                      className="flex items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-4 py-2.5 text-xs font-black text-white disabled:opacity-40"
+                                    >
+                                      {sendingRewardReminderFor === customer.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                      إرسال تنبيه انتهاء النقاط
+                                    </button>
+                                  )}
+                                />
                               </div>
 
                               {customer.hasStoreAccount && (

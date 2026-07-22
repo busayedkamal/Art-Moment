@@ -12,6 +12,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import logo from '../assets/logo-art-moment.svg';
 import { getCustomerSession } from '../utils/customerSession';
 import OrderFinancialBreakdown from '../components/OrderFinancialBreakdown';
+import { RewardPointsSummary, RewardRedemptionForm } from '../components/RewardPointsSummary';
 import { getPrintOrderFinancials } from '../utils/orderFinancials';
 import {
   getPaymentState,
@@ -123,14 +124,56 @@ export default function TrackOrderPage() {
   const [ordersList, setOrdersList] = useState([]);
   const [paymentsMap, setPaymentsMap] = useState({}); 
   const [customerStats, setCustomerStats] = useState({ points: 0, packages: 0, debt: 0, net: 0 });
+  const [customerSession, setCustomerSession] = useState(null);
+  const [applyingPointsTo, setApplyingPointsTo] = useState(null);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const customer = getCustomerSession();
+    setCustomerSession(customer);
     if (customer?.phone) setPhone(customer.phone);
   }, []);
+
+  const handleApplyRewardPoints = async (order, points) => {
+    const session = getCustomerSession();
+    if (!session?.sessionToken) {
+      toast.error('سجلي الدخول من صفحة طلباتي لاستخدام النقاط');
+      return;
+    }
+    setApplyingPointsTo(order.id);
+    const toastId = toast.loading('جاري تحديث النقاط...');
+    try {
+      const { error: functionError } = await supabase.functions.invoke('customer-orders', {
+        body: {
+          action: 'apply_reward_points',
+          sessionToken: session.sessionToken,
+          orderId: order.id,
+          points,
+        },
+      });
+      if (functionError) throw new Error(await getFunctionError(functionError));
+      toast.success(points > 0 ? 'تم تطبيق النقاط على الطلب' : 'تم إلغاء النقاط من الطلب', { id: toastId });
+      if (activeTab === 'history') await handleHistorySearch({ preventDefault() {} });
+      else await handleIdSearch({ preventDefault() {} });
+    } catch (err) {
+      console.error(err);
+      const message = String(err?.message || '');
+      toast.error(
+        message.includes('reward_minimum_redemption_not_met')
+          ? 'لم تصلي إلى الحد الأدنى للاستبدال.'
+          : message.includes('reward_redemption_limit_exceeded') || message.includes('reward_redemption_exceeds_unpaid_products')
+            ? 'عدد النقاط يتجاوز الحد المسموح لهذا الطلب.'
+            : message.includes('reward_points_balance_insufficient')
+              ? 'رصيد النقاط غير كافٍ.'
+              : 'تعذر تحديث النقاط حالياً.',
+        { id: toastId },
+      );
+    } finally {
+      setApplyingPointsTo(null);
+    }
+  };
 
   const handleIdSearch = async (e) => {
     e.preventDefault();
@@ -144,7 +187,7 @@ export default function TrackOrderPage() {
     setLoading(true); setError(null); setOrdersList([]); setCustomerStats(null);
     try {
       const { data, error } = await supabase.functions.invoke('track-order', {
-        body: { mode: 'id', searchId: shortCleanId },
+        body: { mode: 'id', searchId: shortCleanId, sessionToken: getCustomerSession()?.sessionToken || null },
       });
       if (error) throw new Error(await getFunctionError(error));
 
@@ -299,6 +342,8 @@ export default function TrackOrderPage() {
                  </div>
               </div>
             )}
+
+            <RewardPointsSummary rewards={customerStats?.rewards} compact={activeTab !== 'history'} />
 
             {ordersList.map(order => {
               const currentStep = getStepStatus(order.status);
@@ -495,6 +540,19 @@ export default function TrackOrderPage() {
                         <span className="text-xs font-bold flex items-center gap-2"><Wallet size={16}/> {remaining > 0 ? 'المبلغ المتبقي' : 'حالة الدفع'}</span>
                         <span className="text-xl font-black">{remaining > 0 ? `${remaining.toFixed(2)} ر.س` : 'خالص ✅'}</span>
                       </div>
+                      {order.order_type === 'store' && customerSession?.sessionToken && (
+                        <RewardRedemptionForm
+                          order={order}
+                          rewards={customerStats?.rewards}
+                          onApply={(points) => handleApplyRewardPoints(order, points)}
+                          submitting={applyingPointsTo === order.id}
+                        />
+                      )}
+                      {order.order_type === 'store' && !customerSession?.sessionToken && remaining > 0 && (
+                        <Link to={`/store/orders/${order.id}`} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#C5A059]/25 bg-[#C5A059]/5 px-4 py-3 text-xs font-black text-[#9E7D35]">
+                          <Wallet size={15} /> سجلي الدخول من طلباتي لاستخدام النقاط
+                        </Link>
+                      )}
                     </div>
 
                     {order.status === 'done' && order.order_type === 'print' && (

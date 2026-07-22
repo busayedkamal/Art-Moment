@@ -174,6 +174,46 @@ supabase functions deploy customer-orders
 supabase functions deploy store-return-requests
 ```
 
+For automatic reward expiry reminders, detailed reward lots, and secure customer
+redemption on unpaid store orders, run:
+
+```text
+supabase/migrations/202607220002_reward_expiry_notifications.sql
+```
+
+Deploy the updated reward readers and the reminder function:
+
+```bash
+supabase functions deploy customer-account
+supabase functions deploy customer-orders
+supabase functions deploy track-order
+supabase functions deploy reward-expiry-notifications --no-verify-jwt
+```
+
+Create a strong random cron secret, save the same value in Edge Function Secrets,
+and add the function URL and secret to Vault. Never commit the secret:
+
+```powershell
+$ProjectRef = "dftmbamuyupgzpqfoixl"
+$RewardCronSecret = [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")
+npx supabase secrets set "REWARD_CRON_SECRET=$RewardCronSecret" --project-ref $ProjectRef
+```
+
+Then run the following in the Supabase SQL Editor, replacing the placeholder once:
+
+```sql
+select vault.create_secret(
+  'https://dftmbamuyupgzpqfoixl.supabase.co/functions/v1/reward-expiry-notifications',
+  'reward_expiry_function_url'
+);
+select vault.create_secret('REPLACE_WITH_THE_SAME_CRON_SECRET', 'reward_expiry_cron_secret');
+select public.schedule_reward_expiry_notifications();
+```
+
+The daily schedule runs at 07:00 Asia/Riyadh and sends idempotent reminders at
+30 and 7 days. Manual reminders remain available from the Customers page and are
+recorded in both the customer message log and the administration activity log.
+
 ## Telegram bot setup
 
 The bot token must never be committed or placed in a Vite environment variable. Store it only in Supabase Secrets. The webhook secret may contain letters, numbers, `_`, and `-`.

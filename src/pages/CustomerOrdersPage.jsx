@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CustomerAuthModal from '../components/CustomerAuthModal';
+import { RewardPointsSummary, RewardRedemptionForm } from '../components/RewardPointsSummary';
 import { supabase } from '../lib/supabase';
 import { getCustomerSession } from '../utils/customerSession';
 import { clampCartQuantity, normalizeStockQuantity } from '../utils/productStock';
@@ -577,7 +578,7 @@ function OrderCard({ order }) {
   );
 }
 
-function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt, returnWindowDays }) {
+function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownloadReceipt, onApplyRewardPoints, applyingRewardPoints, returnWindowDays }) {
   const trackingUrl = getTrackingUrl(order);
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
   const remaining = Math.max(0, total - Number(order.amountPaid || 0) - Number(order.pointsUsedAmount || 0));
@@ -624,6 +625,8 @@ function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt, 
           <Download size={17} className="text-[#D9A3AA]" /> تحميل الإيصال
         </button>
       </div>
+
+      <RewardPointsSummary rewards={rewards} compact />
 
       <OrderTimeline status={order.status} />
 
@@ -723,6 +726,12 @@ function OrderDetails({ order, onReturnSubmitted, onReorder, onDownloadReceipt, 
                 </span>
               </div>
             </div>
+            <RewardRedemptionForm
+              order={order}
+              rewards={rewards}
+              onApply={onApplyRewardPoints}
+              submitting={applyingRewardPoints}
+            />
           </section>
 
           <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 p-5 shadow-sm">
@@ -780,8 +789,48 @@ export default function CustomerOrdersPage() {
   const [error, setError] = useState('');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [returnWindowDays, setReturnWindowDays] = useState(7);
+  const [rewards, setRewards] = useState(null);
+  const [applyingRewardPoints, setApplyingRewardPoints] = useState(false);
 
   const canLoadOrders = Boolean(customer?.sessionToken);
+
+  const handleApplyRewardPoints = async (points) => {
+    const session = getCustomerSession();
+    if (!session?.sessionToken || !selectedOrder?.id) {
+      toast.error('سجلي الدخول مرة أخرى لتحديث النقاط');
+      return;
+    }
+    setApplyingRewardPoints(true);
+    const toastId = toast.loading('جاري تحديث نقاط الطلب...');
+    try {
+      const { error: functionError } = await supabase.functions.invoke('customer-orders', {
+        body: {
+          action: 'apply_reward_points',
+          sessionToken: session.sessionToken,
+          orderId: selectedOrder.id,
+          points,
+        },
+      });
+      if (functionError) throw new Error(await getFunctionError(functionError));
+      toast.success(points > 0 ? 'تم تطبيق النقاط على الطلب' : 'تم إلغاء النقاط من الطلب', { id: toastId });
+      await loadOrders();
+    } catch (err) {
+      console.error(err);
+      const message = String(err?.message || '');
+      const friendly = message.includes('reward_minimum_redemption_not_met')
+        ? 'لم تصلي إلى الحد الأدنى للاستبدال.'
+        : message.includes('reward_redemption_limit_exceeded') || message.includes('reward_redemption_exceeds_unpaid_products')
+          ? 'عدد النقاط يتجاوز الحد المسموح لهذا الطلب.'
+          : message.includes('reward_points_balance_insufficient') || message.includes('reward_points_lots_insufficient')
+            ? 'رصيد النقاط المتاح غير كافٍ.'
+            : message.includes('reward_redemption_order_locked')
+              ? 'لا يمكن تعديل النقاط بعد إغلاق الدفع أو الطلب.'
+              : 'تعذر تحديث النقاط حالياً.';
+      toast.error(friendly, { id: toastId });
+    } finally {
+      setApplyingRewardPoints(false);
+    }
+  };
 
   const handleReorder = async (order) => {
     const productIds = [...new Set((order.items || []).map(item => item.productId).filter(Boolean))];
@@ -871,6 +920,7 @@ export default function CustomerOrdersPage() {
     if (!session?.sessionToken) {
       setOrders([]);
       setSelectedOrder(null);
+      setRewards(null);
       setError('');
       return;
     }
@@ -889,6 +939,7 @@ export default function CustomerOrdersPage() {
 
       setOrders(data?.orders || []);
       setSelectedOrder(orderId ? data?.order || null : null);
+      setRewards(data?.rewards || null);
       setReturnWindowDays(Number(data?.operationRules?.returnWindowDays || 7));
       if (orderId && !data?.order) setError('لم يتم العثور على هذا الطلب ضمن حسابك.');
     } catch (err) {
@@ -986,9 +1037,12 @@ export default function CustomerOrdersPage() {
           selectedOrder ? (
             <OrderDetails
               order={selectedOrder}
+              rewards={rewards}
               onReturnSubmitted={loadOrders}
               onReorder={handleReorder}
               onDownloadReceipt={downloadReceipt}
+              onApplyRewardPoints={handleApplyRewardPoints}
+              applyingRewardPoints={applyingRewardPoints}
               returnWindowDays={returnWindowDays}
             />
           ) : null
@@ -1008,6 +1062,8 @@ export default function CustomerOrdersPage() {
                 <p className="text-2xl font-black mt-2 text-[#D9A3AA]">{formatCurrency(stats.total)}</p>
               </div>
             </div>
+
+            <RewardPointsSummary rewards={rewards} />
 
             {orders.length === 0 ? (
               <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 shadow-sm p-8 text-center">

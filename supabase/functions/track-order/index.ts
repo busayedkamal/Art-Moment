@@ -1,5 +1,7 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { verifyCustomerSessionToken } from '../_shared/customerToken.ts';
 import { normalizeSaudiPhone, phoneVariants } from '../_shared/phone.ts';
+import { fetchRewardPointsSummary } from '../_shared/rewardPoints.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 
 function asOrderList(data: unknown[] | null | undefined, orderType: string) {
@@ -49,6 +51,9 @@ async function fetchCustomerStats(
   }
   const points = Number(refreshedWallet?.reward_points_balance
     ?? Math.round(Number(refreshedWallet?.points_balance || 0) / pointValue));
+  const rewardSummary = variants[0]
+    ? await fetchRewardPointsSummary(supabase, variants[0], { includeActivities: false })
+    : null;
 
   let packages = 0;
   if (walletIds.length > 0) {
@@ -87,6 +92,7 @@ async function fetchCustomerStats(
     points,
     pointsValue: Number((points * pointValue).toFixed(2)),
     pointsExpiryMonths: Number(rewardSettings?.reward_expiry_months || 4),
+    rewards: rewardSummary,
     packages: Math.max(0, packages),
     totalPayments,
     totalDebt,
@@ -150,9 +156,26 @@ Deno.serve(async (req) => {
 
       const paymentsMap = await fetchPaymentsMap(supabase, printOrders);
       const variants = orders[0]?.phone ? phoneFilterValues(orders[0].phone) : [];
-      const customerStats = variants.length > 0
+      let customerStats = variants.length > 0
         ? await fetchCustomerStats(supabase, variants, printOrders, storeOrders)
         : null;
+      const tokenPayload = body?.sessionToken
+        ? await verifyCustomerSessionToken(body.sessionToken)
+        : null;
+      if (customerStats?.rewards && tokenPayload?.sub) {
+        const { data: signedInCustomer } = await supabase
+          .from('customers')
+          .select('id, phone')
+          .eq('id', tokenPayload.sub)
+          .maybeSingle();
+        const ownsOrder = signedInCustomer && (
+          String(storeOrders[0]?.customer_id || '') === String(signedInCustomer.id)
+          || phoneFilterValues(signedInCustomer.phone).some((phone) => variants.includes(phone))
+        );
+        if (!ownsOrder) customerStats = { ...customerStats, rewards: null };
+      } else if (customerStats?.rewards) {
+        customerStats = { ...customerStats, rewards: null };
+      }
 
       return jsonResponse({ orders, paymentsMap, customerStats });
     }

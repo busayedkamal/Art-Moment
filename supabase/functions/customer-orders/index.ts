@@ -1,6 +1,7 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { verifyCustomerSessionToken } from '../_shared/customerToken.ts';
 import { phoneVariants } from '../_shared/phone.ts';
+import { fetchRewardPointsSummary } from '../_shared/rewardPoints.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 
 function normalizeOrderItem(item: Record<string, unknown>) {
@@ -167,6 +168,28 @@ Deno.serve(async (req) => {
     if (customerError) throw customerError;
     if (!customer) return jsonResponse({ error: 'unauthorized' }, 401);
 
+    const action = String(body?.action || 'get');
+    if (action === 'apply_reward_points') {
+      const requestedPoints = Math.max(0, Math.floor(Number(body?.points || 0)));
+      if (!Number.isFinite(requestedPoints)) {
+        return jsonResponse({ error: 'invalid_reward_points' }, 400);
+      }
+      const { data: redemption, error: redemptionError } = await supabase.rpc(
+        'customer_apply_store_order_reward_points',
+        {
+          p_customer_id: customer.id,
+          p_order_id: String(body?.orderId || ''),
+          p_requested_points: requestedPoints,
+        },
+      );
+      if (redemptionError) {
+        return jsonResponse({ error: redemptionError.message || 'reward_redemption_failed' }, 409);
+      }
+      const rewards = await fetchRewardPointsSummary(supabase, customer.phone);
+      return jsonResponse({ ok: true, redemption, rewards });
+    }
+    if (action !== 'get') return jsonResponse({ error: 'unknown_action' }, 400);
+
     const orderId = String(body?.orderId || '').trim();
     const selectFields = `
       *,
@@ -223,6 +246,7 @@ Deno.serve(async (req) => {
       store_return_requests: returnRequestsByOrder.get(String(order.id)) || [],
     }));
     const returnWindowDays = await getReturnWindowDays(supabase);
+    const rewards = await fetchRewardPointsSummary(supabase, customer.phone);
 
     return jsonResponse({
       customer: {
@@ -233,6 +257,7 @@ Deno.serve(async (req) => {
       },
       orders: normalizedOrders,
       order: orderId ? normalizedOrders[0] || null : null,
+      rewards,
       operationRules: { returnWindowDays },
     });
   } catch (error) {
