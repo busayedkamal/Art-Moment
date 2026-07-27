@@ -295,14 +295,6 @@ export default function Customers() {
         .maybeSingle();
       const rewardRules = normalizeRewardRules(rewardSettings || {});
 
-      // توليد كود اشتراك للمحافظ التي ليس لها كود (مرة واحدة تلقائياً)
-      const walletsNeedCode = (walletsData || []).filter(w => w.phone && !w.subscription_code);
-      for (const w of walletsNeedCode) {
-        const code = String(Math.floor(1000 + Math.random() * 9000));
-        await supabase.from('wallets').update({ subscription_code: code }).eq('id', w.id);
-        w.subscription_code = code;
-      }
-
       // 3) حركات الباقات لكل محفظة (package_charge = الشحن، package_redeem = الاستخدام)
       const { data: packageTxData } = await supabase
         .from('wallet_transactions')
@@ -617,7 +609,7 @@ export default function Customers() {
           minimumRedemptionPoints: rewardRules.minimumRedemptionPoints,
           maximumRedemptionPercent: rewardRules.maximumRedemptionPercent,
           expiryMonths: rewardRules.expiryMonths,
-          earnedPointsTotal: rewardSum(['reward_points_earn', 'reward_signup_bonus'], true),
+          earnedPointsTotal: rewardSum(['reward_points_earn', 'reward_signup_bonus', 'reward_friendship_bonus'], true),
           redeemedPointsTotal: rewardSum(['reward_points_redeem', 'redeem']),
           restoredPointsTotal: rewardSum(['reward_points_restore'], true),
           expiredPointsTotal: rewardSum(['reward_points_expire']),
@@ -1315,25 +1307,17 @@ export default function Customers() {
     if (!customer.cleanPhone) { toast.error('لا يوجد رقم هاتف'); return; }
     setGeneratingCodeFor(customer.id);
     try {
-      const code = String(Math.floor(1000 + Math.random() * 9000));
       const withZero = customer.cleanPhone.length === 9 ? '0' + customer.cleanPhone : customer.cleanPhone;
-
-      if (customer.walletId) {
-        // محفظة موجودة → فقط أضف الكود
-        await supabase.from('wallets').update({ subscription_code: code }).eq('id', customer.walletId);
-      } else {
-        // لا توجد محفظة → أنشئ واحدة بالكود
-        await supabase.from('wallets').insert([{
-          phone: withZero,
-          points_balance: 0,
-          subscription_code: code,
-          notes: `اسم العميل: ${customer.name}`
-        }]);
-      }
+      const { data: code, error } = await supabase.rpc('get_or_create_friendship_code', {
+        p_phone: withZero,
+        p_customer_name: customer.name,
+      });
+      if (error) throw error;
       toast.success(`✅ رقم الاشتراك: ${code} — تم الحفظ`);
       fetchData();
     } catch (err) {
-      toast.error('فشل في توليد الكود');
+      console.error('Friendship code generation failed:', err);
+      toast.error('فشل في توليد كود الصداقة');
     } finally {
       setGeneratingCodeFor(null);
     }

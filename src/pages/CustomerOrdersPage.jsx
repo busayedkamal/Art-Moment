@@ -6,7 +6,9 @@ import {
   CalendarDays,
   CheckCircle,
   Clock,
+  Copy,
   Download,
+  Gift,
   Home,
   Loader2,
   LogIn,
@@ -790,6 +792,7 @@ export default function CustomerOrdersPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [returnWindowDays, setReturnWindowDays] = useState(7);
   const [rewards, setRewards] = useState(null);
+  const [friendshipCode, setFriendshipCode] = useState(null);
   const [applyingRewardPoints, setApplyingRewardPoints] = useState(false);
 
   const canLoadOrders = Boolean(customer?.sessionToken);
@@ -921,6 +924,7 @@ export default function CustomerOrdersPage() {
       setOrders([]);
       setSelectedOrder(null);
       setRewards(null);
+      setFriendshipCode(null);
       setError('');
       return;
     }
@@ -940,6 +944,7 @@ export default function CustomerOrdersPage() {
       setOrders(data?.orders || []);
       setSelectedOrder(orderId ? data?.order || null : null);
       setRewards(data?.rewards || null);
+      setFriendshipCode(data?.friendshipCode || null);
       setReturnWindowDays(Number(data?.operationRules?.returnWindowDays || 7));
       if (orderId && !data?.order) setError('لم يتم العثور على هذا الطلب ضمن حسابك.');
     } catch (err) {
@@ -1048,6 +1053,49 @@ export default function CustomerOrdersPage() {
           ) : null
         ) : (
           <div className="space-y-6">
+            {friendshipCode && (
+              <section className="flex flex-col gap-4 rounded-3xl border border-[#C5A059]/25 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#C5A059]/12 text-[#C5A059]">
+                    <Gift size={21} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-[#C5A059]">برنامج كود الصداقة</p>
+                    <h2 className="mt-1 text-lg font-black text-[#4A4A4A]">
+                      كودك: <span className="tracking-widest" dir="ltr">{friendshipCode}</span>
+                    </h2>
+                    <p className="mt-1 text-xs leading-6 text-[#4A4A4A]/55">
+                      شاركي الكود مع صديقاتك. تحصل صديقتك على خصم 5% بكوبون WELCOME، وتحصلين على 200 نقطة عند أول طلب لها.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(String(friendshipCode));
+                        toast.success('تم نسخ كود الصداقة');
+                      } catch {
+                        toast.error('تعذر نسخ الكود تلقائياً');
+                      }
+                    }}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#C5A059]/25 bg-[#F8F5F2] px-4 py-2.5 text-xs font-black text-[#4A4A4A] sm:flex-none"
+                  >
+                    <Copy size={15} /> نسخ
+                  </button>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`استخدمي كود الصداقة ${friendshipCode} عند طلبك من لحظة فن، وكوبون WELCOME للحصول على خصم 5%.\nhttps://art-moment.com`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-black text-white sm:flex-none"
+                  >
+                    <MessageCircle size={15} /> مشاركة
+                  </a>
+                </div>
+              </section>
+            )}
+
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="bg-white rounded-3xl border border-[#D9A3AA]/15 p-5 shadow-sm">
                 <span className="text-xs font-bold text-[#4A4A4A]/45">عدد الطلبات</span>

@@ -154,7 +154,7 @@ export async function fetchRewardPointsSummary(
     points,
     valueSar: Number((points * pointValue).toFixed(2)),
     storeCreditSar: Number(refreshedWallet.store_credit_balance || 0),
-    earnedPointsTotal: sumByTypes(['reward_points_earn', 'reward_signup_bonus'], true),
+    earnedPointsTotal: sumByTypes(['reward_points_earn', 'reward_signup_bonus', 'reward_friendship_bonus'], true),
     redeemedPointsTotal: sumByTypes(['reward_points_redeem', 'redeem']),
     restoredPointsTotal: sumByTypes(['reward_points_restore'], true),
     expiredPointsTotal: sumByTypes(['reward_points_expire']),

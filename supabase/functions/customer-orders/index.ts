@@ -247,6 +247,16 @@ Deno.serve(async (req) => {
     }));
     const returnWindowDays = await getReturnWindowDays(supabase);
     const rewards = await fetchRewardPointsSummary(supabase, customer.phone);
+    const { data: friendshipCode, error: friendshipCodeError } = await supabase.rpc(
+      'get_or_create_friendship_code',
+      {
+        p_phone: customer.phone,
+        p_customer_name: customer.name,
+      },
+    );
+    if (friendshipCodeError) {
+      console.error('customer friendship code lookup failed:', friendshipCodeError);
+    }
 
     return jsonResponse({
       customer: {
@@ -258,6 +268,7 @@ Deno.serve(async (req) => {
       orders: normalizedOrders,
       order: orderId ? normalizedOrders[0] || null : null,
       rewards,
+      friendshipCode: friendshipCode || null,
       operationRules: { returnWindowDays },
     });
   } catch (error) {

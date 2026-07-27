@@ -4,6 +4,7 @@ import { AlertTriangle, CalendarClock, Gift, History, Sparkles, Wallet } from 'l
 const ACTIVITY_LABELS = {
   reward_points_earn: 'نقاط مكتسبة من طلب',
   reward_signup_bonus: 'مكافأة أول طلب',
+  reward_friendship_bonus: 'مكافأة كود الصداقة',
   reward_points_redeem: 'استبدال نقاط',
   redeem: 'استبدال سابق',
   reward_points_restore: 'نقاط مستعادة',
@@ -42,7 +43,7 @@ export function RewardPointsSummary({ rewards, compact = false, embedded = false
         <div className="rounded-2xl bg-emerald-50 p-4">
           <span className="text-[10px] font-bold text-emerald-700/60">المكتسبة إجمالاً</span>
           <p className="mt-1 text-xl font-black text-emerald-700">+{Number(rewards.earnedPointsTotal || 0).toLocaleString()}</p>
-          <span className="text-[10px] text-emerald-700/50">تشمل مكافأة أول طلب</span>
+          <span className="text-[10px] text-emerald-700/50">تشمل مكافآت الطلب والصداقة</span>
         </div>
         <div className="rounded-2xl bg-violet-50 p-4">
           <span className="text-[10px] font-bold text-violet-700/60">المستبدلة</span>

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import RiyalSign from '../components/RiyalSign';
 import {
   Loader2, Tag, Percent, MinusCircle,
-  Crown, AlertTriangle, Sparkles, Wallet, Coins, MapPin, User, Phone, Package
+  Crown, AlertTriangle, Sparkles, Wallet, Coins, MapPin, User, Phone, Package, Gift
 } from 'lucide-react';
 import { choosePreferredWallet } from '../utils/walletBalances';
 import {
@@ -45,6 +45,8 @@ export default function NewOrder() {
   const [packageAmountInput, setPackageAmountInput] = useState(''); // مبلغ جزئي من الباقات
   const [pointsAmountInput, setPointsAmountInput] = useState('');   // عدد النقاط المراد استخدامه
   const [checkingLoyalty, setCheckingLoyalty] = useState(false);
+  const [checkingFriendship, setCheckingFriendship] = useState(false);
+  const [friendshipEligibility, setFriendshipEligibility] = useState(null);
 
   const [previousCustomers, setPreviousCustomers] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
@@ -56,7 +58,7 @@ export default function NewOrder() {
       customerName: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
       source: 'الهفوف', sourceOther: '',
       a4Qty: '', photo4x6Qty: '', deliveryFee: 0, deposit: 0, notes: '',
-      manualDiscount: 0
+      manualDiscount: 0, friendshipCode: ''
     }
   });
 
@@ -201,6 +203,40 @@ export default function NewOrder() {
     return () => clearTimeout(timeoutId);
   }, [phoneWatcher, settings]);
 
+  useEffect(() => {
+    const normalizedPhone = normalizePhone(phoneWatcher);
+    if (!/^05\d{8}$/.test(normalizedPhone)) {
+      setFriendshipEligibility(null);
+      setCheckingFriendship(false);
+      setValue('friendshipCode', '');
+      return undefined;
+    }
+
+    let cancelled = false;
+    setCheckingFriendship(true);
+    const timeoutId = setTimeout(async () => {
+      const { data, error } = await supabase.rpc('check_friendship_referral_eligibility', {
+        p_phone: normalizedPhone,
+      });
+
+      if (cancelled) return;
+      if (error) {
+        console.error('Friendship eligibility check failed:', error);
+        setFriendshipEligibility(null);
+      } else {
+        const result = data || null;
+        setFriendshipEligibility(result);
+        if (!result?.eligible) setValue('friendshipCode', '');
+      }
+      setCheckingFriendship(false);
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [phoneWatcher, setValue]);
+
   // عند تفعيل أحد الخيارين، يُلغى الآخر تلقائياً
   const toggleUsePoints = () => {
     const next = !usePoints;
@@ -312,6 +348,7 @@ export default function NewOrder() {
         direct_discount_amount: directDiscountValue,
         coupon_discount_amount: couponDiscountValue,
         coupon_code: couponData?.code || null,
+        friendship_code: data.friendshipCode?.trim() || null,
         package_discount_amount: packageDiscountValue,
         points_used_amount: pointsDiscountValue,
         reward_points_used: pointsUsedCount,
@@ -398,7 +435,18 @@ export default function NewOrder() {
 
       toast.success(`تم إنشاء الطلب بنجاح ✅`);
       navigate('/app/orders');
-    } catch (error) { toast.error(`خطأ: ${error.message}`); }
+    } catch (error) {
+      const message = String(error?.message || '');
+      const friendshipMessages = {
+        invalid_friendship_code: 'كود الصداقة يجب أن يتكون من 4 أرقام.',
+        friendship_code_not_found: 'كود الصداقة غير موجود.',
+        friendship_self_referral_not_allowed: 'لا يمكن للعميل استخدام كود الصداقة الخاص به.',
+        friendship_customer_not_new: 'كود الصداقة متاح للعملاء الجدد فقط.',
+        friendship_program_disabled: 'برنامج كود الصداقة متوقف حالياً.',
+      };
+      const code = Object.keys(friendshipMessages).find((key) => message.includes(key));
+      toast.error(code ? friendshipMessages[code] : `خطأ: ${message}`);
+    }
   };
 
   if (loadingSettings) return <div className="p-10 text-center flex justify-center gap-2"><Loader2 className="animate-spin" /> جاري التحميل...</div>;
@@ -467,7 +515,7 @@ export default function NewOrder() {
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2" ref={suggestionsRef}>
+            <div className={`grid gap-4 ${friendshipEligibility?.eligible ? 'md:grid-cols-3' : 'md:grid-cols-2'}`} ref={suggestionsRef}>
               {/* ── اسم العميل ── */}
               <div className="relative">
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#D9A3AA]/15 rounded-xl flex items-center justify-center pointer-events-none">
@@ -524,7 +572,40 @@ export default function NewOrder() {
                   </div>
                 )}
               </div>
+
+              {friendshipEligibility?.eligible && (
+                <div className="relative animate-in fade-in slide-in-from-bottom-2">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#C5A059]/15 rounded-xl flex items-center justify-center pointer-events-none">
+                    <Gift size={16} className="text-[#C5A059]" />
+                  </div>
+                  <input
+                    {...register('friendshipCode', {
+                      pattern: {
+                        value: /^\d{4}$/,
+                        message: 'الكود يتكون من 4 أرقام',
+                      },
+                    })}
+                    inputMode="numeric"
+                    maxLength={4}
+                    className="w-full pr-14 pl-4 py-3.5 bg-[#C5A059]/5 border-2 border-[#C5A059]/20 rounded-2xl text-sm font-black tracking-widest placeholder-[#C5A059]/45 outline-none focus:border-[#C5A059] focus:bg-white transition-all"
+                    placeholder="كود الصداقة (اختياري)"
+                    autoComplete="off"
+                  />
+                  {errors.friendshipCode ? (
+                    <p className="text-xs text-red-500 mt-1 pr-1">{errors.friendshipCode.message}</p>
+                  ) : (
+                    <p className="mt-1 pr-1 text-[10px] font-bold text-[#C5A059]">
+                      عميل جديد مؤهل. استخدمي كوبون WELCOME لخصم 5%.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
+            {checkingFriendship && /^05\d{8}$/.test(normalizePhone(phoneWatcher)) && (
+              <p className="mt-3 flex items-center gap-2 text-[11px] text-[#4A4A4A]/45">
+                <Loader2 size={12} className="animate-spin" /> جارٍ التحقق من أهلية كود الصداقة...
+              </p>
+            )}
           </div>
 
           {/* تفاصيل الصور */}
