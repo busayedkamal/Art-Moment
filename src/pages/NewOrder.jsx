@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import RiyalSign from '../components/RiyalSign';
 import {
   Loader2, Tag, Percent, MinusCircle,
-  Crown, AlertTriangle, Sparkles, Wallet, Coins, MapPin, User, Phone, Package, Gift
+  Crown, AlertTriangle, Sparkles, Wallet, Coins, MapPin, User, Phone, Package, Gift, Info
 } from 'lucide-react';
 import { choosePreferredWallet } from '../utils/walletBalances';
 import {
@@ -47,6 +47,7 @@ export default function NewOrder() {
   const [checkingLoyalty, setCheckingLoyalty] = useState(false);
   const [checkingFriendship, setCheckingFriendship] = useState(false);
   const [friendshipEligibility, setFriendshipEligibility] = useState(null);
+  const [friendshipCheckError, setFriendshipCheckError] = useState('');
 
   const [previousCustomers, setPreviousCustomers] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
@@ -207,12 +208,14 @@ export default function NewOrder() {
     const normalizedPhone = normalizePhone(phoneWatcher);
     if (!/^05\d{8}$/.test(normalizedPhone)) {
       setFriendshipEligibility(null);
+      setFriendshipCheckError('');
       setCheckingFriendship(false);
       setValue('friendshipCode', '');
       return undefined;
     }
 
     let cancelled = false;
+    setFriendshipCheckError('');
     setCheckingFriendship(true);
     const timeoutId = setTimeout(async () => {
       const { data, error } = await supabase.rpc('check_friendship_referral_eligibility', {
@@ -223,9 +226,11 @@ export default function NewOrder() {
       if (error) {
         console.error('Friendship eligibility check failed:', error);
         setFriendshipEligibility(null);
+        setFriendshipCheckError('تعذر التحقق من أهلية كود الصداقة. تأكدي من تشغيل تحديث قاعدة البيانات ثم أعيدي المحاولة.');
       } else {
         const result = data || null;
         setFriendshipEligibility(result);
+        setFriendshipCheckError('');
         if (!result?.eligible) setValue('friendshipCode', '');
       }
       setCheckingFriendship(false);
@@ -605,6 +610,27 @@ export default function NewOrder() {
               <p className="mt-3 flex items-center gap-2 text-[11px] text-[#4A4A4A]/45">
                 <Loader2 size={12} className="animate-spin" /> جارٍ التحقق من أهلية كود الصداقة...
               </p>
+            )}
+            {!checkingFriendship && friendshipEligibility?.reason === 'existing_customer' && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#C5A059]/20 bg-[#C5A059]/5 px-3 py-2.5 text-[11px] font-bold text-[#4A4A4A]/70">
+                <Info size={14} className="mt-0.5 shrink-0 text-[#C5A059]" />
+                <span>
+                  هذا الرقم مسجل سابقاً في بيانات العملاء، لذلك لا يظهر حقل كود الصداقة. المكافأة متاحة للعميل الجديد فقط.
+                </span>
+              </div>
+            )}
+            {!checkingFriendship && friendshipEligibility && !friendshipEligibility.eligible
+              && friendshipEligibility.reason !== 'existing_customer' && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-slate-200 bg-[#F8F5F2] px-3 py-2.5 text-[11px] font-bold text-[#4A4A4A]/65">
+                <Info size={14} className="mt-0.5 shrink-0 text-slate-400" />
+                <span>كود الصداقة غير متاح لهذا الرقم وفق شروط البرنامج.</span>
+              </div>
+            )}
+            {friendshipCheckError && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[11px] font-bold text-red-700">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                <span>{friendshipCheckError}</span>
+              </div>
             )}
           </div>
 
