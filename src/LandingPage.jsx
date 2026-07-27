@@ -296,7 +296,7 @@ export default function LandingPage() {
   const handleSendFeedback = () => {
     if (!feedbackText.trim()) return;
     const msg = `مرحباً، لدي رسالة للإدارة:\n\n*نوع الرسالة:* ${feedbackType}\n*النص:* ${feedbackText}`;
-    window.open(`https://wa.me/966569663697?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://wa.me/966560301744?text=${encodeURIComponent(msg)}`, '_blank');
     setFeedbackText('');
   };
 
@@ -477,7 +477,7 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 justify-center pt-2">
-              <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
+              <a href="https://wa.me/966560301744" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
                 <MessageCircle size={20} /> واتساب
               </a>
               <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
@@ -687,7 +687,7 @@ export default function LandingPage() {
                         <span className="text-2xl font-black text-[#4A4A4A]">333 <RiyalSign size="0.7em" /></span>
                       </div>
                       <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!</p>
-                      <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة البرونزية بـ 299 ريال" target="_blank" rel="noreferrer"
+                      <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة البرونزية بـ 299 ريال" target="_blank" rel="noreferrer"
                         className="w-full py-3 rounded-xl bg-orange-100 text-orange-700 font-bold hover:bg-orange-600 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
                     </div>
                     <div className="bg-white rounded-[2rem] p-8 border-2 border-slate-300 shadow-xl flex flex-col relative overflow-hidden group">
@@ -701,7 +701,7 @@ export default function LandingPage() {
                         <span className="text-3xl font-black text-slate-700">808 <RiyalSign size="0.7em" /></span>
                       </div>
                       <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!</p>
-                      <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة الفضية بـ 699 ريال" target="_blank" rel="noreferrer"
+                      <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة الفضية بـ 699 ريال" target="_blank" rel="noreferrer"
                         className="w-full py-4 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-md">اشحن الآن</a>
                     </div>
                     <div className="bg-white rounded-[2rem] p-8 border border-amber-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
@@ -714,7 +714,7 @@ export default function LandingPage() {
                         <span className="text-2xl font-black text-[#4A4A4A]">1,202 <RiyalSign size="0.7em" /></span>
                       </div>
                       <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!</p>
-                      <a href="https://wa.me/966569663697?text=مرحباً، أرغب بشحن الباقة الذهبية بـ 999 ريال" target="_blank" rel="noreferrer"
+                      <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة الذهبية بـ 999 ريال" target="_blank" rel="noreferrer"
                         className="w-full py-3 rounded-xl bg-amber-100 text-amber-700 font-bold hover:bg-amber-500 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
                     </div>
                   </div>
@@ -778,7 +778,7 @@ export default function LandingPage() {
                             ))}
                           </ul>
                         </div>
-                        <a href={`https://wa.me/966569663697?text=${encodeURIComponent(activePkg.msg)}`}
+                        <a href={`https://wa.me/966560301744?text=${encodeURIComponent(activePkg.msg)}`}
                           target="_blank" rel="noreferrer"
                           className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-[#4A4A4A] font-black hover:bg-[#F8F5F2] hover:scale-105 transition-all shadow-xl">
                           <MessageCircle size={20} /> اطلب هذه الباقة الآن
@@ -870,7 +870,7 @@ export default function LandingPage() {
                                 </div>
                               )}
                             </div>
-                            <a href={`https://wa.me/966569663697?text=${encodeURIComponent(`مرحباً، أرغب بطباعة ${calcQty} صورة`)}`}
+                            <a href={`https://wa.me/966560301744?text=${encodeURIComponent(`مرحباً، أرغب بطباعة ${calcQty} صورة`)}`}
                               target="_blank" rel="noreferrer"
                               className="block w-full bg-[#4A4A4A] text-white text-center py-4 rounded-xl font-bold hover:bg-[#C5A059] transition-colors shadow-lg">اطلبي بهذا السعر</a>
                           </div>
@@ -1036,11 +1036,11 @@ export default function LandingPage() {
             <h3 className="font-black text-[#4A4A4A] mb-4">تواصل معنا</h3>
             <div className="flex gap-2 flex-wrap mb-6">
               {[
-                { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966569663697',                alt: 'WhatsApp' },
+                { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966560301744',                alt: 'WhatsApp' },
                 { id: 'instagram', icon: instagramIcon, url: 'https://www.instagram.com/art.moment26/',   alt: 'Instagram' },
                 { id: 'snapchat',  icon: snapchatIcon,  url: 'https://www.snapchat.com/add/omsayedkamal', alt: 'Snapchat' },
                 { id: 'tiktok',    icon: tiktokIcon,    url: 'https://www.tiktok.com/@art.moment26',      alt: 'TikTok' },
-                { id: 'telegram',  icon: telegramIcon,  url: 'https://t.me/+966569663697',                alt: 'Telegram' },
+                { id: 'telegram',  icon: telegramIcon,  url: 'https://t.me/+966560301744',                alt: 'Telegram' },
                 { id: 'gmail',     icon: gmailIcon,     url: 'mailto:art.moment26@gmail.com',             alt: 'Gmail' },
                 { id: 'linktree',  icon: linktreeIcon,  url: 'https://linktr.ee/Art_Moment',              alt: 'Linktree' },
               ].map(social => (
@@ -1256,7 +1256,7 @@ export default function LandingPage() {
       />
 
       {/* Floating WhatsApp button */}
-      <a href="https://wa.me/966569663697" target="_blank" rel="noreferrer"
+      <a href="https://wa.me/966560301744" target="_blank" rel="noreferrer"
         className="fixed bottom-6 left-6 z-40 bg-[#25D366] hover:bg-[#128C7E] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group border-4 border-white">
         <MessageCircle size={28} />
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-bold">تواصل معنا</span>

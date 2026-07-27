@@ -279,7 +279,7 @@ export default function ProductManagement() {
 
   /* ══════════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-[#F8F5F2] font-sans text-[#4A4A4A]" dir="rtl">
+    <div className="min-h-screen bg-[#F8F5F2] font-[Tajawal] text-[#4A4A4A]" dir="rtl">
 
       {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-3xl border border-[#D9A3AA]/20 shadow-sm">

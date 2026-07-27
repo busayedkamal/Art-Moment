@@ -288,7 +288,7 @@ export default function Reports() {
     const targetCustomer = eligibleCustomers[0];
     const savings = ((targetCustomer.totalPhotos * settings.photo_4x6_price) + (targetCustomer.totalA4 * settings.a4_price)).toFixed(0);
 
-    const msg = `أهلاً بك عميلنا العزيز ${targetCustomer.name} 👋\nنفتقدك في لحظة فن! 🎨\n\nلقد طبعنا لك مسبقاً أكثر من ${targetCustomer.totalPhotos} صورة، ووفرت معنا أكثر من ${savings} ريال.\n\nرجعنا لك بعرض خاص لفترة محدودة:\nاطبع 50 صورة بـ 49 ريال فقط بدلاً من 100 ريال! 🎁\n\nللطلب أرسل صورك الآن:\nhttps://wa.me/966569663697`;
+    const msg = `أهلاً بك عميلنا العزيز ${targetCustomer.name} 👋\nنفتقدك في لحظة فن! 🎨\n\nلقد طبعنا لك مسبقاً أكثر من ${targetCustomer.totalPhotos} صورة، ووفرت معنا أكثر من ${savings} ريال.\n\nرجعنا لك بعرض خاص لفترة محدودة:\nاطبع 50 صورة بـ 49 ريال فقط بدلاً من 100 ريال! 🎁\n\nللطلب أرسل صورك الآن:\nhttps://wa.me/966560301744`;
     
     navigator.clipboard.writeText(msg);
     toast.success(`تم نسخ رسالة العرض للعميل ${targetCustomer.name}! يمكنك لصقها في الواتساب.`);

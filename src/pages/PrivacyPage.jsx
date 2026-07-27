@@ -399,7 +399,7 @@ export default function PrivacyPage() {
               </a>
 
               <a
-                href="https://wa.me/966569663697"
+                href="https://wa.me/966560301744"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-colors group"
@@ -407,7 +407,7 @@ export default function PrivacyPage() {
                 <Phone size={20} className="text-[#C5A059] shrink-0" />
                 <div>
                   <p className="text-[10px] text-white/40 font-bold uppercase tracking-wide">واتساب</p>
-                  <p className="text-sm font-bold group-hover:text-[#C5A059] transition-colors">0569663697</p>
+                  <p className="text-sm font-bold group-hover:text-[#C5A059] transition-colors">0560301744</p>
                 </div>
               </a>
 

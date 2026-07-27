@@ -2,6 +2,8 @@
 -- Customer matching, stock reservation, order creation, items, and audit logging
 -- all run in one PostgreSQL transaction.
 
+begin;
+
 alter table public.customers
   add column if not exists account_origin text not null default 'self_signup',
   add column if not exists account_claimed_at timestamptz,
@@ -34,7 +36,7 @@ returns text
 language sql
 immutable
 set search_path = public
-as $$
+as $normalize_phone$
   select case
     when digits ~ '^009665[0-9]{8}$' then '0' || right(digits, 9)
     when digits ~ '^9665[0-9]{8}$' then '0' || right(digits, 9)
@@ -45,7 +47,7 @@ as $$
   from (
     select regexp_replace(coalesce(value, ''), '\D', '', 'g') as digits
   ) normalized;
-$$;
+$normalize_phone$;
 
 create or replace function public.admin_create_store_order(
   p_customer jsonb,
@@ -58,7 +60,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $admin_manual_order$
 declare
   requested_customer_id uuid;
   phone_customer_id uuid;
@@ -486,10 +488,12 @@ begin
     'customer_pin', tracking_pin
   );
 end;
-$$;
+$admin_manual_order$;
 
 revoke all on function public.normalize_customer_phone(text) from public;
 revoke all on function public.admin_create_store_order(jsonb, jsonb, jsonb, uuid, text) from public;
 
 grant execute on function public.admin_create_store_order(jsonb, jsonb, jsonb, uuid, text)
 to authenticated, service_role;
+
+commit;

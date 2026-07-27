@@ -73,6 +73,9 @@ const ERROR_MESSAGES = {
   amount_paid_exceeds_total: 'المبلغ المدفوع أكبر من إجمالي الطلب.',
   invalid_order_status: 'حالة الطلب غير متاحة عند الإنشاء.',
   invalid_payment_status: 'حالة الدفع غير صحيحة.',
+  manual_order_setup_required: 'إعداد قاعدة بيانات الطلب اليدوي غير مكتمل. شغّل ملف SQL الخاص بتوحيد العملاء والطلبات اليدوية.',
+  manual_order_schema_outdated: 'بنية جداول الطلب اليدوي قديمة وتحتاج تشغيل آخر ملف ترحيل SQL.',
+  manual_order_constraint_failed: 'تعارضت بيانات الطلب مع أحد قيود قاعدة البيانات. راجع بيانات العميل وحالة الطلب.',
   manual_order_failed: 'تعذر إنشاء الطلب اليدوي. لم يتم حفظ أي جزء منه.',
 };
 
@@ -110,6 +113,81 @@ function getFirstAddress(customer) {
   return addresses[0] || null;
 }
 
+function getWalletCustomerName(notes) {
+  const value = String(notes || '').trim();
+  const match = value.match(/اسم العميل\s*:\s*(.+)/i);
+  return match?.[1]?.trim() || '';
+}
+
+function buildUnifiedCustomerDirectory(storeCustomers, printOrders, wallets) {
+  const directory = new Map();
+
+  (storeCustomers || []).forEach((customer) => {
+    const phone = normalizePhone(customer.phone);
+    if (!/^05\d{8}$/.test(phone)) return;
+    directory.set(phone, {
+      ...customer,
+      phone,
+      customer_key: `store_${customer.id}`,
+      customer_source: 'store',
+    });
+  });
+
+  (printOrders || []).forEach((order) => {
+    const phone = normalizePhone(order.phone);
+    if (!/^05\d{8}$/.test(phone)) return;
+    const existing = directory.get(phone);
+    if (existing) {
+      if (!existing.name && order.customer_name) existing.name = order.customer_name;
+      return;
+    }
+    directory.set(phone, {
+      id: null,
+      name: order.customer_name || 'عميل طباعة',
+      phone,
+      email: '',
+      preferred_contact_method: 'whatsapp',
+      marketing_opt_in: false,
+      saved_addresses: [],
+      admin_tags: ['عميل طباعة'],
+      customer_key: `print_${phone}`,
+      customer_source: 'printing',
+    });
+  });
+
+  (wallets || []).forEach((wallet) => {
+    const phone = normalizePhone(wallet.phone);
+    if (!/^05\d{8}$/.test(phone)) return;
+    const existing = directory.get(phone);
+    const walletName = getWalletCustomerName(wallet.notes);
+    if (existing) {
+      existing.subscription_code = wallet.subscription_code || existing.subscription_code || null;
+      if ((!existing.name || existing.name === 'عميل طباعة') && walletName) existing.name = walletName;
+      if ((!existing.saved_addresses || existing.saved_addresses.length === 0) && wallet.address) {
+        existing.saved_addresses = [{ city: '', district: '', street: wallet.address }];
+      }
+      return;
+    }
+    directory.set(phone, {
+      id: null,
+      name: walletName || 'عميل محفظة',
+      phone,
+      email: '',
+      preferred_contact_method: 'whatsapp',
+      marketing_opt_in: false,
+      saved_addresses: wallet.address ? [{ city: '', district: '', street: wallet.address }] : [],
+      admin_tags: ['عميل محفظة'],
+      subscription_code: wallet.subscription_code || null,
+      customer_key: `wallet_${phone}`,
+      customer_source: 'wallet',
+    });
+  });
+
+  return [...directory.values()].sort((left, right) => (
+    String(left.name || '').localeCompare(String(right.name || ''), 'ar')
+  ));
+}
+
 async function getFunctionErrorCode(error) {
   try {
     const body = await error?.context?.clone?.().json?.();
@@ -138,7 +216,7 @@ export default function ManualStoreOrder() {
   const fetchData = async () => {
     setLoading(true);
     setLoadErrors({ customers: '', products: '' });
-    const [customersResult, productsResult] = await Promise.all([
+    const [customersResult, productsResult, printOrdersResult, walletsResult] = await Promise.all([
       supabase
         .from('customers')
         .select('id, name, email, phone, preferred_contact_method, marketing_opt_in, saved_addresses, admin_tags')
@@ -149,18 +227,35 @@ export default function ManualStoreOrder() {
         .select('id, name, description, price, category, image, in_stock, stock_quantity')
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true }),
+      supabase
+        .from('orders')
+        .select('id, customer_name, phone, created_at')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('wallets')
+        .select('id, phone, address, notes, subscription_code'),
     ]);
 
+    const customerSourceErrors = [
+      customersResult.error,
+      printOrdersResult.error,
+      walletsResult.error,
+    ].filter(Boolean);
     const nextErrors = {
-      customers: customersResult.error ? 'تعذر تحميل بيانات العملاء.' : '',
+      customers: customerSourceErrors.length === 3 ? 'تعذر تحميل بيانات العملاء.' : '',
       products: productsResult.error ? 'تعذر تحميل منتجات المتجر.' : '',
     };
 
-    if (!customersResult.error) {
-      setCustomers(customersResult.data || []);
-    } else {
-      console.error('Manual store order customers load failed:', customersResult.error);
+    if (customerSourceErrors.length < 3) {
+      setCustomers(buildUnifiedCustomerDirectory(
+        customersResult.data || [],
+        printOrdersResult.data || [],
+        walletsResult.data || [],
+      ));
     }
+    if (customersResult.error) console.error('Store customers load failed:', customersResult.error);
+    if (printOrdersResult.error) console.error('Print customers load failed:', printOrdersResult.error);
+    if (walletsResult.error) console.error('Wallet customers load failed:', walletsResult.error);
 
     if (!productsResult.error) {
       setProducts(productsResult.data || []);
@@ -185,8 +280,9 @@ export default function ManualStoreOrder() {
     if (query.length < 2 && phoneQuery.length < 3) return [];
 
     return customers.filter((customer) => {
-      const haystack = `${customer.name || ''} ${customer.email || ''}`.toLowerCase();
-      return haystack.includes(query) || normalizePhone(customer.phone).includes(phoneQuery);
+      const haystack = `${customer.name || ''} ${customer.email || ''} ${customer.subscription_code || ''}`.toLowerCase();
+      const matchesPhone = phoneQuery.length >= 3 && normalizePhone(customer.phone).includes(phoneQuery);
+      return haystack.includes(query) || matchesPhone;
     }).slice(0, 6);
   }, [customerSearch, customers]);
 
@@ -435,7 +531,7 @@ export default function ManualStoreOrder() {
                   <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[#D9A3AA]/20 bg-white shadow-xl">
                     {customerResults.map((customer) => (
                       <button
-                        key={customer.id}
+                        key={customer.id || customer.customer_key}
                         type="button"
                         onClick={() => selectCustomer(customer)}
                         className="flex w-full items-center justify-between gap-3 border-b border-[#D9A3AA]/10 px-4 py-3 text-right transition-colors last:border-0 hover:bg-[#F8F5F2]"

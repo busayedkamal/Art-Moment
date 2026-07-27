@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
 
       const { data: existingPhone, error: phoneError } = await supabase
         .from('customers')
-        .select('id')
+        .select('id, name, email, phone, password_hash, marketing_opt_in')
         .in('phone', phoneVariants(phone))
         .limit(1)
         .maybeSingle();
@@ -240,17 +240,53 @@ Deno.serve(async (req) => {
 
       const { data: existingEmail, error: emailError } = await supabase
         .from('customers')
-        .select('id')
+        .select('id, name, email, phone, password_hash, marketing_opt_in')
         .ilike('email', email)
         .limit(1)
         .maybeSingle();
       if (emailError) throw emailError;
 
-      if (existingPhone || existingEmail) {
+      if (existingPhone && existingEmail && existingPhone.id !== existingEmail.id) {
         return jsonResponse({ error: 'customer_exists' }, 409);
       }
 
       const passwordHash = await createPasswordHash(password);
+      const claimableCustomer = existingPhone || existingEmail;
+
+      if (claimableCustomer) {
+        const storedPhone = normalizeSaudiPhone(claimableCustomer.phone);
+        const storedEmail = normalizeEmail(claimableCustomer.email);
+        const hasIdentityConflict = (
+          (storedPhone && storedPhone !== phone) ||
+          (storedEmail && storedEmail !== email)
+        );
+
+        if (claimableCustomer.password_hash || hasIdentityConflict) {
+          return jsonResponse({ error: 'customer_exists' }, 409);
+        }
+
+        const { data: claimedCustomer, error: claimError } = await supabase
+          .from('customers')
+          .update({
+            name: name || claimableCustomer.name,
+            email,
+            phone,
+            password_hash: passwordHash,
+            marketing_opt_in: Boolean(claimableCustomer.marketing_opt_in) || marketingOptIn,
+            account_claimed_at: new Date().toISOString(),
+          })
+          .eq('id', claimableCustomer.id)
+          .is('password_hash', null)
+          .select('id, name, email, phone, marketing_opt_in')
+          .single();
+
+        if (claimError) throw claimError;
+        return jsonResponse({
+          customer: safeCustomer(claimedCustomer),
+          sessionToken: await createCustomerSessionToken(String(claimedCustomer.id)),
+        });
+      }
+
       const { data: newCustomer, error: insertError } = await supabase
         .from('customers')
         .insert({
@@ -259,6 +295,7 @@ Deno.serve(async (req) => {
           phone,
           password_hash: passwordHash,
           marketing_opt_in: marketingOptIn,
+          account_claimed_at: new Date().toISOString(),
         })
         .select('id, name, email, phone, marketing_opt_in')
         .single();

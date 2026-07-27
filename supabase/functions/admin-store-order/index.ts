@@ -30,7 +30,13 @@ async function getAdminActor(req: Request, supabase: ServiceClient) {
   return isAdmin ? { id: user.id, email: userEmail } : null;
 }
 
-function getDatabaseErrorCode(message: string) {
+function getDatabaseErrorCode(error: Record<string, unknown>) {
+  const message = [
+    error.code,
+    error.message,
+    error.details,
+    error.hint,
+  ].filter(Boolean).join(' ');
   const knownCodes = [
     'not_authorized',
     'invalid_manual_order',
@@ -52,7 +58,18 @@ function getDatabaseErrorCode(message: string) {
     'invalid_payment_status',
   ];
 
-  return knownCodes.find((code) => message.includes(code)) || 'manual_order_failed';
+  const knownCode = knownCodes.find((code) => message.includes(code));
+  if (knownCode) return knownCode;
+  if (/PGRST202|admin_create_store_order.*schema cache|function .*admin_create_store_order.*does not exist/i.test(message)) {
+    return 'manual_order_setup_required';
+  }
+  if (/42P01|42703|42883|schema cache|column .* does not exist|relation .* does not exist/i.test(message)) {
+    return 'manual_order_schema_outdated';
+  }
+  if (/23502|23503|23505|23514|constraint/i.test(message)) {
+    return 'manual_order_constraint_failed';
+  }
+  return 'manual_order_failed';
 }
 
 Deno.serve(async (req) => {
@@ -88,11 +105,13 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error('admin-store-order database error:', error);
-      const code = getDatabaseErrorCode(String(error.message || ''));
+      const code = getDatabaseErrorCode(error as unknown as Record<string, unknown>);
       const status = ['product_unavailable', 'product_out_of_stock', 'customer_identity_conflict', 'customer_phone_exists', 'customer_email_exists']
         .includes(code)
         ? 409
-        : code === 'manual_order_failed'
+        : ['manual_order_setup_required', 'manual_order_schema_outdated'].includes(code)
+          ? 503
+          : code === 'manual_order_failed'
           ? 500
           : 400;
       return jsonResponse({ error: code }, status);

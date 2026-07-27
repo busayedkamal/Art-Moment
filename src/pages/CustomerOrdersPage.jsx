@@ -766,7 +766,7 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
           <ReturnRequestPanel order={order} onSubmitted={onReturnSubmitted} returnWindowDays={returnWindowDays} />
 
           <a
-            href={`https://wa.me/966569663697?text=${encodeURIComponent(`مرحباً، أحتاج مساعدة بخصوص طلب المتجر #${order.shortId}`)}`}
+            href={`https://wa.me/966560301744?text=${encodeURIComponent(`مرحباً، أحتاج مساعدة بخصوص طلب المتجر #${order.shortId}`)}`}
             target="_blank"
             rel="noreferrer"
             className="w-full py-4 rounded-2xl bg-[#25D366] text-white font-black flex items-center justify-center gap-2 shadow-lg hover:bg-[#128C7E] transition-colors"
