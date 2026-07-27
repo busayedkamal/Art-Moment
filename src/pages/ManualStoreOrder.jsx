@@ -125,6 +125,7 @@ export default function ManualStoreOrder() {
   const [submitting, setSubmitting] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [loadErrors, setLoadErrors] = useState({ customers: '', products: '' });
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerForm, setCustomerForm] = useState(CUSTOMER_INITIAL);
@@ -136,30 +137,42 @@ export default function ManualStoreOrder() {
 
   const fetchData = async () => {
     setLoading(true);
-    try {
-      const [customersResult, productsResult] = await Promise.all([
-        supabase
-          .from('customers')
-          .select('id, name, email, phone, preferred_contact_method, marketing_opt_in, saved_addresses, admin_tags')
-          .order('created_at', { ascending: false })
-          .limit(500),
-        supabase
-          .from('products')
-          .select('id, name, description, price, category, image, in_stock, stock_quantity')
-          .order('priority', { ascending: true })
-          .order('name', { ascending: true }),
-      ]);
+    setLoadErrors({ customers: '', products: '' });
+    const [customersResult, productsResult] = await Promise.all([
+      supabase
+        .from('customers')
+        .select('id, name, email, phone, preferred_contact_method, marketing_opt_in, saved_addresses, admin_tags')
+        .order('created_at', { ascending: false })
+        .limit(500),
+      supabase
+        .from('products')
+        .select('id, name, description, price, category, image, in_stock, stock_quantity')
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true }),
+    ]);
 
-      if (customersResult.error) throw customersResult.error;
-      if (productsResult.error) throw productsResult.error;
+    const nextErrors = {
+      customers: customersResult.error ? 'تعذر تحميل بيانات العملاء.' : '',
+      products: productsResult.error ? 'تعذر تحميل منتجات المتجر.' : '',
+    };
+
+    if (!customersResult.error) {
       setCustomers(customersResult.data || []);
-      setProducts(productsResult.data || []);
-    } catch (error) {
-      console.error(error);
-      toast.error('تعذر تحميل العملاء ومنتجات المتجر');
-    } finally {
-      setLoading(false);
+    } else {
+      console.error('Manual store order customers load failed:', customersResult.error);
     }
+
+    if (!productsResult.error) {
+      setProducts(productsResult.data || []);
+    } else {
+      console.error('Manual store order products load failed:', productsResult.error);
+    }
+
+    setLoadErrors(nextErrors);
+    if (nextErrors.customers || nextErrors.products) {
+      toast.error([nextErrors.customers, nextErrors.products].filter(Boolean).join(' '));
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -436,6 +449,19 @@ export default function ManualStoreOrder() {
                     ))}
                   </div>
                 )}
+                {loadErrors.customers && (
+                  <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
+                    <span>{loadErrors.customers}</span>
+                    <button type="button" onClick={fetchData} className="inline-flex shrink-0 items-center gap-1 font-black">
+                      <RefreshCw size={13} /> إعادة المحاولة
+                    </button>
+                  </div>
+                )}
+                {!loadErrors.customers && customerSearch.trim().length >= 2 && customerResults.length === 0 && (
+                  <p className="mt-2 text-xs font-bold text-[#4A4A4A]/45">
+                    لا يوجد عميل مطابق. يمكنك إدخال بياناته كعميل جديد في الحقول أدناه.
+                  </p>
+                )}
               </div>
             )}
 
@@ -561,7 +587,18 @@ export default function ManualStoreOrder() {
             </div>
 
             {visibleProducts.length === 0 && (
-              <div className="py-10 text-center text-sm font-bold text-[#4A4A4A]/40">لا توجد منتجات مطابقة.</div>
+              <div className="py-10 text-center text-sm font-bold text-[#4A4A4A]/40">
+                {loadErrors.products ? (
+                  <>
+                    <p className="text-red-500">{loadErrors.products}</p>
+                    <button type="button" onClick={fetchData} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#D9A3AA]/20 bg-white px-3 py-2 text-xs font-black text-[#4A4A4A]">
+                      <RefreshCw size={14} /> إعادة المحاولة
+                    </button>
+                  </>
+                ) : (
+                  'لا توجد منتجات مطابقة.'
+                )}
+              </div>
             )}
 
             {orderLines.length > 0 && (
