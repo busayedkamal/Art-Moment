@@ -161,6 +161,9 @@ function ReturnStatusBadge({ status }) {
 
 function getStatusUpdateErrorMessage(error) {
   const message = String(error?.message || '');
+  if (error?.code === '42804' || /order_status_enum/i.test(message)) {
+    return 'يلزم تشغيل تحديث حالات طلبات المتجر في قاعدة البيانات';
+  }
   if (/product_out_of_stock/i.test(message)) return 'لا توجد كمية كافية لإعادة فتح الطلب';
   if (/product_unavailable/i.test(message)) return 'أحد منتجات الطلب لم يعد متاحاً في المخزون';
   if (/invalid_status_transition/i.test(message)) return 'هذا الانتقال غير متاح للحالة الحالية';

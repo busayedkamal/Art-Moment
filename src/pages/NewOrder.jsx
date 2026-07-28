@@ -48,6 +48,7 @@ export default function NewOrder() {
   const [checkingFriendship, setCheckingFriendship] = useState(false);
   const [friendshipEligibility, setFriendshipEligibility] = useState(null);
   const [friendshipCheckError, setFriendshipCheckError] = useState('');
+  const [friendshipOwners, setFriendshipOwners] = useState([]);
 
   const [previousCustomers, setPreviousCustomers] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
@@ -66,6 +67,7 @@ export default function NewOrder() {
   const orderData = watch();
   const phoneWatcher = watch('phone');
   const nameWatcher = watch('customerName');
+  const friendshipCodeWatcher = watch('friendshipCode');
   const currentCity = watch('source');
   const [a4Qty, photo4x6Qty, deliveryFee, deposit, manualDiscount] = watch([
     'a4Qty', 'photo4x6Qty', 'deliveryFee', 'deposit', 'manualDiscount'
@@ -109,6 +111,54 @@ export default function NewOrder() {
           });
           setPreviousCustomers(uniqueCustomers);
         }
+
+        const [
+          { data: friendshipWallets, error: friendshipWalletsError },
+          { data: customerDirectory, error: customerDirectoryError },
+        ] = await Promise.all([
+          supabase
+            .from('wallets')
+            .select('phone, subscription_code, customer_id')
+            .not('subscription_code', 'is', null),
+          supabase
+            .from('customers')
+            .select('id, name, phone'),
+        ]);
+
+        if (friendshipWalletsError || customerDirectoryError) {
+          console.error('Friendship code directory fetch failed:', friendshipWalletsError || customerDirectoryError);
+        } else {
+          const customerNameById = new Map(
+            (customerDirectory || []).map((customer) => [customer.id, customer.name || 'عميلة مسجلة'])
+          );
+          const customerNameByPhone = new Map();
+
+          (customerDirectory || []).forEach((customer) => {
+            const phone = normalizePhone(customer.phone);
+            if (phone && customer.name) customerNameByPhone.set(phone, customer.name);
+          });
+          (customersData || []).forEach((customer) => {
+            const phone = normalizePhone(customer.phone);
+            if (phone && customer.customer_name && !customerNameByPhone.has(phone)) {
+              customerNameByPhone.set(phone, customer.customer_name);
+            }
+          });
+
+          const ownersByCode = new Map();
+          (friendshipWallets || []).forEach((walletRow) => {
+            const code = String(walletRow.subscription_code || '').trim();
+            if (!/^\d{4}$/.test(code) || ownersByCode.has(code)) return;
+
+            const name = customerNameById.get(walletRow.customer_id)
+              || customerNameByPhone.get(normalizePhone(walletRow.phone))
+              || 'عميلة مسجلة';
+            ownersByCode.set(code, { code, name });
+          });
+
+          setFriendshipOwners(
+            Array.from(ownersByCode.values()).sort((a, b) => a.code.localeCompare(b.code, 'ar'))
+          );
+        }
       } catch { toast.error('فشل جلب البيانات'); } finally { setLoadingSettings(false); }
     }
     fetchData();
@@ -138,6 +188,16 @@ export default function NewOrder() {
     setShowSuggestions(null);
     toast.success('تم اختيار بيانات العميل');
   };
+
+  const friendshipCodeQuery = String(friendshipCodeWatcher || '').trim();
+  const matchingFriendshipOwners = friendshipCodeQuery
+    ? friendshipOwners
+      .filter((owner) => owner.code.startsWith(friendshipCodeQuery))
+      .slice(0, 8)
+    : [];
+  const selectedFriendshipOwner = friendshipOwners.find(
+    (owner) => owner.code === friendshipCodeQuery
+  ) || null;
 
   // جلب بيانات المحفظة ورصيد الباقات عند تغيير رقم الجوال
   useEffect(() => {
@@ -595,9 +655,45 @@ export default function NewOrder() {
                     className="w-full pr-14 pl-4 py-3.5 bg-[#C5A059]/5 border-2 border-[#C5A059]/20 rounded-2xl text-sm font-black tracking-widest placeholder-[#C5A059]/45 outline-none focus:border-[#C5A059] focus:bg-white transition-all"
                     placeholder="كود الصداقة (اختياري)"
                     autoComplete="off"
+                    onFocus={() => setShowSuggestions('friendship')}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setShowSuggestions('friendship');
+                    }}
                   />
+                  {showSuggestions === 'friendship' && friendshipCodeQuery && (
+                    <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-[#C5A059]/20 bg-white shadow-xl animate-in fade-in slide-in-from-top-2">
+                      {matchingFriendshipOwners.length > 0 ? matchingFriendshipOwners.map((owner) => (
+                        <button
+                          key={owner.code}
+                          type="button"
+                          onClick={() => {
+                            setValue('friendshipCode', owner.code, { shouldValidate: true });
+                            setShowSuggestions(null);
+                            toast.success(`تم اختيار كود ${owner.name}`);
+                          }}
+                          className="flex w-full items-center justify-between gap-3 border-b border-[#C5A059]/10 px-4 py-3 text-right transition-colors last:border-0 hover:bg-[#C5A059]/10"
+                        >
+                          <span className="min-w-0 truncate text-xs font-black text-[#4A4A4A]">
+                            {owner.name}
+                          </span>
+                          <span className="shrink-0 rounded-lg bg-[#C5A059]/10 px-2.5 py-1 font-mono text-sm font-black tracking-wider text-[#9E7D35]" dir="ltr">
+                            {owner.code}
+                          </span>
+                        </button>
+                      )) : (
+                        <p className="px-4 py-3 text-xs font-bold text-red-500">
+                          لا يوجد رقم اشتراك يبدأ بهذه الأرقام.
+                        </p>
+                      )}
+                    </div>
+                  )}
                   {errors.friendshipCode ? (
                     <p className="text-xs text-red-500 mt-1 pr-1">{errors.friendshipCode.message}</p>
+                  ) : selectedFriendshipOwner ? (
+                    <p className="mt-1 flex items-center gap-1 pr-1 text-[10px] font-black text-emerald-600">
+                      <Gift size={11} /> صاحبة الكود: {selectedFriendshipOwner.name}
+                    </p>
                   ) : (
                     <p className="mt-1 pr-1 text-[10px] font-bold text-[#C5A059]">
                       عميل جديد مؤهل. استخدمي كوبون WELCOME لخصم 5%.

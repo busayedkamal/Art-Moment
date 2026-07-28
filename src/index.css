@@ -51,6 +51,7 @@ body {
 @layer components {
 
   .art-page {
+    font-family: 'Tajawal', system-ui, -apple-system, "Segoe UI", sans-serif;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(248,245,242,0.96) 34%, #F8F5F2 100%),
       repeating-linear-gradient(135deg, rgba(197,160,89,0.035) 0 1px, transparent 1px 22px);

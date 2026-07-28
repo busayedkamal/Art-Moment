@@ -9,7 +9,7 @@ export default {
 
       // ─── خطوط لحظة فن ──────────────────────────────
       fontFamily: {
-        sans: ['Cairo', 'sans-serif'],
+        sans: ['Tajawal', 'system-ui', 'sans-serif'],
         ibm:  ['IBM Plex Sans Arabic', 'sans-serif'],
       },
 

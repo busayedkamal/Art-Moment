@@ -153,7 +153,7 @@ begin
 
   update public.store_orders
   set
-    status = p_status,
+    status = p_status::public.order_status_enum,
     tracking_number = case
       when p_status = 'shipped' and nullif(trim(coalesce(p_tracking_number, '')), '') is not null
         then trim(p_tracking_number)
