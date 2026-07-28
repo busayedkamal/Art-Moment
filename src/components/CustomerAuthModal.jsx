@@ -19,6 +19,7 @@ import {
   normalizeCustomerPhone,
   saveCustomerSession,
 } from '../utils/customerSession';
+import { trackStoreEvent } from '../utils/storeAnalytics';
 
 const errorMessages = {
   customer_exists: 'رقم الجوال أو البريد الإلكتروني مسجل مسبقاً. سجل الدخول بدلاً من إنشاء حساب جديد.',
@@ -138,6 +139,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
       sessionToken: data?.sessionToken,
     }, { remember: formData.rememberMe });
 
+    trackStoreEvent('login', { mode: 'login' });
     toast.success('مرحباً بعودتك إلى لحظة فن.');
     onClose();
     window.location.href = redirectTo;
@@ -183,6 +185,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
       sessionToken: data?.sessionToken,
     }, { remember: formData.rememberMe });
 
+    trackStoreEvent('login', { mode: 'signup' });
     toast.success('تم إنشاء حسابك بنجاح.');
     onClose();
     window.location.href = redirectTo;

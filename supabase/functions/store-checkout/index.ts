@@ -27,6 +27,60 @@ function getStockRpcErrorMessage(error: { message?: string } | null) {
   return 'stock_reservation_failed';
 }
 
+function normalizeProductOptions(rawOptions: unknown) {
+  if (!Array.isArray(rawOptions)) return [];
+  return rawOptions.map((rawOption, optionIndex) => {
+    const option = rawOption && typeof rawOption === 'object'
+      ? rawOption as Record<string, unknown>
+      : {};
+    const id = String(option.id || `option_${optionIndex + 1}`).trim();
+    const values = Array.isArray(option.values)
+      ? option.values.map((rawValue) => {
+        const valueObject = rawValue && typeof rawValue === 'object'
+          ? rawValue as Record<string, unknown>
+          : { value: rawValue, label: rawValue };
+        const value = String(valueObject.value || valueObject.label || '').trim();
+        return {
+          value,
+          priceDelta: Number(valueObject.priceDelta || valueObject.price_delta || 0),
+        };
+      }).filter((value) => value.value)
+      : [];
+    return {
+      id,
+      required: option.required !== false,
+      values,
+    };
+  }).filter((option) => option.id && option.values.length > 0);
+}
+
+function resolveProductOptions(
+  rawOptions: unknown,
+  rawSelections: unknown,
+) {
+  const productOptions = normalizeProductOptions(rawOptions);
+  const selections = rawSelections && typeof rawSelections === 'object' && !Array.isArray(rawSelections)
+    ? rawSelections as Record<string, unknown>
+    : {};
+  const normalizedSelections: Record<string, string> = {};
+  let priceDelta = 0;
+
+  for (const option of productOptions) {
+    const selectedValue = String(selections[option.id] || '').trim();
+    const matchedValue = option.values.find((value) => value.value === selectedValue);
+    if (option.required && !matchedValue) throw new Error('invalid_product_options');
+    if (matchedValue) {
+      normalizedSelections[option.id] = matchedValue.value;
+      priceDelta += Number(matchedValue.priceDelta || 0);
+    }
+  }
+
+  return {
+    selections: normalizedSelections,
+    priceDelta,
+  };
+}
+
 async function sendWhatsAppConfirmation(
   order: Record<string, unknown>,
   customerPin: string,
@@ -127,6 +181,9 @@ Deno.serve(async (req) => {
       .map((item: Record<string, unknown>) => ({
         product_id: Number(item.id),
         quantity: Math.max(1, Number(item.qty || item.quantity || 1)),
+        selected_options: item.selectedOptions && typeof item.selectedOptions === 'object'
+          ? item.selectedOptions
+          : {},
       }))
       .filter((item: { product_id: number; quantity: number }) => Number.isFinite(item.product_id) && item.quantity > 0);
 
@@ -163,7 +220,7 @@ Deno.serve(async (req) => {
     const productIds = normalizedItems.map((item: { product_id: number }) => item.product_id);
     const { data: products, error: productsError } = await supabase
       .from('products')
-      .select('id, name, price, in_stock, stock_quantity')
+      .select('id, name, price, in_stock, stock_quantity, product_options')
       .in('id', productIds);
 
     if (productsError) throw productsError;
@@ -171,7 +228,11 @@ Deno.serve(async (req) => {
     const productById = new Map((products || []).map((product: Record<string, unknown>) => [String(product.id), product]));
     let subtotal = 0;
 
-    const orderItems = normalizedItems.map((item: { product_id: number; quantity: number }) => {
+    const orderItems = normalizedItems.map((item: {
+      product_id: number;
+      quantity: number;
+      selected_options: Record<string, unknown>;
+    }) => {
       const product = productById.get(String(item.product_id));
       if (!product || product.in_stock === false) throw new Error('product_unavailable');
 
@@ -180,12 +241,14 @@ Deno.serve(async (req) => {
         throw new Error('product_out_of_stock');
       }
 
-      const price = Number(product.price || 0);
+      const resolvedOptions = resolveProductOptions(product.product_options, item.selected_options);
+      const price = Number((Number(product.price || 0) + resolvedOptions.priceDelta).toFixed(2));
       subtotal += price * item.quantity;
       return {
         product_id: item.product_id,
         quantity: item.quantity,
         price_at_time: price,
+        selected_options: resolvedOptions.selections,
       };
     });
 

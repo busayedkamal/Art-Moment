@@ -1,41 +1,51 @@
 // src/App.jsx
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import AuthProvider, { useAuth } from './contexts/AuthContext'
 
 // الصفحة الرئيسية
-import LandingPage from './LandingPage.jsx'
+const LandingPage = lazy(() => import('./LandingPage.jsx'))
 
 // الصفحات العامة
-import StoreIndex from './pages/StoreIndex.jsx'
-import TrackOrderPage from './pages/TrackOrderPage.jsx'
-import PrivacyPage from './pages/PrivacyPage.jsx'
-import StoreCart from './pages/StoreCart.jsx'
-import CustomerOrdersPage from './pages/CustomerOrdersPage.jsx'
-import CustomerAccountPage from './pages/CustomerAccountPage.jsx'
-import StorePaymentResult from './pages/StorePaymentResult.jsx'
-import MarketingUnsubscribePage from './pages/MarketingUnsubscribePage.jsx'
-import ProductManagement from './pages/ProductManagement.jsx'
-import StoreOrdersManagement from './pages/StoreOrdersManagement.jsx'
-import ManualStoreOrder from './pages/ManualStoreOrder.jsx'
-import AdminNotifications from './pages/AdminNotifications.jsx'
-import AdminActivityLog from './pages/AdminActivityLog.jsx'
-import AdminActionTasks from './pages/AdminActionTasks.jsx'
+const StoreIndex = lazy(() => import('./pages/StoreIndex.jsx'))
+const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage.jsx'))
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage.jsx'))
+const StoreCart = lazy(() => import('./pages/StoreCart.jsx'))
+const ProductDetailsPage = lazy(() => import('./pages/ProductDetailsPage.jsx'))
+const CustomerOrdersPage = lazy(() => import('./pages/CustomerOrdersPage.jsx'))
+const CustomerAccountPage = lazy(() => import('./pages/CustomerAccountPage.jsx'))
+const StorePaymentResult = lazy(() => import('./pages/StorePaymentResult.jsx'))
+const MarketingUnsubscribePage = lazy(() => import('./pages/MarketingUnsubscribePage.jsx'))
+const ProductManagement = lazy(() => import('./pages/ProductManagement.jsx'))
+const StoreOrdersManagement = lazy(() => import('./pages/StoreOrdersManagement.jsx'))
+const ManualStoreOrder = lazy(() => import('./pages/ManualStoreOrder.jsx'))
+const AdminNotifications = lazy(() => import('./pages/AdminNotifications.jsx'))
+const AdminActivityLog = lazy(() => import('./pages/AdminActivityLog.jsx'))
+const AdminActionTasks = lazy(() => import('./pages/AdminActionTasks.jsx'))
+const StoreGrowthAnalytics = lazy(() => import('./pages/StoreGrowthAnalytics.jsx'))
 
 // صفحات لوحة التحكم
-import AdminLoginPage from './pages/AdminLoginPage.jsx'
-import Dashboard from './pages/Dashboard.jsx'
-import NewOrder from './pages/NewOrder.jsx'
-import Orders from './pages/Orders.jsx'
-import OrderDetails from './pages/OrderDetails.jsx'
-import Customers from './pages/Customers.jsx'
-import Reports from './pages/Reports.jsx'
-import Settings from './pages/Settings.jsx'
-import Expenses from './pages/Expenses.jsx' // 👈 1. هذا السطر كان ناقصاً (استدعاء الصفحة)
+const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage.jsx'))
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'))
+const NewOrder = lazy(() => import('./pages/NewOrder.jsx'))
+const Orders = lazy(() => import('./pages/Orders.jsx'))
+const OrderDetails = lazy(() => import('./pages/OrderDetails.jsx'))
+const Customers = lazy(() => import('./pages/Customers.jsx'))
+const Reports = lazy(() => import('./pages/Reports.jsx'))
+const Settings = lazy(() => import('./pages/Settings.jsx'))
+const Expenses = lazy(() => import('./pages/Expenses.jsx'))
 
 // الإطار العام
-import Layout from './components/layout/Layout.jsx'
+const Layout = lazy(() => import('./components/layout/Layout.jsx'))
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F5F2]">
+      <div className="w-9 h-9 border-4 border-[#D9A3AA]/25 border-t-[#D9A3AA] rounded-full animate-spin" />
+    </div>
+  )
+}
 
 // مكون حماية المسارات
 function ProtectedRoute({ children }) {
@@ -59,6 +69,7 @@ function AppRoutes() {
       <Route path="/track" element={<TrackOrderPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/store/cart" element={<StoreCart />} />
+      <Route path="/store/products/:productId" element={<ProductDetailsPage />} />
       <Route path="/store/payment/success" element={<StorePaymentResult />} />
       <Route path="/store/payment/failed" element={<StorePaymentResult />} />
       <Route path="/store/account" element={<CustomerAccountPage />} />
@@ -94,6 +105,7 @@ function AppRoutes() {
         <Route path="notifications" element={<AdminNotifications />} />
         <Route path="activity" element={<AdminActivityLog />} />
         <Route path="tasks" element={<AdminActionTasks />} />
+        <Route path="store-growth" element={<StoreGrowthAnalytics />} />
       </Route>
 
       <Route path="*" element={<div className="min-h-screen flex items-center justify-center text-xl font-bold text-slate-400">الصفحة غير موجودة 404</div>} />
@@ -105,7 +117,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <Suspense fallback={<PageLoader />}>
+          <AppRoutes />
+        </Suspense>
         <Toaster position="top-center" />
       </AuthProvider>
     </BrowserRouter>

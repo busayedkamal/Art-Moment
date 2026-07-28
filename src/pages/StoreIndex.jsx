@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { clearCustomerSession, getCustomerSession } from '../utils/customerSession';
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from '../utils/customerAuthPrompt';
+import { getCartLineKey, normalizeProductOptions } from '../utils/productOptions';
+import { trackStoreEvent } from '../utils/storeAnalytics';
 
 import logo from '../assets/logo-art-moment.svg';
 import fallbackLogo from '../assets/logo.png';
@@ -34,10 +36,14 @@ const fromDb = (p) => {
     sortOrder:   p.sort_order  ?? 0,
     stockQuantity,
     inStock:     (p.in_stock ?? true) && (stockQuantity === null || stockQuantity > 0),
+    productOptions: normalizeProductOptions(p.product_options),
+    galleryImages: Array.isArray(p.gallery_images) ? p.gallery_images.filter(Boolean) : [],
+    specifications: p.specifications && typeof p.specifications === 'object' ? p.specifications : {},
   };
 };
 
 export default function StoreIndex() {
+  const navigate = useNavigate();
   const [products, setProducts]             = useState([]);
   const [searchQ, setSearchQ]               = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -121,6 +127,7 @@ export default function StoreIndex() {
 
     const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
     setCart(savedCart);
+    trackStoreEvent('store_visit');
   }, [fetchProducts]);
 
   useEffect(() => {
@@ -160,6 +167,12 @@ export default function StoreIndex() {
   };
 
   const addToCart = (product) => {
+    if (product.productOptions?.length > 0) {
+      navigate(`/store/products/${product.id}`);
+      toast('اختاري خصائص المنتج أولاً');
+      return;
+    }
+
     const currentQty = getProductQty(product.id);
     if (!canAddProductToCart(product, currentQty)) {
       toast.error('وصلت إلى الكمية المتوفرة لهذا المنتج');
@@ -167,13 +180,19 @@ export default function StoreIndex() {
     }
 
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const cartKey = getCartLineKey(product.id);
+      const existing = prev.find(item => (
+        String(item.cartKey || getCartLineKey(item.id, item.selectedOptions)) === cartKey
+      ));
       if (existing) return prev.map(item => item.id === product.id ? { ...item, ...product, qty: item.qty + 1 } : item);
-      return [...prev, { ...product, qty: 1 }];
+      return [...prev, { ...product, cartKey, selectedOptions: {}, selectedOptionLabels: [], qty: 1 }];
     });
+    trackStoreEvent('add_to_cart', { productId: product.id, quantity: 1 });
   };
 
-  const getProductQty = (id) => cart.find(item => item.id === id)?.qty || 0;
+  const getProductQty = (id) => cart
+    .filter(item => String(item.id) === String(id))
+    .reduce((sum, item) => sum + Number(item.qty || 0), 0);
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   const uniqueCategories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
@@ -483,7 +502,7 @@ export default function StoreIndex() {
               return (
               <div
                 key={product.id}
-                onClick={() => { if (productAvailable) { setSelectedProduct(product); setIsModalOpen(true); } }}
+                onClick={() => { if (productAvailable) navigate(`/store/products/${product.id}`); }}
                 className={`art-product-card p-3 sm:p-4 lg:p-5 group flex flex-col relative overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500 ${productAvailable ? 'cursor-pointer' : 'opacity-80 cursor-not-allowed'}`}
                 style={{ animationDelay: `${Math.min(productIndex % (columnCount * 2), 5) * 70}ms` }}
               >
@@ -703,6 +722,13 @@ export default function StoreIndex() {
               >
                 <Plus size={20} /> إضافة إلى السلة
               </button>
+              <Link
+                to={`/store/products/${selectedProduct.id}`}
+                onClick={() => setIsModalOpen(false)}
+                className="mb-8 flex w-full items-center justify-center rounded-xl border border-[#C5A059]/25 bg-white py-3 text-sm font-black text-[#4A4A4A] hover:border-[#C5A059]"
+              >
+                عرض صفحة المنتج والتفاصيل
+              </Link>
 
               {/* Smart Recommendations */}
               {getRecommendations(selectedProduct).length > 0 && (

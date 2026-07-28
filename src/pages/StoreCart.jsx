@@ -12,6 +12,8 @@ import {
   getAvailableStock,
   normalizeStockQuantity,
 } from '../utils/productStock';
+import { getCartLineKey, getSelectedOptionLabels } from '../utils/productOptions';
+import { getStoreAnonymousId, trackStoreEvent } from '../utils/storeAnalytics';
 
 async function getFunctionError(error) {
   try {
@@ -42,13 +44,18 @@ export default function StoreCart() {
   const [rewardSummary, setRewardSummary] = useState(null);
   const [useRewardPoints, setUseRewardPoints] = useState(false);
   const [rewardPointsInput, setRewardPointsInput] = useState('');
+  const [cartHydrated, setCartHydrated] = useState(false);
+  const [remoteRestoreChecked, setRemoteRestoreChecked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const loadCartWithStock = async () => {
       const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
-      let nextCart = savedCart;
+      let nextCart = savedCart.map((item) => ({
+        ...item,
+        cartKey: item.cartKey || getCartLineKey(item.id, item.selectedOptions),
+      }));
 
       const productIds = [...new Set(savedCart.map(item => item.id).filter(Boolean))];
       if (productIds.length > 0) {
@@ -60,12 +67,17 @@ export default function StoreCart() {
           if (error) throw error;
 
           const stockById = new Map((data || []).map(product => [product.id, product]));
-          nextCart = savedCart
+          nextCart = nextCart
             .map(item => {
               const productStock = stockById.get(item.id);
               const stockQuantity = normalizeStockQuantity(productStock?.stock_quantity ?? item.stockQuantity);
               const inStock = (productStock?.in_stock ?? item.inStock ?? true) && (stockQuantity === null || stockQuantity > 0);
-              const hydratedItem = { ...item, stockQuantity, inStock };
+              const hydratedItem = {
+                ...item,
+                cartKey: item.cartKey || getCartLineKey(item.id, item.selectedOptions),
+                stockQuantity,
+                inStock,
+              };
               return { ...hydratedItem, qty: clampCartQuantity(hydratedItem, item.qty) };
             })
             .filter(item => item.inStock !== false && Number(item.qty) > 0);
@@ -79,7 +91,14 @@ export default function StoreCart() {
         }
       }
 
-      if (!cancelled) setCart(nextCart);
+      if (!cancelled) {
+        setCart(nextCart);
+        setCartHydrated(true);
+      }
+      trackStoreEvent('cart_view', {
+        itemCount: nextCart.reduce((sum, item) => sum + Number(item.qty || 0), 0),
+        value: nextCart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0),
+      });
     };
 
     loadCartWithStock();
@@ -122,18 +141,77 @@ export default function StoreCart() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    const customerSession = getCustomerSession();
+    if (!customerSession?.sessionToken) {
+      setRemoteRestoreChecked(true);
+      return undefined;
+    }
+    let cancelled = false;
+
+    supabase.functions.invoke('abandoned-cart', {
+      body: { action: 'get', sessionToken: customerSession.sessionToken },
+    }).then(({ data, error }) => {
+      if (cancelled || error || !Array.isArray(data?.cart?.items) || data.cart.items.length === 0) return;
+      const localCart = JSON.parse(localStorage.getItem('art_moment_cart') || '[]');
+      if (localCart.length > 0) return;
+
+      const restored = data.cart.items.map((item) => ({
+        ...item,
+        cartKey: item.cartKey || getCartLineKey(item.id, item.selectedOptions),
+      }));
+      localStorage.setItem('art_moment_cart', JSON.stringify(restored));
+      setCart(restored);
+      toast.success('تمت استعادة سلتك المحفوظة');
+    }).finally(() => {
+      if (!cancelled) setRemoteRestoreChecked(true);
+    });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!cartHydrated || !remoteRestoreChecked) return undefined;
+    const customerSession = getCustomerSession();
+    if (!customerSession?.sessionToken) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      void supabase.functions.invoke('abandoned-cart', {
+        body: {
+          action: 'sync',
+          sessionToken: customerSession.sessionToken,
+          anonymousId: getStoreAnonymousId(),
+          items: cart.map((item) => ({
+            id: item.id,
+            qty: Number(item.qty || 0),
+            selectedOptions: item.selectedOptions || {},
+          })),
+        },
+      });
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [cart, cartHydrated, remoteRestoreChecked]);
+
   const saveCart = (newCart) => {
     setCart(newCart);
     localStorage.setItem('art_moment_cart', JSON.stringify(newCart));
     if (appliedCoupon) setAppliedCoupon(null);
   };
 
-  const updateQty = (id, delta) => {
+  const getItemKey = (item) => String(item.cartKey || getCartLineKey(item.id, item.selectedOptions));
+
+  const updateQty = (itemKey, delta) => {
     let reachedLimit = false;
     const updated = cart.map(item => {
-      if (item.id === id) {
+      if (getItemKey(item) === String(itemKey)) {
         const currentQty = Number(item.qty) || 1;
-        const nextQty = clampCartQuantity(item, currentQty + delta);
+        const availableStock = getAvailableStock(item);
+        const otherQuantity = cart
+          .filter((other) => String(other.id) === String(item.id) && getItemKey(other) !== String(itemKey))
+          .reduce((sum, other) => sum + Number(other.qty || 0), 0);
+        const lineStock = availableStock === null ? null : Math.max(0, availableStock - otherQuantity);
+        const nextQty = clampCartQuantity({ ...item, stockQuantity: lineStock }, currentQty + delta);
         if (delta > 0 && nextQty === currentQty && getAvailableStock(item) !== null) {
           reachedLimit = true;
         }
@@ -145,15 +223,20 @@ export default function StoreCart() {
     if (reachedLimit) toast.error('لا يمكن تجاوز الكمية المتوفرة');
   };
 
-  const removeItem = (id) => saveCart(cart.filter(item => item.id !== id));
+  const removeItem = (itemKey) => saveCart(cart.filter(item => getItemKey(item) !== String(itemKey)));
 
-  const setExactQty = (id, val) => {
+  const setExactQty = (itemKey, val) => {
     let reachedLimit = false;
     const updated = cart.map(item => {
-      if (item.id !== id) return item;
+      if (getItemKey(item) !== String(itemKey)) return item;
       if (val === '') return { ...item, qty: '' };
       const num = parseInt(val, 10);
-      const nextQty = clampCartQuantity(item, isNaN(num) ? 1 : num);
+      const availableStock = getAvailableStock(item);
+      const otherQuantity = cart
+        .filter((other) => String(other.id) === String(item.id) && getItemKey(other) !== String(itemKey))
+        .reduce((sum, other) => sum + Number(other.qty || 0), 0);
+      const lineStock = availableStock === null ? null : Math.max(0, availableStock - otherQuantity);
+      const nextQty = clampCartQuantity({ ...item, stockQuantity: lineStock }, isNaN(num) ? 1 : num);
       if (!isNaN(num) && getAvailableStock(item) !== null && num > nextQty) {
         reachedLimit = true;
       }
@@ -275,7 +358,13 @@ export default function StoreCart() {
 
     try {
       const customerSession = getCustomerSession();
-      const { error } = await supabase.functions.invoke('store-checkout', {
+      trackStoreEvent('checkout_started', {
+        itemCount: cart.reduce((sum, item) => sum + Number(item.qty || 0), 0),
+        value: payableTotal,
+        paymentMethod,
+      });
+
+      const { data, error } = await supabase.functions.invoke('store-checkout', {
         body: {
           customer: {
             id: customerSession?.id,
@@ -290,6 +379,7 @@ export default function StoreCart() {
           items: cart.map(item => ({
             id: item.id,
             qty: Number(item.qty) || 1,
+            selectedOptions: item.selectedOptions || {},
           })),
           payment: {
             method: paymentMethod,
@@ -304,6 +394,20 @@ export default function StoreCart() {
       }
 
       saveCart([]);
+      if (customerSession?.sessionToken) {
+        void supabase.functions.invoke('abandoned-cart', {
+          body: {
+            action: 'complete',
+            sessionToken: customerSession.sessionToken,
+            orderId: data?.order?.id || null,
+          },
+        });
+      }
+      trackStoreEvent('order_created', {
+        orderId: data?.order?.id || null,
+        value: Number(data?.order?.total_amount || payableTotal),
+        paymentMethod,
+      });
       toast.success('تم استلام طلبك بنجاح!', { id: toastId });
       setIsSubmitted(true);
     } catch (error) {
@@ -314,6 +418,7 @@ export default function StoreCart() {
         reward_minimum_redemption_not_met: `الحد الأدنى للاستبدال ${minimumRewardPoints.toLocaleString()} نقطة.`,
         reward_program_disabled: 'استخدام النقاط متوقف مؤقتاً.',
         reward_points_migration_required: 'نظام النقاط قيد التحديث. حاولي بعد قليل.',
+        invalid_product_options: 'تحققي من اختيار المقاس أو اللون أو الخامة لكل منتج.',
       };
       toast.error(checkoutMessages[error.message] || 'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.', { id: toastId });
     } finally {
@@ -390,9 +495,13 @@ export default function StoreCart() {
           {cart.map(item => {
             const availableStock = getAvailableStock(item);
             const reachedMax = availableStock !== null && Number(item.qty || 0) >= availableStock;
+            const itemKey = getItemKey(item);
+            const optionLabels = Array.isArray(item.selectedOptionLabels) && item.selectedOptionLabels.length > 0
+              ? item.selectedOptionLabels
+              : getSelectedOptionLabels(item.productOptions, item.selectedOptions);
 
             return (
-            <div key={item.id} className="bg-white p-4 sm:p-5 rounded-3xl border border-[#D9A3AA]/15 flex items-center gap-4 sm:gap-5 shadow-sm">
+            <div key={itemKey} className="bg-white p-4 sm:p-5 rounded-3xl border border-[#D9A3AA]/15 flex items-center gap-4 sm:gap-5 shadow-sm">
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#F8F5F2] rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
                 {item.image
                   ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
@@ -402,6 +511,15 @@ export default function StoreCart() {
 
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-sm line-clamp-1">{item.name}</h3>
+                {optionLabels.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {optionLabels.map((option) => (
+                      <span key={option.id} className="rounded-full bg-[#F8F5F2] px-2 py-0.5 text-[9px] font-black text-[#4A4A4A]/60">
+                        {option.name}: {option.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <p className="text-[10px] text-[#4A4A4A]/50 mt-1">{item.price} ر.س × {item.qty}</p>
                 <p className={`text-[10px] font-bold mt-1 ${reachedMax ? 'text-amber-600' : 'text-[#4A4A4A]/45'}`}>
                   {availableStock === null ? 'الكمية متاحة' : `المتوفر: ${availableStock}`}
@@ -411,14 +529,14 @@ export default function StoreCart() {
 
               <div className="flex flex-col items-center gap-2 shrink-0">
                 <button
-                  onClick={() => removeItem(item.id)}
+                  onClick={() => removeItem(itemKey)}
                   className="text-red-300 hover:text-red-500 bg-red-50 p-1.5 rounded-lg transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>
                 <div className="flex items-center gap-2 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/20 p-1">
                   <button
-                    onClick={() => updateQty(item.id, 1)}
+                    onClick={() => updateQty(itemKey, 1)}
                     disabled={reachedMax}
                     className={`w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm transition-colors ${
                       reachedMax ? 'text-[#4A4A4A]/25 cursor-not-allowed' : 'text-[#4A4A4A]'
@@ -431,12 +549,12 @@ export default function StoreCart() {
                     min="1"
                     max={availableStock ?? undefined}
                     value={item.qty}
-                    onChange={e => setExactQty(item.id, e.target.value)}
-                    onBlur={() => handleBlurQty(item.id, item.qty)}
+                    onChange={e => setExactQty(itemKey, e.target.value)}
+                    onBlur={() => handleBlurQty(itemKey, item.qty)}
                     className="w-10 text-center font-black text-sm text-[#4A4A4A] bg-transparent outline-none focus:bg-white rounded-md transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     dir="ltr"
                   />
-                  <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#4A4A4A]">
+                  <button onClick={() => updateQty(itemKey, -1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#4A4A4A]">
                     <Minus size={12} />
                   </button>
                 </div>

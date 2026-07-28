@@ -13,6 +13,7 @@ import {
   Bell,
   History,
   ClipboardList,
+  ChartNoAxesCombined,
   LogOut,
 } from 'lucide-react';
 
@@ -75,6 +76,7 @@ export default function Sidebar() {
         <NavItem to="/app/expenses" label="المصروفات" icon={Receipt} />
         <NavItem to="/app/notifications" label="الإشعارات" icon={Bell} />
         <NavItem to="/app/activity" label="سجل النشاط" icon={History} />
+        <NavItem to="/app/store-growth" label="نمو المتجر" icon={ChartNoAxesCombined} />
         <NavItem to="/app/settings" label="الإعدادات" icon={SettingsIcon} />
       </nav>
 

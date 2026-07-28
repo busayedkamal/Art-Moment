@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ArrowRight, CheckCircle, RefreshCw, ShoppingBag } from 'lucide-react';
 import logo from '../assets/logo-art-moment.svg';
+import { trackStoreEvent } from '../utils/storeAnalytics';
 
 export default function StorePaymentResult() {
   const location = useLocation();
@@ -9,8 +10,13 @@ export default function StorePaymentResult() {
   const isSuccess = location.pathname.includes('/success');
   const orderId = searchParams.get('order');
 
+  useEffect(() => {
+    if (!isSuccess) return;
+    trackStoreEvent('payment_completed', { orderId: orderId || null });
+  }, [isSuccess, orderId]);
+
   return (
-    <div className="art-page min-h-screen font-sans flex items-center justify-center p-5 text-[#4A4A4A]" dir="rtl">
+    <div className="art-page min-h-screen font-[Tajawal] flex items-center justify-center p-5 text-[#4A4A4A]" dir="rtl">
       <div className="w-full max-w-lg rounded-[2rem] border border-[#D9A3AA]/15 bg-white p-7 text-center shadow-xl">
         <img src={logo} alt="Art Moment" className="mx-auto mb-5 h-16 w-16 object-contain" />
         <div className={`mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full ${

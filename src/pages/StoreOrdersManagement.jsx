@@ -19,6 +19,7 @@ import {
 } from '../utils/storeOrderStatus';
 import { logAdminActivity } from '../utils/adminActivity';
 import { getEmailErrorMessage } from '../utils/emailErrors';
+import { getSelectedOptionLabels } from '../utils/productOptions';
 
 // ─── FSM Configuration ────────────────────────────────────────────────────────
 
@@ -376,7 +377,7 @@ export default function StoreOrdersManagement() {
     try {
       const { data, error } = await supabase
         .from('store_order_items')
-        .select('*, product:products(name, image)')
+        .select('*, product:products(name, image, product_options)')
         .eq('store_order_id', order.id);
       if (error) throw error;
       setOrderItems(data || []);
@@ -1501,7 +1502,12 @@ export default function StoreOrdersManagement() {
                     <p className="text-sm text-[#4A4A4A]/40 text-center py-6">لا توجد منتجات مسجلة</p>
                   ) : (
                     <div className="space-y-3">
-                      {orderItems.map((item, idx) => (
+                      {orderItems.map((item, idx) => {
+                        const optionLabels = getSelectedOptionLabels(
+                          item.product?.product_options,
+                          item.selected_options,
+                        );
+                        return (
                         <div key={item.id || idx} className="flex items-center gap-3 bg-[#F8F5F2] rounded-2xl p-3">
                           <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-[#D9A3AA]/15">
                             {item.product?.image
@@ -1514,12 +1520,18 @@ export default function StoreOrdersManagement() {
                             <p className="text-xs text-[#4A4A4A]/50 mt-0.5">
                               {item.price_at_time} ر.س × {item.quantity}
                             </p>
+                            {optionLabels.length > 0 && (
+                              <p className="mt-1 text-[10px] font-bold text-[#B97882]">
+                                {optionLabels.map((option) => `${option.name}: ${option.label}`).join(' • ')}
+                              </p>
+                            )}
                           </div>
                           <span className="font-black text-[#C5A059] text-sm shrink-0">
                             {(item.price_at_time * item.quantity).toFixed(2)} ر.س
                           </span>
                         </div>
-                      ))}
+                        );
+                      })}
                       {/* Total row */}
                       <div className="flex justify-between items-center pt-2 border-t border-[#D9A3AA]/15 px-1">
                         <span className="text-sm font-bold text-[#4A4A4A]/60">الإجمالي</span>

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import CustomerAuthModal from './components/CustomerAuthModal';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from './utils/customerAuthPrompt';
+import { normalizeProductOptions } from './utils/productOptions';
 
 import promoVideo from './assets/printing-quality.mp4';
 import logo from './assets/logo-art-moment.svg';
@@ -49,15 +50,9 @@ const fromDb = (p) => {
     stockQuantity,
     inStock:      (p.in_stock ?? true) && (stockQuantity === null || stockQuantity > 0),
     isBestSeller: p.is_best_seller ?? false,
+    productOptions: normalizeProductOptions(p.product_options),
   };
 };
-
-const CATEGORIES = [
-  { id: 'all',      name: 'الكل' },
-  { id: 'albums',   name: 'الألبومات' },
-  { id: 'frames',   name: 'الإطارات' },
-  { id: 'stickers', name: 'الملصقات' },
-];
 
 const FAQS = [
   { q: 'كم يستغرق تجهيز طلب الطباعة؟',   a: 'يعتمد الوقت على عدد الصور والضغط، لكن عادة يتم التجهيز في نفس اليوم أو اليوم التالي.' },
@@ -84,8 +79,6 @@ export default function LandingPage() {
 
   // --- Store states ---
   const [products, setProducts]               = useState([]);
-  const [searchQ, setSearchQ]                 = useState('');
-  const [activeCategory, setActiveCategory]   = useState('all');
   const [cart, setCart]                       = useState([]);
   const [toastMsg, setToastMsg]               = useState('');
   const [openPolicyModal, setOpenPolicyModal] = useState(false);
@@ -196,13 +189,6 @@ export default function LandingPage() {
   }, []);
 
   // ─── Store logic ────────────────────────────────────────────
-  const filteredProducts = products.filter(p => {
-    const matchCat    = activeCategory === 'all' || p.category === activeCategory;
-    const matchSearch = p.name.toLowerCase().includes(searchQ.toLowerCase());
-    return matchCat && matchSearch;
-  });
-
-  const uniqueCategories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
   const getCategoryLabel = (cat) => {
     if (cat === 'all')      return 'الكل';
     if (cat === 'albums')   return 'ألبومات';
@@ -214,6 +200,10 @@ export default function LandingPage() {
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   const addToCart = (product) => {
+    if (product.productOptions?.length > 0) {
+      navigate(`/store/products/${product.id}`);
+      return;
+    }
     const currentQty = getProductQty(product.id);
     if (!canAddProductToCart(product, currentQty)) {
       showToast('وصلت إلى الكمية المتوفرة لهذا المنتج');
@@ -564,7 +554,7 @@ export default function LandingPage() {
               return (
               <div key={product.id} className={`art-product-card p-3 sm:p-4 lg:p-5 group flex flex-col relative overflow-hidden ${productAvailable ? '' : 'opacity-75 cursor-not-allowed'}`}>
                 <div
-                  onClick={() => productAvailable && setSelectedProduct(product)}
+                  onClick={() => productAvailable && navigate(`/store/products/${product.id}`)}
                   className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${productAvailable ? 'cursor-pointer group-hover:scale-105' : 'grayscale'}`}
                 >
                   {product.image ? (

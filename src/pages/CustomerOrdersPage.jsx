@@ -32,6 +32,7 @@ import { RewardPointsSummary, RewardRedemptionForm } from '../components/RewardP
 import { supabase } from '../lib/supabase';
 import { getCustomerSession } from '../utils/customerSession';
 import { clampCartQuantity, normalizeStockQuantity } from '../utils/productStock';
+import { getCartLineKey, getSelectedOptionLabels } from '../utils/productOptions';
 import {
   getPaymentState,
   getStorePaymentMethod,
@@ -80,14 +81,19 @@ function buildReceiptHtml(order) {
   const remaining = Math.max(0, total - Number(order.amountPaid || 0) - pointsUsedAmount);
   const discount = Number(order.discountAmount || 0);
   const subtotal = Number(order.subtotalAmount ?? order.totalAmount ?? 0);
-  const itemsRows = (order.items || []).map(item => `
+  const itemsRows = (order.items || []).map(item => {
+    const optionsText = getSelectedOptionLabels(item.productOptions, item.selectedOptions)
+      .map((option) => `${option.name}: ${option.label}`)
+      .join(' • ');
+    return `
     <tr>
-      <td>${escapeHtml(item.name)}</td>
+      <td>${escapeHtml(item.name)}${optionsText ? `<div class="muted">${escapeHtml(optionsText)}</div>` : ''}</td>
       <td>${Number(item.quantity || 0)}</td>
       <td>${formatCurrency(item.price)}</td>
       <td>${formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   return `<!doctype html>
   <html lang="ar" dir="rtl">
@@ -141,16 +147,60 @@ function buildReceiptHtml(order) {
   </html>`;
 }
 
-function downloadReceipt(order) {
-  const blob = new Blob([buildReceiptHtml(order)], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `art-moment-receipt-${order.shortId || order.id}.html`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+async function downloadReceipt(order) {
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+    import('html2canvas'),
+    import('jspdf'),
+  ]);
+  const frame = document.createElement('iframe');
+  frame.setAttribute('title', 'تجهيز إيصال الطلب');
+  frame.style.position = 'fixed';
+  frame.style.left = '-10000px';
+  frame.style.top = '0';
+  frame.style.width = '900px';
+  frame.style.height = '1200px';
+  frame.style.opacity = '0';
+  document.body.appendChild(frame);
+
+  try {
+    const frameDocument = frame.contentDocument;
+    frameDocument.open();
+    frameDocument.write(buildReceiptHtml(order));
+    frameDocument.close();
+    await frameDocument.fonts?.ready;
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+
+    const receipt = frameDocument.querySelector('.receipt');
+    if (!receipt) throw new Error('receipt_render_failed');
+    const canvas = await html2canvas(receipt, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#FFFFFF',
+      logging: false,
+    });
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const imageWidth = pageWidth - (margin * 2);
+    const imageHeight = (canvas.height * imageWidth) / canvas.width;
+    let remainingHeight = imageHeight;
+    let position = margin;
+    const imageData = canvas.toDataURL('image/jpeg', 0.94);
+
+    pdf.addImage(imageData, 'JPEG', margin, position, imageWidth, imageHeight);
+    remainingHeight -= pageHeight - (margin * 2);
+    while (remainingHeight > 0) {
+      position = margin - (imageHeight - remainingHeight);
+      pdf.addPage();
+      pdf.addImage(imageData, 'JPEG', margin, position, imageWidth, imageHeight);
+      remainingHeight -= pageHeight - (margin * 2);
+    }
+    pdf.save(`art-moment-receipt-${order.shortId || order.id}.pdf`);
+  } finally {
+    frame.remove();
+  }
 }
 
 function getTrackingUrl(order) {
@@ -647,6 +697,13 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-black text-[#4A4A4A] truncate">{item.name}</h3>
+                  {getSelectedOptionLabels(item.productOptions, item.selectedOptions).length > 0 && (
+                    <p className="mt-1 text-[10px] font-bold text-[#B97882]">
+                      {getSelectedOptionLabels(item.productOptions, item.selectedOptions)
+                        .map((option) => `${option.name}: ${option.label}`)
+                        .join(' • ')}
+                    </p>
+                  )}
                   <p className="text-xs text-[#4A4A4A]/50 mt-1">الكمية: {item.quantity}</p>
                 </div>
                 <div className="text-left shrink-0">
@@ -846,7 +903,7 @@ export default function CustomerOrdersPage() {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, price, image, stock_quantity, in_stock')
+        .select('id, name, description, price, image, stock_quantity, in_stock, product_options')
         .in('id', productIds);
       if (error) throw error;
 
@@ -875,9 +932,15 @@ export default function CustomerOrdersPage() {
           qty: Number(item.quantity || 1),
           stockQuantity,
           inStock: true,
+          productOptions: product.product_options || item.productOptions || [],
+          selectedOptions: item.selectedOptions || {},
+          selectedOptionLabels: getSelectedOptionLabels(item.productOptions, item.selectedOptions),
         };
+        cartProduct.cartKey = getCartLineKey(product.id, cartProduct.selectedOptions);
         const safeQty = clampCartQuantity(cartProduct, item.quantity || 1);
-        const existing = nextCart.find(cartItem => String(cartItem.id) === String(product.id));
+        const existing = nextCart.find(cartItem => (
+          String(cartItem.cartKey || getCartLineKey(cartItem.id, cartItem.selectedOptions)) === cartProduct.cartKey
+        ));
 
         if (existing) {
           const hydrated = {
@@ -913,6 +976,17 @@ export default function CustomerOrdersPage() {
     } catch (err) {
       console.error(err);
       toast.error('تعذر إعادة الطلب حالياً', { id: toastId });
+    }
+  };
+
+  const handleDownloadReceipt = async (order) => {
+    const toastId = toast.loading('جاري تجهيز ملف PDF...');
+    try {
+      await downloadReceipt(order);
+      toast.success('تم تحميل الإيصال', { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error('تعذر إنشاء ملف PDF حالياً', { id: toastId });
     }
   };
 
@@ -1045,7 +1119,7 @@ export default function CustomerOrdersPage() {
               rewards={rewards}
               onReturnSubmitted={loadOrders}
               onReorder={handleReorder}
-              onDownloadReceipt={downloadReceipt}
+              onDownloadReceipt={handleDownloadReceipt}
               onApplyRewardPoints={handleApplyRewardPoints}
               applyingRewardPoints={applyingRewardPoints}
               returnWindowDays={returnWindowDays}

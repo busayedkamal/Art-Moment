@@ -13,6 +13,12 @@ function normalizeOrderItem(item: Record<string, unknown>) {
     image: (product as Record<string, unknown> | undefined)?.image || null,
     quantity: Number(item.quantity || 0),
     price: Number(item.price_at_time || 0),
+    selectedOptions: item.selected_options && typeof item.selected_options === 'object'
+      ? item.selected_options
+      : {},
+    productOptions: Array.isArray((product as Record<string, unknown> | undefined)?.product_options)
+      ? (product as Record<string, unknown>).product_options
+      : [],
   };
 }
 
@@ -193,7 +199,7 @@ Deno.serve(async (req) => {
     const orderId = String(body?.orderId || '').trim();
     const selectFields = `
       *,
-      store_order_items(id, product_id, quantity, price_at_time, products(name, image))
+      store_order_items(id, product_id, quantity, price_at_time, selected_options, products(name, image, product_options))
     `;
 
     const phoneValues = phoneVariants(customer.phone);

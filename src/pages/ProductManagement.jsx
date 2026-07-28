@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import fallbackLogo from '../assets/logo.png';
 import { logAdminActivity } from '../utils/adminActivity';
+import { normalizeProductOptions } from '../utils/productOptions';
 
 // ─── إعدادات الفئات ──────────────────────────────────────────────
 const CAT_CONFIG = {
@@ -32,6 +33,8 @@ const fromDb = (p) => ({
   inStock:       p.in_stock      ?? true,
   stockQuantity: p.stock_quantity ?? 0,
   isBestSeller:  p.is_best_seller ?? false,
+  productOptions: normalizeProductOptions(p.product_options),
+  specifications: p.specifications && typeof p.specifications === 'object' ? p.specifications : {},
 });
 
 // تحويل حالة React (camelCase) → صف قاعدة البيانات (snake_case)
@@ -46,11 +49,14 @@ const toDb = (f) => ({
   in_stock:       f.inStock,
   stock_quantity: Number(f.stockQuantity) || 0,
   is_best_seller: f.isBestSeller,
+  product_options: normalizeProductOptions(f.productOptions),
+  specifications: f.specifications && typeof f.specifications === 'object' ? f.specifications : {},
 });
 
 const initialForm = {
   name: '', description: '', price: '', category: 'albums',
   image: null, hoverImage: null, sortOrder: 0, inStock: true, stockQuantity: 0, isBestSeller: false,
+  productOptions: [], specifications: {},
 };
 
 const auditProduct = (product = {}) => ({
@@ -62,6 +68,7 @@ const auditProduct = (product = {}) => ({
   in_stock: product.inStock ?? product.in_stock ?? true,
   stock_quantity: Number(product.stockQuantity ?? product.stock_quantity ?? 0),
   is_best_seller: product.isBestSeller ?? product.is_best_seller ?? false,
+  product_options: normalizeProductOptions(product.productOptions ?? product.product_options),
   has_image: Boolean(product.image),
   has_hover_image: Boolean(product.hoverImage ?? product.hover_image),
 });
@@ -445,6 +452,142 @@ export default function ProductManagement() {
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="وصف مختصر للمنتج..."
                   className="w-full resize-none bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all text-sm text-[#4A4A4A]"
+                />
+              </div>
+
+              {/* خصائص المنتج */}
+              <div className="rounded-2xl border border-[#C5A059]/20 bg-[#C5A059]/5 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black text-[#4A4A4A]">خيارات وخصائص المنتج</h3>
+                    <p className="mt-1 text-[10px] font-bold text-[#4A4A4A]/50">
+                      مثل المقاس أو اللون أو الخامة. اتركيها فارغة للمنتج الذي لا يحتاج اختياراً.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((current) => ({
+                      ...current,
+                      productOptions: [
+                        ...(current.productOptions || []),
+                        {
+                          id: `option_${Date.now()}`,
+                          name: '',
+                          required: true,
+                          values: [],
+                        },
+                      ],
+                    }))}
+                    className="shrink-0 rounded-xl bg-white px-3 py-2 text-xs font-black text-[#9E7D35] shadow-sm ring-1 ring-[#C5A059]/20 hover:bg-[#C5A059]/10"
+                  >
+                    <Plus size={14} className="inline" /> إضافة خاصية
+                  </button>
+                </div>
+
+                {(form.productOptions || []).length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-[#C5A059]/25 bg-white/60 px-4 py-5 text-center text-xs font-bold text-[#4A4A4A]/45">
+                    لا توجد خصائص لهذا المنتج.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(form.productOptions || []).map((option, optionIndex) => (
+                      <div key={option.id || optionIndex} className="rounded-xl border border-[#C5A059]/15 bg-white p-3">
+                        <div className="grid gap-3 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto]">
+                          <div>
+                            <label className="mb-1 block text-[10px] font-black text-[#4A4A4A]/55">اسم الخاصية</label>
+                            <input
+                              value={option.name || ''}
+                              onChange={(event) => setForm((current) => ({
+                                ...current,
+                                productOptions: current.productOptions.map((item, index) => (
+                                  index === optionIndex ? { ...item, name: event.target.value } : item
+                                )),
+                              }))}
+                              placeholder="مثال: اللون"
+                              className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-[10px] font-black text-[#4A4A4A]/55">القيم المتاحة</label>
+                            <input
+                              defaultValue={(option.values || []).map((value) => value.label || value.value).join('، ')}
+                              onBlur={(event) => {
+                                const values = event.target.value
+                                  .split(/[,،]/)
+                                  .map((value) => value.trim())
+                                  .filter(Boolean)
+                                  .map((value) => ({ value, label: value, priceDelta: 0, colorHex: null }));
+                                setForm((current) => ({
+                                  ...current,
+                                  productOptions: current.productOptions.map((item, index) => (
+                                    index === optionIndex ? { ...item, values } : item
+                                  )),
+                                }));
+                              }}
+                              placeholder="أخضر، وردي، أسود"
+                              className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
+                            />
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[#F8F5F2] px-3 text-[10px] font-black text-[#4A4A4A]/65">
+                              <input
+                                type="checkbox"
+                                checked={option.required !== false}
+                                onChange={(event) => setForm((current) => ({
+                                  ...current,
+                                  productOptions: current.productOptions.map((item, index) => (
+                                    index === optionIndex ? { ...item, required: event.target.checked } : item
+                                  )),
+                                }))}
+                                className="accent-[#C5A059]"
+                              />
+                              مطلوب
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setForm((current) => ({
+                                ...current,
+                                productOptions: current.productOptions.filter((_, index) => index !== optionIndex),
+                              }))}
+                              className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100"
+                              title="حذف الخاصية"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-[#D9A3AA]/20 bg-[#D9A3AA]/5 p-4">
+                <label className="block text-sm font-black text-[#4A4A4A]">
+                  مواصفات تظهر في صفحة المنتج
+                </label>
+                <p className="mb-3 mt-1 text-[10px] font-bold text-[#4A4A4A]/50">
+                  اكتب كل مواصفة في سطر بصيغة: اسم المواصفة: القيمة.
+                </p>
+                <textarea
+                  key={`specifications-${form.id || 'new'}`}
+                  rows="4"
+                  defaultValue={Object.entries(form.specifications || {})
+                    .map(([name, value]) => `${name}: ${value}`)
+                    .join('\n')}
+                  onBlur={(event) => {
+                    const specifications = {};
+                    event.target.value.split(/\r?\n/).forEach((line) => {
+                      const separatorIndex = line.indexOf(':');
+                      if (separatorIndex < 1) return;
+                      const name = line.slice(0, separatorIndex).trim();
+                      const value = line.slice(separatorIndex + 1).trim();
+                      if (name && value) specifications[name] = value;
+                    });
+                    setForm((current) => ({ ...current, specifications }));
+                  }}
+                  placeholder={'الخامة: جلد\nالمقاس: 20 × 20 سم\nعدد الصفحات: 40 صفحة'}
+                  className="w-full resize-y rounded-xl border border-[#D9A3AA]/20 bg-white px-4 py-3 text-sm font-bold leading-7 outline-none focus:border-[#D9A3AA]"
                 />
               </div>
 

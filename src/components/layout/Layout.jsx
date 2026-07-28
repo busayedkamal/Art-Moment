@@ -17,7 +17,8 @@ import {
   ShoppingBag,
   Bell,
   History,
-  ClipboardList
+  ClipboardList,
+  ChartNoAxesCombined
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -36,6 +37,7 @@ export default function Layout() {
     { path: '/app/expenses',  label: 'المصروفات',  icon: <Wallet size={20} /> },
     { path: '/app/products',     label: 'المتجر',         icon: <Package size={20} /> },
     { path: '/app/store-orders', label: 'طلبات المتجر',  icon: <ShoppingBag size={20} /> },
+    { path: '/app/store-growth', label: 'نمو المتجر', icon: <ChartNoAxesCombined size={20} /> },
     { path: '/app/notifications', label: 'الإشعارات', icon: <Bell size={20} /> },
     { path: '/app/activity', label: 'سجل النشاط', icon: <History size={20} /> },
     { path: '/track',         label: 'تتبع الطلب', icon: <Search size={20} /> },
