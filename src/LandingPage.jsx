@@ -19,7 +19,7 @@ import {
   Plane, Gift, Smartphone, LayoutDashboard,
   MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet,
   ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale, AlertCircle, ChevronLeft,
-  User, LogOut
+  User, LogOut, Share2
 } from 'lucide-react';
 import CustomerAuthModal from './components/CustomerAuthModal';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from './utils/customerAuthPrompt';
@@ -31,7 +31,6 @@ import fallbackLogo from './assets/logo.png';
 import instagramIcon from './assets/instagram icon.svg';
 import snapchatIcon from './assets/SnapChat icon.svg';
 import tiktokIcon from './assets/tiktok icon.svg';
-import linktreeIcon from './assets/linktree_icon.svg';
 import whatsappIcon from './assets/whatsapp icon.svg';
 import telegramIcon from './assets/telegram icon.svg';
 import gmailIcon from './assets/gmail icon.svg';
@@ -432,6 +431,7 @@ export default function LandingPage() {
             <a href="#services" className="flex items-center gap-2 py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}><Wallet size={16} /> شحن المحفظة</a>
             <Link to="/store/orders" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
             <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
+            <Link to="/links" className="flex w-full items-center justify-center gap-2 py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}><Share2 size={16} className="text-[#C5A059]" /> حساباتنا</Link>
             {customer && (
               <button
                 onClick={() => { setIsMobileMenuOpen(false); setIsAccountSidebarOpen(true); }}
@@ -472,6 +472,9 @@ export default function LandingPage() {
               </a>
               <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
                 <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
+              </Link>
+              <Link to="/links" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
+                <Share2 size={20} className="text-[#D9A3AA]" /> حساباتنا
               </Link>
             </div>
 
@@ -1018,6 +1021,7 @@ export default function LandingPage() {
               <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">سياسة الاسترجاع والاستبدال</button></li>
               <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">الشروط والأحكام</button></li>
               <li><Link to="/track"      className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">تتبع الطلب</Link></li>
+              <li><Link to="/links"      className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">حساباتنا الرسمية</Link></li>
               <li><Link to="/store/cart" className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">سلة التسوق</Link></li>
             </ul>
           </div>
@@ -1030,9 +1034,8 @@ export default function LandingPage() {
                 { id: 'instagram', icon: instagramIcon, url: 'https://www.instagram.com/art.moment26/',   alt: 'Instagram' },
                 { id: 'snapchat',  icon: snapchatIcon,  url: 'https://www.snapchat.com/add/omsayedkamal', alt: 'Snapchat' },
                 { id: 'tiktok',    icon: tiktokIcon,    url: 'https://www.tiktok.com/@art.moment26',      alt: 'TikTok' },
-                { id: 'telegram',  icon: telegramIcon,  url: 'https://t.me/+966560301744',                alt: 'Telegram' },
+                { id: 'telegram',  icon: telegramIcon,  url: 'https://t.me/artmoment26',                  alt: 'Telegram' },
                 { id: 'gmail',     icon: gmailIcon,     url: 'mailto:art.moment26@gmail.com',             alt: 'Gmail' },
-                { id: 'linktree',  icon: linktreeIcon,  url: 'https://linktr.ee/Art_Moment',              alt: 'Linktree' },
               ].map(social => (
                 <a key={social.id} href={social.url}
                   target={social.url.startsWith('mailto') ? '_self' : '_blank'} rel="noopener noreferrer"
