@@ -24,7 +24,9 @@ const getCatStyle = (cat) =>
 const fromDb = (p) => ({
   id:            p.id,
   name:          p.name,
+  nameEn:        p.name_en || '',
   description:   p.description  || '',
+  descriptionEn: p.description_en || '',
   price:         p.price,
   category:      p.category,
   image:         p.image        || null,
@@ -35,12 +37,15 @@ const fromDb = (p) => ({
   isBestSeller:  p.is_best_seller ?? false,
   productOptions: normalizeProductOptions(p.product_options),
   specifications: p.specifications && typeof p.specifications === 'object' ? p.specifications : {},
+  specificationsEn: p.specifications_en && typeof p.specifications_en === 'object' ? p.specifications_en : {},
 });
 
 // تحويل حالة React (camelCase) → صف قاعدة البيانات (snake_case)
 const toDb = (f) => ({
   name:           f.name,
+  name_en:        f.nameEn || null,
   description:    f.description,
+  description_en: f.descriptionEn || null,
   price:          Number(f.price),
   category:       f.category,
   image:          f.image,
@@ -51,17 +56,20 @@ const toDb = (f) => ({
   is_best_seller: f.isBestSeller,
   product_options: normalizeProductOptions(f.productOptions),
   specifications: f.specifications && typeof f.specifications === 'object' ? f.specifications : {},
+  specifications_en: f.specificationsEn && typeof f.specificationsEn === 'object' ? f.specificationsEn : {},
 });
 
 const initialForm = {
-  name: '', description: '', price: '', category: 'albums',
+  name: '', nameEn: '', description: '', descriptionEn: '', price: '', category: 'albums',
   image: null, hoverImage: null, sortOrder: 0, inStock: true, stockQuantity: 0, isBestSeller: false,
-  productOptions: [], specifications: {},
+  productOptions: [], specifications: {}, specificationsEn: {},
 };
 
 const auditProduct = (product = {}) => ({
   name: product.name || '',
+  name_en: product.nameEn || product.name_en || '',
   description: product.description || '',
+  description_en: product.descriptionEn || product.description_en || '',
   price: Number(product.price || 0),
   category: product.category || '',
   sort_order: Number(product.sortOrder ?? product.sort_order ?? 0),
@@ -444,6 +452,16 @@ export default function ProductManagement() {
                 />
               </div>
 
+              <div dir="ltr">
+                <label className="block text-left text-sm font-bold text-[#4A4A4A] mb-1.5">Product name in English</label>
+                <input
+                  type="text" value={form.nameEn}
+                  onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))}
+                  placeholder="Example: Green photo album"
+                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all font-bold text-[#4A4A4A]"
+                />
+              </div>
+
               {/* الوصف */}
               <div>
                 <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">الوصف (اختياري)</label>
@@ -451,6 +469,16 @@ export default function ProductManagement() {
                   rows="2" value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="وصف مختصر للمنتج..."
+                  className="w-full resize-none bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all text-sm text-[#4A4A4A]"
+                />
+              </div>
+
+              <div dir="ltr">
+                <label className="block text-left text-sm font-bold text-[#4A4A4A] mb-1.5">Description in English (optional)</label>
+                <textarea
+                  rows="2" value={form.descriptionEn}
+                  onChange={e => setForm(f => ({ ...f, descriptionEn: e.target.value }))}
+                  placeholder="A short product description..."
                   className="w-full resize-none bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all text-sm text-[#4A4A4A]"
                 />
               </div>
@@ -473,6 +501,7 @@ export default function ProductManagement() {
                         {
                           id: `option_${Date.now()}`,
                           name: '',
+                          nameEn: '',
                           required: true,
                           values: [],
                         },
@@ -492,7 +521,7 @@ export default function ProductManagement() {
                   <div className="space-y-3">
                     {(form.productOptions || []).map((option, optionIndex) => (
                       <div key={option.id || optionIndex} className="rounded-xl border border-[#C5A059]/15 bg-white p-3">
-                        <div className="grid gap-3 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto]">
+                        <div className="grid gap-3 sm:grid-cols-2">
                           <div>
                             <label className="mb-1 block text-[10px] font-black text-[#4A4A4A]/55">اسم الخاصية</label>
                             <input
@@ -507,24 +536,74 @@ export default function ProductManagement() {
                               className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
                             />
                           </div>
+                          <div dir="ltr">
+                            <label className="mb-1 block text-left text-[10px] font-black text-[#4A4A4A]/55">Option name in English</label>
+                            <input
+                              value={option.nameEn || ''}
+                              onChange={(event) => setForm((current) => ({
+                                ...current,
+                                productOptions: current.productOptions.map((item, index) => (
+                                  index === optionIndex ? { ...item, nameEn: event.target.value } : item
+                                )),
+                              }))}
+                              placeholder="Example: Color"
+                              className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
+                            />
+                          </div>
                           <div>
                             <label className="mb-1 block text-[10px] font-black text-[#4A4A4A]/55">القيم المتاحة</label>
                             <input
                               defaultValue={(option.values || []).map((value) => value.label || value.value).join('، ')}
                               onBlur={(event) => {
-                                const values = event.target.value
+                                const labels = event.target.value
                                   .split(/[,،]/)
                                   .map((value) => value.trim())
-                                  .filter(Boolean)
-                                  .map((value) => ({ value, label: value, priceDelta: 0, colorHex: null }));
+                                  .filter(Boolean);
                                 setForm((current) => ({
                                   ...current,
                                   productOptions: current.productOptions.map((item, index) => (
-                                    index === optionIndex ? { ...item, values } : item
+                                    index === optionIndex
+                                      ? {
+                                          ...item,
+                                          values: labels.map((label, valueIndex) => ({
+                                            ...(item.values?.[valueIndex] || {}),
+                                            value: item.values?.[valueIndex]?.value || label,
+                                            label,
+                                            labelEn: item.values?.[valueIndex]?.labelEn || '',
+                                            priceDelta: Number(item.values?.[valueIndex]?.priceDelta || 0),
+                                            colorHex: item.values?.[valueIndex]?.colorHex || null,
+                                          })),
+                                        }
+                                      : item
                                   )),
                                 }));
                               }}
                               placeholder="أخضر، وردي، أسود"
+                              className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
+                            />
+                          </div>
+                          <div dir="ltr">
+                            <label className="mb-1 block text-left text-[10px] font-black text-[#4A4A4A]/55">Values in English (same order)</label>
+                            <input
+                              defaultValue={(option.values || []).map((value) => value.labelEn || '').join(', ')}
+                              onBlur={(event) => {
+                                const labels = event.target.value.split(',').map((value) => value.trim());
+                                setForm((current) => ({
+                                  ...current,
+                                  productOptions: current.productOptions.map((item, index) => (
+                                    index === optionIndex
+                                      ? {
+                                          ...item,
+                                          values: (item.values || []).map((value, valueIndex) => ({
+                                            ...value,
+                                            labelEn: labels[valueIndex] || '',
+                                          })),
+                                        }
+                                      : item
+                                  )),
+                                }));
+                              }}
+                              placeholder="Green, Pink, Black"
                               className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
                             />
                           </div>
@@ -560,6 +639,35 @@ export default function ProductManagement() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div dir="ltr" className="rounded-2xl border border-[#C5A059]/20 bg-[#C5A059]/5 p-4">
+                <label className="block text-left text-sm font-black text-[#4A4A4A]">
+                  Specifications in English
+                </label>
+                <p className="mb-3 mt-1 text-left text-[10px] font-bold text-[#4A4A4A]/50">
+                  Enter one specification per line using: label: value.
+                </p>
+                <textarea
+                  key={`specifications-en-${form.id || 'new'}`}
+                  rows="4"
+                  defaultValue={Object.entries(form.specificationsEn || {})
+                    .map(([name, value]) => `${name}: ${value}`)
+                    .join('\n')}
+                  onBlur={(event) => {
+                    const specificationsEn = {};
+                    event.target.value.split(/\r?\n/).forEach((line) => {
+                      const separatorIndex = line.indexOf(':');
+                      if (separatorIndex < 1) return;
+                      const name = line.slice(0, separatorIndex).trim();
+                      const value = line.slice(separatorIndex + 1).trim();
+                      if (name && value) specificationsEn[name] = value;
+                    });
+                    setForm((current) => ({ ...current, specificationsEn }));
+                  }}
+                  placeholder={'Material: Leather\nSize: 20 x 20 cm\nPages: 40'}
+                  className="w-full resize-y rounded-xl border border-[#C5A059]/20 bg-white px-4 py-3 text-sm font-bold leading-7 outline-none focus:border-[#C5A059]"
+                />
               </div>
 
               <div className="rounded-2xl border border-[#D9A3AA]/20 bg-[#D9A3AA]/5 p-4">

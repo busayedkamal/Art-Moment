@@ -9,27 +9,33 @@ import {
   getMissingRequiredOptions,
   getProductPriceWithOptions,
   getSelectedOptionLabels,
-  normalizeProductOptions,
+  localizeProductOptions,
   normalizeSelectedOptions,
 } from '../utils/productOptions';
 import { isProductAvailable, normalizeStockQuantity } from '../utils/productStock';
 import { trackStoreEvent } from '../utils/storeAnalytics';
+import { useLanguage } from '../contexts/LanguageContext';
 
-function fromDb(product) {
+function fromDb(product, language) {
   const stockQuantity = normalizeStockQuantity(product?.stock_quantity);
   return {
     id: product?.id,
-    name: product?.name || '',
-    description: product?.description || '',
+    name: language === 'en' && product?.name_en ? product.name_en : (product?.name || ''),
+    description: language === 'en' && product?.description_en
+      ? product.description_en
+      : (product?.description || ''),
     price: Number(product?.price || 0),
     category: product?.category || '',
     image: product?.image || null,
     hoverImage: product?.hover_image || null,
     galleryImages: Array.isArray(product?.gallery_images) ? product.gallery_images.filter(Boolean) : [],
-    specifications: product?.specifications && typeof product.specifications === 'object'
-      ? product.specifications
-      : {},
-    productOptions: normalizeProductOptions(product?.product_options),
+    specifications: language === 'en'
+      && product?.specifications_en
+      && typeof product.specifications_en === 'object'
+      && Object.keys(product.specifications_en).length > 0
+      ? product.specifications_en
+      : (product?.specifications && typeof product.specifications === 'object' ? product.specifications : {}),
+    productOptions: localizeProductOptions(product?.product_options, language),
     stockQuantity,
     inStock: (product?.in_stock ?? true) && (stockQuantity === null || stockQuantity > 0),
   };
@@ -44,6 +50,7 @@ function getCategoryLabel(category) {
 
 export default function ProductDetailsPage() {
   const { productId } = useParams();
+  const { language } = useLanguage();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -70,7 +77,7 @@ export default function ProductDetailsPage() {
         return;
       }
 
-      const normalized = fromDb(data);
+      const normalized = fromDb(data, language);
       setProduct(normalized);
       setSelectedImage(normalized.image || normalized.hoverImage || '');
       const defaultSelections = {};
@@ -86,7 +93,7 @@ export default function ProductDetailsPage() {
     const savedCart = JSON.parse(localStorage.getItem('art_moment_cart') || '[]');
     setCartCount(savedCart.reduce((sum, item) => sum + Number(item.qty || 0), 0));
     return () => { cancelled = true; };
-  }, [productId]);
+  }, [language, productId]);
 
   const images = useMemo(() => {
     if (!product) return [];
@@ -332,4 +339,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-

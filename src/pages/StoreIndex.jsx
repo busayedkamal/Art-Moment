@@ -17,18 +17,19 @@ import {
 } from 'lucide-react';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from '../utils/customerAuthPrompt';
-import { getCartLineKey, normalizeProductOptions } from '../utils/productOptions';
+import { getCartLineKey, localizeProductOptions } from '../utils/productOptions';
 import { trackStoreEvent } from '../utils/storeAnalytics';
+import { useLanguage } from '../contexts/LanguageContext';
 
 import logo from '../assets/logo-art-moment.svg';
 import fallbackLogo from '../assets/logo.png';
 
-const fromDb = (p) => {
+const fromDb = (p, language) => {
   const stockQuantity = normalizeStockQuantity(p.stock_quantity);
   return {
     id:          p.id,
-    name:        p.name,
-    description: p.description || '',
+    name:        language === 'en' && p.name_en ? p.name_en : p.name,
+    description: language === 'en' && p.description_en ? p.description_en : (p.description || ''),
     price:       p.price,
     category:    p.category,
     image:       p.image       || null,
@@ -36,14 +37,35 @@ const fromDb = (p) => {
     sortOrder:   p.sort_order  ?? 0,
     stockQuantity,
     inStock:     (p.in_stock ?? true) && (stockQuantity === null || stockQuantity > 0),
-    productOptions: normalizeProductOptions(p.product_options),
+    productOptions: localizeProductOptions(p.product_options, language),
     galleryImages: Array.isArray(p.gallery_images) ? p.gallery_images.filter(Boolean) : [],
-    specifications: p.specifications && typeof p.specifications === 'object' ? p.specifications : {},
+    specifications: language === 'en'
+      && p.specifications_en
+      && typeof p.specifications_en === 'object'
+      && Object.keys(p.specifications_en).length > 0
+      ? p.specifications_en
+      : (p.specifications && typeof p.specifications === 'object' ? p.specifications : {}),
   };
+};
+
+const getLocalizedCategoryLabel = (category, language) => {
+  const labels = {
+    all: { ar: 'الكل', en: 'All' },
+    albums: { ar: 'ألبومات', en: 'Albums' },
+    'ألبومات': { ar: 'ألبومات', en: 'Albums' },
+    frames: { ar: 'إطارات', en: 'Frames' },
+    'إطارات': { ar: 'إطارات', en: 'Frames' },
+    stickers: { ar: 'ملصقات', en: 'Stickers' },
+    'ملصقات': { ar: 'ملصقات', en: 'Stickers' },
+    printing: { ar: 'طباعة', en: 'Printing' },
+    'طباعة': { ar: 'طباعة', en: 'Printing' },
+  };
+  return labels[category]?.[language] || category;
 };
 
 export default function StoreIndex() {
   const navigate = useNavigate();
+  const { language, t } = useLanguage();
   const [products, setProducts]             = useState([]);
   const [searchQ, setSearchQ]               = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -113,14 +135,14 @@ export default function StoreIndex() {
         .select('*')
         .order('sort_order', { ascending: true });
       if (error) throw error;
-      setProducts((data || []).map(fromDb));
+      setProducts((data || []).map((product) => fromDb(product, language)));
     } catch (err) {
       console.error('Error fetching products:', err);
       setProductsError('تعذر تحميل المنتجات حالياً. تحققي من اتصال Supabase أو سياسات القراءة العامة للمنتجات.');
     } finally {
       setIsProductsLoading(false);
     }
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     fetchProducts();
@@ -202,14 +224,6 @@ export default function StoreIndex() {
     counts[category] = (counts[category] || 0) + 1;
     return counts;
   }, { all: 0 }), [products]);
-
-  const getCategoryLabel = (cat) => {
-    if (cat === 'all')      return 'الكل';
-    if (cat === 'albums')   return 'ألبومات';
-    if (cat === 'frames')   return 'إطارات';
-    if (cat === 'stickers') return 'ملصقات';
-    return cat;
-  };
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = searchQ.trim().toLowerCase();
@@ -317,8 +331,12 @@ export default function StoreIndex() {
             <Link to="/" className="flex items-center gap-2 sm:gap-3">
               <img src={logo} alt="Art Moment Logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
               <div className="flex flex-col">
-                <span className="text-lg sm:text-xl font-black text-[#4A4A4A] leading-none">لحظة فن</span>
-                <span className="text-[9px] sm:text-[10px] text-[#C5A059] font-bold tracking-widest uppercase">Art Moment</span>
+                <span className="text-lg sm:text-xl font-black text-[#4A4A4A] leading-none">
+                  {language === 'en' ? 'Art Moment' : 'لحظة فن'}
+                </span>
+                <span className="text-[9px] sm:text-[10px] text-[#C5A059] font-bold tracking-widest uppercase">
+                  {language === 'en' ? 'Photo Printing & Gifts' : 'Art Moment'}
+                </span>
               </div>
             </Link>
           </div>
@@ -372,8 +390,14 @@ export default function StoreIndex() {
       {/* Main Store Content */}
       <main className="art-shell py-8 sm:py-10 lg:py-12">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-black text-[#4A4A4A] mb-4">متجر <span className="text-[#D9A3AA]">لحظة فن</span></h2>
-          <p className="text-[#4A4A4A]/60 max-w-xl mx-auto">تصفح تشكيلتنا المتكاملة من الألبومات، الإطارات، والملحقات الفنية.</p>
+          <h2 className="text-3xl md:text-4xl font-black text-[#4A4A4A] mb-4">
+            {language === 'en' ? 'Art Moment Store' : <>متجر <span className="text-[#D9A3AA]">لحظة فن</span></>}
+          </h2>
+          <p className="text-[#4A4A4A]/60 max-w-xl mx-auto">
+            {language === 'en'
+              ? 'Browse our complete collection of albums, frames, prints, and artistic accessories.'
+              : 'تصفح تشكيلتنا المتكاملة من الألبومات، الإطارات، والملحقات الفنية.'}
+          </p>
         </div>
 
         {/* Search & Filters */}
@@ -390,7 +414,7 @@ export default function StoreIndex() {
                       : 'bg-[#F8F5F2] text-[#4A4A4A] border-transparent hover:border-[#D9A3AA]/30'
                   }`}
                 >
-                  <span>{getCategoryLabel(cat)}</span>
+                  <span>{getLocalizedCategoryLabel(cat, language)}</span>
                   <span className={`min-w-6 h-6 px-2 rounded-full text-[11px] flex items-center justify-center ${
                     activeCategory === cat ? 'bg-white/20 text-white' : 'bg-white text-[#C5A059]'
                   }`}>
@@ -404,7 +428,7 @@ export default function StoreIndex() {
               <div className="relative">
                 <input
                   value={searchQ} onChange={e => setSearchQ(e.target.value)}
-                  placeholder="ابحث باسم المنتج أو الوصف..."
+                  placeholder={language === 'en' ? 'Search by product name or description...' : 'ابحث باسم المنتج أو الوصف...'}
                   className="art-input w-full rounded-full px-4 py-2.5 pr-10 outline-none text-sm"
                 />
                 <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
@@ -419,7 +443,7 @@ export default function StoreIndex() {
                   value={sortMode}
                   onChange={e => setSortMode(e.target.value)}
                   className="art-input w-full appearance-none rounded-full px-4 py-2.5 pr-10 pl-8 outline-none text-sm font-bold bg-white"
-                  aria-label="ترتيب المنتجات"
+                  aria-label={t('ترتيب المنتجات')}
                 >
                   <option value="featured">الأولوية</option>
                   <option value="price_asc">السعر: الأقل</option>
@@ -433,7 +457,9 @@ export default function StoreIndex() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8 text-sm">
           <p className="text-[#4A4A4A]/60 font-bold">
-            يعرض {filteredProducts.length} منتج من أصل {products.length}
+            {language === 'en'
+              ? `Showing ${filteredProducts.length} of ${products.length} products`
+              : `يعرض ${filteredProducts.length} منتج من أصل ${products.length}`}
           </p>
           {(searchQ || activeCategory !== 'all' || sortMode !== 'featured') && (
             <button
@@ -708,7 +734,7 @@ export default function StoreIndex() {
             {/* Details */}
             <div className="w-full sm:w-1/2 p-6 sm:p-10 overflow-y-auto flex flex-col">
               <span className="inline-block px-3 py-1 bg-[#D9A3AA]/10 text-[#D9A3AA] text-[10px] font-black rounded-full mb-3 w-fit">
-                {getCategoryLabel(selectedProduct.category)}
+                {getLocalizedCategoryLabel(selectedProduct.category, language)}
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-[#4A4A4A] mb-2">{selectedProduct.name}</h2>
               <p className="text-2xl font-black text-[#C5A059] mb-6">{selectedProduct.price} <span className="text-sm">ر.س</span></p>

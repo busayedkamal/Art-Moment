@@ -21,9 +21,11 @@ import {
   ChartNoAxesCombined
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function Layout() {
   const { signOut } = useAuth();
+  const { isArabic } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -57,12 +59,16 @@ export default function Layout() {
           h-screen يضمن الارتفاع الكامل في كل الحالات
       ══════════════════════════════════════════════ */}
       <aside className={`
-        fixed top-0 right-0 z-50
+        fixed top-0 z-50 ${isArabic ? 'right-0' : 'left-0'}
         w-64 h-[100dvh]
         bg-[#4A4A4A] text-white
         flex flex-col
         transition-transform duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+        ${isMobileMenuOpen
+          ? 'translate-x-0'
+          : isArabic
+            ? 'translate-x-full md:translate-x-0'
+            : '-translate-x-full md:translate-x-0'}
       `}>
 
         {/* الشعار */}
@@ -123,7 +129,7 @@ export default function Layout() {
           المحتوى الرئيسي
           md:pr-64 = إزاحة 256px عن السايدبار (RTL: right padding)
       ══════════════════════════════════════════════ */}
-      <div className="md:pr-64 flex flex-col min-h-screen w-full min-w-0">
+      <div className={`${isArabic ? 'md:pr-64' : 'md:pl-64'} flex flex-col min-h-screen w-full min-w-0`}>
 
         {/* هيدر الجوال فقط */}
         <header className="md:hidden sticky top-0 z-40 flex items-center justify-between bg-white border-b border-[#D9A3AA]/20 px-4 py-3 shadow-sm">

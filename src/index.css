@@ -7,6 +7,20 @@ html {
   direction: rtl;
 }
 
+html[dir='ltr'] {
+  direction: ltr;
+}
+
+html[dir='ltr'] [dir='rtl']:not([data-preserve-direction]) {
+  direction: ltr;
+}
+
+html[dir='ltr'] input[dir='ltr'],
+html[dir='ltr'] textarea[dir='ltr'],
+html[dir='ltr'] [data-preserve-direction] {
+  direction: ltr;
+}
+
 /* ═══════════════════════════════════════════════════
    تنسيق أساسي — هوية لحظة فن
    60% Off-white · 30% Pink/Charcoal · 10% Gold

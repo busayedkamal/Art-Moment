@@ -4,6 +4,7 @@ export function normalizeProductOptions(rawOptions) {
   return options
     .map((option, optionIndex) => {
       const name = String(option?.name || '').trim();
+      const nameEn = String(option?.nameEn || option?.name_en || '').trim();
       const id = String(option?.id || `option_${optionIndex + 1}`).trim();
       const values = (Array.isArray(option?.values) ? option.values : [])
         .map((rawValue) => {
@@ -11,12 +12,14 @@ export function normalizeProductOptions(rawOptions) {
             ? { value: rawValue, label: rawValue }
             : rawValue || {};
           const label = String(valueObject.label || valueObject.value || '').trim();
+          const labelEn = String(valueObject.labelEn || valueObject.label_en || '').trim();
           const value = String(valueObject.value || label).trim();
           if (!label || !value) return null;
 
           return {
             value,
             label,
+            labelEn,
             priceDelta: Number(valueObject.priceDelta || valueObject.price_delta || 0),
             colorHex: String(valueObject.colorHex || valueObject.color_hex || '').trim() || null,
           };
@@ -27,11 +30,23 @@ export function normalizeProductOptions(rawOptions) {
       return {
         id,
         name,
+        nameEn,
         required: option?.required !== false,
         values,
       };
     })
     .filter(Boolean);
+}
+
+export function localizeProductOptions(rawOptions, language = 'ar') {
+  return normalizeProductOptions(rawOptions).map((option) => ({
+    ...option,
+    name: language === 'en' && option.nameEn ? option.nameEn : option.name,
+    values: option.values.map((value) => ({
+      ...value,
+      label: language === 'en' && value.labelEn ? value.labelEn : value.label,
+    })),
+  }));
 }
 
 export function normalizeSelectedOptions(rawSelections, productOptions = []) {
@@ -85,4 +100,3 @@ export function getSelectedOptionLabels(productOptions, selections) {
     })
     .filter(Boolean);
 }
-

@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import CustomerAuthModal from './components/CustomerAuthModal';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from './utils/customerAuthPrompt';
-import { normalizeProductOptions } from './utils/productOptions';
+import { localizeProductOptions } from './utils/productOptions';
+import { useLanguage } from './contexts/LanguageContext';
 
 import promoVideo from './assets/printing-quality.mp4';
 import logo from './assets/logo-art-moment.svg';
@@ -35,12 +36,12 @@ import whatsappIcon from './assets/whatsapp icon.svg';
 import telegramIcon from './assets/telegram icon.svg';
 import gmailIcon from './assets/gmail icon.svg';
 
-const fromDb = (p) => {
+const fromDb = (p, language) => {
   const stockQuantity = normalizeStockQuantity(p.stock_quantity);
   return {
     id:           p.id,
-    name:         p.name,
-    description:  p.description || '',
+    name:         language === 'en' && p.name_en ? p.name_en : p.name,
+    description:  language === 'en' && p.description_en ? p.description_en : (p.description || ''),
     price:        p.price,
     category:     p.category,
     image:        p.image       || null,
@@ -49,7 +50,7 @@ const fromDb = (p) => {
     stockQuantity,
     inStock:      (p.in_stock ?? true) && (stockQuantity === null || stockQuantity > 0),
     isBestSeller: p.is_best_seller ?? false,
-    productOptions: normalizeProductOptions(p.product_options),
+    productOptions: localizeProductOptions(p.product_options, language),
   };
 };
 
@@ -70,6 +71,7 @@ const REVIEWS = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const { language } = useLanguage();
 
   const handleAdminClick = (e) => {
     e.preventDefault();
@@ -141,7 +143,7 @@ export default function LandingPage() {
           .select('*')
           .order('sort_order', { ascending: true });
         if (error) throw error;
-        setProducts((data || []).map(fromDb));
+        setProducts((data || []).map((product) => fromDb(product, language)));
       } catch (err) {
         console.error('Error fetching products:', err);
         setProducts([]);
@@ -151,7 +153,7 @@ export default function LandingPage() {
 
     const savedCart = JSON.parse(localStorage.getItem('art_moment_cart')) || [];
     setCart(savedCart);
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     localStorage.setItem('art_moment_cart', JSON.stringify(cart));
@@ -369,8 +371,12 @@ export default function LandingPage() {
             <div className="flex items-center gap-2 sm:gap-3">
               <img src={logo} alt="Art Moment Logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
               <div className="flex flex-col">
-                <h1 className="text-lg sm:text-xl font-black text-[#4A4A4A] leading-none">لحظة فن</h1>
-                <span className="text-[9px] sm:text-[10px] text-[#C5A059] font-bold tracking-widest uppercase">Art Moment</span>
+                <h1 className="text-lg sm:text-xl font-black text-[#4A4A4A] leading-none">
+                  {language === 'en' ? 'Art Moment' : 'لحظة فن'}
+                </h1>
+                <span className="text-[9px] sm:text-[10px] text-[#C5A059] font-bold tracking-widest uppercase">
+                  {language === 'en' ? 'Photo Printing & Gifts' : 'Art Moment'}
+                </span>
               </div>
             </div>
           </div>
@@ -458,8 +464,12 @@ export default function LandingPage() {
               <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight md:leading-tight" dir="rtl">
-              منصة <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظة فن</span> Art Moment
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight md:leading-tight">
+              {language === 'en' ? (
+                <>Art Moment <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">Platform</span></>
+              ) : (
+                <>منصة <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظة فن</span> Art Moment</>
+              )}
             </h1>
 
             <p className="text-sm md:text-base text-white/70 leading-relaxed mx-auto max-w-lg">
@@ -515,7 +525,11 @@ export default function LandingPage() {
             </div>
 
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-white mb-3 drop-shadow-md">
-              شاهد سحر <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">التفاصيل</span>
+              {language === 'en' ? (
+                <>See the magic in every <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">detail</span></>
+              ) : (
+                <>شاهد سحر <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">التفاصيل</span></>
+              )}
             </h2>
 
             <p className="text-xs sm:text-sm md:text-base text-white/90 max-w-2xl mx-auto drop-shadow-sm leading-relaxed">
