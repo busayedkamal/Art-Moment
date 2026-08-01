@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin } from 'lucide-react';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin, LogIn, UserPlus, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CustomerAuthModal from '../components/CustomerAuthModal';
 import { supabase } from '../lib/supabase';
 import {
   getCustomerSession,
@@ -46,6 +47,14 @@ export default function StoreCart() {
   const [rewardPointsInput, setRewardPointsInput] = useState('');
   const [cartHydrated, setCartHydrated] = useState(false);
   const [remoteRestoreChecked, setRemoteRestoreChecked] = useState(false);
+  const [customerSession, setCustomerSession] = useState(() => getCustomerSession());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState('login');
+
+  const openCustomerAuth = (nextMode = 'login') => {
+    setAuthInitialMode(nextMode);
+    setIsAuthModalOpen(true);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -105,6 +114,7 @@ export default function StoreCart() {
 
     const customer = getCustomerSession();
     if (customer) {
+      setCustomerSession(customer);
       setName(customer.name || '');
       setPhone(customer.phone || '');
 
@@ -326,6 +336,13 @@ export default function StoreCart() {
   };
 
   const handleCheckout = async () => {
+    const activeCustomerSession = getCustomerSession();
+    if (!activeCustomerSession?.sessionToken) {
+      openCustomerAuth('login');
+      toast('سجّلي الدخول أو أنشئي حساباً لإتمام الطلب مع حفظ سلتك.');
+      return;
+    }
+
     const isValidPhone = /^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim());
     if (!isValidPhone) { setPhoneError(true); return; }
     setPhoneError(false);
@@ -704,6 +721,49 @@ export default function StoreCart() {
             </div>
           </div>
 
+          <div className={`rounded-[1.5rem] border p-5 sm:p-6 shadow-sm ${customerSession?.sessionToken ? 'border-emerald-200 bg-emerald-50/70' : 'border-[#D9A3AA]/20 bg-white'}`}>
+            {customerSession?.sessionToken ? (
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 font-black text-[#4A4A4A]">
+                    <ShieldCheck size={18} className="text-emerald-600" /> حسابك مرتبط بالطلب
+                  </p>
+                  <p className="mt-1 truncate text-xs text-[#4A4A4A]/55">
+                    {customerSession.name || customerSession.email || customerSession.phone}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700">مسجل الدخول</span>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-4">
+                  <h2 className="flex items-center gap-2 font-black text-[#4A4A4A]">
+                    <LogIn size={18} className="text-[#C5A059]" /> الحساب وإتمام الطلب
+                  </h2>
+                  <p className="mt-1 text-xs leading-relaxed text-[#4A4A4A]/55">
+                    سجّلي الدخول إن كان لديك حساب، أو أنشئي حساباً جديداً. ستبقى المنتجات في سلتك وتُربط بطلباتك تلقائياً.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => openCustomerAuth('login')}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-4 text-sm font-black text-white transition-colors hover:bg-[#D9A3AA]"
+                  >
+                    <LogIn size={17} /> تسجيل الدخول
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openCustomerAuth('signup')}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#C5A059]/30 bg-[#C5A059]/10 px-4 text-sm font-black text-[#8A6A2F] transition-colors hover:bg-[#C5A059]/20"
+                  >
+                    <UserPlus size={17} /> إنشاء حساب جديد
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* بيانات التواصل والشحن */}
           <div className="art-panel p-6 rounded-[1.5rem]">
             <h2 className="font-black text-[#4A4A4A] mb-4">بيانات التواصل والشحن</h2>
@@ -868,20 +928,35 @@ export default function StoreCart() {
 
           <button
             onClick={handleCheckout}
-            disabled={!phone || !city || !district || !street || isSubmitting}
+            disabled={customerSession?.sessionToken ? (!phone || !city || !district || !street || isSubmitting) : isSubmitting}
             className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg ${
-              phone && city && district && street && !isSubmitting
+              (!customerSession?.sessionToken || (phone && city && district && street)) && !isSubmitting
                 ? 'art-cta'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
             }`}
           >
             {isSubmitting
               ? <><Loader2 size={18} className="animate-spin" /> جاري تسجيل الطلب...</>
-              : <><ShoppingBag size={18} /> إتمام الطلب الآن</>
+              : customerSession?.sessionToken
+                ? <><ShoppingBag size={18} /> إتمام الطلب الآن</>
+                : <><LogIn size={18} /> تسجيل الدخول لإتمام الطلب</>
             }
           </button>
         </div>
       </main>
+
+      <CustomerAuthModal
+        isOpen={isAuthModalOpen}
+        initialMode={authInitialMode}
+        redirectTo="/store/cart"
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          const nextSession = getCustomerSession();
+          setCustomerSession(nextSession);
+          if (nextSession?.name) setName(nextSession.name);
+          if (nextSession?.phone) setPhone(nextSession.phone);
+        }}
+      />
     </div>
   );
 }

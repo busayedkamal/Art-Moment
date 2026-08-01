@@ -23,6 +23,7 @@ import { trackStoreEvent } from '../utils/storeAnalytics';
 
 const errorMessages = {
   customer_exists: 'رقم الجوال أو البريد الإلكتروني مسجل مسبقاً. سجل الدخول بدلاً من إنشاء حساب جديد.',
+  customer_not_found: 'هذا البريد غير مسجل. أكملي البيانات لإنشاء حساب جديد.',
   email_send_failed: 'تعذر إرسال كود الاسترداد الآن. تأكد من إعدادات البريد وحاول مرة أخرى.',
   invalid_credentials: 'بيانات الدخول غير صحيحة.',
   invalid_reset_code: 'كود الاسترداد غير صحيح أو انتهت صلاحيته.',
@@ -65,6 +66,23 @@ function isEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
 }
 
+function prefillSignupIdentifier(formData, identifier) {
+  const normalizedIdentifier = String(identifier || '').trim();
+  const identifierIsEmail = isEmail(normalizedIdentifier);
+
+  return {
+    ...formData,
+    email: identifierIsEmail ? normalizeEmail(normalizedIdentifier) : formData.email,
+    phone: !identifierIsEmail && normalizedIdentifier
+      ? normalizeCustomerPhone(normalizedIdentifier)
+      : formData.phone,
+    identifier: normalizedIdentifier || formData.identifier,
+    password: '',
+    confirmPassword: '',
+    resetCode: '',
+  };
+}
+
 function getTitle(mode) {
   if (mode === 'signup') return 'إنشاء حساب جديد';
   if (mode === 'forgot') return 'استرداد كلمة المرور';
@@ -79,14 +97,75 @@ function getSubtitle(mode) {
   return 'ادخل برقم الجوال أو البريد الإلكتروني لمتابعة طلباتك.';
 }
 
-export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/store', initialMode = 'signup' }) {
+export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/store', initialMode = 'login' }) {
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
+  const [accountCheck, setAccountCheck] = useState('idle');
 
   useEffect(() => {
-    if (isOpen) setMode(initialMode);
+    if (!isOpen) return;
+    setMode(initialMode);
+    setAccountCheck('idle');
+    setFormData((prev) => ({
+      ...prev,
+      password: '',
+      confirmPassword: '',
+      resetCode: '',
+    }));
   }, [initialMode, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || mode !== 'login') return undefined;
+
+    const identifier = normalizeEmail(formData.identifier);
+    if (!isEmail(identifier)) {
+      setAccountCheck('idle');
+      return undefined;
+    }
+
+    let cancelled = false;
+    setAccountCheck('checking');
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const data = await invokeCustomerAuth({
+          mode: 'check_account',
+          identifier,
+        });
+        if (cancelled) return;
+
+        if (data?.exists) {
+          setAccountCheck('exists');
+          return;
+        }
+
+        setFormData((prev) => prefillSignupIdentifier(prev, identifier));
+        setAccountCheck('new');
+        setMode('signup');
+        toast.success('هذا البريد جديد، أكملي بياناتك لإنشاء الحساب.');
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Account lookup failed:', error);
+          setAccountCheck('idle');
+        }
+      }
+    }, 650);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [formData.identifier, isOpen, mode]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -105,13 +184,20 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
 
   const changeMode = (nextMode) => {
     setMode(nextMode);
-    setFormData((prev) => ({
-      ...prev,
-      password: '',
-      confirmPassword: '',
-      resetCode: '',
-      identifier: nextMode === 'login' ? prev.identifier : prev.identifier || prev.phone || prev.email,
-    }));
+    setAccountCheck('idle');
+    setFormData((prev) => {
+      if (nextMode === 'signup') {
+        return prefillSignupIdentifier(prev, prev.identifier || prev.email || prev.phone);
+      }
+
+      return {
+        ...prev,
+        password: '',
+        confirmPassword: '',
+        resetCode: '',
+        identifier: prev.identifier || prev.email || prev.phone,
+      };
+    });
   };
 
   const loginCustomer = async () => {
@@ -254,6 +340,13 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
       else if (isReset) await resetPassword();
     } catch (error) {
       console.error(error);
+      if (isLogin && error.message === 'customer_not_found' && isEmail(formData.identifier)) {
+        setFormData((prev) => prefillSignupIdentifier(prev, formData.identifier));
+        setAccountCheck('new');
+        setMode('signup');
+        toast.success(errorMessages.customer_not_found);
+        return;
+      }
       toast.error(errorMessages[error.message] || 'حدث خطأ، يرجى المحاولة مرة أخرى.');
     } finally {
       setLoading(false);
@@ -284,8 +377,18 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
   const SubmitIcon = isLogin ? LogIn : isSignup ? UserPlus : isForgot ? KeyRound : ShieldCheck;
 
   return (
-    <div className="art-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" dir="rtl">
-      <div className="art-auth-card relative w-full max-w-md rounded-[1.5rem] overflow-hidden animate-in zoom-in-95 duration-300">
+    <div
+      className="art-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="art-auth-card relative w-full max-w-md rounded-[1.5rem] overflow-hidden animate-in zoom-in-95 duration-300"
+        role="dialog"
+        aria-modal="true"
+        aria-label={getTitle(mode)}
+      >
         <button
           type="button"
           onClick={onClose}
@@ -378,6 +481,17 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
                 onChange={set('identifier')}
                 className="art-input w-full h-12 pr-12 pl-4 rounded-xl outline-none text-sm dir-ltr text-right"
               />
+              {isLogin && accountCheck !== 'idle' && (
+                <p className={`mt-1.5 px-1 text-[10px] font-bold ${accountCheck === 'exists' ? 'text-emerald-600' : 'text-[#C5A059]'}`}>
+                  {accountCheck === 'checking' ? 'جاري التحقق من البريد...' : 'الحساب موجود، أدخلي كلمة المرور للمتابعة.'}
+                </p>
+              )}
+            </div>
+          )}
+
+          {isSignup && accountCheck === 'new' && (
+            <div className="rounded-xl border border-[#C5A059]/20 bg-[#C5A059]/10 px-3 py-2 text-xs font-bold leading-relaxed text-[#8A6A2F]">
+              البريد غير مسجل لدينا. بقي إدخال الاسم ورقم الجوال وكلمة المرور لإنشاء حسابك.
             </div>
           )}
 

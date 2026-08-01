@@ -143,6 +143,20 @@ Deno.serve(async (req) => {
     const mode = String(body?.mode ?? 'login');
     const supabase = getServiceClient();
 
+    if (mode === 'check_account') {
+      const identifier = getIdentifier(body);
+      const validIdentifier = isEmailIdentifier(identifier)
+        ? Boolean(normalizeEmail(identifier))
+        : isValidSaudiMobile(normalizeSaudiPhone(identifier));
+
+      if (!validIdentifier) {
+        return jsonResponse({ error: 'invalid_identifier' }, 400);
+      }
+
+      const customer = await findCustomerByIdentifier(supabase, identifier);
+      return jsonResponse({ ok: true, exists: Boolean(customer?.id) });
+    }
+
     if (mode === 'request_password_reset') {
       const customer = await findCustomerByIdentifier(supabase, getIdentifier(body));
       if (!customer?.email) return genericResetResponse();
@@ -309,9 +323,14 @@ Deno.serve(async (req) => {
 
     const customer = await findCustomerByIdentifier(supabase, getIdentifier(body));
     const password = String(body?.password ?? '');
+
+    if (!customer) {
+      return jsonResponse({ error: 'customer_not_found' }, 404);
+    }
+
     const passwordCheck = await verifyPassword(password, customer?.password_hash);
 
-    if (!customer || !passwordCheck.valid) {
+    if (!passwordCheck.valid) {
       return jsonResponse({ error: 'invalid_credentials' }, 401);
     }
 

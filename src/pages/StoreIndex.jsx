@@ -623,7 +623,7 @@ export default function StoreIndex() {
 
       <CustomerAuthModal
         isOpen={isAuthModalOpen}
-        initialMode="signup"
+        initialMode="login"
         onClose={() => {
           setIsAuthModalOpen(false);
           setCustomer(getCustomerSession());

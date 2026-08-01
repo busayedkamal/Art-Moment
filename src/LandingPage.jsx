@@ -1255,7 +1255,7 @@ export default function LandingPage() {
 
       <CustomerAuthModal
         isOpen={isAuthModalOpen}
-        initialMode="signup"
+        initialMode="login"
         onClose={() => {
           setIsAuthModalOpen(false);
           setCustomer(getCustomerSession());
