@@ -4,6 +4,8 @@ import { translateUiText } from '../i18n/translations';
 
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE']);
 const TRANSLATABLE_ATTRIBUTES = ['placeholder', 'title', 'aria-label'];
+const originalTextValues = new WeakMap();
+const originalAttributeValues = new WeakMap();
 
 function shouldSkip(element) {
   if (!element) return true;
@@ -14,16 +16,34 @@ function shouldSkip(element) {
 
 function translateTextNode(node, language) {
   if (!node?.parentElement || shouldSkip(node.parentElement)) return;
-  const translated = translateUiText(node.nodeValue, language);
-  if (translated !== node.nodeValue) node.nodeValue = translated;
+
+  const current = node.nodeValue;
+  const saved = originalTextValues.get(node);
+  let source = saved?.source ?? current;
+  if (saved && current !== saved.source && current !== saved.translated) source = current;
+
+  const translated = language === 'en' ? translateUiText(source, language) : source;
+  originalTextValues.set(node, { source, translated });
+  if (translated !== current) node.nodeValue = translated;
 }
 
 function translateAttributes(element, language) {
   if (!(element instanceof Element) || shouldSkip(element)) return;
+  let savedAttributes = originalAttributeValues.get(element);
+  if (!savedAttributes) {
+    savedAttributes = new Map();
+    originalAttributeValues.set(element, savedAttributes);
+  }
+
   TRANSLATABLE_ATTRIBUTES.forEach((attribute) => {
     if (!element.hasAttribute(attribute)) return;
     const current = element.getAttribute(attribute);
-    const translated = translateUiText(current, language);
+    const saved = savedAttributes.get(attribute);
+    let source = saved?.source ?? current;
+    if (saved && current !== saved.source && current !== saved.translated) source = current;
+
+    const translated = language === 'en' ? translateUiText(source, language) : source;
+    savedAttributes.set(attribute, { source, translated });
     if (translated !== current) element.setAttribute(attribute, translated);
   });
 }
@@ -48,8 +68,6 @@ export default function DomTranslator() {
   const { language } = useLanguage();
 
   useEffect(() => {
-    if (language !== 'en') return undefined;
-
     const root = document.getElementById('app-language-scope');
     if (!root) return undefined;
     translateElement(root, language);

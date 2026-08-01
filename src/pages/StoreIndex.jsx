@@ -348,7 +348,7 @@ export default function StoreIndex() {
             <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
           </nav>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className={`flex items-center gap-3 sm:gap-4 ${language === 'en' ? 'pr-20' : 'pl-20'}`}>
             {(isInstallable || isIOS) && (
               <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#D9A3AA] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C5A059] transition-all">
                 <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
