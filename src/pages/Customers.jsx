@@ -165,6 +165,11 @@ function getWhatsappPhone(raw) {
   return clean.length === 9 ? `966${clean}` : clean;
 }
 
+function hasRegisteredEmail(raw) {
+  const email = String(raw || '').trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function createCustomerBucket({ key, name = 'عميل لحظة فن', phone = '' }) {
   return {
     id: key,
@@ -655,6 +660,7 @@ export default function Customers() {
           lifetimeValue,
           totalOrders: allOrdersCount,
           isVip,
+          isStoreCustomer: hasRegisteredEmail(c.email),
           marketingOptIn: Boolean(c.marketingOptIn),
           adminStatus: c.adminStatus || 'active',
           adminNotes: c.adminNotes || notes,
@@ -1335,7 +1341,7 @@ export default function Customers() {
   const filtered = useMemo(() => {
     let data = customersData;
     if (filter === "vip") data = data.filter(c => c.isVip);
-    if (filter === "store") data = data.filter(c => c.hasStoreAccount || c.storeOrdersCount > 0);
+    if (filter === "store") data = data.filter(c => c.isStoreCustomer);
     if (filter === "marketing") data = data.filter(c => c.marketingOptIn);
     if (filter === "attention") data = data.filter(c => c.segment === 'needs_attention');
     if (search.trim()) {
@@ -1368,7 +1374,7 @@ export default function Customers() {
     const totalCustomers = customersData.length;
     const vipCustomers = customersData.filter(c => c.isVip).length;
     const totalPackageBalance = customersData.reduce((sum, c) => sum + (Number(c.packageBalance || 0)), 0);
-    const storeCustomers = customersData.filter(c => c.hasStoreAccount || c.storeOrdersCount > 0).length;
+    const storeCustomers = customersData.filter(c => c.isStoreCustomer).length;
     const marketingCustomers = customersData.filter(c => c.marketingOptIn).length;
     const attentionCustomers = customersData.filter(c => c.segment === 'needs_attention').length;
     const storeRevenue = customersData.reduce((sum, c) => sum + Number(c.storePaid || 0), 0);
@@ -1549,7 +1555,7 @@ export default function Customers() {
                   <div className="text-xs text-[#4A4A4A]/40 font-mono mt-0.5" dir="ltr">{customer.email || customer.phone || "—"}</div>
                   {/* الأرصدة */}
                   <div className="flex gap-2 mt-1.5 flex-wrap">
-                    {customer.hasStoreAccount && (
+                    {customer.isStoreCustomer && (
                       <span className="text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-lg">
                         <ShieldCheck size={9} className="inline ml-0.5"/> متجر
                       </span>
@@ -1801,7 +1807,7 @@ export default function Customers() {
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black ${segment.className}`}>
                                 <SegmentIcon size={10} /> {segment.label}
                               </span>
-                              {customer.hasStoreAccount && (
+                              {customer.isStoreCustomer && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black bg-blue-50 text-blue-600 border-blue-100">
                                   <ShieldCheck size={10} /> متجر
                                 </span>
