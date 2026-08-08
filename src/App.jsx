@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import AuthProvider, { useAuth } from './contexts/AuthContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
-import LanguageToggle from './components/LanguageToggle'
 import DomTranslator from './components/DomTranslator'
 
 // الصفحة الرئيسية
@@ -132,7 +131,6 @@ function LocalizedApp() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <LanguageToggle />
         <DomTranslator />
         <div id="app-language-scope" key={language}>
           <Suspense fallback={<PageLoader />}>

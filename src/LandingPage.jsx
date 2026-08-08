@@ -22,6 +22,7 @@ import {
   User, LogOut, Share2
 } from 'lucide-react';
 import CustomerAuthModal from './components/CustomerAuthModal';
+import LanguageToggle from './components/LanguageToggle';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from './utils/customerAuthPrompt';
 import { localizeProductOptions } from './utils/productOptions';
 import { useLanguage } from './contexts/LanguageContext';
@@ -35,6 +36,7 @@ import tiktokIcon from './assets/tiktok icon.svg';
 import whatsappIcon from './assets/whatsapp icon.svg';
 import telegramIcon from './assets/telegram icon.svg';
 import gmailIcon from './assets/gmail icon.svg';
+import waseetShopLogo from './assets/waseetshop logo.svg';
 
 const fromDb = (p, language) => {
   const stockQuantity = normalizeStockQuantity(p.stock_quantity);
@@ -396,7 +398,7 @@ export default function LandingPage() {
           </nav>
 
           {/* Left Side: Icons */}
-          <div className={`flex items-center gap-3 sm:gap-4 ${language === 'en' ? 'pr-20' : 'pl-20'}`}>
+          <div className="flex items-center gap-2 sm:gap-3">
             {(isInstallable || isIOS) && (
               <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#D9A3AA] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C5A059] transition-all">
                 <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
@@ -407,6 +409,8 @@ export default function LandingPage() {
             <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
               <Lock size={16} />
             </button>
+
+            <LanguageToggle />
 
             {customer ? (
               <div className="flex items-center gap-1 sm:gap-2">
@@ -1066,8 +1070,18 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="art-shell text-center border-t border-[#F8F5F2] pt-8">
+        <div className="art-shell flex flex-col items-center gap-4 border-t border-[#F8F5F2] pt-8 text-center">
           <p className="text-xs font-bold text-[#4A4A4A]/50">جميع الحقوق محفوظة لمتجر لحظة فن © {new Date().getFullYear()}</p>
+          <a
+            href="https://waseet-shop.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs font-bold text-[#4A4A4A]/60 transition-colors hover:text-[#056ab3]"
+            aria-label="زيارة منصة وسيط شوب"
+          >
+            <span>{language === 'en' ? 'Website designed by Waseet Shop' : 'تم تصميم الموقع بواسطة منصة (وسيط شوب)'}</span>
+            <img src={waseetShopLogo} alt="وسيط شوب" className="h-7 w-7 object-contain" />
+          </a>
         </div>
       </footer>
 
