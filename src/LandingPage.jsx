@@ -1016,7 +1016,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           9. PROFESSIONAL FOOTER
       ══════════════════════════════════ */}
-      <footer className="bg-white border-t border-[#D9A3AA]/20 pt-16 pb-8">
+      <footer className="bg-white border-t border-[#D9A3AA]/20 pt-16 pb-32 sm:pb-8">
         <div className="art-shell grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -1046,7 +1046,7 @@ export default function LandingPage() {
 
           <div>
             <h3 className="font-black text-[#4A4A4A] mb-4">تواصل معنا</h3>
-            <div className="flex gap-2 flex-wrap mb-6">
+            <div className="flex gap-2 flex-wrap">
               {[
                 { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966560301744',                alt: 'WhatsApp' },
                 { id: 'instagram', icon: instagramIcon, url: 'https://www.instagram.com/art.moment26/',   alt: 'Instagram' },
@@ -1061,12 +1061,6 @@ export default function LandingPage() {
                   <img src={social.icon} alt={social.alt} className="w-5 h-5 object-contain" />
                 </a>
               ))}
-            </div>
-            <h3 className="font-black text-[#4A4A4A] mb-3 text-sm">طرق الدفع المدعومة</h3>
-            <div className="flex gap-2">
-              <div className="w-12 h-8 bg-[#F8F5F2] rounded border border-[#D9A3AA]/20 flex items-center justify-center text-[10px] font-black text-[#4A4A4A]/50">Mada</div>
-              <div className="w-12 h-8 bg-[#F8F5F2] rounded border border-[#D9A3AA]/20 flex items-center justify-center text-[10px] font-black text-[#4A4A4A]/50">Visa</div>
-              <div className="w-12 h-8 bg-[#F8F5F2] rounded border border-[#D9A3AA]/20 flex items-center justify-center text-[10px] font-black text-[#4A4A4A]/50">Apple</div>
             </div>
           </div>
         </div>
