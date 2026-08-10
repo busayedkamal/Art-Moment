@@ -58,23 +58,98 @@ const fromDb = (p, language) => {
 };
 
 const FAQS = [
-  { q: 'كم يستغرق تجهيز طلب الطباعة؟',   a: 'يعتمد الوقت على عدد الصور والضغط، لكن عادة يتم التجهيز في نفس اليوم أو اليوم التالي.' },
-  { q: 'كيف أعرف أين وصل طلبي؟',          a: 'من خلال صفحة "تتبع الطلب" في الموقع. تحتاج فقط لرقم الطلب الذي نرسله لك.' },
-  { q: 'ما هي طرق الدفع المتاحة؟',         a: 'الدفع يكون غالباً عند الاستلام نقداً أو تحويل بنكي.' },
-  { q: 'كم يستغرق التوصيل؟',               a: 'يستغرق التوصيل داخل الأحساء 24-48 ساعة، وخارجها من 3 إلى 5 أيام عمل.' },
-  { q: 'هل منتجات المتجر أصلية ومضمونة؟', a: 'نعم، جميع الألبومات والإطارات مختارة بعناية ومضمونة الجودة من لحظة فن.' },
+  {
+    q: 'كم يستغرق تجهيز طلب الطباعة؟',
+    qEn: 'How long does a print order take?',
+    a: 'يعتمد الوقت على عدد الصور والضغط، لكن عادة يتم التجهيز في نفس اليوم أو اليوم التالي.',
+    aEn: 'Timing depends on the number of photos and current demand. Most orders are prepared the same day or the next day.',
+  },
+  {
+    q: 'ما أنواع الملفات المناسبة للطباعة؟',
+    qEn: 'Which file types are best for printing?',
+    a: 'يفضل إرسال الصور الأصلية بصيغة JPG أو PNG وبأعلى دقة متاحة، وتجنب صور الشاشة المضغوطة قدر الإمكان.',
+    aEn: 'Original JPG or PNG files at the highest available resolution are best. Avoid compressed screenshots whenever possible.',
+  },
+  {
+    q: 'ما المقاسات المتاحة؟',
+    qEn: 'Which print sizes are available?',
+    a: 'نوفر مقاسات الصور الشائعة مثل 4x6، إضافة إلى A4 وخيارات أخرى تظهر داخل المتجر حسب التوفر.',
+    aEn: 'Popular sizes such as 4x6 and A4 are available, along with other options shown in the store when in stock.',
+  },
+  {
+    q: 'كيف أعرف أين وصل طلبي؟',
+    qEn: 'How can I track my order?',
+    a: 'من خلال صفحة تتبع الطلب في الموقع باستخدام رقم الطلب الذي نرسله لك.',
+    aEn: 'Use the Track Order page with the order number sent to you after confirmation.',
+  },
+  {
+    q: 'كم يستغرق التوصيل؟',
+    qEn: 'How long does delivery take?',
+    a: 'يستغرق التوصيل داخل الأحساء عادة 24-48 ساعة، وخارجها من 3 إلى 5 أيام عمل.',
+    aEn: 'Delivery usually takes 24-48 hours within Al Ahsa and 3-5 business days elsewhere.',
+  },
 ];
 
 const REVIEWS = [
-  { id: 1, name: 'زينب',   comment: 'الجودة خرافية والألوان تفتح النفس! التغليف كان ممتاز جداً.',   rating: 5 },
-  { id: 2, name: 'معصومة', comment: 'تعامل راقي وسرعة في الإنجاز. طلبت الصباح واستلمت العصر.',     rating: 5 },
-  { id: 3, name: 'فاطمة',  comment: 'أفضل محل طباعة تعاملت معه في الأحساء، دقة في المواعيد.',       rating: 4 },
+  { id: 1, name: 'زينب', nameEn: 'Zainab', comment: 'الجودة خرافية والألوان تفتح النفس! التغليف كان ممتاز جداً.', commentEn: 'The quality and colors are wonderful, and the packaging was excellent.', rating: 5 },
+  { id: 2, name: 'معصومة', nameEn: 'Masooma', comment: 'تعامل راقي وسرعة في الإنجاز. طلبت الصباح واستلمت العصر.', commentEn: 'Lovely service and fast preparation. I ordered in the morning and received it that afternoon.', rating: 5 },
+  { id: 3, name: 'فاطمة', nameEn: 'Fatimah', comment: 'أفضل محل طباعة تعاملت معه في الأحساء، دقة في المواعيد.', commentEn: 'The best printing service I have used in Al Ahsa, with excellent timing.', rating: 4 },
 ];
+
+const LANDING_COPY = {
+  ar: {
+    strip: ['توصيل موثوق', 'جودة طباعة', 'خدمة العملاء'],
+    navPrint: 'اطبع صورك', navStore: 'المتجر', navTrack: 'تتبع الطلب', navAbout: 'من نحن', navCart: 'السلة',
+    heroEyebrow: 'طباعة صور فوتوغرافية في الأحساء',
+    heroTitle: 'صورك تستحق أن تُمسك باليد',
+    heroText: 'نحوّل لحظاتك الرقمية إلى صور مطبوعة ومنتجات تحفظها لسنوات.',
+    printCta: 'اطبع صورك الآن', shopCta: 'تسوّق المستلزمات',
+    processEyebrow: 'من الجوال إلى يدك', processTitle: 'طباعة الصور في 3 خطوات',
+    processText: 'رحلة واضحة وسريعة، من اختيار المنتج حتى استلام ذكرياتك.',
+    categoriesEyebrow: 'تسوّق حسب احتياجك', categoriesTitle: 'كل ما تحتاجه لذكرياتك',
+    featuredEyebrow: 'مختارات لحظة فن', featuredTitle: 'الأكثر طلباً',
+    featuredText: 'منتجات أحبها عملاؤنا وتعودوا على اختيارها لحفظ أجمل اللحظات.',
+    whyEyebrow: 'لماذا لحظة فن؟', whyTitle: 'نهتم بالصورة قبل كل شيء',
+    showcaseEyebrow: 'من داخل التجربة', showcaseTitle: 'تفاصيل تُرى وتُحس',
+    showcaseText: 'ألوان واضحة، ورق مختار بعناية، وتغليف يحافظ على كل صورة حتى تصل إليك.',
+    reviewsEyebrow: 'آراء حقيقية', reviewsTitle: 'قالوا عن لحظة فن', verifiedReview: 'عميلة موثوقة',
+    faqEyebrow: 'قبل أن تطبع', faqTitle: 'أسئلة تتكرر كثيراً',
+    browseStore: 'تصفح المتجر', noProducts: 'لا توجد منتجات مختارة حالياً', addToCart: 'إضافة إلى السلة', unavailable: 'غير متوفر', inCart: 'في السلة',
+    footerText: 'نوثق أجمل لحظاتك بجودة تليق بها، من طباعة الصور إلى الألبومات والإطارات المختارة بعناية.',
+    verifiedAt: 'موثق في', businessCenter: 'المركز السعودي للأعمال', importantLinks: 'روابط مهمة',
+    returnsPolicy: 'سياسة الاسترجاع والاستبدال', terms: 'الشروط والأحكام', officialAccounts: 'حساباتنا الرسمية', shoppingCart: 'سلة التسوق',
+    contactUs: 'تواصل معنا', rights: 'جميع الحقوق محفوظة لمتجر لحظة فن',
+  },
+  en: {
+    strip: ['Fast delivery', 'Photo-quality prints', 'Customer care'],
+    navPrint: 'Print Photos', navStore: 'Store', navTrack: 'Track Order', navAbout: 'About Us', navCart: 'Cart',
+    heroEyebrow: 'Photo printing in Al Ahsa',
+    heroTitle: 'Photos you can hold onto',
+    heroText: 'We turn digital moments into beautiful prints and keepsakes made to last.',
+    printCta: 'Print Your Photos', shopCta: 'Shop Supplies',
+    processEyebrow: 'From your phone to your hands', processTitle: 'Print in 3 simple steps',
+    processText: 'A clear, easy journey from choosing your product to receiving your memories.',
+    categoriesEyebrow: 'Shop by need', categoriesTitle: 'Everything your memories need',
+    featuredEyebrow: 'Art Moment picks', featuredTitle: 'Most Loved',
+    featuredText: 'Customer favorites chosen to preserve the moments that matter most.',
+    whyEyebrow: 'Why Art Moment?', whyTitle: 'The photo always comes first',
+    showcaseEyebrow: 'A closer look', showcaseTitle: 'Details you can see and feel',
+    showcaseText: 'Clear color, carefully selected paper, and thoughtful packaging that protects every print.',
+    reviewsEyebrow: 'Real reviews', reviewsTitle: 'What customers say', verifiedReview: 'Verified customer',
+    faqEyebrow: 'Before you print', faqTitle: 'Frequently asked questions',
+    browseStore: 'Browse the Store', noProducts: 'No featured products right now', addToCart: 'Add to Cart', unavailable: 'Out of Stock', inCart: 'In cart',
+    footerText: 'We preserve your favorite moments with thoughtful photo printing, albums, and frames made to last.',
+    verifiedAt: 'Verified by', businessCenter: 'Saudi Business Center', importantLinks: 'Important Links',
+    returnsPolicy: 'Returns and Exchanges', terms: 'Terms and Conditions', officialAccounts: 'Official Accounts', shoppingCart: 'Shopping Cart',
+    contactUs: 'Contact Us', rights: 'All rights reserved to Art Moment',
+  },
+};
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const { language } = useLanguage();
+  const { language, direction } = useLanguage();
+  const copy = LANDING_COPY[language] || LANDING_COPY.ar;
 
   const handleAdminClick = (e) => {
     e.preventDefault();
@@ -91,7 +166,6 @@ export default function LandingPage() {
   // --- UI states ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq]                   = useState(null);
-  const [activePackage, setActivePackage]       = useState(0);
   const [scrolled, setScrolled]                 = useState(false);
 
   // --- PWA states ---
@@ -125,18 +199,6 @@ export default function LandingPage() {
     toast.success('تم تسجيل الخروج بنجاح');
   };
 
-  // --- Pricing states ---
-  const [pricingSettings, setPricingSettings] = useState(null);
-  const [calcQty, setCalcQty]                 = useState(50);
-
-  // --- Feedback states ---
-  const [feedbackType, setFeedbackType] = useState('تقييم ⭐️');
-  const [feedbackText, setFeedbackText] = useState('');
-
-  // --- Accordion state ---
-  const [activeExpandable, setActiveExpandable] = useState(null);
-  const toggleExpandable = (section) => setActiveExpandable(prev => prev === section ? null : section);
-
   // ─── Effects ───────────────────────────────────────────────
   useEffect(() => {
     const fetchProducts = async () => {
@@ -161,17 +223,6 @@ export default function LandingPage() {
   useEffect(() => {
     localStorage.setItem('art_moment_cart', JSON.stringify(cart));
   }, [cart]);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('public-settings', { body: {} });
-        if (error) throw error;
-        if (data?.settings) setPricingSettings(data.settings);
-      } catch (err) { console.error('Error fetching settings:', err); }
-    };
-    fetchSettings();
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -273,62 +324,8 @@ export default function LandingPage() {
     }
   };
 
-  // ─── Pricing logic ───────────────────────────────────────────
-  const calculateDynamicPrice = (qty) => {
-    if (!pricingSettings) return { unit: 0, total: 0, savings: 0 };
-    let unitPrice = pricingSettings.tier_1_price;
-    const basePrice = pricingSettings.tier_1_price;
-    if (qty > pricingSettings.tier_2_limit)      unitPrice = pricingSettings.tier_3_price;
-    else if (qty > pricingSettings.tier_1_limit) unitPrice = pricingSettings.tier_2_price;
-    const total   = qty * unitPrice;
-    const savings = qty * basePrice - total;
-    return { unit: unitPrice, total, savings };
-  };
-  const calcResult = calculateDynamicPrice(calcQty);
-
-  // ─── Feedback logic ──────────────────────────────────────────
-  const handleSendFeedback = () => {
-    if (!feedbackText.trim()) return;
-    const msg = `مرحباً، لدي رسالة للإدارة:\n\n*نوع الرسالة:* ${feedbackType}\n*النص:* ${feedbackText}`;
-    window.open(`https://wa.me/966560301744?text=${encodeURIComponent(msg)}`, '_blank');
-    setFeedbackText('');
-  };
-
-  // ─── Packages data ───────────────────────────────────────────
-  const packages = [
-    {
-      id: 0, icon: Plane, title: 'ذكريات السفر',
-      desc: 'لا تخلي صور السفرة محبوسة بالجوال! وثق أجمل أيامك في ألبوم يجمع كل تفاصيلها لتعيشها كل ما فتحته.',
-      contents: ['ألبوم صور أنيق ومقاوم', '100 صورة مقاس 4x6', 'ألوان زاهية وتفاصيل دقيقة'],
-      color: 'bg-[#171717]',
-      msg: 'مرحباً، مهتم بطلب "باقة ذكريات السفر" (ألبوم + 100 صورة)',
-    },
-    {
-      id: 1, icon: Gift, title: 'الهدية المثالية',
-      desc: 'أجمل هدية ممكن تقدمها لشخص غالي هي ذكرياتكم المشتركة. جهزناها لك بعناية لتكون مفاجأة لا تُنسى.',
-      contents: ['ألبوم فاخر لحفظ الصور', '50 صورة لأجمل لحظاتكم', 'تغليف هدايا فاخر + كرت إهداء'],
-      color: 'bg-[#B96F7D]',
-      msg: 'مرحباً، مهتم بطلب "باقة الهدية المثالية" (مع التغليف)',
-    },
-    {
-      id: 2, icon: Smartphone, title: 'تفريغ زحمة الجوال',
-      desc: 'الجوالات تخرب وتضيع، لكن الصور المطبوعة تعيش للأبد. نظف مساحة جوالك واحفظ ذكرياتك بأمان.',
-      contents: ['200 صورة مقاس 4x6', 'طباعة عالية الجودة تدوم طويلاً', 'توفير ممتاز للكميات'],
-      color: 'bg-[#8F713C]',
-      msg: 'مرحباً، مهتم بطلب "باقة تفريغ الجوال" (200 صورة)',
-    },
-    {
-      id: 3, icon: LayoutDashboard, title: 'جدار الذكريات',
-      desc: 'جدد غرفتك أو مكتبك بصورك المفضلة! صور بحجم كبير تناسب البراويز وتضيف روح للمكان.',
-      contents: ['6 صور كبيرة مقاس A4', 'دقة استثنائية تناسب البراويز', 'جاهزة للتعليق فوراً'],
-      color: 'bg-[#171717]',
-      msg: 'مرحباً، مهتم بطلب "باقة جدار الذكريات" (6 صور A4)',
-    },
-  ];
-  const activePkg = packages[activePackage];
-
   return (
-    <div className="art-page min-h-screen font-[Tajawal] relative overflow-x-hidden selection:bg-[#E8B4BC] selection:text-white" dir="rtl">
+    <div className="art-page min-h-screen font-[Tajawal] relative overflow-x-hidden selection:bg-[#E8B4BC] selection:text-white" dir={direction}>
 
       {/* Toast notification */}
       {toastMsg && (
@@ -355,9 +352,20 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════
-          NAVBAR
-      ══════════════════════════════════ */}
+      <div className="bg-[#171717] text-white">
+        <div className="art-shell min-h-9 py-2 flex flex-nowrap items-center justify-center gap-3 sm:gap-8 text-[9px] sm:text-xs font-bold text-white/80">
+          {copy.strip.map((item, index) => (
+            <span key={item} className="flex items-center gap-1.5">
+              {index === 0 && <Truck size={13} className="text-[#E8B4BC]" />}
+              {index === 1 && <Award size={13} className="text-[#C6A56B]" />}
+              {index === 2 && <MessageCircle size={13} className="text-[#E8B4BC]" />}
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════ NAVBAR ══════════════════════════════════ */}
       <header className={`sticky top-0 z-50 art-nav transition-all duration-300 ${scrolled ? 'art-nav-scrolled' : ''}`}>
         <div className="art-shell h-20 flex items-center justify-between">
 
@@ -386,16 +394,14 @@ export default function LandingPage() {
 
           {/* Center: Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#171717]/80">
-            <a href="#products" className="hover:text-[#E8B4BC] transition-colors flex items-center gap-1.5">
-              <ShoppingBag size={15} className="text-[#E8B4BC]" /> المتجر
-            </a>
-            <a href="#services" className="hover:text-[#E8B4BC] transition-colors">الباقات</a>
-            <a href="#services" className="hover:text-[#E8B4BC] transition-colors">الطباعة</a>
-            <a href="#services" className="hover:text-[#E8B4BC] transition-colors flex items-center gap-1.5">
-              <Wallet size={15} className="text-[#C6A56B]" /> شحن المحفظة
-            </a>
-            <Link to="/store/orders" className="hover:text-[#E8B4BC] transition-colors">طلباتي</Link>
-            <Link to="/track" className="hover:text-[#E8B4BC] transition-colors">تتبع الطلب</Link>
+            <a href="#print-process" className="hover:text-[#E8B4BC] transition-colors">{copy.navPrint}</a>
+            <Link to="/store" className="hover:text-[#E8B4BC] transition-colors">{copy.navStore}</Link>
+            <Link to="/track" className="hover:text-[#E8B4BC] transition-colors">{copy.navTrack}</Link>
+            <a href="#why" className="hover:text-[#E8B4BC] transition-colors">{copy.navAbout}</a>
+            <Link to="/store/cart" className="hover:text-[#E8B4BC] transition-colors flex items-center gap-1.5">
+              <ShoppingCart size={16} className="text-[#E8B4BC]" /> {copy.navCart}
+              {cartCount > 0 && <span className="min-w-5 h-5 px-1 rounded-full bg-[#171717] text-white text-[10px] grid place-items-center">{cartCount}</span>}
+            </Link>
           </nav>
 
           {/* Left Side: Icons */}
@@ -436,13 +442,12 @@ export default function LandingPage() {
         {/* Mobile menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#FAF9F7] border-t border-[#E8B4BC]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
-            <a href="#products" className="flex items-center gap-2 py-2 text-[#E8B4BC] font-bold" onClick={() => setIsMobileMenuOpen(false)}><ShoppingBag size={16} /> المتجر</a>
-            <a href="#services" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
-            <a href="#services" className="block py-2 text-[#171717]"           onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
-            <a href="#services" className="flex items-center gap-2 py-2 text-[#C6A56B] font-bold" onClick={() => setIsMobileMenuOpen(false)}><Wallet size={16} /> شحن المحفظة</a>
-            <Link to="/store/orders" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
-            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
-            <Link to="/links" className="flex w-full items-center justify-center gap-2 py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}><Share2 size={16} className="text-[#C6A56B]" /> حساباتنا</Link>
+            <a href="#print-process" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navPrint}</a>
+            <Link to="/store" className="flex items-center gap-2 py-2 text-[#E8B4BC] font-bold" onClick={() => setIsMobileMenuOpen(false)}><ShoppingBag size={16} /> {copy.navStore}</Link>
+            <Link to="/track" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navTrack}</Link>
+            <a href="#why" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navAbout}</a>
+            <Link to="/store/cart" className="flex w-full items-center justify-center gap-2 py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}><ShoppingCart size={16} /> {copy.navCart} ({cartCount})</Link>
+            <Link to="/links" className="flex w-full items-center justify-center gap-2 py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}><Share2 size={16} className="text-[#C6A56B]" /> {language === 'en' ? 'Our Accounts' : 'حساباتنا'}</Link>
             {customer && (
               <button
                 onClick={() => { setIsMobileMenuOpen(false); setIsAccountSidebarOpen(true); }}
@@ -459,99 +464,81 @@ export default function LandingPage() {
         )}
       </header>
 
-      {/* ══════════════════════════════════
-          1. HERO SECTION (Banner Style)
-      ══════════════════════════════════ */}
+      {/* ══════════════════════════════════ HERO ══════════════════════════════════ */}
       <section className="pt-6 pb-8 art-shell">
         <div className="art-hero-card art-crop-marks relative min-h-[500px] sm:min-h-[540px] overflow-hidden rounded-lg p-7 sm:p-10 md:p-14 flex items-end sm:items-center justify-center text-center text-white">
           <img
             src={printedPhotos}
-            alt="مجموعة صور مطبوعة من لحظة فن"
+            alt={language === 'en' ? 'A collection of printed photos by Art Moment' : 'مجموعة صور مطبوعة من لحظة فن'}
             className="absolute inset-0 h-full w-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-[#171717]/60" />
           <div className="max-w-4xl mx-auto relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 text-[#171717] text-[10px] sm:text-xs font-bold border border-white mx-auto shadow-sm">
-              <Sparkles size={14} className="text-[#C6A56B]" /> طباعة صور فوتوغرافية في الأحساء
+              <Sparkles size={14} className="text-[#C6A56B]" /> {copy.heroEyebrow}
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight md:leading-tight">
-              {language === 'en' ? (
-                <>Art Moment <span className="text-[#E8B4BC]">Platform</span></>
-              ) : (
-                <>منصة <span className="text-[#E8B4BC]">لحظة فن</span> Art Moment</>
-              )}
-            </h1>
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-white leading-tight md:leading-tight">{copy.heroTitle}</h1>
 
             <p className="text-sm md:text-base text-white/70 leading-relaxed mx-auto max-w-lg">
-              حوّل صورك الرقمية إلى ذكريات ملموسة.
+              {copy.heroText}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 justify-center pt-2">
-              <a href="https://wa.me/966560301744" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
-                <MessageCircle size={20} /> واتساب
-              </a>
-              <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#171717] border border-white font-bold hover:bg-[#FAF9F7] flex items-center justify-center gap-2 transition-colors">
-                <Search size={20} className="text-[#C6A56B]" /> تتبع طلبك
+              <Link to="/store?category=printing" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#171717] border border-white font-black hover:bg-[#FAF9F7] flex items-center justify-center gap-2 transition-colors shadow-lg">
+                <Printer size={20} className="text-[#E8B4BC]" /> {copy.printCta}
               </Link>
-              <Link to="/links" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/50 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
-                <Share2 size={20} className="text-[#E8B4BC]" /> حساباتنا
+              <Link to="/store" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#171717]/75 border border-white/60 text-white font-bold hover:bg-[#171717] flex items-center justify-center gap-2 transition-colors">
+                <ShoppingBag size={20} className="text-[#C6A56B]" /> {copy.shopCta}
               </Link>
-            </div>
-
-            <div className="pt-2 flex flex-wrap gap-4 justify-center text-[10px] sm:text-xs font-bold text-white/60">
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C6A56B]" /> ورق فاخر</span>
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C6A56B]" /> دقة عالية</span>
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C6A56B]" /> دفع عند الاستلام</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════
-          1.5 VIDEO PROMO SECTION
-      ══════════════════════════════════ */}
-      <section className="art-shell mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
-        <div className="art-crop-marks relative rounded-lg overflow-hidden shadow-xl border-[8px] border-white h-[350px] md:h-[450px] flex items-center justify-center group bg-[#171717]">
-
-          {/* Video Background */}
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover opacity-80 transition-transform duration-1000 group-hover:scale-105"
-          >
-            <source src={promoVideo} type="video/mp4" />
-            متصفحك لا يدعم تشغيل الفيديو.
-          </video>
-
-          <div className="absolute inset-0 bg-[#171717]/35"></div>
-
-          {/* Text Content */}
-          <div className="relative z-10 text-center px-6 mt-auto pb-10 w-full">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold border border-white/20 mx-auto mb-4 shadow-sm">
-              <Sparkles size={14} className="text-[#C6A56B]" /> جودة لا تضاهى
+      {/* ══════════════════════════════════ PRINT PROCESS ══════════════════════════════════ */}
+      <section id="print-process" className="art-shell py-12 sm:py-16 scroll-mt-28">
+        <div className="max-w-2xl mb-9 sm:mb-12">
+          <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.processEyebrow}</p>
+          <h2 className="text-2xl sm:text-4xl font-black text-[#171717] mb-3">{copy.processTitle}</h2>
+          <p className="text-sm sm:text-base text-[#171717]/60 leading-relaxed">{copy.processText}</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-y border-[#171717]/10">
+          {[
+            { icon: ShoppingBag, ar: 'اختر منتج الطباعة والمقاس المناسب', en: 'Choose your print product and size' },
+            { icon: ImageIcon, ar: 'أرسل صورك الأصلية بأعلى دقة', en: 'Send your original, high-resolution photos' },
+            { icon: Truck, ar: 'نطبع ونغلف ثم نوصّل طلبك', en: 'We print, package, and deliver your order' },
+          ].map((step, index) => (
+            <div key={step.ar} className="relative px-4 py-7 sm:p-8 border-b md:border-b-0 md:border-e border-[#171717]/10 last:border-0">
+              <span className="absolute top-6 end-4 text-5xl font-black text-[#171717]/5">0{index + 1}</span>
+              <step.icon size={28} strokeWidth={1.6} className={index === 1 ? 'text-[#E8B4BC]' : 'text-[#C6A56B]'} />
+              <h3 className="mt-5 max-w-xs font-black text-[#171717] leading-relaxed">{language === 'en' ? step.en : step.ar}</h3>
             </div>
+          ))}
+        </div>
+      </section>
 
-            <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-white mb-3 drop-shadow-md">
-              {language === 'en' ? (
-                <>See the magic in every <span className="text-[#E8B4BC]">detail</span></>
-              ) : (
-                <>شاهد سحر <span className="text-[#E8B4BC]">التفاصيل</span></>
-              )}
-            </h2>
-
-            <p className="text-xs sm:text-sm md:text-base text-white/90 max-w-2xl mx-auto drop-shadow-sm leading-relaxed">
-              نستخدم أحدث تقنيات الطباعة وأجود أنواع الورق لنضمن لك ألواناً تنبض بالحياة وذكريات تدوم للأبد.
-              كل طلب يُغلف بحب واهتمام فائق.
-            </p>
-          </div>
-
-          {/* 4K badge */}
-          <div className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70">
-            <span className="font-mono text-[10px] font-bold">4K</span>
-          </div>
+      {/* ══════════════════════════════════ CATEGORIES ══════════════════════════════════ */}
+      <section id="categories" className="art-shell py-12 sm:py-16">
+        <div className="text-center max-w-2xl mx-auto mb-9 sm:mb-12">
+          <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.categoriesEyebrow}</p>
+          <h2 className="text-2xl sm:text-4xl font-black text-[#171717]">{copy.categoriesTitle}</h2>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+          {[
+            { icon: Printer, ar: 'مقاسات الطباعة', en: 'Print Sizes', to: '/store?category=printing' },
+            { icon: BookOpen, ar: 'الألبومات', en: 'Albums', to: '/store?category=albums' },
+            { icon: LayoutDashboard, ar: 'الإطارات', en: 'Frames', to: '/store?category=frames' },
+            { icon: Gift, ar: 'المستلزمات', en: 'Supplies', to: '/store' },
+          ].map((category, index) => (
+            <Link key={category.ar} to={category.to} className="group min-h-40 sm:min-h-48 bg-white border border-[#171717]/10 rounded-lg p-5 sm:p-7 flex flex-col justify-between hover:border-[#E8B4BC] hover:-translate-y-1 hover:shadow-lg transition-all">
+              <category.icon size={30} strokeWidth={1.5} className={index % 2 === 0 ? 'text-[#E8B4BC]' : 'text-[#C6A56B]'} />
+              <div className="flex items-end justify-between gap-2">
+                <h3 className="font-black text-[#171717] text-sm sm:text-lg">{language === 'en' ? category.en : category.ar}</h3>
+                <ArrowLeft size={18} className={`text-[#171717]/35 group-hover:text-[#171717] transition-all ${language === 'en' ? 'rotate-180 group-hover:translate-x-1' : 'group-hover:-translate-x-1'}`} />
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -560,18 +547,19 @@ export default function LandingPage() {
       ══════════════════════════════════ */}
       <main id="products" className="art-shell py-12 sm:py-14">
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16">
+          <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.featuredEyebrow}</p>
           <h2 className="text-3xl sm:text-4xl font-black text-[#171717] mb-4">
-            الأكثر مبيعاً 🌟
+            {copy.featuredTitle}
           </h2>
           <p className="text-sm sm:text-base text-[#171717]/60 leading-relaxed">
-            تشكيلة من أفضل منتجاتنا الجاهزة والأكثر طلباً لتوثيق لحظاتكم السعيدة.
+            {copy.featuredText}
           </p>
         </div>
 
         {/* Product grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 lg:gap-8">
           {products.length === 0 ? (
-            <div className="col-span-full text-center py-20 text-[#171717]/50 font-bold">لا توجد منتجات بعد</div>
+            <div className="col-span-full text-center py-20 text-[#171717]/50 font-bold">{copy.noProducts}</div>
           ) : (
             products.filter(p => p.isBestSeller).slice(0, 6).map(product => {
               const productQty = getProductQty(product.id);
@@ -610,7 +598,7 @@ export default function LandingPage() {
                   </span>
                   {productAvailable && productQty > 0 && (
                     <span className="absolute top-2 right-2 bg-[#C6A56B] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
-                      في السلة: {productQty}
+                      {copy.inCart}: {productQty}
                     </span>
                   )}
                 </div>
@@ -631,7 +619,7 @@ export default function LandingPage() {
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
                     >
-                      <span>{productAvailable ? 'إضافة إلى السلة' : 'غير متوفر'}</span>
+                      <span>{productAvailable ? copy.addToCart : copy.unavailable}</span>
                       <Plus size={16} />
                     </button>
                   </div>
@@ -650,368 +638,115 @@ export default function LandingPage() {
               className="art-cta inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 rounded-full font-black text-lg transition-all duration-300 group"
             >
               <ShoppingBag size={24} className="group-hover:scale-110 transition-transform" />
-              تصفح المتجر ({products.length})
+              {copy.browseStore} ({products.length})
             </Link>
-            <p className="mt-4 text-xs font-bold text-[#171717]/40">
-              اكتشف المزيد من الألبومات، الإطارات، والتوزيعات الحصرية.
-            </p>
           </div>
         )}
       </main>
 
-      {/* ══════════════════════════════════
-          3. EXPANDABLE SERVICES ACCORDION
-      ══════════════════════════════════ */}
-      <section id="services" className="art-shell py-12">
-        <h2 className="text-xl font-black text-center mb-6 text-[#171717]">اكتشف خدماتنا</h2>
-        <div className="space-y-3">
-
-          {/* WALLET PACKAGES */}
-          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('wallet')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#C6A56B]/10 rounded-xl flex items-center justify-center text-[#C6A56B]"><Wallet size={20} /></div>
-                <div>
-                  <div className="font-black text-[#171717]">شحن المحفظة</div>
-                  <div className="text-xs text-[#171717]/50">باقات برونزية وفضية وذهبية</div>
-                </div>
-              </div>
-              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'wallet' ? 'rotate-180' : ''}`} />
-            </button>
-            {activeExpandable === 'wallet' && (
-              <div className="bg-[#FAF9F7] border-t border-[#E8B4BC]/10">
-                <div className="py-10 px-4">
-                  <div className="text-center mb-10 max-w-2xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C6A56B]/10 text-[#C6A56B] font-bold text-xs mb-4 border border-[#C6A56B]/20">
-                      <Wallet size={16} /> رصيد ذكرياتك.. يعطيك أكثر!
-                    </div>
-                    <h3 className="text-2xl md:text-3xl font-black text-[#171717] mb-3 leading-tight">اشحن محفظتك، <span className="text-[#C6A56B]">واطبع براحتك</span></h3>
-                    <p className="text-[#171717]/70 text-sm leading-relaxed mb-4">بدل ما تنتظر العروض، اشحن محفظتك في <span className="font-bold text-[#E8B4BC]">لحظة فن</span> واحصل على رصيد إضافي تستخدمه بكل حرية.</p>
-                    <div className="flex flex-wrap justify-center gap-3 text-xs font-bold text-[#171717]/80">
-                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#E8B4BC]/10"><CheckCircle size={14} className="text-emerald-500" /> الرصيد لا ينتهي صلاحيته</span>
-                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#E8B4BC]/10"><CheckCircle size={14} className="text-emerald-500" /> تقسم طلباتك براحتك</span>
-                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#E8B4BC]/10"><CheckCircle size={14} className="text-emerald-500" /> هدايا وميزات حصرية</span>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-5 lg:gap-6">
-                    <div className="bg-white rounded-[2rem] p-8 border border-orange-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-2 h-full bg-orange-400"></div>
-                      <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:scale-110 transition-transform"><CreditCard size={28} /></div>
-                      <h3 className="text-xl font-black text-[#171717] mb-2">الباقة البرونزية</h3>
-                      <div className="mb-6"><span className="text-3xl font-black text-orange-600">299</span> <RiyalSign size="0.7em" /></div>
-                      <div className="bg-orange-50 rounded-xl p-4 mb-6 border border-orange-100">
-                        <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                        <span className="text-2xl font-black text-[#171717]">333 <RiyalSign size="0.7em" /></span>
-                      </div>
-                      <p className="text-sm text-[#171717]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!</p>
-                      <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة البرونزية بـ 299 ريال" target="_blank" rel="noreferrer"
-                        className="w-full py-3 rounded-xl bg-orange-100 text-orange-700 font-bold hover:bg-orange-600 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
-                    </div>
-                    <div className="bg-white rounded-[2rem] p-8 border-2 border-slate-300 shadow-xl flex flex-col relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-full h-2 bg-slate-400"></div>
-                      <div className="absolute top-4 left-4 bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full border border-slate-200">الأكثر طلباً</div>
-                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 mb-6 group-hover:scale-110 transition-transform"><Award size={28} /></div>
-                      <h3 className="text-xl font-black text-[#171717] mb-2">الباقة الفضية</h3>
-                      <div className="mb-6"><span className="text-4xl font-black text-slate-600">699</span> <RiyalSign size="0.7em" /></div>
-                      <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
-                        <span className="block text-[10px] text-slate-500 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                        <span className="text-3xl font-black text-slate-700">808 <RiyalSign size="0.7em" /></span>
-                      </div>
-                      <p className="text-sm text-[#171717]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!</p>
-                      <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة الفضية بـ 699 ريال" target="_blank" rel="noreferrer"
-                        className="w-full py-4 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-md">اشحن الآن</a>
-                    </div>
-                    <div className="bg-white rounded-[2rem] p-8 border border-amber-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-2 h-full bg-[#C6A56B]"></div>
-                      <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform"><Gem size={28} /></div>
-                      <h3 className="text-xl font-black text-[#171717] mb-2">الباقة الذهبية</h3>
-                      <div className="mb-6"><span className="text-3xl font-black text-amber-600">999</span> <RiyalSign size="0.7em" /></div>
-                      <div className="bg-amber-50 rounded-xl p-4 mb-6 border border-amber-100">
-                        <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                        <span className="text-2xl font-black text-[#171717]">1,202 <RiyalSign size="0.7em" /></span>
-                      </div>
-                      <p className="text-sm text-[#171717]/70 mb-8 flex-1 leading-relaxed">رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!</p>
-                      <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة الذهبية بـ 999 ريال" target="_blank" rel="noreferrer"
-                        className="w-full py-3 rounded-xl bg-amber-100 text-amber-700 font-bold hover:bg-amber-500 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* MEMORY PACKAGES */}
-          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('packages')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#E8B4BC]/10 rounded-xl flex items-center justify-center text-[#E8B4BC]"><Gift size={20} /></div>
-                <div>
-                  <div className="font-black text-[#171717]">باقات الذكريات</div>
-                  <div className="text-xs text-[#171717]/50">رحلة، هدية، صور هاتف، معرض جداري</div>
-                </div>
-              </div>
-              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'packages' ? 'rotate-180' : ''}`} />
-            </button>
-            {activeExpandable === 'packages' && (
-              <div className="bg-[#171717] text-white border-t border-white/10 overflow-hidden relative">
-                <div className="px-4 sm:px-6 lg:px-8 py-10 relative z-10">
-                  <div className="text-center mb-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C6A56B]/20 text-[#C6A56B] font-bold text-xs mb-3 border border-[#C6A56B]/30">
-                      <Sparkles size={14} /> حلك الجاهز عندنا
-                    </div>
-                    <h3 className="text-2xl md:text-3xl font-black leading-tight mb-3">
-                      محتار وش تطبع؟ <br /><span className="text-[#C6A56B]">اختر المناسبة وخلي الباقي علينا!</span>
-                    </h3>
-                    <p className="text-white/70 max-w-xl mx-auto text-sm">صممنا لك باقات ذكية ومدروسة توفر عليك التفكير، وتضمن لك توثيق ذكرياتك بأفضل شكل وبأنسب سعر.</p>
-                  </div>
-                  <div className="grid md:grid-cols-12 gap-8 items-start">
-                    <div className="md:col-span-4 space-y-3">
-                      {packages.map((pkg) => (
-                        <button key={pkg.id} onClick={() => setActivePackage(pkg.id)}
-                          className={`w-full text-right p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 border ${activePackage === pkg.id ? 'bg-white text-[#171717] border-white shadow-xl scale-105' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
-                        >
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${pkg.color} shadow-md`}>
-                            <pkg.icon size={24} />
-                          </div>
-                          <h4 className={`font-black ${activePackage === pkg.id ? 'text-[#171717]' : 'text-white'}`}>{pkg.title}</h4>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="md:col-span-8">
-                      <div className="bg-white/5 backdrop-blur-md rounded-[2rem] p-8 border border-white/10 shadow-2xl relative overflow-hidden" key={activePkg.id}>
-                    <div className={`absolute top-0 right-0 w-2 h-full ${activePkg.color}`}></div>
-                        <h3 className="text-3xl font-black text-white mb-4">{activePkg.title}</h3>
-                        <p className="text-white/70 leading-relaxed mb-8">{activePkg.desc}</p>
-                        <div className="bg-[#FAF9F7]/10 rounded-2xl p-6 mb-8 border border-white/5">
-                          <h4 className="font-bold text-[#C6A56B] mb-4 text-sm uppercase tracking-wider">محتويات الباقة الافتراضية:</h4>
-                          <ul className="space-y-3">
-                            {activePkg.contents.map((item, idx) => (
-                              <li key={idx} className="flex items-center gap-3 text-white/90">
-                                <CheckCircle size={18} className="text-[#E8B4BC]" />
-                                <span className="font-medium">{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <a href={`https://wa.me/966560301744?text=${encodeURIComponent(activePkg.msg)}`}
-                          target="_blank" rel="noreferrer"
-                          className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-[#171717] font-black hover:bg-[#FAF9F7] hover:scale-105 transition-all shadow-xl">
-                          <MessageCircle size={20} /> اطلب هذه الباقة الآن
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* PRINT SERVICES */}
-          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('print')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#171717]/10 rounded-xl flex items-center justify-center text-[#171717]"><Printer size={20} /></div>
-                <div>
-                  <div className="font-black text-[#171717]">خدمات الطباعة</div>
-                  <div className="text-xs text-[#171717]/50">صور 4×6، A4، ألبومات — مع حاسبة السعر</div>
-                </div>
-              </div>
-              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'print' ? 'rotate-180' : ''}`} />
-            </button>
-            {activeExpandable === 'print' && (
-              <div className="bg-white border-t border-[#E8B4BC]/10">
-                <div className="py-10 px-4 sm:px-6 lg:px-8">
-                  <div className="grid md:grid-cols-3 gap-5 lg:gap-8 mb-12">
-                    {[
-                      { icon: ImageIcon, title: 'صور 4×6', desc: 'المقاس الأشهر والأكثر طلباً. مثالي لحفظ يومياتك وتوثيق اللحظات العفوية والرحلات.', features: ['ورق تصوير فاخر مقاوم للبهتان', 'ألوان زاهية وواقعية تدوم طويلاً', 'المقاس المثالي للألبومات الكلاسيكية'], color: 'text-[#E8B4BC]', bg: 'bg-[#E8B4BC]/10' },
-                      { icon: FileText, title: 'صور A4', desc: 'لصورك الاحترافية واللوحات الفنية. المقاس الأفضل لإبراز أدق التفاصيل وتزيين المكان.', features: ['دقة طباعة استثنائية للتفاصيل', 'حجم كبير مناسب للبراويز الجدارية', 'مثالية لصور التخرج والمناسبات الكبرى'], color: 'text-[#C6A56B]', bg: 'bg-[#C6A56B]/10' },
-                      { icon: BookOpen, title: 'الألبومات', desc: 'لا تترك صورك متناثرة. اختر من تشكيلتنا الأنيقة لحفظ ذكرياتك بطريقة فخمة ومرتبة.', features: ['تصاميم عصرية وأغلفة متينة', 'سعات مختلفة تناسب كمية صورك', 'حماية تامة للصور من الغبار والتلف'], color: 'text-[#171717]', bg: 'bg-[#171717]/10' },
-                    ].map((service, i) => (
-                      <div key={i} className="bg-[#FAF9F7] rounded-3xl p-8 hover:shadow-xl hover:shadow-[#E8B4BC]/10 transition-all border border-transparent hover:border-[#E8B4BC]/30 group flex flex-col">
-                        <div className={`w-14 h-14 ${service.bg} rounded-2xl flex items-center justify-center ${service.color} mb-6 group-hover:scale-110 transition-transform`}>
-                          <service.icon size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-[#171717] mb-3">{service.title}</h3>
-                        <p className="text-[#171717]/60 text-sm leading-relaxed mb-6 flex-1">{service.desc}</p>
-                        <ul className="space-y-3 pt-4 border-t border-[#E8B4BC]/10">
-                          {service.features.map((f, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm text-[#171717]/80 font-medium">
-                              <CheckCircle size={16} className={`shrink-0 mt-0.5 ${service.color}`} />
-                              <span>{f}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                  {pricingSettings?.is_dynamic_pricing_enabled && (
-                    <div className="max-w-6xl mx-auto">
-                      <div className="bg-[#171717] rounded-lg p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                          <div className="flex-1 text-center md:text-right">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8B4BC]/20 text-[#E8B4BC] font-bold text-xs mb-3 border border-[#E8B4BC]/30">
-                              <Sparkles size={14} className="animate-pulse" /> وفر أكثر
-                            </div>
-                            <h3 className="text-3xl font-black mb-4">كل ما طبعت أكثر، <span className="text-[#C6A56B]">وفرت أكثر!</span></h3>
-                            <p className="text-white/70 text-sm mb-8">حرك المؤشر وشوف السعر يتغير تلقائياً.</p>
-                            <div className="space-y-6">
-                              <input type="range" min="1" max="100" value={calcQty} onChange={e => setCalcQty(Number(e.target.value))}
-                                className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#E8B4BC]" />
-                              <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10">
-                                <span className="text-sm font-bold text-white/80">العدد المختار:</span>
-                                <div className="flex items-center gap-3">
-                                  <button onClick={() => setCalcQty(Math.max(1, calcQty - 1))} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center font-bold">-</button>
-                                  <span className="text-2xl font-black w-12 text-center text-[#C6A56B]">{calcQty}</span>
-                                  <button onClick={() => setCalcQty(calcQty + 1)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center font-bold">+</button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="w-full md:w-80 bg-white text-[#171717] rounded-3xl p-8 shadow-2xl transform md:rotate-2">
-                            <div className="text-center pb-6 border-b border-[#FAF9F7] mb-6">
-                              <span className="text-xs text-[#171717]/50 font-bold uppercase tracking-wider block mb-1">سعر الصورة الواحدة</span>
-                              <span className="text-5xl font-black text-[#E8B4BC]">{calcResult.unit} <RiyalSign size="0.55em" /></span>
-                            </div>
-                            <div className="space-y-4 mb-8">
-                              <div className="flex justify-between text-sm font-bold">
-                                <span className="text-[#171717]/60">الإجمالي</span>
-                                <span>{calcResult.total.toFixed(2)} <RiyalSign /></span>
-                              </div>
-                              {calcResult.savings > 0 && (
-                                <div className="flex justify-between text-sm font-bold text-[#C6A56B] bg-[#C6A56B]/10 px-4 py-2 rounded-xl">
-                                  <span className="flex items-center gap-1"><Sparkles size={14} /> وفرتي</span>
-                                  <span>{calcResult.savings.toFixed(2)} <RiyalSign /></span>
-                                </div>
-                              )}
-                            </div>
-                            <a href={`https://wa.me/966560301744?text=${encodeURIComponent(`مرحباً، أرغب بطباعة ${calcQty} صورة`)}`}
-                              target="_blank" rel="noreferrer"
-                              className="block w-full bg-[#171717] text-white text-center py-4 rounded-xl font-bold hover:bg-[#C6A56B] transition-colors shadow-lg">اطلبي بهذا السعر</a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* REVIEWS + FEEDBACK */}
-          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('reviews')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#C6A56B]/10 rounded-xl flex items-center justify-center text-[#C6A56B]"><Star size={20} /></div>
-                <div>
-                  <div className="font-black text-[#171717]">آراء العملاء وتواصل معنا</div>
-                  <div className="text-xs text-[#171717]/50">تقييمات حقيقية + أرسل ملاحظاتك للإدارة</div>
-                </div>
-              </div>
-              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'reviews' ? 'rotate-180' : ''}`} />
-            </button>
-            {activeExpandable === 'reviews' && (
-              <div className="bg-[#FAF9F7] border-t border-[#E8B4BC]/10">
-                <div className="py-10 px-4 sm:px-6 lg:px-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-black text-[#171717] mb-3">ماذا يقول <span className="text-[#E8B4BC]">عملاؤنا؟</span></h3>
-                    <div className="flex justify-center gap-1 mb-8 text-[#C6A56B]">
-                      {[...Array(5)].map((_, i) => <Star key={i} size={20} fill="currentColor" />)}
-                    </div>
-                    <div className="grid md:grid-cols-3 gap-6 mb-10">
-                      {REVIEWS.map(review => (
-                        <div key={review.id} className="bg-white p-8 rounded-[2rem] border border-[#E8B4BC]/10 relative hover:-translate-y-2 transition-transform duration-300 shadow-sm">
-                          <Quote className="absolute top-6 left-6 text-[#FAF9F7]" size={40} />
-                          <p className="text-[#171717]/80 font-medium leading-relaxed mb-6 relative z-10">"{review.comment}"</p>
-                          <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-[#171717] ring-2 ring-[#E8B4BC] rounded-full flex items-center justify-center text-white font-bold">{review.name.charAt(0)}</div>
-                            <div className="text-right">
-                              <div className="font-bold text-[#171717]">{review.name}</div>
-                              <div className="text-xs text-[#E8B4BC]">عميل موثوق ✅</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="max-w-2xl mx-auto bg-white rounded-[2rem] p-8 shadow-xl border border-[#E8B4BC]/20 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-2 h-full bg-[#C6A56B]"></div>
-                      <h3 className="text-xl font-black text-[#171717] flex items-center justify-center gap-2 mb-2"><MessageSquarePlus className="text-[#C6A56B]" /> الإدارة في خدمتك دائماً</h3>
-                      <p className="text-[#171717]/60 text-sm mb-6 text-center">نستقبل تقييماتك، مقترحاتك، أو حتى شكواك بصدر رحب.</p>
-                      <div className="space-y-4">
-                        <div className="flex flex-wrap gap-3 justify-center">
-                          {['تقييم ⭐️', 'اقتراح 💡', 'شكوى ⚠️'].map(type => (
-                            <button key={type} onClick={() => setFeedbackType(type)}
-                              className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${feedbackType === type ? 'bg-[#171717] text-white border-[#171717] shadow-md scale-105' : 'bg-white text-[#171717]/60 border-[#E8B4BC]/30 hover:border-[#171717]/50 hover:bg-[#FAF9F7]'}`}
-                            >{type}</button>
-                          ))}
-                        </div>
-                        <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)}
-                          placeholder="اكتب رسالتك هنا بكل شفافية وسرية تامة..."
-                          className="w-full h-32 bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl p-4 text-[#171717] outline-none focus:border-[#E8B4BC] focus:ring-4 focus:ring-[#E8B4BC]/10 resize-none transition-all" />
-                        <button onClick={handleSendFeedback} disabled={!feedbackText.trim()}
-                          className="w-full bg-[#171717] text-white py-4 rounded-xl font-bold hover:bg-[#2b2b2b] hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-                          <Send size={18} /> إرسال الرسالة للإدارة
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* FAQ */}
-          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('faq')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#E8B4BC]/10 rounded-xl flex items-center justify-center text-[#E8B4BC]"><MessageCircle size={20} /></div>
-                <div>
-                  <div className="font-black text-[#171717]">الأسئلة الشائعة</div>
-                  <div className="text-xs text-[#171717]/50">إجابات على أكثر الأسئلة المطروحة</div>
-                </div>
-              </div>
-              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'faq' ? 'rotate-180' : ''}`} />
-            </button>
-            {activeExpandable === 'faq' && (
-              <div className="bg-[#FAF9F7] border-t border-[#E8B4BC]/10">
-                <div className="py-8 px-4 max-w-2xl mx-auto space-y-3">
-                  {FAQS.map((faq, idx) => (
-                    <div key={idx} className="bg-white rounded-2xl border border-[#E8B4BC]/15 overflow-hidden">
-                      <button onClick={() => setOpenFaq(openFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-5 text-right">
-                        <span className="font-bold text-[#171717] text-sm">{faq.q}</span>
-                        <ChevronDown size={18} className={`text-[#E8B4BC] transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
-                      </button>
-                      {openFaq === idx && (
-                        <div className="p-5 pt-0 text-sm text-[#171717]/70 leading-relaxed border-t border-[#FAF9F7]">{faq.a}</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
+      {/* ══════════════════════════════════ WHY ART MOMENT ══════════════════════════════════ */}
+      <section id="why" className="art-shell py-14 sm:py-20 scroll-mt-28">
+        <div className="max-w-2xl mb-10 sm:mb-14">
+          <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.whyEyebrow}</p>
+          <h2 className="text-2xl sm:text-4xl font-black text-[#171717]">{copy.whyTitle}</h2>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 border-y border-[#171717]/10">
+          {[
+            { icon: Award, ar: 'جودة طباعة واضحة', en: 'Crisp print quality', textAr: 'ورق وألوان مختارة لتبقى الصورة جميلة.', textEn: 'Paper and color selected to keep every photo beautiful.' },
+            { icon: ShieldCheck, ar: 'خصوصية صورك', en: 'Your photos stay private', textAr: 'تُستخدم ملفاتك لتنفيذ الطلب فقط.', textEn: 'Your files are used only to fulfil your order.' },
+            { icon: Smartphone, ar: 'طلب سهل', en: 'Simple ordering', textAr: 'تجربة واضحة من الجوال وحتى الاستلام.', textEn: 'A clear experience from mobile order to delivery.' },
+            { icon: Gift, ar: 'تغليف بعناية', en: 'Thoughtful packaging', textAr: 'نحمي المطبوعات لتصل بحالة ممتازة.', textEn: 'Prints are protected so they arrive in excellent condition.' },
+          ].map((feature, index) => (
+            <div key={feature.ar} className="p-5 sm:p-8 border-b border-e border-[#171717]/10 [&:nth-child(2n)]:border-e-0 lg:border-b-0 lg:[&:nth-child(2n)]:border-e lg:last:border-e-0">
+              <feature.icon size={28} strokeWidth={1.5} className={index % 2 === 0 ? 'text-[#E8B4BC]' : 'text-[#C6A56B]'} />
+              <h3 className="mt-5 font-black text-[#171717] text-sm sm:text-base">{language === 'en' ? feature.en : feature.ar}</h3>
+              <p className="mt-2 text-xs sm:text-sm text-[#171717]/55 leading-relaxed">{language === 'en' ? feature.textEn : feature.textAr}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ══════════════════════════════════
-          8. TRUST & COMPLIANCE
-      ══════════════════════════════════ */}
-      <section className="bg-[#171717] text-white py-12">
-        <div className="art-shell grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 text-center">
-          <div className="flex flex-col items-center">
-            <ShieldCheck size={40} className="text-[#E8B4BC] mb-4" />
-            <h3 className="font-black text-lg mb-2">تسوق آمن وموثق</h3>
-            <p className="text-sm text-white/70">متجر موثق في المركز السعودي للأعمال، لضمان حقوقك وتجربة تسوق موثوقة.</p>
+      {/* ══════════════════════════════════ SHOWCASE ══════════════════════════════════ */}
+      <section className="art-shell py-10 sm:py-16">
+        <div className="art-crop-marks relative rounded-lg overflow-hidden shadow-xl border-[8px] border-white h-[390px] md:h-[520px] flex items-center justify-center group bg-[#171717]">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-85 transition-transform duration-1000 group-hover:scale-[1.02]"
+          >
+            <source src={promoVideo} type="video/mp4" />
+            {language === 'en' ? 'Your browser does not support video.' : 'متصفحك لا يدعم تشغيل الفيديو.'}
+          </video>
+          <div className="absolute inset-0 bg-[#171717]/35" />
+          <div className="relative z-10 text-center px-6 mt-auto pb-10 sm:pb-14 w-full">
+            <p className="text-xs font-black text-[#C6A56B] mb-3">{copy.showcaseEyebrow}</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white mb-4">{copy.showcaseTitle}</h2>
+            <p className="text-sm sm:text-base text-white/80 max-w-2xl mx-auto leading-relaxed">{copy.showcaseText}</p>
           </div>
-          <div className="flex flex-col items-center">
-            <Scale size={40} className="text-[#C6A56B] mb-4" />
-            <h3 className="font-black text-lg mb-2">سياسة استرجاع عادلة</h3>
-            <p className="text-sm text-white/70">حق الاسترجاع مكفول خلال 7 أيام للمنتجات الجاهزة بحالتها الأصلية.</p>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════ REAL REVIEWS ══════════════════════════════════ */}
+      <section id="reviews" className="art-shell py-14 sm:py-20">
+        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
+          <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.reviewsEyebrow}</p>
+          <h2 className="text-2xl sm:text-4xl font-black text-[#171717]">{copy.reviewsTitle}</h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
+          {REVIEWS.map((review) => {
+            const reviewName = language === 'en' ? review.nameEn : review.name;
+            return (
+              <article key={review.id} className="bg-white border border-[#171717]/10 rounded-lg p-6 sm:p-8 shadow-sm">
+                <Quote size={28} strokeWidth={1.5} className="text-[#E8B4BC] mb-6" />
+                <div className="flex gap-1 text-[#C6A56B] mb-4" aria-label={`${review.rating} / 5`}>
+                  {[...Array(5)].map((_, index) => (
+                    <Star key={index} size={15} fill={index < review.rating ? 'currentColor' : 'none'} className={index < review.rating ? '' : 'text-[#171717]/15'} />
+                  ))}
+                </div>
+                <p className="text-sm text-[#171717]/75 leading-7 min-h-20">“{language === 'en' ? review.commentEn : review.comment}”</p>
+                <div className="mt-6 pt-5 border-t border-[#171717]/10 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-full bg-[#FAF9F7] grid place-items-center font-black text-[#171717]">{reviewName.charAt(0)}</span>
+                  <div>
+                    <p className="font-black text-sm text-[#171717]">{reviewName}</p>
+                    <p className="text-[10px] text-[#171717]/45">{copy.verifiedReview}</p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════ FAQ ══════════════════════════════════ */}
+      <section id="faq" className="art-shell py-14 sm:py-20">
+        <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-8 lg:gap-16 items-start">
+          <div className="lg:sticky lg:top-28">
+            <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.faqEyebrow}</p>
+            <h2 className="text-2xl sm:text-4xl font-black text-[#171717]">{copy.faqTitle}</h2>
           </div>
-          <div className="flex flex-col items-center">
-            <Truck size={40} className="text-[#E8B4BC] mb-4" />
-            <h3 className="font-black text-lg mb-2">ضمان التوصيل</h3>
-            <p className="text-sm text-white/70">نلتزم بتوصيل طلباتك بأسرع وقت، مع ضمان التسليم خلال المدة النظامية.</p>
+          <div className="border-t border-[#171717]/10">
+            {FAQS.map((faq, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div key={faq.q} className="border-b border-[#171717]/10">
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : index)}
+                    className="w-full py-5 sm:py-6 flex items-center justify-between gap-5 text-start"
+                    aria-expanded={isOpen}
+                  >
+                    <span className="font-black text-sm sm:text-base text-[#171717]">{language === 'en' ? faq.qEn : faq.q}</span>
+                    <ChevronDown size={19} className={`shrink-0 text-[#E8B4BC] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isOpen && (
+                    <p className="pb-6 text-sm text-[#171717]/60 leading-7 animate-in fade-in slide-in-from-top-1">
+                      {language === 'en' ? faq.aEn : faq.a}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -1024,31 +759,31 @@ export default function LandingPage() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img src={logo} alt="لحظة فن" className="w-10 h-10 object-contain grayscale opacity-80" />
-              <h2 className="text-xl font-black text-[#171717]">لحظة فن</h2>
+              <h2 className="text-xl font-black text-[#171717]">{language === 'en' ? 'Art Moment' : 'لحظة فن'}</h2>
             </div>
-            <p className="text-sm text-[#171717]/70 leading-relaxed mb-6">نوثق أجمل لحظاتك بأعلى جودة. تشكيلة من الألبومات والإطارات الفاخرة التي تليق بذكرياتك.</p>
+            <p className="text-sm text-[#171717]/70 leading-relaxed mb-6">{copy.footerText}</p>
             <div className="flex items-center gap-2 bg-[#FAF9F7] w-max px-4 py-2 rounded-xl border border-[#E8B4BC]/20">
               <ShieldCheck size={18} className="text-emerald-500" />
-              <div className="text-right">
-                <p className="text-[10px] text-[#171717]/60 font-bold">سيوثق في</p>
-                <p className="text-xs font-black text-[#171717]">المركز السعودي للأعمال</p>
+              <div className="text-start">
+                <p className="text-[10px] text-[#171717]/60 font-bold">{copy.verifiedAt}</p>
+                <p className="text-xs font-black text-[#171717]">{copy.businessCenter}</p>
               </div>
             </div>
           </div>
 
           <div>
-            <h3 className="font-black text-[#171717] mb-4">روابط هامة</h3>
+            <h3 className="font-black text-[#171717] mb-4">{copy.importantLinks}</h3>
             <ul className="space-y-3">
-              <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">سياسة الاسترجاع والاستبدال</button></li>
-              <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">الشروط والأحكام</button></li>
-              <li><Link to="/track"      className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">تتبع الطلب</Link></li>
-              <li><Link to="/links"      className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">حساباتنا الرسمية</Link></li>
-              <li><Link to="/store/cart" className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">سلة التسوق</Link></li>
+              <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">{copy.returnsPolicy}</button></li>
+              <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">{copy.terms}</button></li>
+              <li><Link to="/track"      className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">{copy.navTrack}</Link></li>
+              <li><Link to="/links"      className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">{copy.officialAccounts}</Link></li>
+              <li><Link to="/store/cart" className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">{copy.shoppingCart}</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-black text-[#171717] mb-4">تواصل معنا</h3>
+            <h3 className="font-black text-[#171717] mb-4">{copy.contactUs}</h3>
             <div className="flex gap-2 flex-wrap">
               {[
                 { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966560301744',                alt: 'WhatsApp' },
@@ -1068,9 +803,9 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="art-shell flex flex-col items-center gap-4 border-t border-[#FAF9F7] pt-8 text-center">
-          <p className="text-xs font-bold text-[#171717]/50">جميع الحقوق محفوظة لمتجر لحظة فن © {new Date().getFullYear()}</p>
+          <p className="text-xs font-bold text-[#171717]/50">{copy.rights} © {new Date().getFullYear()}</p>
           <a
-            href="https://waseet-shop.com/"
+            href="https://waseet-shop.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-xs font-bold text-[#171717]/60 transition-colors hover:text-[#056ab3]"
@@ -1274,11 +1009,13 @@ export default function LandingPage() {
       />
 
       {/* Floating WhatsApp button */}
-      <a href="https://wa.me/966560301744" target="_blank" rel="noreferrer"
-        className="fixed bottom-6 left-6 z-40 bg-[#25D366] hover:bg-[#128C7E] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group border-4 border-white">
-        <MessageCircle size={28} />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-bold">تواصل معنا</span>
-      </a>
+      {scrolled && (
+        <a href="https://wa.me/966560301744" target="_blank" rel="noreferrer"
+          className="fixed bottom-3 left-3 sm:bottom-6 sm:left-6 z-40 bg-[#25D366] hover:bg-[#128C7E] text-white p-3 sm:p-4 rounded-full shadow-2xl hover:scale-105 transition-transform flex items-center gap-2 group border-2 sm:border-4 border-white animate-in fade-in zoom-in-90">
+          <MessageCircle size={22} className="sm:w-7 sm:h-7" />
+          <span className="hidden sm:block max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-bold">{language === 'en' ? 'Contact us' : 'تواصل معنا'}</span>
+        </a>
+      )}
 
     </div>
   );

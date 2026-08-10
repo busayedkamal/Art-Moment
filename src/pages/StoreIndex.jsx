@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { clearCustomerSession, getCustomerSession } from '../utils/customerSession';
@@ -65,6 +65,8 @@ const getLocalizedCategoryLabel = (category, language) => {
 
 export default function StoreIndex() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedCategory = searchParams.get('category');
   const { language, t } = useLanguage();
   const [products, setProducts]             = useState([]);
   const [searchQ, setSearchQ]               = useState('');
@@ -224,6 +226,20 @@ export default function StoreIndex() {
     counts[category] = (counts[category] || 0) + 1;
     return counts;
   }, { all: 0 }), [products]);
+
+  useEffect(() => {
+    if (!requestedCategory || products.length === 0) return;
+
+    const categoryAliases = {
+      printing: ['printing', 'طباعة'],
+      albums: ['albums', 'ألبومات'],
+      frames: ['frames', 'إطارات'],
+      stickers: ['stickers', 'ملصقات'],
+    };
+    const aliases = categoryAliases[requestedCategory] || [requestedCategory];
+    const matchedCategory = products.find((product) => aliases.includes(product.category))?.category;
+    setActiveCategory(matchedCategory || 'all');
+  }, [products, requestedCategory]);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = searchQ.trim().toLowerCase();
