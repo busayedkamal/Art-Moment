@@ -15,7 +15,7 @@ export default function LanguageToggle() {
       title={accessibleLabel}
       dir={isArabic ? 'ltr' : 'rtl'}
       data-no-translate
-      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#D9A3AA]/20 bg-white px-3 py-2 text-xs font-bold text-[#4A4A4A] shadow-sm transition-all hover:text-[#D9A3AA]"
+      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E8B4BC]/20 bg-white px-3 py-2 text-xs font-bold text-[#171717] shadow-sm transition-all hover:text-[#E8B4BC]"
     >
       <span>{label}</span>
       <Globe2 size={16} />

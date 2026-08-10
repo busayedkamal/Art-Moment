@@ -12,13 +12,13 @@ import { normalizeProductOptions } from '../utils/productOptions';
 
 // ─── إعدادات الفئات ──────────────────────────────────────────────
 const CAT_CONFIG = {
-  albums:   { label: 'ألبومات', bg: 'bg-[#D9A3AA]', text: 'text-[#D9A3AA]', icon: Package },
-  frames:   { label: 'إطارات', bg: 'bg-[#C5A059]', text: 'text-[#C5A059]', icon: Frame },
-  stickers: { label: 'ملصقات', bg: 'bg-[#4A4A4A]', text: 'text-[#4A4A4A]', icon: StickyNote },
+  albums:   { label: 'ألبومات', bg: 'bg-[#E8B4BC]', text: 'text-[#E8B4BC]', icon: Package },
+  frames:   { label: 'إطارات', bg: 'bg-[#C6A56B]', text: 'text-[#C6A56B]', icon: Frame },
+  stickers: { label: 'ملصقات', bg: 'bg-[#171717]', text: 'text-[#171717]', icon: StickyNote },
 };
 
 const getCatStyle = (cat) =>
-  CAT_CONFIG[cat] || { label: cat, bg: 'bg-[#F8F5F2]', text: 'text-[#4A4A4A]', icon: Package };
+  CAT_CONFIG[cat] || { label: cat, bg: 'bg-[#FAF9F7]', text: 'text-[#171717]', icon: Package };
 
 // تحويل صف قاعدة البيانات (snake_case) → حالة React (camelCase)
 const fromDb = (p) => ({
@@ -294,24 +294,24 @@ export default function ProductManagement() {
 
   /* ══════════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-[#F8F5F2] font-[Tajawal] text-[#4A4A4A]" dir="rtl">
+    <div className="min-h-screen bg-[#FAF9F7] font-[Tajawal] text-[#171717]" dir="rtl">
 
       {/* ── Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-3xl border border-[#D9A3AA]/20 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-3xl border border-[#E8B4BC]/20 shadow-sm">
         <div>
-          <h1 className="text-2xl font-black text-[#4A4A4A] mb-1">إدارة متجر لحظة فن 🛍️</h1>
-          <p className="text-sm font-bold text-[#D9A3AA]">{products.length} منتج مسجّل</p>
+          <h1 className="text-2xl font-black text-[#171717] mb-1">إدارة متجر لحظة فن 🛍️</h1>
+          <p className="text-sm font-bold text-[#E8B4BC]">{products.length} منتج مسجّل</p>
         </div>
         <div className="flex items-center gap-3">
           <a
             href="/store" target="_blank" rel="noreferrer"
-            className="flex items-center gap-2 bg-[#F8F5F2] text-[#4A4A4A] hover:text-[#D9A3AA] px-5 py-2.5 rounded-xl font-bold transition-colors border border-[#D9A3AA]/20 text-sm"
+            className="flex items-center gap-2 bg-[#FAF9F7] text-[#171717] hover:text-[#E8B4BC] px-5 py-2.5 rounded-xl font-bold transition-colors border border-[#E8B4BC]/20 text-sm"
           >
             عرض المتجر <ExternalLink size={16} />
           </a>
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 bg-[#D9A3AA] text-white hover:bg-[#C48A92] px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-[#D9A3AA]/30 text-sm"
+            className="flex items-center gap-2 bg-[#E8B4BC] text-white hover:bg-[#C48A92] px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-[#E8B4BC]/30 text-sm"
           >
             إضافة منتج <Plus size={16} />
           </button>
@@ -322,7 +322,7 @@ export default function ProductManagement() {
       <div className="flex overflow-x-auto gap-3 pb-4 mb-6">
         <button
           onClick={() => setCatFilter('all')}
-          className={`px-6 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap border ${catFilter === 'all' ? 'bg-[#4A4A4A] text-white border-[#4A4A4A]' : 'bg-white text-[#4A4A4A] border-[#D9A3AA]/20 hover:bg-[#F8F5F2]'}`}
+          className={`px-6 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap border ${catFilter === 'all' ? 'bg-[#171717] text-white border-[#171717]' : 'bg-white text-[#171717] border-[#E8B4BC]/20 hover:bg-[#FAF9F7]'}`}
         >
           الكل ({products.length})
         </button>
@@ -333,7 +333,7 @@ export default function ProductManagement() {
             <button
               key={key}
               onClick={() => setCatFilter(key)}
-              className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap border ${catFilter === key ? `${cfg.bg} text-white border-transparent` : `bg-white ${cfg.text} border-[#D9A3AA]/20 hover:bg-[#F8F5F2]`}`}
+              className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap border ${catFilter === key ? `${cfg.bg} text-white border-transparent` : `bg-white ${cfg.text} border-[#E8B4BC]/20 hover:bg-[#FAF9F7]`}`}
             >
               <Icon size={14} /> {cfg.label} ({products.filter(p => p.category === key).length})
             </button>
@@ -344,11 +344,11 @@ export default function ProductManagement() {
       {/* ── Products Grid ── */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 size={32} className="animate-spin text-[#D9A3AA] mb-4" />
-          <p className="font-bold text-[#4A4A4A]/70">جاري تحميل المنتجات...</p>
+          <Loader2 size={32} className="animate-spin text-[#E8B4BC] mb-4" />
+          <p className="font-bold text-[#171717]/70">جاري تحميل المنتجات...</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-[#4A4A4A]/40 font-bold">
+        <div className="text-center py-20 text-[#171717]/40 font-bold">
           {products.length === 0 ? 'لا توجد منتجات بعد — ابدأ بإضافة أول منتج' : 'لا توجد منتجات في هذه الفئة'}
         </div>
       ) : (
@@ -356,10 +356,10 @@ export default function ProductManagement() {
           {filtered.map(product => {
             const cat = getCatStyle(product.category);
             return (
-              <div key={product.id} className="bg-white rounded-3xl overflow-hidden border border-[#D9A3AA]/20 shadow-sm hover:shadow-lg transition-all flex flex-col group">
+              <div key={product.id} className="bg-white rounded-3xl overflow-hidden border border-[#E8B4BC]/20 shadow-sm hover:shadow-lg transition-all flex flex-col group">
 
                 {/* صورة المنتج */}
-                <div className="h-48 relative bg-gradient-to-br from-[#D9A3AA]/10 to-[#C5A059]/10 flex items-center justify-center overflow-hidden">
+                <div className="h-48 relative bg-gradient-to-br from-[#E8B4BC]/10 to-[#C6A56B]/10 flex items-center justify-center overflow-hidden">
                   {product.image
                     ? <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     : <img src={fallbackLogo} alt={product.name} className="w-full h-full object-contain p-6 opacity-30 grayscale group-hover:scale-105 transition-transform duration-500 mix-blend-multiply" />
@@ -374,7 +374,7 @@ export default function ProductManagement() {
                       <cat.icon size={10} /> {cat.label}
                     </span>
                     {product.isBestSeller && (
-                      <span className="flex items-center gap-1 bg-[#C5A059] text-white px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm">
+                      <span className="flex items-center gap-1 bg-[#C6A56B] text-white px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm">
                         <Star size={10} fill="currentColor" /> الأكثر مبيعاً
                       </span>
                     )}
@@ -383,11 +383,11 @@ export default function ProductManagement() {
 
                 {/* تفاصيل */}
                 <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="font-black text-[#4A4A4A] text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
-                  <p className="text-xs text-[#4A4A4A]/60 line-clamp-2 mb-4 flex-1">{product.description || 'لا يوجد وصف'}</p>
+                  <h3 className="font-black text-[#171717] text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
+                  <p className="text-xs text-[#171717]/60 line-clamp-2 mb-4 flex-1">{product.description || 'لا يوجد وصف'}</p>
 
                   <div className="flex items-end justify-between mb-4">
-                    <span className="font-black text-2xl text-[#D9A3AA] leading-none">{product.price} <span className="text-xs">ر.س</span></span>
+                    <span className="font-black text-2xl text-[#E8B4BC] leading-none">{product.price} <span className="text-xs">ر.س</span></span>
                     <div className="flex flex-col items-end gap-1">
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                         product.stockQuantity === 0 ? 'bg-red-100 text-red-600' :
@@ -396,14 +396,14 @@ export default function ProductManagement() {
                       }`}>
                         {product.stockQuantity === 0 ? 'نفد' : `${product.stockQuantity} قطعة`}
                       </span>
-                      <span className="text-[10px] text-[#4A4A4A]/40 font-bold">#{product.sortOrder}</span>
+                      <span className="text-[10px] text-[#171717]/40 font-bold">#{product.sortOrder}</span>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 pt-4 border-t border-[#F8F5F2]">
+                  <div className="flex gap-2 pt-4 border-t border-[#FAF9F7]">
                     <button
                       onClick={() => openEdit(product)}
-                      className="flex-1 bg-[#F8F5F2] hover:bg-[#D9A3AA]/10 text-[#4A4A4A] py-2 rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1"
+                      className="flex-1 bg-[#FAF9F7] hover:bg-[#E8B4BC]/10 text-[#171717] py-2 rounded-xl text-xs font-bold transition-colors flex justify-center items-center gap-1"
                     >
                       <Edit3 size={14} /> تعديل
                     </button>
@@ -432,9 +432,9 @@ export default function ProductManagement() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl my-auto animate-in zoom-in-95 duration-200">
 
-            <div className="p-6 border-b border-[#F8F5F2] flex justify-between items-center bg-[#F8F5F2]/50 rounded-t-3xl">
-              <h2 className="text-xl font-black text-[#4A4A4A]">{isEdit ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A]/50 hover:text-red-500 shadow-sm transition-colors">
+            <div className="p-6 border-b border-[#FAF9F7] flex justify-between items-center bg-[#FAF9F7]/50 rounded-t-3xl">
+              <h2 className="text-xl font-black text-[#171717]">{isEdit ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 bg-white rounded-full text-[#171717]/50 hover:text-red-500 shadow-sm transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -443,52 +443,52 @@ export default function ProductManagement() {
 
               {/* الاسم */}
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">اسم المنتج <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-[#171717] mb-1.5">اسم المنتج <span className="text-red-500">*</span></label>
                 <input
                   type="text" value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="مثال: ألبوم جلدي أسود"
-                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all font-bold text-[#4A4A4A]"
+                  className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC] focus:ring-2 ring-[#E8B4BC]/20 transition-all font-bold text-[#171717]"
                 />
               </div>
 
               <div dir="ltr">
-                <label className="block text-left text-sm font-bold text-[#4A4A4A] mb-1.5">Product name in English</label>
+                <label className="block text-left text-sm font-bold text-[#171717] mb-1.5">Product name in English</label>
                 <input
                   type="text" value={form.nameEn}
                   onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))}
                   placeholder="Example: Green photo album"
-                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all font-bold text-[#4A4A4A]"
+                  className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC] focus:ring-2 ring-[#E8B4BC]/20 transition-all font-bold text-[#171717]"
                 />
               </div>
 
               {/* الوصف */}
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">الوصف (اختياري)</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1.5">الوصف (اختياري)</label>
                 <textarea
                   rows="2" value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="وصف مختصر للمنتج..."
-                  className="w-full resize-none bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all text-sm text-[#4A4A4A]"
+                  className="w-full resize-none bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC] focus:ring-2 ring-[#E8B4BC]/20 transition-all text-sm text-[#171717]"
                 />
               </div>
 
               <div dir="ltr">
-                <label className="block text-left text-sm font-bold text-[#4A4A4A] mb-1.5">Description in English (optional)</label>
+                <label className="block text-left text-sm font-bold text-[#171717] mb-1.5">Description in English (optional)</label>
                 <textarea
                   rows="2" value={form.descriptionEn}
                   onChange={e => setForm(f => ({ ...f, descriptionEn: e.target.value }))}
                   placeholder="A short product description..."
-                  className="w-full resize-none bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all text-sm text-[#4A4A4A]"
+                  className="w-full resize-none bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC] focus:ring-2 ring-[#E8B4BC]/20 transition-all text-sm text-[#171717]"
                 />
               </div>
 
               {/* خصائص المنتج */}
-              <div className="rounded-2xl border border-[#C5A059]/20 bg-[#C5A059]/5 p-4">
+              <div className="rounded-2xl border border-[#C6A56B]/20 bg-[#C6A56B]/5 p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-black text-[#4A4A4A]">خيارات وخصائص المنتج</h3>
-                    <p className="mt-1 text-[10px] font-bold text-[#4A4A4A]/50">
+                    <h3 className="text-sm font-black text-[#171717]">خيارات وخصائص المنتج</h3>
+                    <p className="mt-1 text-[10px] font-bold text-[#171717]/50">
                       مثل المقاس أو اللون أو الخامة. اتركيها فارغة للمنتج الذي لا يحتاج اختياراً.
                     </p>
                   </div>
@@ -507,23 +507,23 @@ export default function ProductManagement() {
                         },
                       ],
                     }))}
-                    className="shrink-0 rounded-xl bg-white px-3 py-2 text-xs font-black text-[#9E7D35] shadow-sm ring-1 ring-[#C5A059]/20 hover:bg-[#C5A059]/10"
+                    className="shrink-0 rounded-xl bg-white px-3 py-2 text-xs font-black text-[#9E7D35] shadow-sm ring-1 ring-[#C6A56B]/20 hover:bg-[#C6A56B]/10"
                   >
                     <Plus size={14} className="inline" /> إضافة خاصية
                   </button>
                 </div>
 
                 {(form.productOptions || []).length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-[#C5A059]/25 bg-white/60 px-4 py-5 text-center text-xs font-bold text-[#4A4A4A]/45">
+                  <div className="rounded-xl border border-dashed border-[#C6A56B]/25 bg-white/60 px-4 py-5 text-center text-xs font-bold text-[#171717]/45">
                     لا توجد خصائص لهذا المنتج.
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {(form.productOptions || []).map((option, optionIndex) => (
-                      <div key={option.id || optionIndex} className="rounded-xl border border-[#C5A059]/15 bg-white p-3">
+                      <div key={option.id || optionIndex} className="rounded-xl border border-[#C6A56B]/15 bg-white p-3">
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>
-                            <label className="mb-1 block text-[10px] font-black text-[#4A4A4A]/55">اسم الخاصية</label>
+                            <label className="mb-1 block text-[10px] font-black text-[#171717]/55">اسم الخاصية</label>
                             <input
                               value={option.name || ''}
                               onChange={(event) => setForm((current) => ({
@@ -533,11 +533,11 @@ export default function ProductManagement() {
                                 )),
                               }))}
                               placeholder="مثال: اللون"
-                              className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
+                              className="w-full rounded-lg border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-2 text-sm font-bold outline-none focus:border-[#C6A56B]"
                             />
                           </div>
                           <div dir="ltr">
-                            <label className="mb-1 block text-left text-[10px] font-black text-[#4A4A4A]/55">Option name in English</label>
+                            <label className="mb-1 block text-left text-[10px] font-black text-[#171717]/55">Option name in English</label>
                             <input
                               value={option.nameEn || ''}
                               onChange={(event) => setForm((current) => ({
@@ -547,11 +547,11 @@ export default function ProductManagement() {
                                 )),
                               }))}
                               placeholder="Example: Color"
-                              className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
+                              className="w-full rounded-lg border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-2 text-sm font-bold outline-none focus:border-[#C6A56B]"
                             />
                           </div>
                           <div>
-                            <label className="mb-1 block text-[10px] font-black text-[#4A4A4A]/55">القيم المتاحة</label>
+                            <label className="mb-1 block text-[10px] font-black text-[#171717]/55">القيم المتاحة</label>
                             <input
                               defaultValue={(option.values || []).map((value) => value.label || value.value).join('، ')}
                               onBlur={(event) => {
@@ -579,11 +579,11 @@ export default function ProductManagement() {
                                 }));
                               }}
                               placeholder="أخضر، وردي، أسود"
-                              className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
+                              className="w-full rounded-lg border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-2 text-sm font-bold outline-none focus:border-[#C6A56B]"
                             />
                           </div>
                           <div dir="ltr">
-                            <label className="mb-1 block text-left text-[10px] font-black text-[#4A4A4A]/55">Values in English (same order)</label>
+                            <label className="mb-1 block text-left text-[10px] font-black text-[#171717]/55">Values in English (same order)</label>
                             <input
                               defaultValue={(option.values || []).map((value) => value.labelEn || '').join(', ')}
                               onBlur={(event) => {
@@ -604,11 +604,11 @@ export default function ProductManagement() {
                                 }));
                               }}
                               placeholder="Green, Pink, Black"
-                              className="w-full rounded-lg border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-2 text-sm font-bold outline-none focus:border-[#C5A059]"
+                              className="w-full rounded-lg border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-2 text-sm font-bold outline-none focus:border-[#C6A56B]"
                             />
                           </div>
                           <div className="flex items-end gap-2">
-                            <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[#F8F5F2] px-3 text-[10px] font-black text-[#4A4A4A]/65">
+                            <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[#FAF9F7] px-3 text-[10px] font-black text-[#171717]/65">
                               <input
                                 type="checkbox"
                                 checked={option.required !== false}
@@ -618,7 +618,7 @@ export default function ProductManagement() {
                                     index === optionIndex ? { ...item, required: event.target.checked } : item
                                   )),
                                 }))}
-                                className="accent-[#C5A059]"
+                                className="accent-[#C6A56B]"
                               />
                               مطلوب
                             </label>
@@ -641,11 +641,11 @@ export default function ProductManagement() {
                 )}
               </div>
 
-              <div dir="ltr" className="rounded-2xl border border-[#C5A059]/20 bg-[#C5A059]/5 p-4">
-                <label className="block text-left text-sm font-black text-[#4A4A4A]">
+              <div dir="ltr" className="rounded-2xl border border-[#C6A56B]/20 bg-[#C6A56B]/5 p-4">
+                <label className="block text-left text-sm font-black text-[#171717]">
                   Specifications in English
                 </label>
-                <p className="mb-3 mt-1 text-left text-[10px] font-bold text-[#4A4A4A]/50">
+                <p className="mb-3 mt-1 text-left text-[10px] font-bold text-[#171717]/50">
                   Enter one specification per line using: label: value.
                 </p>
                 <textarea
@@ -666,15 +666,15 @@ export default function ProductManagement() {
                     setForm((current) => ({ ...current, specificationsEn }));
                   }}
                   placeholder={'Material: Leather\nSize: 20 x 20 cm\nPages: 40'}
-                  className="w-full resize-y rounded-xl border border-[#C5A059]/20 bg-white px-4 py-3 text-sm font-bold leading-7 outline-none focus:border-[#C5A059]"
+                  className="w-full resize-y rounded-xl border border-[#C6A56B]/20 bg-white px-4 py-3 text-sm font-bold leading-7 outline-none focus:border-[#C6A56B]"
                 />
               </div>
 
-              <div className="rounded-2xl border border-[#D9A3AA]/20 bg-[#D9A3AA]/5 p-4">
-                <label className="block text-sm font-black text-[#4A4A4A]">
+              <div className="rounded-2xl border border-[#E8B4BC]/20 bg-[#E8B4BC]/5 p-4">
+                <label className="block text-sm font-black text-[#171717]">
                   مواصفات تظهر في صفحة المنتج
                 </label>
-                <p className="mb-3 mt-1 text-[10px] font-bold text-[#4A4A4A]/50">
+                <p className="mb-3 mt-1 text-[10px] font-bold text-[#171717]/50">
                   اكتب كل مواصفة في سطر بصيغة: اسم المواصفة: القيمة.
                 </p>
                 <textarea
@@ -695,23 +695,23 @@ export default function ProductManagement() {
                     setForm((current) => ({ ...current, specifications }));
                   }}
                   placeholder={'الخامة: جلد\nالمقاس: 20 × 20 سم\nعدد الصفحات: 40 صفحة'}
-                  className="w-full resize-y rounded-xl border border-[#D9A3AA]/20 bg-white px-4 py-3 text-sm font-bold leading-7 outline-none focus:border-[#D9A3AA]"
+                  className="w-full resize-y rounded-xl border border-[#E8B4BC]/20 bg-white px-4 py-3 text-sm font-bold leading-7 outline-none focus:border-[#E8B4BC]"
                 />
               </div>
 
               {/* السعر + الفئة */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">السعر (ر.س) <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-bold text-[#171717] mb-1.5">السعر (ر.س) <span className="text-red-500">*</span></label>
                   <input
                     type="number" min="0" step="0.5" dir="ltr" value={form.price}
                     onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
                     placeholder="0.00"
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] focus:ring-2 ring-[#D9A3AA]/20 transition-all font-black text-xl text-[#C5A059] text-right"
+                    className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC] focus:ring-2 ring-[#E8B4BC]/20 transition-all font-black text-xl text-[#C6A56B] text-right"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-[#4A4A4A]/60 block mb-2">الفئة <span className="text-red-500">*</span></label>
+                  <label className="text-[10px] font-bold text-[#171717]/60 block mb-2">الفئة <span className="text-red-500">*</span></label>
                   <div className="space-y-2">
                     <select
                       value={dynamicCategories.includes(form.category) ? form.category : '__NEW__'}
@@ -722,7 +722,7 @@ export default function ProductManagement() {
                           setForm(f => ({ ...f, category: '' }));
                         }
                       }}
-                      className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] transition-colors cursor-pointer"
+                      className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC] transition-colors cursor-pointer"
                     >
                       <option value="" disabled>اختر الفئة...</option>
                       {dynamicCategories.map(cat => (
@@ -736,7 +736,7 @@ export default function ProductManagement() {
                         value={form.category}
                         onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                         placeholder="اكتب اسم الفئة الجديدة..."
-                        className="w-full bg-white border-2 border-[#C5A059]/50 rounded-xl px-4 py-3 outline-none focus:border-[#C5A059] transition-colors"
+                        className="w-full bg-white border-2 border-[#C6A56B]/50 rounded-xl px-4 py-3 outline-none focus:border-[#C6A56B] transition-colors"
                         required
                       />
                     )}
@@ -746,25 +746,25 @@ export default function ProductManagement() {
 
               {/* الصورة الرئيسية */}
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">الصورة الرئيسية</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1.5">الصورة الرئيسية</label>
                 <input type="file" accept="image/*" ref={fileRef} className="hidden" onChange={e => handleImageUpload(e, 'main')} />
                 <div
                   onClick={() => !form.image && fileRef.current.click()}
-                  className={`h-36 rounded-2xl border-2 flex flex-col items-center justify-center relative overflow-hidden transition-colors ${form.image ? 'border-[#D9A3AA] bg-[#F8F5F2]' : 'border-dashed border-[#D9A3AA]/40 hover:border-[#D9A3AA] bg-white cursor-pointer'}`}
+                  className={`h-36 rounded-2xl border-2 flex flex-col items-center justify-center relative overflow-hidden transition-colors ${form.image ? 'border-[#E8B4BC] bg-[#FAF9F7]' : 'border-dashed border-[#E8B4BC]/40 hover:border-[#E8B4BC] bg-white cursor-pointer'}`}
                 >
                   {uploadingMain ? (
-                    <div className="flex flex-col items-center"><Loader2 size={24} className="animate-spin text-[#D9A3AA] mb-2" /><span className="text-xs font-bold text-[#D9A3AA]">جاري الضغط...</span></div>
+                    <div className="flex flex-col items-center"><Loader2 size={24} className="animate-spin text-[#E8B4BC] mb-2" /><span className="text-xs font-bold text-[#E8B4BC]">جاري الضغط...</span></div>
                   ) : form.image ? (
                     <>
                       <img src={form.image} alt="معاينة" className="h-full w-full object-contain p-2" />
                       <button onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, image: null })); }} className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 shadow-md">إزالة</button>
-                      <button onClick={e => { e.stopPropagation(); fileRef.current.click(); }} className="absolute bottom-2 right-2 bg-[#4A4A4A] text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-[#D9A3AA] shadow-md">تغيير</button>
+                      <button onClick={e => { e.stopPropagation(); fileRef.current.click(); }} className="absolute bottom-2 right-2 bg-[#171717] text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-[#E8B4BC] shadow-md">تغيير</button>
                     </>
                   ) : (
                     <div className="text-center">
-                      <UploadCloud size={32} className="mx-auto text-[#D9A3AA]/50 mb-2" />
-                      <p className="text-sm font-bold text-[#4A4A4A]/70">اضغطي لرفع صورة</p>
-                      <p className="text-[10px] text-[#4A4A4A]/40 mt-1">يتم ضغط الصورة تلقائياً</p>
+                      <UploadCloud size={32} className="mx-auto text-[#E8B4BC]/50 mb-2" />
+                      <p className="text-sm font-bold text-[#171717]/70">اضغطي لرفع صورة</p>
+                      <p className="text-[10px] text-[#171717]/40 mt-1">يتم ضغط الصورة تلقائياً</p>
                     </div>
                   )}
                 </div>
@@ -772,14 +772,14 @@ export default function ProductManagement() {
 
               {/* صورة Hover */}
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">صورة Hover (اختياري)</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1.5">صورة Hover (اختياري)</label>
                 <input type="file" accept="image/*" ref={hoverRef} className="hidden" onChange={e => handleImageUpload(e, 'hover')} />
                 <div
                   onClick={() => !form.hoverImage && hoverRef.current.click()}
-                  className={`h-32 rounded-2xl border-2 flex flex-col items-center justify-center relative overflow-hidden transition-colors ${form.hoverImage ? 'border-[#C5A059] bg-[#F8F5F2]' : 'border-dashed border-[#C5A059]/40 hover:border-[#C5A059] bg-white cursor-pointer'}`}
+                  className={`h-32 rounded-2xl border-2 flex flex-col items-center justify-center relative overflow-hidden transition-colors ${form.hoverImage ? 'border-[#C6A56B] bg-[#FAF9F7]' : 'border-dashed border-[#C6A56B]/40 hover:border-[#C6A56B] bg-white cursor-pointer'}`}
                 >
                   {uploadingHover ? (
-                    <div className="flex flex-col items-center"><Loader2 size={24} className="animate-spin text-[#C5A059] mb-2" /><span className="text-xs font-bold text-[#C5A059]">جاري الضغط...</span></div>
+                    <div className="flex flex-col items-center"><Loader2 size={24} className="animate-spin text-[#C6A56B] mb-2" /><span className="text-xs font-bold text-[#C6A56B]">جاري الضغط...</span></div>
                   ) : form.hoverImage ? (
                     <>
                       <img src={form.hoverImage} alt="Hover" className="h-full w-full object-contain p-2" />
@@ -787,33 +787,33 @@ export default function ProductManagement() {
                     </>
                   ) : (
                     <div className="text-center">
-                      <ImageIcon size={28} className="mx-auto text-[#C5A059]/50 mb-2" />
-                      <p className="text-sm font-bold text-[#4A4A4A]/60">صورة بديلة عند تمرير الماوس</p>
+                      <ImageIcon size={28} className="mx-auto text-[#C6A56B]/50 mb-2" />
+                      <p className="text-sm font-bold text-[#171717]/60">صورة بديلة عند تمرير الماوس</p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* الترتيب + الكمية + المخزون + الأكثر مبيعاً */}
-              <div className="grid grid-cols-4 gap-4 border-t border-[#F8F5F2] pt-4">
+              <div className="grid grid-cols-4 gap-4 border-t border-[#FAF9F7] pt-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">ترتيب العرض</label>
+                  <label className="block text-xs font-bold text-[#171717] mb-1.5">ترتيب العرض</label>
                   <input
                     type="number" min="0" dir="ltr" value={form.sortOrder}
                     onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value }))}
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-2.5 outline-none focus:border-[#D9A3AA] text-center font-mono font-bold"
+                    className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-xl px-4 py-2.5 outline-none focus:border-[#E8B4BC] text-center font-mono font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">الكمية المتوفرة <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-bold text-[#171717] mb-1.5">الكمية المتوفرة <span className="text-red-500">*</span></label>
                   <input
                     type="number" min="0" dir="ltr" value={form.stockQuantity}
                     onChange={e => setForm(f => ({ ...f, stockQuantity: parseInt(e.target.value) || 0 }))}
-                    className="w-full bg-[#F8F5F2] border border-[#C5A059]/40 rounded-xl px-4 py-2.5 outline-none focus:border-[#C5A059] text-center font-black text-[#C5A059] text-lg"
+                    className="w-full bg-[#FAF9F7] border border-[#C6A56B]/40 rounded-xl px-4 py-2.5 outline-none focus:border-[#C6A56B] text-center font-black text-[#C6A56B] text-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">حالة المخزون</label>
+                  <label className="block text-xs font-bold text-[#171717] mb-1.5">حالة المخزون</label>
                   <div
                     onClick={() => setForm(f => ({ ...f, inStock: !f.inStock }))}
                     className={`cursor-pointer w-full h-[42px] rounded-xl flex items-center px-2 gap-2 transition-colors ${form.inStock ? 'bg-emerald-100' : 'bg-gray-100'}`}
@@ -827,15 +827,15 @@ export default function ProductManagement() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#4A4A4A] mb-1.5">الأكثر مبيعاً</label>
+                  <label className="block text-xs font-bold text-[#171717] mb-1.5">الأكثر مبيعاً</label>
                   <div
                     onClick={handleToggleBestSeller}
                     className={`cursor-pointer w-full h-[42px] rounded-xl flex items-center px-2 gap-2 transition-colors ${form.isBestSeller ? 'bg-amber-100' : 'bg-gray-100'}`}
                   >
-                    <div className={`w-8 h-8 rounded-lg shadow-sm flex items-center justify-center text-white transition-colors ${form.isBestSeller ? 'bg-[#C5A059]' : 'bg-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-lg shadow-sm flex items-center justify-center text-white transition-colors ${form.isBestSeller ? 'bg-[#C6A56B]' : 'bg-gray-400'}`}>
                       <Star size={16} fill={form.isBestSeller ? 'currentColor' : 'none'} />
                     </div>
-                    <span className={`text-xs font-black ${form.isBestSeller ? 'text-[#C5A059]' : 'text-gray-500'}`}>
+                    <span className={`text-xs font-black ${form.isBestSeller ? 'text-[#C6A56B]' : 'text-gray-500'}`}>
                       {form.isBestSeller ? 'نعم' : 'لا'}
                     </span>
                   </div>
@@ -843,14 +843,14 @@ export default function ProductManagement() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-[#F8F5F2] flex gap-3 bg-[#F8F5F2]/30 rounded-b-3xl">
-              <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-[#4A4A4A]/5 transition-colors">
+            <div className="p-6 border-t border-[#FAF9F7] flex gap-3 bg-[#FAF9F7]/30 rounded-b-3xl">
+              <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-[#171717]/60 hover:bg-[#171717]/5 transition-colors">
                 إلغاء
               </button>
               <button
                 onClick={saveProduct}
                 disabled={isSaving || uploadingMain || uploadingHover}
-                className="flex-1 bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white py-3 rounded-xl font-black shadow-lg shadow-[#D9A3AA]/30 hover:scale-[1.02] transition-all flex justify-center items-center gap-2 disabled:opacity-70 disabled:hover:scale-100"
+                className="flex-1 bg-gradient-to-r from-[#E8B4BC] to-[#C6A56B] text-white py-3 rounded-xl font-black shadow-lg shadow-[#E8B4BC]/30 hover:scale-[1.02] transition-all flex justify-center items-center gap-2 disabled:opacity-70 disabled:hover:scale-100"
               >
                 {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
                 {isSaving ? 'جاري الحفظ...' : (isEdit ? 'حفظ التعديلات' : 'إضافة المنتج')}
@@ -865,12 +865,12 @@ export default function ProductManagement() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
             <div className="text-5xl mb-4">🗑️</div>
-            <h3 className="text-xl font-black text-[#4A4A4A] mb-2">حذف المنتج</h3>
-            <p className="text-sm text-[#4A4A4A]/70 mb-6 leading-relaxed">
+            <h3 className="text-xl font-black text-[#171717] mb-2">حذف المنتج</h3>
+            <p className="text-sm text-[#171717]/70 mb-6 leading-relaxed">
               سيتم حذف <strong className="text-red-500">"{deleteTarget?.name}"</strong> نهائياً. هذا الإجراء لا يمكن التراجع عنه.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setIsDeleteModal(false)} className="flex-1 py-3 rounded-xl font-bold text-[#4A4A4A] bg-[#F8F5F2] hover:bg-gray-200 transition-colors">
+              <button onClick={() => setIsDeleteModal(false)} className="flex-1 py-3 rounded-xl font-bold text-[#171717] bg-[#FAF9F7] hover:bg-gray-200 transition-colors">
                 إلغاء
               </button>
               <button

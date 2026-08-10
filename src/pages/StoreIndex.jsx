@@ -321,7 +321,7 @@ export default function StoreIndex() {
 
           <div className="flex items-center gap-1 sm:gap-3">
             <button
-              className="md:hidden p-1 -mr-2 text-[#4A4A4A]"
+              className="md:hidden p-1 -mr-2 text-[#171717]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
               title={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
@@ -331,33 +331,33 @@ export default function StoreIndex() {
             <Link to="/" className="flex items-center gap-2 sm:gap-3">
               <img src={logo} alt="Art Moment Logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
               <div className="flex flex-col">
-                <span className="text-lg sm:text-xl font-black text-[#4A4A4A] leading-none">
+                <span className="text-lg sm:text-xl font-black text-[#171717] leading-none">
                   {language === 'en' ? 'Art Moment' : 'لحظة فن'}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-[#C5A059] font-bold tracking-widest uppercase">
+                <span className="text-[9px] sm:text-[10px] text-[#C6A56B] font-bold tracking-widest uppercase">
                   {language === 'en' ? 'Photo Printing & Gifts' : 'Art Moment'}
                 </span>
               </div>
             </Link>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#4A4A4A]/80">
-            <Link to="/" className="hover:text-[#D9A3AA] transition-colors">الرئيسية</Link>
-            <span className="text-[#D9A3AA] flex items-center gap-1.5"><ShoppingBag size={15} /> المتجر</span>
-            <Link to="/store/orders" className="hover:text-[#D9A3AA] transition-colors">طلباتي</Link>
-            <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
+          <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#171717]/80">
+            <Link to="/" className="hover:text-[#E8B4BC] transition-colors">الرئيسية</Link>
+            <span className="text-[#E8B4BC] flex items-center gap-1.5"><ShoppingBag size={15} /> المتجر</span>
+            <Link to="/store/orders" className="hover:text-[#E8B4BC] transition-colors">طلباتي</Link>
+            <Link to="/track" className="hover:text-[#E8B4BC] transition-colors">تتبع الطلب</Link>
           </nav>
 
           <div className={`flex items-center gap-3 sm:gap-4 ${language === 'en' ? 'pr-20' : 'pl-20'}`}>
             {(isInstallable || isIOS) && (
-              <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#D9A3AA] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C5A059] transition-all">
+              <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#E8B4BC] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C6A56B] transition-all">
                 <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
               </button>
             )}
-            <Link to="/store/cart" className="relative p-2 bg-white/70 rounded-full hover:bg-[#D9A3AA]/10 transition-colors border border-[#D9A3AA]/20">
-              <ShoppingCart size={20} className="text-[#4A4A4A]" />
+            <Link to="/store/cart" className="relative p-2 bg-white/70 rounded-full hover:bg-[#E8B4BC]/10 transition-colors border border-[#E8B4BC]/20">
+              <ShoppingCart size={20} className="text-[#171717]" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#D9A3AA] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
+                <span className="absolute -top-1 -right-1 bg-[#E8B4BC] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
                   {cartCount}
                 </span>
               )}
@@ -365,12 +365,12 @@ export default function StoreIndex() {
 
             {customer ? (
               <div className="flex items-center gap-1 sm:gap-2">
-                <button onClick={() => setIsAccountSidebarOpen(true)} className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#4A4A4A] bg-white px-3 py-2 rounded-full border border-[#D9A3AA]/20 hover:bg-[#D9A3AA]/10 transition-colors shadow-sm">
-                  <User size={16} className="text-[#C5A059]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
+                <button onClick={() => setIsAccountSidebarOpen(true)} className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#171717] bg-white px-3 py-2 rounded-full border border-[#E8B4BC]/20 hover:bg-[#E8B4BC]/10 transition-colors shadow-sm">
+                  <User size={16} className="text-[#C6A56B]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
                 </button>
               </div>
             ) : (
-              <button onClick={() => setIsAuthModalOpen(true)} className="flex items-center gap-1.5 bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm text-xs font-bold">
+              <button onClick={() => setIsAuthModalOpen(true)} className="flex items-center gap-1.5 bg-white text-[#171717] border border-[#E8B4BC]/20 px-3 py-2 rounded-full hover:text-[#E8B4BC] transition-all shadow-sm text-xs font-bold">
                 <User size={16} /> <span className="hidden sm:inline">دخول</span>
               </button>
             )}
@@ -378,11 +378,11 @@ export default function StoreIndex() {
         </div>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
-            <Link to="/" className="block py-2 text-[#4A4A4A] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الرئيسية</Link>
-            <span className="flex items-center gap-2 py-2 text-[#D9A3AA] font-bold"><ShoppingBag size={16} /> المتجر</span>
-            <Link to="/store/orders" className="block w-full text-center py-3 mt-2 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
-            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
+          <div className="md:hidden bg-[#FAF9F7] border-t border-[#E8B4BC]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
+            <Link to="/" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الرئيسية</Link>
+            <span className="flex items-center gap-2 py-2 text-[#E8B4BC] font-bold"><ShoppingBag size={16} /> المتجر</span>
+            <Link to="/store/orders" className="block w-full text-center py-3 mt-2 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
+            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
           </div>
         )}
       </header>
@@ -390,10 +390,10 @@ export default function StoreIndex() {
       {/* Main Store Content */}
       <main className="art-shell py-8 sm:py-10 lg:py-12">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-black text-[#4A4A4A] mb-4">
-            {language === 'en' ? 'Art Moment Store' : <>متجر <span className="text-[#D9A3AA]">لحظة فن</span></>}
+          <h2 className="text-3xl md:text-4xl font-black text-[#171717] mb-4">
+            {language === 'en' ? 'Art Moment Store' : <>متجر <span className="text-[#E8B4BC]">لحظة فن</span></>}
           </h2>
-          <p className="text-[#4A4A4A]/60 max-w-xl mx-auto">
+          <p className="text-[#171717]/60 max-w-xl mx-auto">
             {language === 'en'
               ? 'Browse our complete collection of albums, frames, prints, and artistic accessories.'
               : 'تصفح تشكيلتنا المتكاملة من الألبومات، الإطارات، والملحقات الفنية.'}
@@ -410,13 +410,13 @@ export default function StoreIndex() {
                   onClick={() => setActiveCategory(cat)}
                   className={`px-4 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all border inline-flex items-center gap-2 ${
                     activeCategory === cat
-                      ? 'bg-[#D9A3AA] text-white border-[#D9A3AA] shadow-md'
-                      : 'bg-[#F8F5F2] text-[#4A4A4A] border-transparent hover:border-[#D9A3AA]/30'
+                      ? 'bg-[#E8B4BC] text-white border-[#E8B4BC] shadow-md'
+                      : 'bg-[#FAF9F7] text-[#171717] border-transparent hover:border-[#E8B4BC]/30'
                   }`}
                 >
                   <span>{getLocalizedCategoryLabel(cat, language)}</span>
                   <span className={`min-w-6 h-6 px-2 rounded-full text-[11px] flex items-center justify-center ${
-                    activeCategory === cat ? 'bg-white/20 text-white' : 'bg-white text-[#C5A059]'
+                    activeCategory === cat ? 'bg-white/20 text-white' : 'bg-white text-[#C6A56B]'
                   }`}>
                     {categoryCounts[cat] || 0}
                   </span>
@@ -431,14 +431,14 @@ export default function StoreIndex() {
                   placeholder={language === 'en' ? 'Search by product name or description...' : 'ابحث باسم المنتج أو الوصف...'}
                   className="art-input w-full rounded-full px-4 py-2.5 pr-10 outline-none text-sm"
                 />
-                <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
+                <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#171717]/40" />
                 {searchQ && (
                   <X size={14} onClick={() => setSearchQ('')} className="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer text-red-400" />
                 )}
               </div>
 
               <label className="relative block">
-                <ArrowUpDown size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C5A059] pointer-events-none" />
+                <ArrowUpDown size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C6A56B] pointer-events-none" />
                 <select
                   value={sortMode}
                   onChange={e => setSortMode(e.target.value)}
@@ -456,7 +456,7 @@ export default function StoreIndex() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8 text-sm">
-          <p className="text-[#4A4A4A]/60 font-bold">
+          <p className="text-[#171717]/60 font-bold">
             {language === 'en'
               ? `Showing ${filteredProducts.length} of ${products.length} products`
               : `يعرض ${filteredProducts.length} منتج من أصل ${products.length}`}
@@ -469,7 +469,7 @@ export default function StoreIndex() {
                 setActiveCategory('all');
                 setSortMode('featured');
               }}
-              className="w-fit px-4 py-2 rounded-full bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 font-bold hover:bg-[#D9A3AA]/10 transition-colors"
+              className="w-fit px-4 py-2 rounded-full bg-white text-[#171717] border border-[#E8B4BC]/20 font-bold hover:bg-[#E8B4BC]/10 transition-colors"
             >
               مسح التصفية
             </button>
@@ -484,7 +484,7 @@ export default function StoreIndex() {
                 <div className="art-product-media aspect-square rounded-2xl mb-4 bg-white/80 animate-pulse" />
                 <div className="h-4 w-4/5 bg-white rounded-full animate-pulse mb-3" />
                 <div className="h-3 w-3/5 bg-white rounded-full animate-pulse mb-6" />
-                <div className="flex items-center justify-between pt-3 border-t border-[#F8F5F2]">
+                <div className="flex items-center justify-between pt-3 border-t border-[#FAF9F7]">
                   <div className="h-5 w-20 bg-white rounded-full animate-pulse" />
                   <div className="h-10 w-10 bg-white rounded-xl animate-pulse" />
                 </div>
@@ -492,9 +492,9 @@ export default function StoreIndex() {
             ))
           ) : productsError ? (
             <div className="col-span-full art-panel text-center py-14 px-6 rounded-[1.5rem]">
-              <AlertCircle size={34} className="mx-auto mb-4 text-[#D9A3AA]" />
-              <h3 className="text-xl font-black text-[#4A4A4A] mb-2">لم نتمكن من تحميل المنتجات</h3>
-              <p className="text-[#4A4A4A]/60 max-w-lg mx-auto mb-6">{productsError}</p>
+              <AlertCircle size={34} className="mx-auto mb-4 text-[#E8B4BC]" />
+              <h3 className="text-xl font-black text-[#171717] mb-2">لم نتمكن من تحميل المنتجات</h3>
+              <p className="text-[#171717]/60 max-w-lg mx-auto mb-6">{productsError}</p>
               <button
                 type="button"
                 onClick={fetchProducts}
@@ -504,7 +504,7 @@ export default function StoreIndex() {
               </button>
             </div>
           ) : visibleProducts.length === 0 ? (
-            <div className="col-span-full text-center py-20 text-[#4A4A4A]/60">
+            <div className="col-span-full text-center py-20 text-[#171717]/60">
               <p className="font-black text-lg mb-4">لا توجد منتجات مطابقة لبحثك</p>
               {(searchQ || activeCategory !== 'all') && (
                 <button
@@ -513,7 +513,7 @@ export default function StoreIndex() {
                     setSearchQ('');
                     setActiveCategory('all');
                   }}
-                  className="px-5 py-2.5 rounded-full bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 font-bold hover:bg-[#D9A3AA]/10 transition-colors"
+                  className="px-5 py-2.5 rounded-full bg-white text-[#171717] border border-[#E8B4BC]/20 font-bold hover:bg-[#E8B4BC]/10 transition-colors"
                 >
                   عرض كل المنتجات
                 </button>
@@ -554,31 +554,31 @@ export default function StoreIndex() {
                   )}
                   <span className={`absolute bottom-2 right-2 z-20 text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm border ${
                     productAvailable
-                      ? 'bg-white/90 text-[#4A4A4A] border-[#D9A3AA]/20'
+                      ? 'bg-white/90 text-[#171717] border-[#E8B4BC]/20'
                       : 'bg-red-500 text-white border-red-400'
                   }`}>
                     {getStockLabel(product)}
                   </span>
                   {productAvailable && productQty > 0 && (
-                    <span className="absolute top-2 right-2 bg-[#C5A059] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
+                    <span className="absolute top-2 right-2 bg-[#C6A56B] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
                       في السلة: {productQty}
                     </span>
                   )}
                 </div>
 
                 <div className="flex-1 flex flex-col px-1">
-                  <h3 className="font-black text-[#4A4A4A] text-sm md:text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
-                  <p className="text-[#4A4A4A]/50 text-xs line-clamp-2 mb-4 flex-1">{product.description}</p>
-                  <div className="mt-auto pt-3 border-t border-[#F8F5F2] space-y-3">
+                  <h3 className="font-black text-[#171717] text-sm md:text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
+                  <p className="text-[#171717]/50 text-xs line-clamp-2 mb-4 flex-1">{product.description}</p>
+                  <div className="mt-auto pt-3 border-t border-[#FAF9F7] space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-black text-[#D9A3AA] text-lg">{product.price} <span className="text-[10px] text-[#4A4A4A]/60">ر.س</span></span>
+                      <span className="font-black text-[#E8B4BC] text-lg">{product.price} <span className="text-[10px] text-[#171717]/60">ر.س</span></span>
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); addToCart(product); }}
                       disabled={!canAddProduct}
                       className={`w-full py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-black ${
                         canAddProduct
-                          ? 'bg-[#4A4A4A] text-white hover:bg-[#C5A059] shadow-md'
+                          ? 'bg-[#171717] text-white hover:bg-[#C6A56B] shadow-md'
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
                     >
@@ -601,13 +601,13 @@ export default function StoreIndex() {
                 lastRevealAtRef.current = Date.now();
                 revealNextProductRow();
               }}
-              className="flex min-h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold text-[#4A4A4A]/60 transition-colors hover:bg-white hover:text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-[#D9A3AA]/40"
+              className="flex min-h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold text-[#171717]/60 transition-colors hover:bg-white hover:text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#E8B4BC]/40"
             >
-              <ChevronDown size={16} className="text-[#D9A3AA]" />
+              <ChevronDown size={16} className="text-[#E8B4BC]" />
               عرض المزيد
             </button>
           ) : filteredProducts.length > columnCount ? (
-            <span className="text-xs font-bold text-[#4A4A4A]/35">تم عرض جميع المنتجات</span>
+            <span className="text-xs font-bold text-[#171717]/35">تم عرض جميع المنتجات</span>
           ) : null}
         </div>
       </main>
@@ -615,7 +615,7 @@ export default function StoreIndex() {
       {/* Floating Cart Button */}
       {cartCount > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-10">
-          <Link to="/store/cart" className="flex items-center gap-3 bg-[#C5A059] text-white px-6 py-3.5 rounded-full font-black hover:bg-[#4A4A4A] transition-all shadow-xl hover:scale-105 border-2 border-white">
+          <Link to="/store/cart" className="flex items-center gap-3 bg-[#C6A56B] text-white px-6 py-3.5 rounded-full font-black hover:bg-[#171717] transition-all shadow-xl hover:scale-105 border-2 border-white">
             <ShoppingCart size={20} /> عرض السلة ({cartCount}) <ArrowLeft size={18} />
           </Link>
         </div>
@@ -637,7 +637,7 @@ export default function StoreIndex() {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsAccountSidebarOpen(false)}
           />
-          <div className="relative w-full max-w-sm bg-[#F8F5F2] h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col" dir="rtl">
+          <div className="relative w-full max-w-sm bg-[#FAF9F7] h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col" dir="rtl">
 
             {/* Header */}
             <div className="art-auth-header text-white p-6 pb-8 relative overflow-hidden shrink-0 rounded-bl-3xl">
@@ -645,7 +645,7 @@ export default function StoreIndex() {
                 <X size={18} />
               </button>
               <div className="flex items-center gap-4 mt-6 relative z-10">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white shrink-0">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#E8B4BC] to-[#C6A56B] rounded-full flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white shrink-0">
                   {customer.name ? customer.name.charAt(0) : <User size={28} />}
                 </div>
                 <div className="min-w-0">
@@ -660,47 +660,47 @@ export default function StoreIndex() {
 
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-3">
-                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#D9A3AA]/10 flex flex-col items-center justify-center gap-2 hover:border-[#D9A3AA]/40 transition-colors group">
-                  <div className="w-12 h-12 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA] group-hover:scale-110 transition-transform">
+                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#E8B4BC]/10 flex flex-col items-center justify-center gap-2 hover:border-[#E8B4BC]/40 transition-colors group">
+                  <div className="w-12 h-12 bg-[#E8B4BC]/10 rounded-full flex items-center justify-center text-[#E8B4BC] group-hover:scale-110 transition-transform">
                     <Package size={22} />
                   </div>
-                  <span className="font-bold text-sm text-[#4A4A4A]">طلباتي</span>
+                  <span className="font-bold text-sm text-[#171717]">طلباتي</span>
                 </Link>
-                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C5A059]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C5A059]/40 transition-colors group">
-                  <div className="w-12 h-12 bg-[#C5A059]/10 rounded-full flex items-center justify-center text-[#C5A059] group-hover:scale-110 transition-transform">
+                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C6A56B]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C6A56B]/40 transition-colors group">
+                  <div className="w-12 h-12 bg-[#C6A56B]/10 rounded-full flex items-center justify-center text-[#C6A56B] group-hover:scale-110 transition-transform">
                     <Wallet size={22} />
                   </div>
-                  <span className="font-bold text-sm text-[#4A4A4A]">المحفظة</span>
+                  <span className="font-bold text-sm text-[#171717]">المحفظة</span>
                 </Link>
               </div>
 
               {/* Profile Details */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9A3AA]/10">
-                <h3 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
-                  <User size={16} className="text-[#C5A059]" /> بيانات الحساب
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#E8B4BC]/10">
+                <h3 className="font-black text-[#171717] mb-4 flex items-center gap-2">
+                  <User size={16} className="text-[#C6A56B]" /> بيانات الحساب
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">الاسم</label>
-                    <input type="text" defaultValue={customer.name || ''} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none text-[#4A4A4A] font-bold" />
+                    <label className="text-[10px] font-bold text-[#171717]/50 block mb-1">الاسم</label>
+                    <input type="text" defaultValue={customer.name || ''} readOnly className="w-full bg-[#FAF9F7] border border-transparent rounded-xl px-4 py-3 text-sm outline-none text-[#171717] font-bold" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">البريد الإلكتروني</label>
-                    <input type="email" defaultValue={customer.email || 'غير مسجل'} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none dir-ltr text-right text-[#4A4A4A] font-bold" />
+                    <label className="text-[10px] font-bold text-[#171717]/50 block mb-1">البريد الإلكتروني</label>
+                    <input type="email" defaultValue={customer.email || 'غير مسجل'} readOnly className="w-full bg-[#FAF9F7] border border-transparent rounded-xl px-4 py-3 text-sm outline-none dir-ltr text-right text-[#171717] font-bold" />
                   </div>
                   <Link
                     to="/store/account"
                     onClick={() => setIsAccountSidebarOpen(false)}
-                    className="w-full py-3 mt-2 bg-[#F8F5F2] text-[#4A4A4A] font-bold text-xs rounded-xl hover:bg-[#D9A3AA]/10 transition-colors border border-[#D9A3AA]/20 flex items-center justify-center gap-2"
+                    className="w-full py-3 mt-2 bg-[#FAF9F7] text-[#171717] font-bold text-xs rounded-xl hover:bg-[#E8B4BC]/10 transition-colors border border-[#E8B4BC]/20 flex items-center justify-center gap-2"
                   >
-                    <User size={15} className="text-[#C5A059]" /> إدارة الحساب
+                    <User size={15} className="text-[#C6A56B]" /> إدارة الحساب
                   </Link>
                 </div>
               </div>
             </div>
 
             {/* Footer / Logout */}
-            <div className="p-6 bg-white border-t border-[#D9A3AA]/10 shrink-0">
+            <div className="p-6 bg-white border-t border-[#E8B4BC]/10 shrink-0">
               <button
                 onClick={() => { setIsAccountSidebarOpen(false); handleLogout(); }}
                 className="w-full py-4 bg-red-50 text-red-500 font-black text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors shadow-sm"
@@ -718,8 +718,8 @@ export default function StoreIndex() {
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
 
-          <div className="relative w-full max-w-4xl bg-[#F8F5F2] rounded-t-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col sm:flex-row max-h-[90vh] animate-in slide-in-from-bottom-10 sm:zoom-in-95">
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 left-4 z-10 w-10 h-10 bg-white/50 backdrop-blur rounded-full flex items-center justify-center text-[#4A4A4A] hover:bg-white transition-colors">
+          <div className="relative w-full max-w-4xl bg-[#FAF9F7] rounded-t-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col sm:flex-row max-h-[90vh] animate-in slide-in-from-bottom-10 sm:zoom-in-95">
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 left-4 z-10 w-10 h-10 bg-white/50 backdrop-blur rounded-full flex items-center justify-center text-[#171717] hover:bg-white transition-colors">
               <X size={20} />
             </button>
 
@@ -727,57 +727,57 @@ export default function StoreIndex() {
             <div className="w-full sm:w-1/2 bg-white relative h-64 sm:h-auto shrink-0 flex items-center justify-center p-8">
               {selectedProduct.image
                 ? <img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-contain mix-blend-multiply" />
-                : <ImageIcon size={64} className="text-[#D9A3AA]/20" />
+                : <ImageIcon size={64} className="text-[#E8B4BC]/20" />
               }
             </div>
 
             {/* Details */}
             <div className="w-full sm:w-1/2 p-6 sm:p-10 overflow-y-auto flex flex-col">
-              <span className="inline-block px-3 py-1 bg-[#D9A3AA]/10 text-[#D9A3AA] text-[10px] font-black rounded-full mb-3 w-fit">
+              <span className="inline-block px-3 py-1 bg-[#E8B4BC]/10 text-[#E8B4BC] text-[10px] font-black rounded-full mb-3 w-fit">
                 {getLocalizedCategoryLabel(selectedProduct.category, language)}
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#4A4A4A] mb-2">{selectedProduct.name}</h2>
-              <p className="text-2xl font-black text-[#C5A059] mb-6">{selectedProduct.price} <span className="text-sm">ر.س</span></p>
-              <p className="text-[#4A4A4A]/70 text-sm leading-relaxed mb-8 bg-white p-4 rounded-2xl border border-[#D9A3AA]/10">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#171717] mb-2">{selectedProduct.name}</h2>
+              <p className="text-2xl font-black text-[#C6A56B] mb-6">{selectedProduct.price} <span className="text-sm">ر.س</span></p>
+              <p className="text-[#171717]/70 text-sm leading-relaxed mb-8 bg-white p-4 rounded-2xl border border-[#E8B4BC]/10">
                 {selectedProduct.description || 'لا يوجد وصف متاح لهذا المنتج حالياً.'}
               </p>
 
               <button
                 onClick={() => { addToCart(selectedProduct); setIsModalOpen(false); }}
-                className="w-full py-4 rounded-xl font-black text-white bg-[#4A4A4A] hover:bg-[#D9A3AA] transition-colors flex items-center justify-center gap-2 shadow-lg mb-8"
+                className="w-full py-4 rounded-xl font-black text-white bg-[#171717] hover:bg-[#E8B4BC] transition-colors flex items-center justify-center gap-2 shadow-lg mb-8"
               >
                 <Plus size={20} /> إضافة إلى السلة
               </button>
               <Link
                 to={`/store/products/${selectedProduct.id}`}
                 onClick={() => setIsModalOpen(false)}
-                className="mb-8 flex w-full items-center justify-center rounded-xl border border-[#C5A059]/25 bg-white py-3 text-sm font-black text-[#4A4A4A] hover:border-[#C5A059]"
+                className="mb-8 flex w-full items-center justify-center rounded-xl border border-[#C6A56B]/25 bg-white py-3 text-sm font-black text-[#171717] hover:border-[#C6A56B]"
               >
                 عرض صفحة المنتج والتفاصيل
               </Link>
 
               {/* Smart Recommendations */}
               {getRecommendations(selectedProduct).length > 0 && (
-                <div className="mt-auto border-t border-[#D9A3AA]/10 pt-6">
-                  <h4 className="text-sm font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
-                    <Sparkles size={16} className="text-[#C5A059]" /> أكملي مجموعتك الفنية
+                <div className="mt-auto border-t border-[#E8B4BC]/10 pt-6">
+                  <h4 className="text-sm font-black text-[#171717] mb-4 flex items-center gap-2">
+                    <Sparkles size={16} className="text-[#C6A56B]" /> أكملي مجموعتك الفنية
                   </h4>
                   <div className="grid grid-cols-2 gap-3">
                     {getRecommendations(selectedProduct).map(rec => (
                       <div
                         key={rec.id}
                         onClick={() => setSelectedProduct(rec)}
-                        className="bg-white p-2.5 rounded-xl border border-[#D9A3AA]/10 flex items-center gap-3 cursor-pointer hover:border-[#C5A059]/40 transition-colors group"
+                        className="bg-white p-2.5 rounded-xl border border-[#E8B4BC]/10 flex items-center gap-3 cursor-pointer hover:border-[#C6A56B]/40 transition-colors group"
                       >
-                        <div className="w-12 h-12 bg-[#F8F5F2] rounded-lg overflow-hidden shrink-0">
+                        <div className="w-12 h-12 bg-[#FAF9F7] rounded-lg overflow-hidden shrink-0">
                           {rec.image
                             ? <img src={rec.image} alt={rec.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                             : <ImageIcon className="w-full h-full p-3 opacity-20" />
                           }
                         </div>
                         <div>
-                          <p className="text-[10px] font-bold text-[#4A4A4A] line-clamp-1">{rec.name}</p>
-                          <p className="text-xs font-black text-[#D9A3AA]">{rec.price} ر.س</p>
+                          <p className="text-[10px] font-bold text-[#171717] line-clamp-1">{rec.name}</p>
+                          <p className="text-xs font-black text-[#E8B4BC]">{rec.price} ر.س</p>
                         </div>
                       </div>
                     ))}

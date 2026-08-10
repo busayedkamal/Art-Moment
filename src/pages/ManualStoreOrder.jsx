@@ -479,27 +479,27 @@ export default function ManualStoreOrder() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center" dir="rtl">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 rounded-full border-4 border-[#D9A3AA]/25 border-t-[#D9A3AA] animate-spin" />
-          <p className="mt-3 text-sm font-bold text-[#4A4A4A]/55">جاري تجهيز الطلب اليدوي...</p>
+          <div className="mx-auto h-10 w-10 rounded-full border-4 border-[#E8B4BC]/25 border-t-[#E8B4BC] animate-spin" />
+          <p className="mt-3 text-sm font-bold text-[#171717]/55">جاري تجهيز الطلب اليدوي...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="text-[#4A4A4A]" dir="rtl">
+    <div className="text-[#171717]" dir="rtl">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="mb-1 flex items-center gap-2 text-xs font-black text-[#C5A059]">
+          <p className="mb-1 flex items-center gap-2 text-xs font-black text-[#C6A56B]">
             <ClipboardCheck size={14} /> طلب وارد خارج الموقع
           </p>
           <h1 className="text-2xl font-black sm:text-3xl">إنشاء طلب متجر يدوي</h1>
-          <p className="mt-1 text-sm text-[#4A4A4A]/55">اربط العميل، اختر المنتجات، وراجع الحساب قبل حجز المخزون.</p>
+          <p className="mt-1 text-sm text-[#171717]/55">اربط العميل، اختر المنتجات، وراجع الحساب قبل حجز المخزون.</p>
         </div>
         <button
           type="button"
           onClick={() => navigate('/app/store-orders')}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D9A3AA]/25 bg-white px-4 py-2.5 text-sm font-black shadow-sm transition-colors hover:bg-[#D9A3AA]/5"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E8B4BC]/25 bg-white px-4 py-2.5 text-sm font-black shadow-sm transition-colors hover:bg-[#E8B4BC]/5"
         >
           <ArrowRight size={16} /> طلبات المتجر
         </button>
@@ -507,40 +507,40 @@ export default function ManualStoreOrder() {
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-6">
-          <section className="rounded-2xl border border-[#D9A3AA]/15 bg-white p-4 shadow-sm sm:p-6">
+          <section className="rounded-2xl border border-[#E8B4BC]/15 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D9A3AA]/10 text-[#D9A3AA]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8B4BC]/10 text-[#E8B4BC]">
                 <User size={20} />
               </div>
               <div>
                 <h2 className="font-black">1. العميل</h2>
-                <p className="text-xs text-[#4A4A4A]/50">ابحث أولاً لتجنب تكرار الحساب، أو أدخل عميلاً جديداً.</p>
+                <p className="text-xs text-[#171717]/50">ابحث أولاً لتجنب تكرار الحساب، أو أدخل عميلاً جديداً.</p>
               </div>
             </div>
 
             {!selectedCustomer && (
               <div className="relative mb-5">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/35" size={17} />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171717]/35" size={17} />
                 <input
                   value={customerSearch}
                   onChange={(event) => setCustomerSearch(event.target.value)}
                   placeholder="ابحث بالاسم أو الجوال أو البريد..."
-                  className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] py-3 pr-10 pl-4 text-sm outline-none transition-colors focus:border-[#D9A3AA]"
+                  className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] py-3 pr-10 pl-4 text-sm outline-none transition-colors focus:border-[#E8B4BC]"
                 />
                 {customerResults.length > 0 && (
-                  <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[#D9A3AA]/20 bg-white shadow-xl">
+                  <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[#E8B4BC]/20 bg-white shadow-xl">
                     {customerResults.map((customer) => (
                       <button
                         key={customer.id || customer.customer_key}
                         type="button"
                         onClick={() => selectCustomer(customer)}
-                        className="flex w-full items-center justify-between gap-3 border-b border-[#D9A3AA]/10 px-4 py-3 text-right transition-colors last:border-0 hover:bg-[#F8F5F2]"
+                        className="flex w-full items-center justify-between gap-3 border-b border-[#E8B4BC]/10 px-4 py-3 text-right transition-colors last:border-0 hover:bg-[#FAF9F7]"
                       >
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-black">{customer.name || 'بدون اسم'}</span>
-                          <span className="mt-0.5 block truncate text-xs text-[#4A4A4A]/50">{customer.phone} {customer.email ? `• ${customer.email}` : ''}</span>
+                          <span className="mt-0.5 block truncate text-xs text-[#171717]/50">{customer.phone} {customer.email ? `• ${customer.email}` : ''}</span>
                         </span>
-                        <span className="shrink-0 rounded-full bg-[#C5A059]/10 px-3 py-1 text-[10px] font-black text-[#C5A059]">استخدام</span>
+                        <span className="shrink-0 rounded-full bg-[#C6A56B]/10 px-3 py-1 text-[10px] font-black text-[#C6A56B]">استخدام</span>
                       </button>
                     ))}
                   </div>
@@ -554,7 +554,7 @@ export default function ManualStoreOrder() {
                   </div>
                 )}
                 {!loadErrors.customers && customerSearch.trim().length >= 2 && customerResults.length === 0 && (
-                  <p className="mt-2 text-xs font-bold text-[#4A4A4A]/45">
+                  <p className="mt-2 text-xs font-bold text-[#171717]/45">
                     لا يوجد عميل مطابق. يمكنك إدخال بياناته كعميل جديد في الحقول أدناه.
                   </p>
                 )}
@@ -576,52 +576,52 @@ export default function ManualStoreOrder() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">اسم العميل *</span>
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">اسم العميل *</span>
                 <div className="relative">
-                  <User className="absolute right-3 top-1/2 -translate-y-1/2 text-[#D9A3AA]" size={15} />
-                  <input value={customerForm.name} onChange={(event) => setCustomerForm({ ...customerForm, name: event.target.value })} className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] py-3 pr-9 pl-3 text-sm outline-none focus:border-[#D9A3AA]" />
+                  <User className="absolute right-3 top-1/2 -translate-y-1/2 text-[#E8B4BC]" size={15} />
+                  <input value={customerForm.name} onChange={(event) => setCustomerForm({ ...customerForm, name: event.target.value })} className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] py-3 pr-9 pl-3 text-sm outline-none focus:border-[#E8B4BC]" />
                 </div>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">رقم الجوال *</span>
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">رقم الجوال *</span>
                 <div className="relative">
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-[#D9A3AA]" size={15} />
-                  <input value={customerForm.phone} onChange={(event) => setCustomerForm({ ...customerForm, phone: event.target.value })} inputMode="tel" dir="ltr" placeholder="05xxxxxxxx" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] py-3 pr-9 pl-3 text-left text-sm outline-none focus:border-[#D9A3AA]" />
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-[#E8B4BC]" size={15} />
+                  <input value={customerForm.phone} onChange={(event) => setCustomerForm({ ...customerForm, phone: event.target.value })} inputMode="tel" dir="ltr" placeholder="05xxxxxxxx" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] py-3 pr-9 pl-3 text-left text-sm outline-none focus:border-[#E8B4BC]" />
                 </div>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">البريد الإلكتروني</span>
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">البريد الإلكتروني</span>
                 <div className="relative">
-                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-[#D9A3AA]" size={15} />
-                  <input value={customerForm.email} onChange={(event) => setCustomerForm({ ...customerForm, email: event.target.value })} type="email" dir="ltr" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] py-3 pr-9 pl-3 text-left text-sm outline-none focus:border-[#D9A3AA]" />
+                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-[#E8B4BC]" size={15} />
+                  <input value={customerForm.email} onChange={(event) => setCustomerForm({ ...customerForm, email: event.target.value })} type="email" dir="ltr" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] py-3 pr-9 pl-3 text-left text-sm outline-none focus:border-[#E8B4BC]" />
                 </div>
               </label>
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">وسيلة التواصل المفضلة</span>
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">وسيلة التواصل المفضلة</span>
                 <div className="relative">
-                  <select value={customerForm.preferredContactMethod} onChange={(event) => setCustomerForm({ ...customerForm, preferredContactMethod: event.target.value })} className="w-full appearance-none rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-4 py-3 text-sm font-bold outline-none focus:border-[#D9A3AA]">
+                  <select value={customerForm.preferredContactMethod} onChange={(event) => setCustomerForm({ ...customerForm, preferredContactMethod: event.target.value })} className="w-full appearance-none rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-4 py-3 text-sm font-bold outline-none focus:border-[#E8B4BC]">
                     <option value="whatsapp">واتساب</option>
                     <option value="phone">اتصال</option>
                     <option value="email">بريد إلكتروني</option>
                     <option value="sms">رسالة نصية</option>
                   </select>
-                  <ChevronDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" size={15} />
+                  <ChevronDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#171717]/40" size={15} />
                 </div>
               </label>
-              <label className={`flex items-start gap-3 rounded-xl border p-3.5 ${customerForm.marketingOptIn ? 'border-emerald-200 bg-emerald-50' : 'border-[#D9A3AA]/15 bg-[#F8F5F2]'}`}>
+              <label className={`flex items-start gap-3 rounded-xl border p-3.5 ${customerForm.marketingOptIn ? 'border-emerald-200 bg-emerald-50' : 'border-[#E8B4BC]/15 bg-[#FAF9F7]'}`}>
                 <input
                   type="checkbox"
                   checked={customerForm.marketingOptIn}
                   disabled={Boolean(selectedCustomer?.marketing_opt_in)}
                   onChange={(event) => setCustomerForm({ ...customerForm, marketingOptIn: event.target.checked })}
-                  className="mt-0.5 h-4 w-4 accent-[#C5A059]"
+                  className="mt-0.5 h-4 w-4 accent-[#C6A56B]"
                 />
                 <span>
                   <span className="block text-xs font-black">موافقة تسويقية صريحة</span>
-                  <span className="mt-1 block text-[11px] leading-relaxed text-[#4A4A4A]/50">
+                  <span className="mt-1 block text-[11px] leading-relaxed text-[#171717]/50">
                     {selectedCustomer?.marketing_opt_in ? 'العميل مشترك مسبقاً ولن تتغير موافقته.' : 'فعّلها فقط بعد موافقة العميل على استقبال العروض.'}
                   </span>
                 </span>
@@ -629,26 +629,26 @@ export default function ManualStoreOrder() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-[#D9A3AA]/15 bg-white p-4 shadow-sm sm:p-6">
+          <section className="rounded-2xl border border-[#E8B4BC]/15 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#C5A059]/10 text-[#C5A059]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#C6A56B]/10 text-[#C6A56B]">
                 <Package size={20} />
               </div>
               <div>
                 <h2 className="font-black">2. منتجات المتجر</h2>
-                <p className="text-xs text-[#4A4A4A]/50">السعر والمخزون يُراجعان مرة أخرى داخل قاعدة البيانات.</p>
+                <p className="text-xs text-[#171717]/50">السعر والمخزون يُراجعان مرة أخرى داخل قاعدة البيانات.</p>
               </div>
             </div>
 
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
               <div className="relative flex-1">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/35" size={17} />
-                <input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder="ابحث عن منتج..." className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#D9A3AA]" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171717]/35" size={17} />
+                <input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder="ابحث عن منتج..." className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] py-3 pr-10 pl-4 text-sm outline-none focus:border-[#E8B4BC]" />
               </div>
               <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
-                <button type="button" onClick={() => setActiveCategory('all')} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black ${activeCategory === 'all' ? 'bg-[#4A4A4A] text-white' : 'bg-[#F8F5F2] text-[#4A4A4A]/65'}`}>الكل</button>
+                <button type="button" onClick={() => setActiveCategory('all')} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black ${activeCategory === 'all' ? 'bg-[#171717] text-white' : 'bg-[#FAF9F7] text-[#171717]/65'}`}>الكل</button>
                 {categories.map((category) => (
-                  <button key={category} type="button" onClick={() => setActiveCategory(category)} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black ${activeCategory === category ? 'bg-[#4A4A4A] text-white' : 'bg-[#F8F5F2] text-[#4A4A4A]/65'}`}>
+                  <button key={category} type="button" onClick={() => setActiveCategory(category)} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black ${activeCategory === category ? 'bg-[#171717] text-white' : 'bg-[#FAF9F7] text-[#171717]/65'}`}>
                     {CATEGORY_LABELS[category] || category}
                   </button>
                 ))}
@@ -661,18 +661,18 @@ export default function ManualStoreOrder() {
                 const stock = getStockQuantity(product);
                 const selected = selectedItems.find((item) => String(item.productId) === String(product.id));
                 return (
-                  <div key={product.id} className={`flex min-h-28 gap-3 rounded-xl border p-3 ${available ? 'border-[#D9A3AA]/15 bg-[#F8F5F2]' : 'border-red-100 bg-red-50/60'}`}>
+                  <div key={product.id} className={`flex min-h-28 gap-3 rounded-xl border p-3 ${available ? 'border-[#E8B4BC]/15 bg-[#FAF9F7]' : 'border-red-100 bg-red-50/60'}`}>
                     <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-black/5 bg-white">
-                      {product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#D9A3AA]/40"><Package size={20} /></div>}
+                      {product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#E8B4BC]/40"><Package size={20} /></div>}
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col">
                       <p className="line-clamp-2 text-xs font-black leading-relaxed">{product.name}</p>
-                      <p className="mt-1 text-xs font-black text-[#C5A059]">{money(product.price)} ر.س</p>
+                      <p className="mt-1 text-xs font-black text-[#C6A56B]">{money(product.price)} ر.س</p>
                       <div className="mt-auto flex items-end justify-between gap-2 pt-2">
                         <span className={`text-[10px] font-bold ${available ? 'text-emerald-600' : 'text-red-500'}`}>
                           {available ? (stock === null ? 'متاح' : `المخزون ${stock}`) : 'نفد المخزون'}
                         </span>
-                        <button type="button" disabled={!available} onClick={() => addProduct(product)} title="إضافة المنتج" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#4A4A4A] text-white transition-colors hover:bg-[#C5A059] disabled:bg-[#4A4A4A]/20">
+                        <button type="button" disabled={!available} onClick={() => addProduct(product)} title="إضافة المنتج" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#171717] text-white transition-colors hover:bg-[#C6A56B] disabled:bg-[#171717]/20">
                           {selected ? <span className="text-xs font-black">{selected.quantity}</span> : <Plus size={15} />}
                         </button>
                       </div>
@@ -683,11 +683,11 @@ export default function ManualStoreOrder() {
             </div>
 
             {visibleProducts.length === 0 && (
-              <div className="py-10 text-center text-sm font-bold text-[#4A4A4A]/40">
+              <div className="py-10 text-center text-sm font-bold text-[#171717]/40">
                 {loadErrors.products ? (
                   <>
                     <p className="text-red-500">{loadErrors.products}</p>
-                    <button type="button" onClick={fetchData} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#D9A3AA]/20 bg-white px-3 py-2 text-xs font-black text-[#4A4A4A]">
+                    <button type="button" onClick={fetchData} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#E8B4BC]/20 bg-white px-3 py-2 text-xs font-black text-[#171717]">
                       <RefreshCw size={14} /> إعادة المحاولة
                     </button>
                   </>
@@ -698,24 +698,24 @@ export default function ManualStoreOrder() {
             )}
 
             {orderLines.length > 0 && (
-              <div className="mt-6 border-t border-[#D9A3AA]/15 pt-5">
+              <div className="mt-6 border-t border-[#E8B4BC]/15 pt-5">
                 <h3 className="mb-3 text-sm font-black">المنتجات المختارة</h3>
                 <div className="space-y-2">
                   {orderLines.map((item) => {
                     const stock = getStockQuantity(item.product);
                     return (
-                      <div key={item.productId} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-[#F8F5F2] p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                      <div key={item.productId} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-[#FAF9F7] p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-black">{item.product.name}</p>
-                          <p className="mt-0.5 text-xs text-[#4A4A4A]/50">{money(item.product.price)} ر.س للوحدة</p>
+                          <p className="mt-0.5 text-xs text-[#171717]/50">{money(item.product.price)} ر.س للوحدة</p>
                         </div>
-                        <div className="flex h-9 items-center overflow-hidden rounded-lg border border-[#D9A3AA]/20 bg-white">
-                          <button type="button" onClick={() => changeQuantity(item.productId, item.quantity - 1)} className="flex h-full w-9 items-center justify-center text-[#4A4A4A]/60 hover:bg-[#D9A3AA]/10"><Minus size={13} /></button>
-                          <input value={item.quantity} onChange={(event) => changeQuantity(item.productId, event.target.value)} type="number" min="1" max={stock ?? 999} className="h-full w-12 border-x border-[#D9A3AA]/15 bg-transparent text-center text-xs font-black outline-none" />
-                          <button type="button" onClick={() => changeQuantity(item.productId, item.quantity + 1)} className="flex h-full w-9 items-center justify-center text-[#4A4A4A]/60 hover:bg-[#D9A3AA]/10"><Plus size={13} /></button>
+                        <div className="flex h-9 items-center overflow-hidden rounded-lg border border-[#E8B4BC]/20 bg-white">
+                          <button type="button" onClick={() => changeQuantity(item.productId, item.quantity - 1)} className="flex h-full w-9 items-center justify-center text-[#171717]/60 hover:bg-[#E8B4BC]/10"><Minus size={13} /></button>
+                          <input value={item.quantity} onChange={(event) => changeQuantity(item.productId, event.target.value)} type="number" min="1" max={stock ?? 999} className="h-full w-12 border-x border-[#E8B4BC]/15 bg-transparent text-center text-xs font-black outline-none" />
+                          <button type="button" onClick={() => changeQuantity(item.productId, item.quantity + 1)} className="flex h-full w-9 items-center justify-center text-[#171717]/60 hover:bg-[#E8B4BC]/10"><Plus size={13} /></button>
                         </div>
-                        <div className="col-span-2 flex items-center justify-between gap-3 border-t border-[#D9A3AA]/10 pt-2 sm:col-span-1 sm:border-0 sm:pt-0">
-                          <span className="min-w-20 text-left text-sm font-black text-[#C5A059]">{money(item.product.price * item.quantity)} ر.س</span>
+                        <div className="col-span-2 flex items-center justify-between gap-3 border-t border-[#E8B4BC]/10 pt-2 sm:col-span-1 sm:border-0 sm:pt-0">
+                          <span className="min-w-20 text-left text-sm font-black text-[#C6A56B]">{money(item.product.price * item.quantity)} ر.س</span>
                           <button type="button" onClick={() => removeProduct(item.productId)} title="حذف المنتج" className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 hover:bg-red-50"><Trash2 size={14} /></button>
                         </div>
                       </div>
@@ -726,21 +726,21 @@ export default function ManualStoreOrder() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-[#D9A3AA]/15 bg-white p-4 shadow-sm sm:p-6">
+          <section className="rounded-2xl border border-[#E8B4BC]/15 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D9A3AA]/10 text-[#D9A3AA]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8B4BC]/10 text-[#E8B4BC]">
                 <MapPin size={20} />
               </div>
               <div>
                 <h2 className="font-black">3. التوصيل والدفع</h2>
-                <p className="text-xs text-[#4A4A4A]/50">سجّل مصدر الطلب وحالته كما تم الاتفاق مع العميل.</p>
+                <p className="text-xs text-[#171717]/50">سجّل مصدر الطلب وحالته كما تم الاتفاق مع العميل.</p>
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">مصدر الطلب</span>
-                <select value={orderForm.source} onChange={(event) => setOrderForm({ ...orderForm, source: event.target.value })} className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm font-bold outline-none focus:border-[#D9A3AA]">
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">مصدر الطلب</span>
+                <select value={orderForm.source} onChange={(event) => setOrderForm({ ...orderForm, source: event.target.value })} className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm font-bold outline-none focus:border-[#E8B4BC]">
                   <option value="whatsapp">واتساب</option>
                   <option value="phone">اتصال</option>
                   <option value="instagram">انستغرام</option>
@@ -749,15 +749,15 @@ export default function ManualStoreOrder() {
                 </select>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">حالة الطلب</span>
-                <select value={orderForm.status} onChange={(event) => setOrderForm({ ...orderForm, status: event.target.value })} className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm font-bold outline-none focus:border-[#D9A3AA]">
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">حالة الطلب</span>
+                <select value={orderForm.status} onChange={(event) => setOrderForm({ ...orderForm, status: event.target.value })} className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm font-bold outline-none focus:border-[#E8B4BC]">
                   <option value="pending_verification">بانتظار التأكيد</option>
                   <option value="confirmed">مؤكد</option>
                 </select>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">طريقة الدفع</span>
-                <select value={orderForm.paymentMethod} onChange={(event) => setOrderForm({ ...orderForm, paymentMethod: event.target.value })} className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm font-bold outline-none focus:border-[#D9A3AA]">
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">طريقة الدفع</span>
+                <select value={orderForm.paymentMethod} onChange={(event) => setOrderForm({ ...orderForm, paymentMethod: event.target.value })} className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm font-bold outline-none focus:border-[#E8B4BC]">
                   <option value="bank_transfer">تحويل بنكي</option>
                   <option value="cash_on_delivery">الدفع عند الاستلام</option>
                   <option value="card">بطاقة</option>
@@ -767,7 +767,7 @@ export default function ManualStoreOrder() {
                 </select>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">حالة الدفع</span>
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">حالة الدفع</span>
                 <select
                   value={orderForm.paymentStatus}
                   onChange={(event) => setOrderForm({
@@ -775,7 +775,7 @@ export default function ManualStoreOrder() {
                     paymentStatus: event.target.value,
                     amountPaid: event.target.value === 'paid' ? grandTotal.toFixed(2) : '0',
                   })}
-                  className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                  className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm font-bold outline-none focus:border-[#E8B4BC]"
                 >
                   <option value="pending_payment">بانتظار الدفع</option>
                   <option value="awaiting_review">بانتظار المراجعة</option>
@@ -784,47 +784,47 @@ export default function ManualStoreOrder() {
                 </select>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">المبلغ المدفوع</span>
-                <input value={orderForm.amountPaid} onChange={(event) => setOrderForm({ ...orderForm, amountPaid: event.target.value })} disabled={orderForm.paymentStatus === 'paid'} type="number" min="0" step="0.01" dir="ltr" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-left text-sm font-bold outline-none focus:border-[#D9A3AA] disabled:opacity-60" />
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">المبلغ المدفوع</span>
+                <input value={orderForm.amountPaid} onChange={(event) => setOrderForm({ ...orderForm, amountPaid: event.target.value })} disabled={orderForm.paymentStatus === 'paid'} type="number" min="0" step="0.01" dir="ltr" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-left text-sm font-bold outline-none focus:border-[#E8B4BC] disabled:opacity-60" />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">رسوم التوصيل</span>
-                <input value={orderForm.deliveryFee} onChange={(event) => setOrderForm({ ...orderForm, deliveryFee: event.target.value })} type="number" min="0" step="0.01" dir="ltr" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-left text-sm font-bold outline-none focus:border-[#D9A3AA]" />
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">رسوم التوصيل</span>
+                <input value={orderForm.deliveryFee} onChange={(event) => setOrderForm({ ...orderForm, deliveryFee: event.target.value })} type="number" min="0" step="0.01" dir="ltr" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-left text-sm font-bold outline-none focus:border-[#E8B4BC]" />
               </label>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <input value={orderForm.city} onChange={(event) => setOrderForm({ ...orderForm, city: event.target.value })} placeholder="المدينة" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm outline-none focus:border-[#D9A3AA]" />
-              <input value={orderForm.district} onChange={(event) => setOrderForm({ ...orderForm, district: event.target.value })} placeholder="الحي" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm outline-none focus:border-[#D9A3AA]" />
-              <input value={orderForm.street} onChange={(event) => setOrderForm({ ...orderForm, street: event.target.value })} placeholder="الشارع أو وصف الموقع" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm outline-none focus:border-[#D9A3AA]" />
+              <input value={orderForm.city} onChange={(event) => setOrderForm({ ...orderForm, city: event.target.value })} placeholder="المدينة" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm outline-none focus:border-[#E8B4BC]" />
+              <input value={orderForm.district} onChange={(event) => setOrderForm({ ...orderForm, district: event.target.value })} placeholder="الحي" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm outline-none focus:border-[#E8B4BC]" />
+              <input value={orderForm.street} onChange={(event) => setOrderForm({ ...orderForm, street: event.target.value })} placeholder="الشارع أو وصف الموقع" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm outline-none focus:border-[#E8B4BC]" />
             </div>
 
-            <label className="mt-3 flex items-center gap-2 text-xs font-bold text-[#4A4A4A]/60">
-              <input type="checkbox" checked={orderForm.saveAddress} onChange={(event) => setOrderForm({ ...orderForm, saveAddress: event.target.checked })} className="h-4 w-4 accent-[#C5A059]" />
+            <label className="mt-3 flex items-center gap-2 text-xs font-bold text-[#171717]/60">
+              <input type="checkbox" checked={orderForm.saveAddress} onChange={(event) => setOrderForm({ ...orderForm, saveAddress: event.target.checked })} className="h-4 w-4 accent-[#C6A56B]" />
               حفظ العنوان داخل حساب العميل
             </label>
 
             <div className="mt-5 grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">خصم يدوي</span>
-                <input value={orderForm.manualDiscountAmount} onChange={(event) => setOrderForm({ ...orderForm, manualDiscountAmount: event.target.value })} type="number" min="0" step="0.01" dir="ltr" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-left text-sm font-bold outline-none focus:border-[#D9A3AA]" />
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">خصم يدوي</span>
+                <input value={orderForm.manualDiscountAmount} onChange={(event) => setOrderForm({ ...orderForm, manualDiscountAmount: event.target.value })} type="number" min="0" step="0.01" dir="ltr" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-left text-sm font-bold outline-none focus:border-[#E8B4BC]" />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">سبب الخصم {discount > 0 && '*'}</span>
-                <input value={orderForm.manualDiscountReason} onChange={(event) => setOrderForm({ ...orderForm, manualDiscountReason: event.target.value })} placeholder="مثال: تعويض عميل أو عرض واتساب" className="w-full rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm outline-none focus:border-[#D9A3AA]" />
+                <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">سبب الخصم {discount > 0 && '*'}</span>
+                <input value={orderForm.manualDiscountReason} onChange={(event) => setOrderForm({ ...orderForm, manualDiscountReason: event.target.value })} placeholder="مثال: تعويض عميل أو عرض واتساب" className="w-full rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm outline-none focus:border-[#E8B4BC]" />
               </label>
             </div>
 
             <label className="mt-5 block">
-              <span className="mb-1.5 block text-xs font-bold text-[#4A4A4A]/60">ملاحظات الطلب</span>
-              <textarea value={orderForm.notes} onChange={(event) => setOrderForm({ ...orderForm, notes: event.target.value })} rows="3" placeholder="تفاصيل الاتفاق مع العميل أو متطلبات التجهيز..." className="w-full resize-y rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] px-3 py-3 text-sm leading-relaxed outline-none focus:border-[#D9A3AA]" />
+              <span className="mb-1.5 block text-xs font-bold text-[#171717]/60">ملاحظات الطلب</span>
+              <textarea value={orderForm.notes} onChange={(event) => setOrderForm({ ...orderForm, notes: event.target.value })} rows="3" placeholder="تفاصيل الاتفاق مع العميل أو متطلبات التجهيز..." className="w-full resize-y rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-3 text-sm leading-relaxed outline-none focus:border-[#E8B4BC]" />
             </label>
           </section>
         </div>
 
         <aside className="xl:sticky xl:top-6">
-          <div className="overflow-hidden rounded-2xl border border-[#D9A3AA]/20 bg-white shadow-sm">
-            <div className="border-b border-[#D9A3AA]/15 bg-[#4A4A4A] p-5 text-white">
+          <div className="overflow-hidden rounded-2xl border border-[#E8B4BC]/20 bg-white shadow-sm">
+            <div className="border-b border-[#E8B4BC]/15 bg-[#171717] p-5 text-white">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10"><ShoppingBag size={20} /></div>
                 <div>
@@ -837,8 +837,8 @@ export default function ManualStoreOrder() {
             <div className="p-5">
               {orderLines.length === 0 ? (
                 <div className="py-8 text-center">
-                  <Package className="mx-auto text-[#D9A3AA]/30" size={32} />
-                  <p className="mt-2 text-xs font-bold text-[#4A4A4A]/40">أضف منتجات ليظهر الحساب.</p>
+                  <Package className="mx-auto text-[#E8B4BC]/30" size={32} />
+                  <p className="mt-2 text-xs font-bold text-[#171717]/40">أضف منتجات ليظهر الحساب.</p>
                 </div>
               ) : (
                 <div className="mb-5 max-h-52 space-y-2 overflow-y-auto pl-1">
@@ -851,18 +851,18 @@ export default function ManualStoreOrder() {
                 </div>
               )}
 
-              <div className="space-y-3 border-t border-[#D9A3AA]/15 pt-4 text-sm">
-                <div className="flex justify-between gap-3"><span className="text-[#4A4A4A]/55">قيمة المنتجات</span><span className="font-black">{money(subtotal)} ر.س</span></div>
+              <div className="space-y-3 border-t border-[#E8B4BC]/15 pt-4 text-sm">
+                <div className="flex justify-between gap-3"><span className="text-[#171717]/55">قيمة المنتجات</span><span className="font-black">{money(subtotal)} ر.س</span></div>
                 {discount > 0 && <div className="flex justify-between gap-3 text-emerald-600"><span>خصم يدوي</span><span className="font-black">-{money(discount)} ر.س</span></div>}
-                <div className="flex justify-between gap-3"><span className="text-[#4A4A4A]/55">التوصيل</span><span className="font-black">{money(deliveryFee)} ر.س</span></div>
-                <div className="flex items-end justify-between gap-3 border-t border-[#D9A3AA]/15 pt-4">
+                <div className="flex justify-between gap-3"><span className="text-[#171717]/55">التوصيل</span><span className="font-black">{money(deliveryFee)} ر.س</span></div>
+                <div className="flex items-end justify-between gap-3 border-t border-[#E8B4BC]/15 pt-4">
                   <span className="font-black">الإجمالي</span>
-                  <span className="text-2xl font-black text-[#D9A3AA]">{money(grandTotal)} <small className="text-xs">ر.س</small></span>
+                  <span className="text-2xl font-black text-[#E8B4BC]">{money(grandTotal)} <small className="text-xs">ر.س</small></span>
                 </div>
               </div>
 
-              <div className="mt-5 rounded-xl bg-[#F8F5F2] p-3 text-xs leading-relaxed text-[#4A4A4A]/60">
-                <p className="flex items-center gap-2 font-black text-[#4A4A4A]"><AlertCircle size={14} className="text-[#C5A059]" /> عملية واحدة آمنة</p>
+              <div className="mt-5 rounded-xl bg-[#FAF9F7] p-3 text-xs leading-relaxed text-[#171717]/60">
+                <p className="flex items-center gap-2 font-black text-[#171717]"><AlertCircle size={14} className="text-[#C6A56B]" /> عملية واحدة آمنة</p>
                 <p className="mt-1">لن يُنشأ العميل أو الطلب ولن يتغير المخزون إذا فشلت أي خطوة.</p>
               </div>
 
@@ -870,7 +870,7 @@ export default function ManualStoreOrder() {
                 type="button"
                 disabled={submitting || selectedItems.length === 0}
                 onClick={createOrder}
-                className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-4 py-3 text-sm font-black text-white shadow-lg transition-colors hover:bg-[#C5A059] disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#171717] px-4 py-3 text-sm font-black text-white shadow-lg transition-colors hover:bg-[#C6A56B] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {submitting ? <><RefreshCw size={17} className="animate-spin" /> جاري إنشاء الطلب</> : <><Check size={17} /> إنشاء الطلب وحجز المخزون</>}
               </button>
@@ -888,24 +888,24 @@ export default function ManualStoreOrder() {
               <p className="mt-1 text-sm text-white/75">حُجز المخزون وربط الطلب بالعميل.</p>
             </div>
             <div className="space-y-3 p-6">
-              <button type="button" onClick={() => copyValue(createdResult.order?.short_id || String(createdResult.order?.id || '').slice(0, 6), 'رقم الطلب')} className="flex w-full items-center justify-between rounded-xl bg-[#F8F5F2] p-4 text-right">
-                <span><span className="block text-[10px] text-[#4A4A4A]/45">رقم الطلب</span><span className="mt-1 block font-mono text-lg font-black">#{createdResult.order?.short_id || String(createdResult.order?.id || '').slice(0, 6)}</span></span>
-                <Copy size={17} className="text-[#C5A059]" />
+              <button type="button" onClick={() => copyValue(createdResult.order?.short_id || String(createdResult.order?.id || '').slice(0, 6), 'رقم الطلب')} className="flex w-full items-center justify-between rounded-xl bg-[#FAF9F7] p-4 text-right">
+                <span><span className="block text-[10px] text-[#171717]/45">رقم الطلب</span><span className="mt-1 block font-mono text-lg font-black">#{createdResult.order?.short_id || String(createdResult.order?.id || '').slice(0, 6)}</span></span>
+                <Copy size={17} className="text-[#C6A56B]" />
               </button>
-              <button type="button" onClick={() => copyValue(createdResult.customer_pin, 'رمز التتبع')} className="flex w-full items-center justify-between rounded-xl bg-[#F8F5F2] p-4 text-right">
-                <span><span className="block text-[10px] text-[#4A4A4A]/45">رمز تتبع العميل</span><span className="mt-1 block font-mono text-lg font-black">{createdResult.customer_pin}</span></span>
-                <Copy size={17} className="text-[#C5A059]" />
+              <button type="button" onClick={() => copyValue(createdResult.customer_pin, 'رمز التتبع')} className="flex w-full items-center justify-between rounded-xl bg-[#FAF9F7] p-4 text-right">
+                <span><span className="block text-[10px] text-[#171717]/45">رمز تتبع العميل</span><span className="mt-1 block font-mono text-lg font-black">{createdResult.customer_pin}</span></span>
+                <Copy size={17} className="text-[#C6A56B]" />
               </button>
-              <div className="flex items-center gap-3 rounded-xl border border-[#D9A3AA]/15 p-4">
-                <WalletCards size={18} className="text-[#D9A3AA]" />
+              <div className="flex items-center gap-3 rounded-xl border border-[#E8B4BC]/15 p-4">
+                <WalletCards size={18} className="text-[#E8B4BC]" />
                 <div>
                   <p className="text-sm font-black">{createdResult.customer?.name}</p>
-                  <p className="text-xs text-[#4A4A4A]/50">{createdResult.customer?.created ? 'تم إنشاء حساب عميل غير مفعّل' : 'تم استخدام حساب العميل الموجود'}</p>
+                  <p className="text-xs text-[#171717]/50">{createdResult.customer?.created ? 'تم إنشاء حساب عميل غير مفعّل' : 'تم استخدام حساب العميل الموجود'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <button type="button" onClick={resetPage} className="rounded-xl border border-[#D9A3AA]/20 px-4 py-3 text-sm font-black">طلب جديد</button>
-                <button type="button" onClick={() => navigate(`/app/store-orders?order=${createdResult.order?.id}`)} className="rounded-xl bg-[#4A4A4A] px-4 py-3 text-sm font-black text-white">فتح الطلب</button>
+                <button type="button" onClick={resetPage} className="rounded-xl border border-[#E8B4BC]/20 px-4 py-3 text-sm font-black">طلب جديد</button>
+                <button type="button" onClick={() => navigate(`/app/store-orders?order=${createdResult.order?.id}`)} className="rounded-xl bg-[#171717] px-4 py-3 text-sm font-black text-white">فتح الطلب</button>
               </div>
             </div>
           </div>

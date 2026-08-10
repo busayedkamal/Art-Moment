@@ -52,7 +52,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="bg-[#F8F5F2] min-h-screen">
+    <div className="bg-[#FAF9F7] min-h-screen">
 
       {/* ══════════════════════════════════════════════
           السايدبار — fixed دائماً على الجوال والديسكتوب
@@ -61,7 +61,7 @@ export default function Layout() {
       <aside className={`
         fixed top-0 z-50 ${isArabic ? 'right-0' : 'left-0'}
         w-64 h-[100dvh]
-        bg-[#4A4A4A] text-white
+        bg-[#171717] text-white
         flex flex-col
         transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen
@@ -94,7 +94,7 @@ export default function Layout() {
                 className={`
                   flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors
                   ${isActive
-                    ? 'bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white shadow-lg shadow-[#D9A3AA]/25'
+                    ? 'bg-gradient-to-b from-[#E8B4BC] to-[#C6A56B] text-white shadow-lg shadow-[#E8B4BC]/25'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'}
                 `}
               >
@@ -132,16 +132,16 @@ export default function Layout() {
       <div className={`${isArabic ? 'md:pr-64' : 'md:pl-64'} flex flex-col min-h-screen w-full min-w-0`}>
 
         {/* هيدر الجوال فقط */}
-        <header className="md:hidden sticky top-0 z-40 flex items-center justify-between bg-white border-b border-[#D9A3AA]/20 px-4 py-3 shadow-sm">
+        <header className="md:hidden sticky top-0 z-40 flex items-center justify-between bg-white border-b border-[#E8B4BC]/20 px-4 py-3 shadow-sm">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 text-[#4A4A4A]/80 hover:bg-[#F8F5F2] rounded-lg transition-colors"
+            className="p-2 text-[#171717]/80 hover:bg-[#FAF9F7] rounded-lg transition-colors"
             aria-label="فتح القائمة الجانبية"
             title="فتح القائمة"
           >
             <Menu size={24} />
           </button>
-          <span className="font-bold text-[#4A4A4A]">لوحة التحكم</span>
+          <span className="font-bold text-[#171717]">لوحة التحكم</span>
         </header>
 
         {/* محتوى الصفحة */}

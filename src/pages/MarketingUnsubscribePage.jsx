@@ -49,42 +49,42 @@ export default function MarketingUnsubscribePage() {
   const Icon = state.status === 'loading' ? Loader2 : isSuccess ? CheckCircle : XCircle;
 
   return (
-    <div className="art-page min-h-screen font-sans text-[#4A4A4A]" dir="rtl">
+    <div className="art-page min-h-screen font-sans text-[#171717]" dir="rtl">
       <header className="art-nav art-nav-scrolled sticky top-0 z-40">
         <div className="art-shell h-16 flex items-center justify-between">
-          <Link to="/store" className="inline-flex items-center gap-2 text-sm font-black text-[#4A4A4A]/60 hover:text-[#D9A3AA]">
+          <Link to="/store" className="inline-flex items-center gap-2 text-sm font-black text-[#171717]/60 hover:text-[#E8B4BC]">
             <ArrowRight size={18} /> المتجر
           </Link>
           <img src={logo} alt="لحظة فن" className="h-9 w-auto" />
-          <Link to="/" className="h-10 w-10 rounded-full border border-[#D9A3AA]/20 bg-white flex items-center justify-center text-[#4A4A4A]/60">
+          <Link to="/" className="h-10 w-10 rounded-full border border-[#E8B4BC]/20 bg-white flex items-center justify-center text-[#171717]/60">
             <Home size={17} />
           </Link>
         </div>
       </header>
 
       <main className="art-shell py-16 flex justify-center">
-        <section className="w-full max-w-lg rounded-[2rem] bg-white border border-[#D9A3AA]/15 p-8 text-center shadow-sm">
+        <section className="w-full max-w-lg rounded-[2rem] bg-white border border-[#E8B4BC]/15 p-8 text-center shadow-sm">
           <div className={`mx-auto mb-5 h-16 w-16 rounded-full flex items-center justify-center ${
             state.status === 'loading'
-              ? 'bg-[#D9A3AA]/10 text-[#D9A3AA]'
+              ? 'bg-[#E8B4BC]/10 text-[#E8B4BC]'
               : isSuccess
                 ? 'bg-emerald-50 text-emerald-600'
                 : 'bg-red-50 text-red-500'
           }`}>
             <Icon size={28} className={state.status === 'loading' ? 'animate-spin' : ''} />
           </div>
-          <div className="mb-3 flex items-center justify-center gap-2 text-xs font-black text-[#C5A059]">
+          <div className="mb-3 flex items-center justify-center gap-2 text-xs font-black text-[#C6A56B]">
             <MailX size={14} /> الرسائل التسويقية
           </div>
           <h1 className="text-2xl font-black mb-3">
             {state.status === 'loading' ? 'جاري معالجة الطلب' : isSuccess ? 'تم إلغاء الاشتراك' : 'تعذر تنفيذ الطلب'}
           </h1>
-          <p className="text-sm leading-7 text-[#4A4A4A]/60 mb-6">
+          <p className="text-sm leading-7 text-[#171717]/60 mb-6">
             {state.message || 'يرجى الانتظار قليلاً.'}
           </p>
           <Link
             to="/store/account"
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-[#4A4A4A] px-6 py-4 text-sm font-black text-white shadow-md hover:bg-[#D9A3AA] transition-colors"
+            className="inline-flex w-full items-center justify-center rounded-2xl bg-[#171717] px-6 py-4 text-sm font-black text-white shadow-md hover:bg-[#E8B4BC] transition-colors"
           >
             فتح حسابي
           </Link>

@@ -67,8 +67,8 @@ function getActionTone(action) {
   if (/failed|deleted/i.test(action)) return 'bg-red-50 text-red-600 border-red-100';
   if (/payment|refund|wallet/i.test(action)) return 'bg-emerald-50 text-emerald-700 border-emerald-100';
   if (/shipping|return/i.test(action)) return 'bg-cyan-50 text-cyan-700 border-cyan-100';
-  if (/notification|campaign/i.test(action)) return 'bg-[#D9A3AA]/10 text-[#C5A059] border-[#D9A3AA]/15';
-  return 'bg-[#F8F5F2] text-[#4A4A4A]/75 border-[#D9A3AA]/15';
+  if (/notification|campaign/i.test(action)) return 'bg-[#E8B4BC]/10 text-[#C6A56B] border-[#E8B4BC]/15';
+  return 'bg-[#FAF9F7] text-[#171717]/75 border-[#E8B4BC]/15';
 }
 
 function formatDate(value) {
@@ -152,11 +152,11 @@ export default function AdminActivityLog() {
     <div dir="rtl" className="max-w-[1600px] mx-auto space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#C5A059]/10 px-3 py-1 text-xs font-black text-[#C5A059] mb-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#C6A56B]/10 px-3 py-1 text-xs font-black text-[#C6A56B] mb-3">
             <History size={14} /> Audit Log
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#4A4A4A]">سجل النشاط الإداري</h1>
-          <p className="text-sm text-[#4A4A4A]/55 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#171717]">سجل النشاط الإداري</h1>
+          <p className="text-sm text-[#171717]/55 mt-1">
             متابعة التغييرات المهمة في الطلبات، الدفع، الشحن، الاسترجاع، العملاء، المنتجات، والإشعارات.
           </p>
         </div>
@@ -164,7 +164,7 @@ export default function AdminActivityLog() {
           type="button"
           onClick={fetchLogs}
           disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-[#D9A3AA]/20 px-4 py-3 text-sm font-black text-[#4A4A4A] shadow-sm hover:border-[#D9A3AA]/50 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-[#E8B4BC]/20 px-4 py-3 text-sm font-black text-[#171717] shadow-sm hover:border-[#E8B4BC]/50 disabled:opacity-50"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> تحديث
         </button>
@@ -177,22 +177,22 @@ export default function AdminActivityLog() {
         <StatCard label="أحداث المنتجات" value={stats.products} icon={Box} tone="green" />
       </div>
 
-      <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 shadow-sm">
+      <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-4 shadow-sm">
         <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto]">
           <label className="relative block">
-            <Search size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/35" />
+            <Search size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#171717]/35" />
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="ابحث بالعميل، رقم الطلب، نوع الحدث، أو القيم المتغيرة..."
-              className="w-full rounded-2xl border border-[#D9A3AA]/15 bg-[#F8F5F2] py-3 pl-4 pr-11 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+              className="w-full rounded-2xl border border-[#E8B4BC]/15 bg-[#FAF9F7] py-3 pl-4 pr-11 text-sm font-bold outline-none focus:border-[#E8B4BC]"
             />
           </label>
 
           <select
             value={actionFilter}
             onChange={(event) => setActionFilter(event.target.value)}
-            className="rounded-2xl border border-[#D9A3AA]/15 bg-[#F8F5F2] px-4 py-3 text-sm font-black outline-none focus:border-[#D9A3AA]"
+            className="rounded-2xl border border-[#E8B4BC]/15 bg-[#FAF9F7] px-4 py-3 text-sm font-black outline-none focus:border-[#E8B4BC]"
           >
             <option value="all">كل الأحداث</option>
             {actionOptions.map((action) => (
@@ -208,8 +208,8 @@ export default function AdminActivityLog() {
                 onClick={() => setEntityFilter(filter.value)}
                 className={`shrink-0 rounded-2xl px-4 py-3 text-xs font-black border transition-colors ${
                   entityFilter === filter.value
-                    ? 'bg-[#4A4A4A] text-white border-[#4A4A4A]'
-                    : 'bg-[#F8F5F2] text-[#4A4A4A]/65 border-[#D9A3AA]/10 hover:border-[#D9A3AA]/40'
+                    ? 'bg-[#171717] text-white border-[#171717]'
+                    : 'bg-[#FAF9F7] text-[#171717]/65 border-[#E8B4BC]/10 hover:border-[#E8B4BC]/40'
                 }`}
               >
                 {filter.label}
@@ -221,31 +221,31 @@ export default function AdminActivityLog() {
 
       <div className="space-y-3">
         {loading ? (
-          <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-10 flex justify-center">
-            <div className="w-8 h-8 rounded-full border-4 border-[#D9A3AA]/25 border-t-[#D9A3AA] animate-spin" />
+          <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-10 flex justify-center">
+            <div className="w-8 h-8 rounded-full border-4 border-[#E8B4BC]/25 border-t-[#E8B4BC] animate-spin" />
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-10 text-center">
-            <History size={38} className="mx-auto text-[#D9A3AA]/40 mb-3" />
-            <p className="font-black text-[#4A4A4A]">لا توجد أحداث مطابقة</p>
-            <p className="text-sm text-[#4A4A4A]/45 mt-1">جرّب تغيير الفلتر أو تحديث السجل.</p>
+          <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-10 text-center">
+            <History size={38} className="mx-auto text-[#E8B4BC]/40 mb-3" />
+            <p className="font-black text-[#171717]">لا توجد أحداث مطابقة</p>
+            <p className="text-sm text-[#171717]/45 mt-1">جرّب تغيير الفلتر أو تحديث السجل.</p>
           </div>
         ) : (
           filteredLogs.map((log) => {
             const EntityIcon = ENTITY_ICONS[log.entity_type] || Activity;
             return (
-              <article key={log.id} className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 shadow-sm">
+              <article key={log.id} className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-4 shadow-sm">
                 <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-black ${getActionTone(log.action)}`}>
                         <EntityIcon size={12} /> {ACTION_LABELS[log.action] || log.action}
                       </span>
-                      <span className="rounded-full bg-[#F8F5F2] border border-[#D9A3AA]/10 px-3 py-1 text-[11px] font-black text-[#4A4A4A]/60">
+                      <span className="rounded-full bg-[#FAF9F7] border border-[#E8B4BC]/10 px-3 py-1 text-[11px] font-black text-[#171717]/60">
                         {ENTITY_LABELS[log.entity_type] || log.entity_type}
                       </span>
                     </div>
-                    <h2 className="truncate text-base font-black text-[#4A4A4A]">
+                    <h2 className="truncate text-base font-black text-[#171717]">
                       {log.entity_label || log.entity_id || 'حدث إداري'}
                     </h2>
                     <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -254,24 +254,24 @@ export default function AdminActivityLog() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3 space-y-3">
+                  <div className="rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/10 p-3 space-y-3">
                     <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-full bg-white border border-[#D9A3AA]/15 flex items-center justify-center text-[#D9A3AA]">
+                      <span className="w-8 h-8 rounded-full bg-white border border-[#E8B4BC]/15 flex items-center justify-center text-[#E8B4BC]">
                         <User size={15} />
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-[#4A4A4A]">
+                        <p className="truncate text-sm font-black text-[#171717]">
                           {log.actor_email || 'الحساب الإداري'}
                         </p>
-                        <p className="text-[11px] font-bold text-[#4A4A4A]/45">
+                        <p className="text-[11px] font-bold text-[#171717]/45">
                           {formatDate(log.created_at)}
                         </p>
                       </div>
                     </div>
                     {log.metadata && Object.keys(log.metadata).length > 0 && (
-                      <div className="rounded-xl bg-white/80 border border-[#D9A3AA]/10 px-3 py-2">
-                        <p className="text-[10px] font-black text-[#4A4A4A]/45 mb-1">تفاصيل إضافية</p>
-                        <p className="line-clamp-2 text-[11px] font-bold text-[#4A4A4A]/65">
+                      <div className="rounded-xl bg-white/80 border border-[#E8B4BC]/10 px-3 py-2">
+                        <p className="text-[10px] font-black text-[#171717]/45 mb-1">تفاصيل إضافية</p>
+                        <p className="line-clamp-2 text-[11px] font-bold text-[#171717]/65">
                           {jsonSummary(log.metadata)}
                         </p>
                       </div>
@@ -289,18 +289,18 @@ export default function AdminActivityLog() {
 
 function ValueBox({ title, value }) {
   return (
-    <div className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
-      <p className="text-[10px] font-black text-[#4A4A4A]/45 mb-1">{title}</p>
-      <p className="line-clamp-2 text-xs font-bold leading-relaxed text-[#4A4A4A]/65">{value}</p>
+    <div className="rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/10 p-3">
+      <p className="text-[10px] font-black text-[#171717]/45 mb-1">{title}</p>
+      <p className="line-clamp-2 text-xs font-bold leading-relaxed text-[#171717]/65">{value}</p>
     </div>
   );
 }
 
 function StatCard({ label, value, icon: Icon, tone = 'neutral' }) {
   const tones = {
-    neutral: 'bg-white text-[#4A4A4A] border-[#D9A3AA]/15',
-    gold: 'bg-[#C5A059]/10 text-[#C5A059] border-[#C5A059]/15',
-    pink: 'bg-[#D9A3AA]/10 text-[#D9A3AA] border-[#D9A3AA]/15',
+    neutral: 'bg-white text-[#171717] border-[#E8B4BC]/15',
+    gold: 'bg-[#C6A56B]/10 text-[#C6A56B] border-[#C6A56B]/15',
+    pink: 'bg-[#E8B4BC]/10 text-[#E8B4BC] border-[#E8B4BC]/15',
     green: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   };
 

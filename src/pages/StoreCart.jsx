@@ -445,25 +445,25 @@ export default function StoreCart() {
 
   if (isSubmitted) {
     return (
-      <div className="art-page min-h-screen font-[Tajawal] flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
+      <div className="art-page min-h-screen font-[Tajawal] flex flex-col items-center justify-center p-4 text-[#171717]" dir="rtl">
         <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center shadow-sm mb-6 animate-in zoom-in duration-500">
           <CheckCircle size={40} />
         </div>
         <h2 className="text-2xl md:text-3xl font-black mb-3 text-center">تم استلام طلبك بنجاح! 🎉</h2>
-        <p className="text-[#4A4A4A]/60 text-sm md:text-base mb-8 text-center max-w-md leading-relaxed">
-          طلبك الآن في حالة <strong className="text-[#D9A3AA]">"بانتظار التأكيد"</strong>.<br />
+        <p className="text-[#171717]/60 text-sm md:text-base mb-8 text-center max-w-md leading-relaxed">
+          طلبك الآن في حالة <strong className="text-[#E8B4BC]">"بانتظار التأكيد"</strong>.<br />
           وحالة الدفع <strong className="text-red-500">بانتظار الدفع</strong>. يمكنك متابعة التفاصيل من صفحة طلباتي.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
             to="/store/orders"
-            className="bg-[#4A4A4A] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#D9A3AA] transition-all hover:-translate-y-1"
+            className="bg-[#171717] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#E8B4BC] transition-all hover:-translate-y-1"
           >
             عرض طلباتي
           </Link>
           <Link
             to="/store"
-            className="bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-8 py-3.5 rounded-full font-bold shadow-sm hover:bg-[#F8F5F2] transition-all"
+            className="bg-white text-[#171717] border border-[#E8B4BC]/20 px-8 py-3.5 rounded-full font-bold shadow-sm hover:bg-[#FAF9F7] transition-all"
           >
             العودة للمتجر
           </Link>
@@ -474,13 +474,13 @@ export default function StoreCart() {
 
   if (cart.length === 0) {
     return (
-      <div className="art-page min-h-screen font-[Tajawal] flex flex-col items-center justify-center p-4 text-[#4A4A4A]" dir="rtl">
-        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-[#D9A3AA]/30">
+      <div className="art-page min-h-screen font-[Tajawal] flex flex-col items-center justify-center p-4 text-[#171717]" dir="rtl">
+        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-[#E8B4BC]/30">
           <ShoppingBag size={40} />
         </div>
         <h2 className="text-2xl font-black mb-2">سلة المشتريات فارغة</h2>
-        <p className="text-[#4A4A4A]/50 text-sm mb-8">لم تقم بإضافة أي منتجات للسلة بعد.</p>
-        <Link to="/store" className="bg-[#4A4A4A] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#D9A3AA] transition-colors">
+        <p className="text-[#171717]/50 text-sm mb-8">لم تقم بإضافة أي منتجات للسلة بعد.</p>
+        <Link to="/store" className="bg-[#171717] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#E8B4BC] transition-colors">
           تصفح المتجر
         </Link>
       </div>
@@ -488,14 +488,14 @@ export default function StoreCart() {
   }
 
   return (
-    <div className="art-page min-h-screen font-[Tajawal] text-[#4A4A4A] pb-24" dir="rtl">
+    <div className="art-page min-h-screen font-[Tajawal] text-[#171717] pb-24" dir="rtl">
       {/* Header */}
       <header className="art-nav art-nav-scrolled sticky top-0 z-40 px-4 h-16 flex items-center justify-between">
-        <Link to="/store" className="flex items-center gap-2 text-[#4A4A4A]/60 hover:text-[#D9A3AA] text-sm font-bold transition-colors">
+        <Link to="/store" className="flex items-center gap-2 text-[#171717]/60 hover:text-[#E8B4BC] text-sm font-bold transition-colors">
           <ArrowRight size={18} /> متابعة التسوق
         </Link>
         <h1 className="text-lg font-black">سلة المشتريات</h1>
-        <span className="bg-[#D9A3AA] text-white text-xs font-bold px-2 py-0.5 rounded-full">{cart.length}</span>
+        <span className="bg-[#E8B4BC] text-white text-xs font-bold px-2 py-0.5 rounded-full">{cart.length}</span>
       </header>
 
       <main className="art-shell py-8 grid lg:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)] gap-5 lg:gap-8">
@@ -503,7 +503,7 @@ export default function StoreCart() {
         {/* قائمة المنتجات */}
         <div className="space-y-4 min-w-0">
           <div className="flex justify-between items-center mb-2">
-            <h2 className="font-black text-[#4A4A4A]">منتجاتك</h2>
+            <h2 className="font-black text-[#171717]">منتجاتك</h2>
             <button onClick={clearCart} className="text-xs text-red-400 font-bold hover:text-red-500 transition-colors">
               مسح السلة
             </button>
@@ -518,11 +518,11 @@ export default function StoreCart() {
               : getSelectedOptionLabels(item.productOptions, item.selectedOptions);
 
             return (
-            <div key={itemKey} className="bg-white p-4 sm:p-5 rounded-3xl border border-[#D9A3AA]/15 flex items-center gap-4 sm:gap-5 shadow-sm">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#F8F5F2] rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
+            <div key={itemKey} className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8B4BC]/15 flex items-center gap-4 sm:gap-5 shadow-sm">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#FAF9F7] rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
                 {item.image
                   ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                  : <ImageIcon size={20} className="text-[#D9A3AA]/30" />
+                  : <ImageIcon size={20} className="text-[#E8B4BC]/30" />
                 }
               </div>
 
@@ -531,17 +531,17 @@ export default function StoreCart() {
                 {optionLabels.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     {optionLabels.map((option) => (
-                      <span key={option.id} className="rounded-full bg-[#F8F5F2] px-2 py-0.5 text-[9px] font-black text-[#4A4A4A]/60">
+                      <span key={option.id} className="rounded-full bg-[#FAF9F7] px-2 py-0.5 text-[9px] font-black text-[#171717]/60">
                         {option.name}: {option.label}
                       </span>
                     ))}
                   </div>
                 )}
-                <p className="text-[10px] text-[#4A4A4A]/50 mt-1">{item.price} ر.س × {item.qty}</p>
-                <p className={`text-[10px] font-bold mt-1 ${reachedMax ? 'text-amber-600' : 'text-[#4A4A4A]/45'}`}>
+                <p className="text-[10px] text-[#171717]/50 mt-1">{item.price} ر.س × {item.qty}</p>
+                <p className={`text-[10px] font-bold mt-1 ${reachedMax ? 'text-amber-600' : 'text-[#171717]/45'}`}>
                   {availableStock === null ? 'الكمية متاحة' : `المتوفر: ${availableStock}`}
                 </p>
-                <div className="font-black text-[#C5A059] text-sm mt-1">{item.price * item.qty} ر.س</div>
+                <div className="font-black text-[#C6A56B] text-sm mt-1">{item.price * item.qty} ر.س</div>
               </div>
 
               <div className="flex flex-col items-center gap-2 shrink-0">
@@ -551,12 +551,12 @@ export default function StoreCart() {
                 >
                   <Trash2 size={14} />
                 </button>
-                <div className="flex items-center gap-2 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/20 p-1">
+                <div className="flex items-center gap-2 bg-[#FAF9F7] rounded-xl border border-[#E8B4BC]/20 p-1">
                   <button
                     onClick={() => updateQty(itemKey, 1)}
                     disabled={reachedMax}
                     className={`w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm transition-colors ${
-                      reachedMax ? 'text-[#4A4A4A]/25 cursor-not-allowed' : 'text-[#4A4A4A]'
+                      reachedMax ? 'text-[#171717]/25 cursor-not-allowed' : 'text-[#171717]'
                     }`}
                   >
                     <Plus size={12} />
@@ -568,10 +568,10 @@ export default function StoreCart() {
                     value={item.qty}
                     onChange={e => setExactQty(itemKey, e.target.value)}
                     onBlur={() => handleBlurQty(itemKey, item.qty)}
-                    className="w-10 text-center font-black text-sm text-[#4A4A4A] bg-transparent outline-none focus:bg-white rounded-md transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-10 text-center font-black text-sm text-[#171717] bg-transparent outline-none focus:bg-white rounded-md transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     dir="ltr"
                   />
-                  <button onClick={() => updateQty(itemKey, -1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#4A4A4A]">
+                  <button onClick={() => updateQty(itemKey, -1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#171717]">
                     <Minus size={12} />
                   </button>
                 </div>
@@ -585,15 +585,15 @@ export default function StoreCart() {
         <div className="space-y-6 min-w-0">
           {/* ملخص */}
           <div className="art-panel p-6 rounded-[1.5rem]">
-            <h2 className="font-black text-[#4A4A4A] mb-4">ملخص الطلب</h2>
-            <div className="space-y-3 mb-6 border-b border-[#F8F5F2] pb-4">
+            <h2 className="font-black text-[#171717] mb-4">ملخص الطلب</h2>
+            <div className="space-y-3 mb-6 border-b border-[#FAF9F7] pb-4">
               <div className="flex justify-between text-sm">
-                <span className="text-[#4A4A4A]/60">المجموع الفرعي</span>
+                <span className="text-[#171717]/60">المجموع الفرعي</span>
                 <span className="font-bold">{subtotal} ر.س</span>
               </div>
-              <div className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/15 p-3">
-                <label className="mb-2 flex items-center gap-2 text-xs font-black text-[#4A4A4A]/60">
-                  <TicketPercent size={14} className="text-[#C5A059]" /> كوبون خصم
+              <div className="rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/15 p-3">
+                <label className="mb-2 flex items-center gap-2 text-xs font-black text-[#171717]/60">
+                  <TicketPercent size={14} className="text-[#C6A56B]" /> كوبون خصم
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -604,7 +604,7 @@ export default function StoreCart() {
                     }}
                     onKeyDown={e => e.key === 'Enter' && applyCoupon()}
                     placeholder="مثال: AM10"
-                    className="min-w-0 flex-1 rounded-xl border border-[#D9A3AA]/15 bg-white px-3 py-2 text-sm font-black outline-none focus:border-[#D9A3AA]"
+                    className="min-w-0 flex-1 rounded-xl border border-[#E8B4BC]/15 bg-white px-3 py-2 text-sm font-black outline-none focus:border-[#E8B4BC]"
                     dir="ltr"
                   />
                   {appliedCoupon ? (
@@ -621,7 +621,7 @@ export default function StoreCart() {
                       type="button"
                       onClick={applyCoupon}
                       disabled={isCheckingCoupon || !couponCode.trim()}
-                      className="px-4 rounded-xl bg-[#4A4A4A] text-white text-xs font-black disabled:opacity-45 flex items-center gap-2"
+                      className="px-4 rounded-xl bg-[#171717] text-white text-xs font-black disabled:opacity-45 flex items-center gap-2"
                     >
                       {isCheckingCoupon && <Loader2 size={13} className="animate-spin" />}
                       تطبيق
@@ -642,13 +642,13 @@ export default function StoreCart() {
                 </div>
               )}
               {rewardSummary && (
-                <div className="rounded-2xl border border-[#D9A3AA]/20 bg-[#D9A3AA]/[0.06] p-3">
+                <div className="rounded-2xl border border-[#E8B4BC]/20 bg-[#E8B4BC]/[0.06] p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="flex items-center gap-2 text-xs font-black text-[#4A4A4A]">
-                        <Wallet size={14} className="text-[#D9A3AA]" /> نقاط لحظة فن
+                      <p className="flex items-center gap-2 text-xs font-black text-[#171717]">
+                        <Wallet size={14} className="text-[#E8B4BC]" /> نقاط لحظة فن
                       </p>
-                      <p className="mt-1 text-[10px] text-[#4A4A4A]/55">
+                      <p className="mt-1 text-[10px] text-[#171717]/55">
                         {availableRewardPoints.toLocaleString()} نقطة = {Number(rewardSummary.valueSar || 0).toFixed(2)} ر.س
                       </p>
                     </div>
@@ -662,10 +662,10 @@ export default function StoreCart() {
                       }}
                       className={`h-8 rounded-lg px-3 text-[11px] font-black transition-colors ${
                         useRewardPoints
-                          ? 'bg-[#D9A3AA] text-white'
+                          ? 'bg-[#E8B4BC] text-white'
                           : canUseRewardPoints
-                            ? 'bg-white text-[#B97882] border border-[#D9A3AA]/25'
-                            : 'bg-white/70 text-[#4A4A4A]/30 cursor-not-allowed'
+                            ? 'bg-white text-[#B97882] border border-[#E8B4BC]/25'
+                            : 'bg-white/70 text-[#171717]/30 cursor-not-allowed'
                       }`}
                     >
                       {useRewardPoints ? 'إلغاء الاستخدام' : 'استخدام النقاط'}
@@ -681,24 +681,24 @@ export default function StoreCart() {
                           step="1"
                           value={rewardPointsInput}
                           onChange={(event) => setRewardPointsInput(event.target.value.replace(/\D/g, ''))}
-                          className="min-w-0 flex-1 rounded-xl border border-[#D9A3AA]/20 bg-white px-3 py-2 text-center text-sm font-black outline-none focus:border-[#D9A3AA]"
+                          className="min-w-0 flex-1 rounded-xl border border-[#E8B4BC]/20 bg-white px-3 py-2 text-center text-sm font-black outline-none focus:border-[#E8B4BC]"
                           dir="ltr"
                         />
                         <button
                           type="button"
                           onClick={() => setRewardPointsInput(String(maximumRewardPoints))}
-                          className="rounded-xl bg-white px-3 text-[11px] font-black text-[#B97882] border border-[#D9A3AA]/20"
+                          className="rounded-xl bg-white px-3 text-[11px] font-black text-[#B97882] border border-[#E8B4BC]/20"
                         >
                           الحد الأعلى
                         </button>
                       </div>
-                      <div className="mt-2 flex justify-between text-[10px] text-[#4A4A4A]/50">
+                      <div className="mt-2 flex justify-between text-[10px] text-[#171717]/50">
                         <span>الحد الأدنى {minimumRewardPoints.toLocaleString()} نقطة</span>
                         <span>خصم {rewardDiscountValue.toFixed(2)} ر.س</span>
                       </div>
                     </div>
                   ) : !canUseRewardPoints ? (
-                    <p className="mt-2 text-[10px] text-[#4A4A4A]/45">
+                    <p className="mt-2 text-[10px] text-[#171717]/45">
                       يبدأ الاستخدام من {minimumRewardPoints.toLocaleString()} نقطة وبحد أقصى {maximumRewardPercent}% من الطلب.
                     </p>
                   ) : null}
@@ -711,24 +711,24 @@ export default function StoreCart() {
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-[#4A4A4A]/60">تكلفة الشحن</span>
+                <span className="text-[#171717]/60">تكلفة الشحن</span>
                 <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded font-bold">تُحدد عبر واتساب</span>
               </div>
             </div>
             <div className="flex justify-between items-center">
               <span className="font-black text-lg">المتبقي للدفع</span>
-              <span className="font-black text-2xl text-[#D9A3AA]">{payableTotal.toFixed(2)} <span className="text-sm">ر.س</span></span>
+              <span className="font-black text-2xl text-[#E8B4BC]">{payableTotal.toFixed(2)} <span className="text-sm">ر.س</span></span>
             </div>
           </div>
 
-          <div className={`rounded-[1.5rem] border p-5 sm:p-6 shadow-sm ${customerSession?.sessionToken ? 'border-emerald-200 bg-emerald-50/70' : 'border-[#D9A3AA]/20 bg-white'}`}>
+          <div className={`rounded-[1.5rem] border p-5 sm:p-6 shadow-sm ${customerSession?.sessionToken ? 'border-emerald-200 bg-emerald-50/70' : 'border-[#E8B4BC]/20 bg-white'}`}>
             {customerSession?.sessionToken ? (
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="flex items-center gap-2 font-black text-[#4A4A4A]">
+                  <p className="flex items-center gap-2 font-black text-[#171717]">
                     <ShieldCheck size={18} className="text-emerald-600" /> حسابك مرتبط بالطلب
                   </p>
-                  <p className="mt-1 truncate text-xs text-[#4A4A4A]/55">
+                  <p className="mt-1 truncate text-xs text-[#171717]/55">
                     {customerSession.name || customerSession.email || customerSession.phone}
                   </p>
                 </div>
@@ -737,10 +737,10 @@ export default function StoreCart() {
             ) : (
               <div>
                 <div className="mb-4">
-                  <h2 className="flex items-center gap-2 font-black text-[#4A4A4A]">
-                    <LogIn size={18} className="text-[#C5A059]" /> الحساب وإتمام الطلب
+                  <h2 className="flex items-center gap-2 font-black text-[#171717]">
+                    <LogIn size={18} className="text-[#C6A56B]" /> الحساب وإتمام الطلب
                   </h2>
-                  <p className="mt-1 text-xs leading-relaxed text-[#4A4A4A]/55">
+                  <p className="mt-1 text-xs leading-relaxed text-[#171717]/55">
                     سجّلي الدخول إن كان لديك حساب، أو أنشئي حساباً جديداً. ستبقى المنتجات في سلتك وتُربط بطلباتك تلقائياً.
                   </p>
                 </div>
@@ -748,14 +748,14 @@ export default function StoreCart() {
                   <button
                     type="button"
                     onClick={() => openCustomerAuth('login')}
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-4 text-sm font-black text-white transition-colors hover:bg-[#D9A3AA]"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#171717] px-4 text-sm font-black text-white transition-colors hover:bg-[#E8B4BC]"
                   >
                     <LogIn size={17} /> تسجيل الدخول
                   </button>
                   <button
                     type="button"
                     onClick={() => openCustomerAuth('signup')}
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#C5A059]/30 bg-[#C5A059]/10 px-4 text-sm font-black text-[#8A6A2F] transition-colors hover:bg-[#C5A059]/20"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#C6A56B]/30 bg-[#C6A56B]/10 px-4 text-sm font-black text-[#8A6A2F] transition-colors hover:bg-[#C6A56B]/20"
                   >
                     <UserPlus size={17} /> إنشاء حساب جديد
                   </button>
@@ -766,10 +766,10 @@ export default function StoreCart() {
 
           {/* بيانات التواصل والشحن */}
           <div className="art-panel p-6 rounded-[1.5rem]">
-            <h2 className="font-black text-[#4A4A4A] mb-4">بيانات التواصل والشحن</h2>
+            <h2 className="font-black text-[#171717] mb-4">بيانات التواصل والشحن</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
+                <label className="block text-xs font-bold mb-1.5 text-[#171717]">
                   رقم الجوال <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -781,7 +781,7 @@ export default function StoreCart() {
                   className={`art-input w-full rounded-xl px-4 py-2.5 outline-none text-right ${
                     phoneError
                       ? 'border-red-400 focus:border-red-500 bg-red-50'
-                      : 'border-[#D9A3AA]/20 focus:border-[#D9A3AA]'
+                      : 'border-[#E8B4BC]/20 focus:border-[#E8B4BC]'
                   }`}
                 />
                 {phoneError && (
@@ -792,7 +792,7 @@ export default function StoreCart() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]/70">الاسم (اختياري)</label>
+                <label className="block text-xs font-bold mb-1.5 text-[#171717]/70">الاسم (اختياري)</label>
                 <input
                   type="text"
                   value={name}
@@ -802,14 +802,14 @@ export default function StoreCart() {
               </div>
 
               {savedAddresses.length > 0 ? (
-                <div className="rounded-2xl border border-[#D9A3AA]/15 bg-[#F8F5F2] p-3">
-                  <label className="mb-2 flex items-center gap-2 text-xs font-black text-[#4A4A4A]/65">
-                    <MapPin size={14} className="text-[#C5A059]" /> العناوين المحفوظة
+                <div className="rounded-2xl border border-[#E8B4BC]/15 bg-[#FAF9F7] p-3">
+                  <label className="mb-2 flex items-center gap-2 text-xs font-black text-[#171717]/65">
+                    <MapPin size={14} className="text-[#C6A56B]" /> العناوين المحفوظة
                   </label>
                   <select
                     value={selectedAddressId}
                     onChange={e => applySavedAddress(e.target.value)}
-                    className="w-full rounded-xl border border-[#D9A3AA]/15 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                    className="w-full rounded-xl border border-[#E8B4BC]/15 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-[#E8B4BC]"
                   >
                     {savedAddresses.map((address, index) => (
                       <option key={address.id || index} value={address.id || ''}>
@@ -821,7 +821,7 @@ export default function StoreCart() {
               ) : getCustomerSession()?.sessionToken ? (
                 <Link
                   to="/store/account"
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-[#D9A3AA]/25 bg-[#F8F5F2] px-4 py-3 text-xs font-black text-[#4A4A4A]/65 hover:border-[#D9A3AA] hover:text-[#D9A3AA] transition-colors"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-[#E8B4BC]/25 bg-[#FAF9F7] px-4 py-3 text-xs font-black text-[#171717]/65 hover:border-[#E8B4BC] hover:text-[#E8B4BC] transition-colors"
                 >
                   <span className="flex items-center gap-2"><MapPin size={14} /> لا توجد عناوين محفوظة</span>
                   <span>إضافة عنوان</span>
@@ -829,9 +829,9 @@ export default function StoreCart() {
               ) : null}
 
               {/* حقول الشحن */}
-              <div className="pt-4 mt-2 border-t border-[#D9A3AA]/20 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="pt-4 mt-2 border-t border-[#E8B4BC]/20 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
+                  <label className="block text-xs font-bold mb-1.5 text-[#171717]">
                     المدينة <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -850,7 +850,7 @@ export default function StoreCart() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
+                  <label className="block text-xs font-bold mb-1.5 text-[#171717]">
                     الحي <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -862,7 +862,7 @@ export default function StoreCart() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]">
+                  <label className="block text-xs font-bold mb-1.5 text-[#171717]">
                     الشارع / وصف البيت <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -876,7 +876,7 @@ export default function StoreCart() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold mb-1.5 text-[#4A4A4A]/70">ملاحظات الطلب (اختياري)</label>
+                <label className="block text-xs font-bold mb-1.5 text-[#171717]/70">ملاحظات الطلب (اختياري)</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
@@ -888,8 +888,8 @@ export default function StoreCart() {
           </div>
 
           <div className="art-panel p-6 rounded-[1.5rem]">
-            <h2 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
-              <Wallet size={18} className="text-[#C5A059]" /> طريقة الدفع
+            <h2 className="font-black text-[#171717] mb-4 flex items-center gap-2">
+              <Wallet size={18} className="text-[#C6A56B]" /> طريقة الدفع
             </h2>
             <div className="grid gap-3">
               {[
@@ -910,17 +910,17 @@ export default function StoreCart() {
                   onClick={() => setPaymentMethod(method.value)}
                   className={`text-right rounded-2xl border p-4 transition-all ${
                     paymentMethod === method.value
-                      ? 'border-[#C5A059] bg-[#C5A059]/10 shadow-sm'
-                      : 'border-[#D9A3AA]/15 bg-white hover:border-[#D9A3AA]/35'
+                      ? 'border-[#C6A56B] bg-[#C6A56B]/10 shadow-sm'
+                      : 'border-[#E8B4BC]/15 bg-white hover:border-[#E8B4BC]/35'
                   }`}
                 >
                   <span className="flex items-center justify-between gap-3">
-                    <span className="font-black text-[#4A4A4A]">{method.title}</span>
+                    <span className="font-black text-[#171717]">{method.title}</span>
                     <span className={`h-4 w-4 rounded-full border-2 ${
-                      paymentMethod === method.value ? 'border-[#C5A059] bg-[#C5A059]' : 'border-[#D9A3AA]/30'
+                      paymentMethod === method.value ? 'border-[#C6A56B] bg-[#C6A56B]' : 'border-[#E8B4BC]/30'
                     }`} />
                   </span>
-                  <span className="block mt-1 text-xs leading-relaxed text-[#4A4A4A]/55">{method.description}</span>
+                  <span className="block mt-1 text-xs leading-relaxed text-[#171717]/55">{method.description}</span>
                 </button>
               ))}
             </div>

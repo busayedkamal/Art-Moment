@@ -214,8 +214,8 @@ export default function Dashboard() {
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center">
-        <Loader2 className="animate-spin text-[#D9A3AA] mx-auto mb-3" size={36}/>
-        <p className="text-[#4A4A4A]/60 text-sm">جاري تحميل البيانات...</p>
+        <Loader2 className="animate-spin text-[#E8B4BC] mx-auto mb-3" size={36}/>
+        <p className="text-[#171717]/60 text-sm">جاري تحميل البيانات...</p>
       </div>
     </div>
   );
@@ -261,13 +261,13 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="w-full max-w-none space-y-5 lg:space-y-6 pb-12 text-[#4A4A4A]">
+    <div className="w-full max-w-none space-y-5 lg:space-y-6 pb-12 text-[#171717]">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between pt-2">
         <div>
-          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">لوحة القيادة</h1>
-          <p className="text-sm text-[#4A4A4A]/50 mt-0.5">ملخص الأداء المالي والتشغيلي</p>
+          <h1 className="text-2xl font-black text-[#171717] tracking-tight">لوحة القيادة</h1>
+          <p className="text-sm text-[#171717]/50 mt-0.5">ملخص الأداء المالي والتشغيلي</p>
         </div>
         <div className="text-3xl select-none">🚀</div>
       </div>
@@ -277,13 +277,13 @@ export default function Dashboard() {
         {/* إجمالي المبيعات */}
         <div className="col-span-2 lg:col-span-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#4A4A4A]/50 uppercase tracking-wide">إجمالي المبيعات</span>
+            <span className="text-xs font-bold text-[#171717]/50 uppercase tracking-wide">إجمالي المبيعات</span>
             <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center">
               <TrendingUp size={15} className="text-slate-400"/>
             </div>
           </div>
-          <p className="text-2xl font-black text-[#4A4A4A]">{stats.totalRevenue.toLocaleString()}</p>
-          <span className="text-xs text-[#4A4A4A]/40">ريال </span>
+          <p className="text-2xl font-black text-[#171717]">{stats.totalRevenue.toLocaleString()}</p>
+          <span className="text-xs text-[#171717]/40">ريال </span>
         </div>
 
         {/* رصيد الباقات */}
@@ -301,13 +301,13 @@ export default function Dashboard() {
         {/* رصيد النقاط */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#4A4A4A]/50 uppercase tracking-wide">رصيد النقاط</span>
+            <span className="text-xs font-bold text-[#171717]/50 uppercase tracking-wide">رصيد النقاط</span>
             <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center">
               <Banknote size={15} className="text-orange-400"/>
             </div>
           </div>
           <p className="text-2xl font-black text-orange-500">{Number(stats.totalPointsBalance || 0).toLocaleString()} نقطة</p>
-          <span className="text-xs text-[#4A4A4A]/40">تعادل {Number(stats.totalWalletBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ريال</span>
+          <span className="text-xs text-[#171717]/40">تعادل {Number(stats.totalWalletBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ريال</span>
         </div>
 
         {/* المديونية */}
@@ -338,14 +338,14 @@ export default function Dashboard() {
       {/* ── Operational Stats ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 2xl:gap-6">
         {[
-          { label: 'طلبات جديدة', value: stats.newOrders, color: 'text-[#D9A3AA]', bg: 'bg-[#D9A3AA]/8', icon: <ShoppingBag size={18}/>, iconColor: 'text-[#D9A3AA]' },
+          { label: 'طلبات جديدة', value: stats.newOrders, color: 'text-[#E8B4BC]', bg: 'bg-[#E8B4BC]/8', icon: <ShoppingBag size={18}/>, iconColor: 'text-[#E8B4BC]' },
           { label: 'قيد التنفيذ', value: stats.pendingOrders, color: 'text-orange-500', bg: 'bg-orange-50', icon: <Clock size={18}/>, iconColor: 'text-orange-500' },
           { label: 'متأخرة', value: stats.lateOrders, color: 'text-red-500', bg: 'bg-red-50', icon: <AlertCircle size={18}/>, iconColor: 'text-red-500' },
-          { label: 'مجموع الطلبات', value: stats.totalOrders, color: 'text-[#4A4A4A]', bg: 'bg-slate-50', icon: <FileText size={18}/>, iconColor: 'text-slate-400' },
+          { label: 'مجموع الطلبات', value: stats.totalOrders, color: 'text-[#171717]', bg: 'bg-slate-50', icon: <FileText size={18}/>, iconColor: 'text-slate-400' },
         ].map((item, i) => (
           <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-[#4A4A4A]/50 font-bold mb-2">{item.label}</p>
+              <p className="text-xs text-[#171717]/50 font-bold mb-2">{item.label}</p>
               <p className={`text-3xl font-black ${item.color}`}>{item.value}</p>
             </div>
             <div className={`w-11 h-11 ${item.bg} rounded-xl flex items-center justify-center ${item.iconColor}`}>
@@ -364,29 +364,29 @@ export default function Dashboard() {
         <div className="p-5 lg:p-6 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-start gap-4">
             <div className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center border ${
-              hasUrgentActionTasks ? 'bg-white text-red-600 border-red-100' : 'bg-[#F8F5F2] text-[#D9A3AA] border-[#D9A3AA]/15'
+              hasUrgentActionTasks ? 'bg-white text-red-600 border-red-100' : 'bg-[#FAF9F7] text-[#E8B4BC] border-[#E8B4BC]/15'
             }`}>
               {hasUrgentActionTasks ? <ShieldAlert size={24} /> : <ClipboardList size={24} />}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-black text-[#4A4A4A] text-lg">مهام تحتاج إجراء</h3>
+                <h3 className="font-black text-[#171717] text-lg">مهام تحتاج إجراء</h3>
                 {hasUrgentActionTasks && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-black text-red-600 border border-red-100">
                     <ShieldAlert size={12} /> يوجد مهام عاجلة
                   </span>
                 )}
               </div>
-              <p className="text-sm text-[#4A4A4A]/55 mt-1">
+              <p className="text-sm text-[#171717]/55 mt-1">
                 متابعة الدفع، الاسترجاع، الشحن، الإشعارات الفاشلة، ومخزون المتجر من مكان واحد.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-[repeat(2,130px)_auto] xl:items-center">
-            <div className="rounded-2xl bg-white border border-[#D9A3AA]/10 p-4">
-              <p className="text-xs font-black text-[#4A4A4A]/45">كل المهام</p>
-              <p className="text-3xl font-black text-[#4A4A4A] mt-1">{actionTaskStats.total}</p>
+            <div className="rounded-2xl bg-white border border-[#E8B4BC]/10 p-4">
+              <p className="text-xs font-black text-[#171717]/45">كل المهام</p>
+              <p className="text-3xl font-black text-[#171717] mt-1">{actionTaskStats.total}</p>
             </div>
             <div className="rounded-2xl bg-white border border-red-100 p-4">
               <p className="text-xs font-black text-red-400">عاجلة</p>
@@ -394,7 +394,7 @@ export default function Dashboard() {
             </div>
             <Link
               to="/app/tasks"
-              className="col-span-2 sm:col-span-1 inline-flex h-full min-h-[72px] items-center justify-center gap-2 rounded-2xl bg-[#4A4A4A] px-5 py-4 text-sm font-black text-white shadow-sm hover:bg-[#C5A059] transition-colors"
+              className="col-span-2 sm:col-span-1 inline-flex h-full min-h-[72px] items-center justify-center gap-2 rounded-2xl bg-[#171717] px-5 py-4 text-sm font-black text-white shadow-sm hover:bg-[#C6A56B] transition-colors"
             >
               فتح مركز المهام <ArrowUpLeft size={16} />
             </Link>
@@ -432,10 +432,10 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="font-black text-[#4A4A4A]">حركة المبيعات والمصروفات</h3>
-              <p className="text-xs text-[#4A4A4A]/40 mt-0.5">آخر 7 أيام</p>
+              <h3 className="font-black text-[#171717]">حركة المبيعات والمصروفات</h3>
+              <p className="text-xs text-[#171717]/40 mt-0.5">آخر 7 أيام</p>
             </div>
-            <div className="flex items-center gap-3 text-xs text-[#4A4A4A]/50">
+            <div className="flex items-center gap-3 text-xs text-[#171717]/50">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>مبيعات</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>مصروفات</span>
             </div>
@@ -462,8 +462,8 @@ export default function Dashboard() {
                 <Wallet size={16} className="text-red-500"/>
               </div>
               <div>
-                <h3 className="font-black text-[#4A4A4A] text-sm">مستحقات التسليم</h3>
-                <p className="text-[10px] text-[#4A4A4A]/40">مُسلَّمة ولم تُدفع</p>
+                <h3 className="font-black text-[#171717] text-sm">مستحقات التسليم</h3>
+                <p className="text-[10px] text-[#171717]/40">مُسلَّمة ولم تُدفع</p>
               </div>
             </div>
             {unpaidDelivered.length > 0 && (
@@ -482,14 +482,14 @@ export default function Dashboard() {
                 return (
                   <div key={order.id} className="flex items-center justify-between p-3 bg-red-50/60 hover:bg-red-50 rounded-xl border border-red-100/80 transition-colors group">
                     <div>
-                      <p className="font-bold text-[#4A4A4A] text-sm leading-tight">{order.customer_name}</p>
-                      <p className="text-[10px] text-[#4A4A4A]/40 mt-0.5 font-mono">#{order.id.slice(0, 6)}</p>
+                      <p className="font-bold text-[#171717] text-sm leading-tight">{order.customer_name}</p>
+                      <p className="text-[10px] text-[#171717]/40 mt-0.5 font-mono">#{order.id.slice(0, 6)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-red-600 font-black text-sm">{remaining.toFixed(0)} <RiyalSign /></span>
                       {order.phone && (
                         <a href={`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer"
-                          className="w-7 h-7 bg-white rounded-lg border border-red-100 flex items-center justify-center text-[#D9A3AA] hover:text-emerald-600 hover:border-emerald-200 transition-colors opacity-0 group-hover:opacity-100"
+                          className="w-7 h-7 bg-white rounded-lg border border-red-100 flex items-center justify-center text-[#E8B4BC] hover:text-emerald-600 hover:border-emerald-200 transition-colors opacity-0 group-hover:opacity-100"
                           title="مطالبة واتساب">
                           <MessageCircle size={13}/>
                         </a>
@@ -501,14 +501,14 @@ export default function Dashboard() {
             ) : (
               <div className="h-full flex flex-col items-center justify-center py-10 text-center">
                 <span className="text-4xl mb-2">🎉</span>
-                <p className="text-sm text-[#4A4A4A]/40 font-medium">لا توجد مديونيات</p>
+                <p className="text-sm text-[#171717]/40 font-medium">لا توجد مديونيات</p>
               </div>
             )}
           </div>
 
           {unpaidDelivered.length > 0 && (
             <div className="px-5 py-3 bg-red-50/50 border-t border-red-100/60 flex justify-between items-center">
-              <span className="text-xs text-[#4A4A4A]/50 font-medium">المستحقات المسلّمة</span>
+              <span className="text-xs text-[#171717]/50 font-medium">المستحقات المسلّمة</span>
               <span className="font-black text-red-600 text-sm">
                 {unpaidDelivered.reduce((sum, o) => sum + (o.total_amount - (o.deposit||0) - Number(o.wallet_used||0)), 0).toFixed(2)} <RiyalSign />
               </span>
@@ -521,15 +521,15 @@ export default function Dashboard() {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-50 flex justify-between items-center">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-[#D9A3AA]/10 rounded-xl flex items-center justify-center">
-              <ShoppingBag size={16} className="text-[#D9A3AA]"/>
+            <div className="w-8 h-8 bg-[#E8B4BC]/10 rounded-xl flex items-center justify-center">
+              <ShoppingBag size={16} className="text-[#E8B4BC]"/>
             </div>
             <div>
-              <h3 className="font-black text-[#4A4A4A] text-sm">أحدث الطلبات الجديدة</h3>
-              <p className="text-[10px] text-[#4A4A4A]/40">بانتظار المعالجة</p>
+              <h3 className="font-black text-[#171717] text-sm">أحدث الطلبات الجديدة</h3>
+              <p className="text-[10px] text-[#171717]/40">بانتظار المعالجة</p>
             </div>
           </div>
-          <Link to="/app/orders" className="text-xs text-[#D9A3AA] font-bold hover:text-[#C5A059] transition-colors flex items-center gap-1">
+          <Link to="/app/orders" className="text-xs text-[#E8B4BC] font-bold hover:text-[#C6A56B] transition-colors flex items-center gap-1">
             عرض الكل <ChevronRight size={14} className="rotate-180"/>
           </Link>
         </div>
@@ -540,7 +540,7 @@ export default function Dashboard() {
             <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-right text-sm">
                 <thead>
-                  <tr className="bg-slate-50/60 text-[#4A4A4A]/40 text-xs font-bold uppercase tracking-wide">
+                  <tr className="bg-slate-50/60 text-[#171717]/40 text-xs font-bold uppercase tracking-wide">
                     <th className="px-6 py-3.5">رقم الطلب</th>
                     <th className="px-6 py-3.5">العميل</th>
                     <th className="px-6 py-3.5">موعد التسليم</th>
@@ -552,31 +552,31 @@ export default function Dashboard() {
                   {recentNewOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4">
-                        <span className="font-mono text-xs font-bold text-[#4A4A4A]/50 bg-slate-100 px-2 py-1 rounded-md">#{order.id.slice(0, 6)}</span>
+                        <span className="font-mono text-xs font-bold text-[#171717]/50 bg-slate-100 px-2 py-1 rounded-md">#{order.id.slice(0, 6)}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#D9A3AA]/20 to-[#C5A059]/20 flex items-center justify-center text-[#C5A059] font-black text-base shrink-0">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E8B4BC]/20 to-[#C6A56B]/20 flex items-center justify-center text-[#C6A56B] font-black text-base shrink-0">
                             {order.customer_name?.charAt(0)}
                           </div>
                           <div>
-                            <p className="font-bold text-[#4A4A4A] text-sm leading-tight">{order.customer_name}</p>
-                            <p className="text-[11px] text-[#4A4A4A]/40 font-mono mt-0.5 dir-ltr text-right">{order.phone}</p>
+                            <p className="font-bold text-[#171717] text-sm leading-tight">{order.customer_name}</p>
+                            <p className="text-[11px] text-[#171717]/40 font-mono mt-0.5 dir-ltr text-right">{order.phone}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-[#4A4A4A]/60 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-[#171717]/60 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">
                           <Calendar size={12}/> {order.delivery_date || '—'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-black text-[#4A4A4A]">{order.total_amount}</span>
-                        <span className="text-[11px] text-[#4A4A4A]/40 mr-1"><RiyalSign /></span>
+                        <span className="font-black text-[#171717]">{order.total_amount}</span>
+                        <span className="text-[11px] text-[#171717]/40 mr-1"><RiyalSign /></span>
                       </td>
                       <td className="px-6 py-4 text-left">
                         <Link to={`/app/orders/${order.id}`}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#D9A3AA] hover:bg-[#C5A059] text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-[#D9A3AA]/30">
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#E8B4BC] hover:bg-[#C6A56B] text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-[#E8B4BC]/30">
                           معالجة <ChevronRight size={13} className="rotate-180"/>
                         </Link>
                       </td>
@@ -587,37 +587,37 @@ export default function Dashboard() {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden flex flex-col gap-3 p-4 border-t border-[#D9A3AA]/10">
+            <div className="md:hidden flex flex-col gap-3 p-4 border-t border-[#E8B4BC]/10">
               {recentNewOrders.map((order) => (
-                <div key={order.id} className="bg-[#F8F5F2]/50 p-4 rounded-2xl border border-[#D9A3AA]/20 flex flex-col gap-3">
+                <div key={order.id} className="bg-[#FAF9F7]/50 p-4 rounded-2xl border border-[#E8B4BC]/20 flex flex-col gap-3">
                   {/* Top row: ID & Price */}
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-[#4A4A4A]">
+                    <span className="font-black text-[#171717]">
                       {order.total_amount} <RiyalSign />
                     </span>
-                    <span className="font-mono text-xs bg-white px-2 py-1 rounded-md text-[#4A4A4A]/60 border border-[#D9A3AA]/20">
+                    <span className="font-mono text-xs bg-white px-2 py-1 rounded-md text-[#171717]/60 border border-[#E8B4BC]/20">
                       #{order.id.slice(0, 6)}
                     </span>
                   </div>
 
                   {/* Middle row: Customer */}
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#D9A3AA]/15 flex items-center justify-center text-[#C5A059] font-black text-base shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-[#E8B4BC]/15 flex items-center justify-center text-[#C6A56B] font-black text-base shrink-0">
                       {order.customer_name?.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-bold text-[#4A4A4A] text-sm leading-tight">{order.customer_name}</p>
-                      <p className="text-[11px] text-[#4A4A4A]/40 font-mono mt-0.5 dir-ltr">{order.phone}</p>
+                      <p className="font-bold text-[#171717] text-sm leading-tight">{order.customer_name}</p>
+                      <p className="text-[11px] text-[#171717]/40 font-mono mt-0.5 dir-ltr">{order.phone}</p>
                     </div>
                   </div>
 
                   {/* Bottom row: Date & Action */}
-                  <div className="flex items-center justify-between border-t border-[#D9A3AA]/10 pt-3">
+                  <div className="flex items-center justify-between border-t border-[#E8B4BC]/10 pt-3">
                     <Link to={`/app/orders/${order.id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#D9A3AA] hover:bg-[#C5A059] text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-[#D9A3AA]/30">
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#E8B4BC] hover:bg-[#C6A56B] text-white rounded-xl text-xs font-bold transition-colors shadow-sm shadow-[#E8B4BC]/30">
                       معالجة <ChevronRight size={13} className="rotate-180"/>
                     </Link>
-                    <span className="inline-flex items-center gap-1.5 text-xs text-[#4A4A4A]/60 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[#171717]/60 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">
                       <Calendar size={12}/> {order.delivery_date || '—'}
                     </span>
                   </div>
@@ -628,7 +628,7 @@ export default function Dashboard() {
         ) : (
           <div className="py-16 text-center">
             <p className="text-5xl mb-3">🎉</p>
-            <p className="text-[#4A4A4A]/40 font-medium">لا توجد طلبات جديدة حالياً</p>
+            <p className="text-[#171717]/40 font-medium">لا توجد طلبات جديدة حالياً</p>
           </div>
         )}
       </div>

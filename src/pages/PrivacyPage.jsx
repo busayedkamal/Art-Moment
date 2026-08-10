@@ -12,21 +12,21 @@ import logo from '../assets/logo-art-moment.svg';
 // ─── مكوّن القسم القابل للطي ─────────────────────────────────────────────────
 function Section({ id, icon: Icon, title, number, accent = 'pink', children }) {
   const [open, setOpen] = useState(true);
-  const accentColor = accent === 'gold' ? '#C5A059' : '#D9A3AA';
-  const accentBg    = accent === 'gold' ? 'bg-[#C5A059]/10 border-[#C5A059]/20' : 'bg-[#D9A3AA]/10 border-[#D9A3AA]/20';
+  const accentColor = accent === 'gold' ? '#C6A56B' : '#E8B4BC';
+  const accentBg    = accent === 'gold' ? 'bg-[#C6A56B]/10 border-[#C6A56B]/20' : 'bg-[#E8B4BC]/10 border-[#E8B4BC]/20';
 
   return (
-    <div id={id} className="bg-white rounded-3xl shadow-sm border border-[#4A4A4A]/8 overflow-hidden scroll-mt-28">
+    <div id={id} className="bg-white rounded-3xl shadow-sm border border-[#171717]/8 overflow-hidden scroll-mt-28">
       {/* رأس القسم */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex flex-col w-full p-4 gap-3 text-right hover:bg-[#F8F5F2]/60 transition-colors"
+        className="flex flex-col w-full p-4 gap-3 text-right hover:bg-[#FAF9F7]/60 transition-colors"
       >
         {/* الصف الأول: العنوان كامل العرض */}
-        <h2 className="w-full text-base md:text-lg font-black text-[#4A4A4A] leading-snug">{title}</h2>
+        <h2 className="w-full text-base md:text-lg font-black text-[#171717] leading-snug">{title}</h2>
 
         {/* الصف الثاني: الأيقونات موزعة */}
-        <div className="flex w-full items-center justify-between border-t border-[#D9A3AA]/10 pt-3 mt-1">
+        <div className="flex w-full items-center justify-between border-t border-[#E8B4BC]/10 pt-3 mt-1">
           {/* رقم القسم — يمين */}
           <div
             className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shadow-sm"
@@ -41,7 +41,7 @@ function Section({ id, icon: Icon, title, number, accent = 'pink', children }) {
           </div>
 
           {/* مؤشر الفتح/الإغلاق — يسار */}
-          <div className="shrink-0 text-[#D9A3AA]">
+          <div className="shrink-0 text-[#E8B4BC]">
             <ChevronDown size={20} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
           </div>
         </div>
@@ -49,7 +49,7 @@ function Section({ id, icon: Icon, title, number, accent = 'pink', children }) {
 
       {/* المحتوى */}
       {open && (
-        <div className="px-6 md:px-8 pb-8 border-t border-[#4A4A4A]/6">
+        <div className="px-6 md:px-8 pb-8 border-t border-[#171717]/6">
           {children}
         </div>
       )}
@@ -59,14 +59,14 @@ function Section({ id, icon: Icon, title, number, accent = 'pink', children }) {
 
 // ─── مكوّن بند داخل قسم ──────────────────────────────────────────────────────
 function SubSection({ icon: Icon, title, children, accent = 'pink' }) {
-  const color = accent === 'gold' ? '#C5A059' : '#D9A3AA';
+  const color = accent === 'gold' ? '#C6A56B' : '#E8B4BC';
   return (
     <div className="mt-6">
       <div className="flex items-center gap-2 mb-3">
         {Icon && <Icon size={16} style={{ color }} className="shrink-0" />}
-        <h3 className="font-black text-[#4A4A4A] text-sm md:text-base">{title}</h3>
+        <h3 className="font-black text-[#171717] text-sm md:text-base">{title}</h3>
       </div>
-      <div className="text-[#4A4A4A]/75 text-sm md:text-base leading-relaxed space-y-2 pr-5 border-r-2" style={{ borderColor: `${color}40` }}>
+      <div className="text-[#171717]/75 text-sm md:text-base leading-relaxed space-y-2 pr-5 border-r-2" style={{ borderColor: `${color}40` }}>
         {children}
       </div>
     </div>
@@ -75,9 +75,9 @@ function SubSection({ icon: Icon, title, children, accent = 'pink' }) {
 
 // ─── مكوّن بند قائمة ─────────────────────────────────────────────────────────
 function ListItem({ children, accent = 'pink' }) {
-  const color = accent === 'gold' ? '#C5A059' : '#D9A3AA';
+  const color = accent === 'gold' ? '#C6A56B' : '#E8B4BC';
   return (
-    <li className="flex items-start gap-2 text-sm md:text-base leading-relaxed text-[#4A4A4A]/80">
+    <li className="flex items-start gap-2 text-sm md:text-base leading-relaxed text-[#171717]/80">
       <CheckCircle size={15} style={{ color }} className="shrink-0 mt-0.5" />
       <span>{children}</span>
     </li>
@@ -85,11 +85,11 @@ function ListItem({ children, accent = 'pink' }) {
 }
 
 // ─── بطاقة تنبيه ─────────────────────────────────────────────────────────────
-function AlertCard({ icon: Icon = AlertCircle, color = '#D9A3AA', bg = 'bg-[#D9A3AA]/8 border-[#D9A3AA]/20', children }) {
+function AlertCard({ icon: Icon = AlertCircle, color = '#E8B4BC', bg = 'bg-[#E8B4BC]/8 border-[#E8B4BC]/20', children }) {
   return (
     <div className={`mt-4 flex items-start gap-3 p-4 rounded-2xl border ${bg}`}>
       <Icon size={18} style={{ color }} className="shrink-0 mt-0.5" />
-      <p className="text-sm leading-relaxed text-[#4A4A4A]/80">{children}</p>
+      <p className="text-sm leading-relaxed text-[#171717]/80">{children}</p>
     </div>
   );
 }
@@ -120,22 +120,22 @@ export default function PrivacyPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8F5F2] text-[#4A4A4A] font-sans" dir="rtl">
+    <div className="min-h-screen bg-[#FAF9F7] text-[#171717] font-sans" dir="rtl">
 
       {/* ═══ شريط التنقل ═══════════════════════════════════════════════════════ */}
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#F8F5F2]/95 backdrop-blur-md shadow-sm border-b border-[#D9A3AA]/15' : 'bg-[#F8F5F2]'}`}>
+      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#FAF9F7]/95 backdrop-blur-md shadow-sm border-b border-[#E8B4BC]/15' : 'bg-[#FAF9F7]'}`}>
         <div className="art-shell h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <img src={logo} alt="Art Moment" className="w-8 h-8 object-contain" />
             <div>
-              <p className="text-sm font-black text-[#4A4A4A] leading-none">لحظة فن</p>
-              <p className="text-[9px] text-[#C5A059] font-bold tracking-widest uppercase">Art Moment</p>
+              <p className="text-sm font-black text-[#171717] leading-none">لحظة فن</p>
+              <p className="text-[9px] text-[#C6A56B] font-bold tracking-widest uppercase">Art Moment</p>
             </div>
           </Link>
 
           <Link
             to="/"
-            className="flex items-center gap-2 text-xs font-bold text-[#4A4A4A]/60 hover:text-[#D9A3AA] transition-colors bg-white border border-[#D9A3AA]/20 px-4 py-2 rounded-full shadow-sm"
+            className="flex items-center gap-2 text-xs font-bold text-[#171717]/60 hover:text-[#E8B4BC] transition-colors bg-white border border-[#E8B4BC]/20 px-4 py-2 rounded-full shadow-sm"
           >
             <ArrowRight size={14} />
             الرجوع للرئيسية
@@ -144,13 +144,13 @@ export default function PrivacyPage() {
       </header>
 
       {/* ═══ هيدر الصفحة ══════════════════════════════════════════════════════ */}
-      <div className="bg-[#4A4A4A] text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#D9A3AA]/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#C5A059]/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
+      <div className="bg-[#171717] text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#E8B4BC]/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#C6A56B]/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
 
         <div className="art-shell py-14 md:py-20 relative z-10">
           {/* شارة */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D9A3AA]/20 border border-[#D9A3AA]/30 text-[#D9A3AA] text-xs font-bold mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#E8B4BC]/20 border border-[#E8B4BC]/30 text-[#E8B4BC] text-xs font-bold mb-6">
             <Shield size={14} />
             وثيقة قانونية مُحدَّثة — 2026
           </div>
@@ -158,7 +158,7 @@ export default function PrivacyPage() {
           <h1 className="text-3xl md:text-5xl font-black leading-tight mb-4">
             سياسة الخصوصية
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#D9A3AA] to-[#C5A059]">وشروط الاستخدام</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#E8B4BC] to-[#C6A56B]">وشروط الاستخدام</span>
           </h1>
 
           <p className="text-white/65 text-base md:text-lg leading-relaxed max-w-2xl mb-8">
@@ -168,23 +168,23 @@ export default function PrivacyPage() {
 
           {/* شريط فاصل بمعلومات مختصرة */}
           <div className="flex flex-wrap gap-4 text-xs font-bold text-white/50">
-            <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#C5A059]" /> يسري اعتباراً من: يناير 2026</span>
-            <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#C5A059]" /> الاختصاص: المحاكم السعودية — الأحساء</span>
-            <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#D9A3AA]" /> كادر نسائي كامل 100%</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#C6A56B]" /> يسري اعتباراً من: يناير 2026</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#C6A56B]" /> الاختصاص: المحاكم السعودية — الأحساء</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={13} className="text-[#E8B4BC]" /> كادر نسائي كامل 100%</span>
           </div>
         </div>
       </div>
 
       {/* ═══ جدول المحتويات ════════════════════════════════════════════════════ */}
-      <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-[#D9A3AA]/15 shadow-sm overflow-x-auto">
+      <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-[#E8B4BC]/15 shadow-sm overflow-x-auto">
         <div className="art-shell">
           <div className="flex items-center gap-1 py-3 whitespace-nowrap">
-            <span className="text-xs font-bold text-[#4A4A4A]/40 ml-3 shrink-0">الأقسام:</span>
+            <span className="text-xs font-bold text-[#171717]/40 ml-3 shrink-0">الأقسام:</span>
             {sections.map((s, i) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#4A4A4A]/60 hover:text-[#D9A3AA] hover:bg-[#D9A3AA]/8 transition-colors shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#171717]/60 hover:text-[#E8B4BC] hover:bg-[#E8B4BC]/8 transition-colors shrink-0"
               >
                 <s.icon size={12} />
                 {i + 1}. {s.label.split(' ').slice(0, 2).join(' ')}
@@ -199,25 +199,25 @@ export default function PrivacyPage() {
 
         {/* ══ رأس: سياسة الخصوصية ══════════════════════════════════════════ */}
         <div className="flex items-center gap-3 pt-2 pb-1">
-          <div className="w-1 h-8 rounded-full bg-gradient-to-b from-[#D9A3AA] to-[#C5A059]"></div>
-          <h2 className="text-xl md:text-2xl font-black text-[#4A4A4A]">أولاً: سياسة الخصوصية</h2>
+          <div className="w-1 h-8 rounded-full bg-gradient-to-b from-[#E8B4BC] to-[#C6A56B]"></div>
+          <h2 className="text-xl md:text-2xl font-black text-[#171717]">أولاً: سياسة الخصوصية</h2>
         </div>
 
         {/* 1. البيانات التي نجمعها */}
         <Section id="data-collected" icon={Eye} title="البيانات التي نجمعها" number="1" accent="pink">
-          <p className="mt-4 text-sm md:text-base text-[#4A4A4A]/70 leading-relaxed">
+          <p className="mt-4 text-sm md:text-base text-[#171717]/70 leading-relaxed">
             نقوم بجمع البيانات الشخصية بالقدر اللازم لتقديم خدمات الطباعة وتوصيلها، وتشمل:
           </p>
           <ul className="mt-4 space-y-2.5">
-            <ListItem><strong className="text-[#4A4A4A]">البيانات الأساسية:</strong> الاسم الثلاثي، رقم الجوال، وعنوان التوصيل (المدينة، الحي، الشارع).</ListItem>
-            <ListItem><strong className="text-[#4A4A4A]">المواد البصرية (الصور):</strong> الصور الفوتوغرافية والملفات التي يتم رفعها أو إرسالها لغرض فحص الجودة والطباعة (مثل مقاسات 4×6 أو A4 وتجهيز الألبومات).</ListItem>
-            <ListItem><strong className="text-[#4A4A4A]">البيانات المالية والتشغيلية:</strong> سجل مدفوعاتك، رصيد المحفظة (الباقات مسبقة الدفع والكاش باك)، وتاريخ الطلبات.</ListItem>
+            <ListItem><strong className="text-[#171717]">البيانات الأساسية:</strong> الاسم الثلاثي، رقم الجوال، وعنوان التوصيل (المدينة، الحي، الشارع).</ListItem>
+            <ListItem><strong className="text-[#171717]">المواد البصرية (الصور):</strong> الصور الفوتوغرافية والملفات التي يتم رفعها أو إرسالها لغرض فحص الجودة والطباعة (مثل مقاسات 4×6 أو A4 وتجهيز الألبومات).</ListItem>
+            <ListItem><strong className="text-[#171717]">البيانات المالية والتشغيلية:</strong> سجل مدفوعاتك، رصيد المحفظة (الباقات مسبقة الدفع والكاش باك)، وتاريخ الطلبات.</ListItem>
           </ul>
         </Section>
 
         {/* 2. الغرض من جمع البيانات */}
         <Section id="data-purpose" icon={HelpCircle} title="الغرض من جمع البيانات)" number="2" accent="pink">
-          <p className="mt-4 text-sm md:text-base text-[#4A4A4A]/70 leading-relaxed">
+          <p className="mt-4 text-sm md:text-base text-[#171717]/70 leading-relaxed">
             تُجمع البيانات وفقاً للمسوّغ النظامي <em>(التعاقد لتقديم الخدمة)</em>، وتُستخدم في:
           </p>
           <ul className="mt-4 space-y-2.5">
@@ -231,7 +231,7 @@ export default function PrivacyPage() {
         {/* 3. أمن البيانات وتخزينها */}
         <Section id="data-security" icon={Lock} title="أمن البيانات وتخزينها)" number="3" accent="pink">
 
-          <AlertCard color="#D9A3AA" bg="bg-[#D9A3AA]/8 border-[#D9A3AA]/25" icon={Shield}>
+          <AlertCard color="#E8B4BC" bg="bg-[#E8B4BC]/8 border-[#E8B4BC]/25" icon={Shield}>
             <strong>سرية الصور — كادر نسائي 100%:</strong> لزيادة مستوى الطمأنينة والراحة التامة لعملائنا، نؤكد أن استقبال، ومعالجة، وطباعة، وتغليف كافة الصور والمواد البصرية يتم حصرياً بأيدي <strong>كادر نسائي كامل 100%</strong>. تُعامل جميع الصور المرفوعة بسرية مطلقة، ولا يُسمح بالاطلاع عليها أو التعامل معها إلا من قِبل الموظفات المختصات بتنفيذ الطباعة فقط.
           </AlertCard>
 
@@ -255,7 +255,7 @@ export default function PrivacyPage() {
 
         {/* 5. حقوق صاحب البيانات */}
         <Section id="user-rights" icon={Shield} title="حقوق صاحب البيانات (المستخدم)" number="5" accent="pink">
-          <p className="mt-4 text-sm md:text-base text-[#4A4A4A]/70 leading-relaxed">
+          <p className="mt-4 text-sm md:text-base text-[#171717]/70 leading-relaxed">
             وفقاً لنظام حماية البيانات الشخصية السعودي، يتمتع العميل بالحقوق التالية:
           </p>
           <div className="mt-5 grid sm:grid-cols-2 gap-3">
@@ -265,13 +265,13 @@ export default function PrivacyPage() {
               { icon: Edit3,  title: 'الحق في التصحيح',  desc: 'طلب تصحيح أي بيانات شخصية غير دقيقة أو تحديثها.' },
               { icon: Trash2, title: 'الحق في الإتلاف',  desc: 'طلب مسح البيانات الشخصية متى انتهى الغرض منها، ما لم تكن ثمة التزامات مالية قائمة.' },
             ].map(right => (
-              <div key={right.title} className="flex items-start gap-3 p-4 bg-[#F8F5F2] rounded-2xl border border-[#D9A3AA]/15">
-                <div className="w-9 h-9 rounded-xl bg-[#D9A3AA]/15 flex items-center justify-center shrink-0">
+              <div key={right.title} className="flex items-start gap-3 p-4 bg-[#FAF9F7] rounded-2xl border border-[#E8B4BC]/15">
+                <div className="w-9 h-9 rounded-xl bg-[#E8B4BC]/15 flex items-center justify-center shrink-0">
                   <right.icon size={16} className="text-[#C48A92]" />
                 </div>
                 <div>
-                  <p className="font-bold text-[#4A4A4A] text-sm">{right.title}</p>
-                  <p className="text-xs text-[#4A4A4A]/60 leading-relaxed mt-0.5">{right.desc}</p>
+                  <p className="font-bold text-[#171717] text-sm">{right.title}</p>
+                  <p className="text-xs text-[#171717]/60 leading-relaxed mt-0.5">{right.desc}</p>
                 </div>
               </div>
             ))}
@@ -280,8 +280,8 @@ export default function PrivacyPage() {
 
         {/* ── فاصل: شروط الاستخدام ─────────────────────────────────────── */}
         <div className="flex items-center gap-3 pt-4 pb-1">
-          <div className="w-1 h-8 rounded-full bg-gradient-to-b from-[#C5A059] to-[#D9A3AA]"></div>
-          <h2 className="text-xl md:text-2xl font-black text-[#4A4A4A]">ثانياً: شروط وأحكام الاستخدام</h2>
+          <div className="w-1 h-8 rounded-full bg-gradient-to-b from-[#C6A56B] to-[#E8B4BC]"></div>
+          <h2 className="text-xl md:text-2xl font-black text-[#171717]">ثانياً: شروط وأحكام الاستخدام</h2>
         </div>
 
         {/* 6. التزامات المستخدم والمحتوى */}
@@ -297,10 +297,10 @@ export default function PrivacyPage() {
         <Section id="wallet-terms" icon={CreditCard} title="نظام المحفظة والباقات" number="7" accent="gold">
           <ul className="mt-4 space-y-2.5">
             <ListItem accent="gold">رصيد الباقات ورصيد المتجر والنقاط مخصص للاستخدام حصرياً داخل منصة "لحظة فن"، ويظهر كل نوع كرصد مستقل داخل الحساب.</ListItem>
-            <ListItem accent="gold">رصيد الباقات والمكافآت الإضافية الممنوحة <strong className="text-[#4A4A4A]">غير قابل للاسترداد النقدي (Cash Refund)</strong> أو التحويل لحسابات بنكية، ويُستخدم فقط لخصم قيمة المشتريات والخدمات من الموقع.</ListItem>
+            <ListItem accent="gold">رصيد الباقات والمكافآت الإضافية الممنوحة <strong className="text-[#171717]">غير قابل للاسترداد النقدي (Cash Refund)</strong> أو التحويل لحسابات بنكية، ويُستخدم فقط لخصم قيمة المشتريات والخدمات من الموقع.</ListItem>
             <ListItem accent="gold">يمنح البرنامج نقطتين عن كل ريال مؤهل ومدفوع فعلياً بعد الخصومات، وكل 100 نقطة تساوي ريالاً واحداً عند الاستخدام.</ListItem>
             <ListItem accent="gold">يبدأ استخدام النقاط من 500 نقطة، وبحد أقصى 25% من قيمة الطلب الواحد. لا تكتسب قيمة الشحن أو الجزء المدفوع بالنقاط نقاطاً جديدة.</ListItem>
-            <ListItem accent="gold">تنتهي كل دفعة نقاط مكافآت بعد <strong className="text-[#4A4A4A]">4 أشهر من تاريخ اكتسابها</strong>، ويُستهلك الأقدم أولاً. أما رصيد الباقات ورصيد المتجر النقدي فلا يخضعان لهذه المدة.</ListItem>
+            <ListItem accent="gold">تنتهي كل دفعة نقاط مكافآت بعد <strong className="text-[#171717]">4 أشهر من تاريخ اكتسابها</strong>، ويُستهلك الأقدم أولاً. أما رصيد الباقات ورصيد المتجر النقدي فلا يخضعان لهذه المدة.</ListItem>
             <ListItem accent="gold">عند الاسترجاع تُلغى نقاط الجزء المسترجع وتُعاد النقاط المستخدمة بحسب قيمة الاسترجاع، وقد يصبح الرصيد سالباً إذا استُخدمت نقاط مكتسبة قبل إلغاء العملية الأصلية.</ListItem>
           </ul>
         </Section>
@@ -316,23 +316,23 @@ export default function PrivacyPage() {
 
         {/* 9. سياسة الاسترجاع */}
         <Section id="return-policy" icon={ShoppingBag} title="سياسة الاسترجاع والاستبدال" number="9" accent="gold">
-          <AlertCard color="#C5A059" bg="bg-[#C5A059]/8 border-[#C5A059]/25" icon={Scale}>
+          <AlertCard color="#C6A56B" bg="bg-[#C6A56B]/8 border-[#C6A56B]/25" icon={Scale}>
             استناداً إلى <strong>المادة الثالثة عشرة من نظام التجارة الإلكترونية</strong> المتعلقة بحالات عدم جواز فسخ العقد، ونظراً لطبيعة الخدمة التي تعتمد على تصنيع منتج بناءً على طلب المستهلك ومواصفات حددها:
           </AlertCard>
           <ul className="mt-4 space-y-2.5">
-            <ListItem accent="gold">لا يحق للعميل استرجاع أو إلغاء الطلب بعد البدء في عملية الطباعة الفعليّة (حالة الطلب: <strong className="text-[#4A4A4A]">قيد الطباعة</strong>).</ListItem>
-            <ListItem accent="gold">يحق للعميل طلب استبدال أو إعادة طباعة المنتجات <strong className="text-[#4A4A4A]">فقط</strong> في حال وجود عيب مصنعي واضح (مثل تلف الورق، أو أخطاء فادحة في جودة الطباعة من طرف المنصة).</ListItem>
-            <ListItem accent="gold">يجب الإبلاغ عن العيب خلال مدة أقصاها <strong className="text-[#4A4A4A]">(3) أيام</strong> من تاريخ الاستلام.</ListItem>
+            <ListItem accent="gold">لا يحق للعميل استرجاع أو إلغاء الطلب بعد البدء في عملية الطباعة الفعليّة (حالة الطلب: <strong className="text-[#171717]">قيد الطباعة</strong>).</ListItem>
+            <ListItem accent="gold">يحق للعميل طلب استبدال أو إعادة طباعة المنتجات <strong className="text-[#171717]">فقط</strong> في حال وجود عيب مصنعي واضح (مثل تلف الورق، أو أخطاء فادحة في جودة الطباعة من طرف المنصة).</ListItem>
+            <ListItem accent="gold">يجب الإبلاغ عن العيب خلال مدة أقصاها <strong className="text-[#171717]">(3) أيام</strong> من تاريخ الاستلام.</ListItem>
           </ul>
         </Section>
 
         {/* 10. إخلاء المسؤولية */}
         <Section id="disclaimer" icon={AlertCircle} title="إخلاء المسؤولية" number="10" accent="gold">
-          <div className="mt-4 space-y-3 text-sm md:text-base text-[#4A4A4A]/80 leading-relaxed">
+          <div className="mt-4 space-y-3 text-sm md:text-base text-[#171717]/80 leading-relaxed">
             <p>نحرص في (لحظة فن) على استخدام أحدث تقنيات الطباعة وأجود أنواع الورق لضمان أفضل نتيجة لصوركم. ومع ذلك، نود التنويه إلى أنه من الطبيعي جداً وجود اختلاف طفيف في درجات الألوان بين ما تراه على شاشة جوالك، وبين الصورة المطبوعة على الورق.</p>
-            <p className="font-bold text-[#4A4A4A]">السبب العلمي والتقني لهذا الاختلاف:</p>
-            <p>📱 <strong className="text-[#4A4A4A]">شاشات الأجهزة (نظام RGB):</strong> تعتمد شاشات الجوالات والكمبيوترات على (الضوء المنبعث) وتستخدم نظام الألوان (الأحمر، الأخضر، الأزرق - RGB)، مما يجعل الألوان تبدو مضيئة ومشرقة جداً.</p>
-            <p>🖨️ <strong className="text-[#4A4A4A]">الطباعة على الورق (نظام CMYK):</strong> تعتمد الطابعات على الحبر (الضوء المنعكس) وتستخدم نظام (السماوي، الأرجواني، الأصفر، الأسود - CMYK). ونظراً لطبيعة الورق وامتصاصه للحبر، قد تبدو الألوان أهدأ قليلاً أو أغمق بنسبة بسيطة مقارنة بتوهج الشاشة.</p>
+            <p className="font-bold text-[#171717]">السبب العلمي والتقني لهذا الاختلاف:</p>
+            <p>📱 <strong className="text-[#171717]">شاشات الأجهزة (نظام RGB):</strong> تعتمد شاشات الجوالات والكمبيوترات على (الضوء المنبعث) وتستخدم نظام الألوان (الأحمر، الأخضر، الأزرق - RGB)، مما يجعل الألوان تبدو مضيئة ومشرقة جداً.</p>
+            <p>🖨️ <strong className="text-[#171717]">الطباعة على الورق (نظام CMYK):</strong> تعتمد الطابعات على الحبر (الضوء المنعكس) وتستخدم نظام (السماوي، الأرجواني، الأصفر، الأسود - CMYK). ونظراً لطبيعة الورق وامتصاصه للحبر، قد تبدو الألوان أهدأ قليلاً أو أغمق بنسبة بسيطة مقارنة بتوهج الشاشة.</p>
             <p>لذلك، هذا الاختلاف التقني هو معيار طبيعي وعالمي في مجال الطباعة، ولا يُعد عيباً مصنعياً أو خطأً في جودة الطباعة من طرف المنصة.</p>
             <p>المنصة غير مسؤولة نهائياً عن ضعف جودة الطباعة أو البكسلة (Pixilation) إذا كانت الصور المرسلة من قِبل العميل ذات دقة أو جودة منخفضة أساساً.</p>
           </div>
@@ -340,47 +340,47 @@ export default function PrivacyPage() {
 
         {/* ── فاصل: أحكام عامة ───────────────────────────────────────── */}
         <div className="flex items-center gap-3 pt-4 pb-1">
-          <div className="w-1 h-8 rounded-full bg-gradient-to-b from-[#4A4A4A] to-[#C5A059]"></div>
-          <h2 className="text-xl md:text-2xl font-black text-[#4A4A4A]">ثالثاً: أحكام عامة والاختصاص القضائي</h2>
+          <div className="w-1 h-8 rounded-full bg-gradient-to-b from-[#171717] to-[#C6A56B]"></div>
+          <h2 className="text-xl md:text-2xl font-black text-[#171717]">ثالثاً: أحكام عامة والاختصاص القضائي</h2>
         </div>
 
         {/* 11. أحكام عامة */}
         <Section id="general-terms" icon={Scale} title="أحكام عامة والاختصاص القضائي" number="11" accent="pink">
           <div className="mt-4 space-y-4">
 
-            <div className="p-4 bg-[#F8F5F2] rounded-2xl border border-[#4A4A4A]/8">
-              <h4 className="font-bold text-[#4A4A4A] text-sm mb-1.5 flex items-center gap-2">
-                <CheckCircle size={14} className="text-[#D9A3AA]" /> تحديث السياسات
+            <div className="p-4 bg-[#FAF9F7] rounded-2xl border border-[#171717]/8">
+              <h4 className="font-bold text-[#171717] text-sm mb-1.5 flex items-center gap-2">
+                <CheckCircle size={14} className="text-[#E8B4BC]" /> تحديث السياسات
               </h4>
-              <p className="text-sm text-[#4A4A4A]/70 leading-relaxed">يحق لـ "لحظة فن" تحديث سياسة الخصوصية وشروط الاستخدام هذه عند الحاجة، ويُعتبر استمرار استخدام العميل للخدمات بعد التحديث موافقة عليها.</p>
+              <p className="text-sm text-[#171717]/70 leading-relaxed">يحق لـ "لحظة فن" تحديث سياسة الخصوصية وشروط الاستخدام هذه عند الحاجة، ويُعتبر استمرار استخدام العميل للخدمات بعد التحديث موافقة عليها.</p>
             </div>
 
-            <div className="p-4 bg-[#F8F5F2] rounded-2xl border border-[#4A4A4A]/8">
-              <h4 className="font-bold text-[#4A4A4A] text-sm mb-1.5 flex items-center gap-2">
-                <CheckCircle size={14} className="text-[#D9A3AA]" /> القانون المطبق
+            <div className="p-4 bg-[#FAF9F7] rounded-2xl border border-[#171717]/8">
+              <h4 className="font-bold text-[#171717] text-sm mb-1.5 flex items-center gap-2">
+                <CheckCircle size={14} className="text-[#E8B4BC]" /> القانون المطبق
               </h4>
-              <p className="text-sm text-[#4A4A4A]/70 leading-relaxed">تخضع هذه الشروط والسياسات وتُفسَّر وفقاً للأنظمة المعمول بها في المملكة العربية السعودية.</p>
+              <p className="text-sm text-[#171717]/70 leading-relaxed">تخضع هذه الشروط والسياسات وتُفسَّر وفقاً للأنظمة المعمول بها في المملكة العربية السعودية.</p>
             </div>
 
-            <div className="p-4 bg-[#F8F5F2] rounded-2xl border border-[#4A4A4A]/8">
-              <h4 className="font-bold text-[#4A4A4A] text-sm mb-1.5 flex items-center gap-2">
-                <CheckCircle size={14} className="text-[#D9A3AA]" /> الاختصاص القضائي
+            <div className="p-4 bg-[#FAF9F7] rounded-2xl border border-[#171717]/8">
+              <h4 className="font-bold text-[#171717] text-sm mb-1.5 flex items-center gap-2">
+                <CheckCircle size={14} className="text-[#E8B4BC]" /> الاختصاص القضائي
               </h4>
-              <p className="text-sm text-[#4A4A4A]/70 leading-relaxed">في حال نشوء أي نزاع يتعلق بهذه الشروط أو باستخدام خدماتنا، يتم حله ودياً أولاً، وإذا تعذر ذلك يكون الاختصاص الحصري <strong className="text-[#4A4A4A]">للمحاكم المختصة في المنطقة الشرقية (الأحساء)</strong>، المملكة العربية السعودية.</p>
+              <p className="text-sm text-[#171717]/70 leading-relaxed">في حال نشوء أي نزاع يتعلق بهذه الشروط أو باستخدام خدماتنا، يتم حله ودياً أولاً، وإذا تعذر ذلك يكون الاختصاص الحصري <strong className="text-[#171717]">للمحاكم المختصة في المنطقة الشرقية (الأحساء)</strong>، المملكة العربية السعودية.</p>
             </div>
 
           </div>
         </Section>
 
         {/* ═══ بطاقة التواصل ════════════════════════════════════════════════════ */}
-        <div className="bg-gradient-to-br from-[#4A4A4A] to-[#3a3a3a] text-white rounded-3xl p-8 md:p-10 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-[#D9A3AA]/10 rounded-full blur-3xl -translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
-          <div className="absolute bottom-0 right-0 w-56 h-56 bg-[#C5A059]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
+        <div className="bg-gradient-to-br from-[#171717] to-[#3a3a3a] text-white rounded-3xl p-8 md:p-10 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-[#E8B4BC]/10 rounded-full blur-3xl -translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
+          <div className="absolute bottom-0 right-0 w-56 h-56 bg-[#C6A56B]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
 
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-2xl bg-[#D9A3AA]/20 flex items-center justify-center">
-                <Phone size={20} className="text-[#D9A3AA]" />
+              <div className="w-10 h-10 rounded-2xl bg-[#E8B4BC]/20 flex items-center justify-center">
+                <Phone size={20} className="text-[#E8B4BC]" />
               </div>
               <h3 className="text-xl font-black">معلومات التواصل المباشر</h3>
             </div>
@@ -391,10 +391,10 @@ export default function PrivacyPage() {
                 href="mailto:art.moment26@gmail.com"
                 className="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-colors group"
               >
-                <Mail size={20} className="text-[#D9A3AA] shrink-0" />
+                <Mail size={20} className="text-[#E8B4BC] shrink-0" />
                 <div>
                   <p className="text-[10px] text-white/40 font-bold uppercase tracking-wide">البريد الإلكتروني</p>
-                  <p className="text-sm font-bold group-hover:text-[#D9A3AA] transition-colors">art.moment26@gmail.com</p>
+                  <p className="text-sm font-bold group-hover:text-[#E8B4BC] transition-colors">art.moment26@gmail.com</p>
                 </div>
               </a>
 
@@ -404,15 +404,15 @@ export default function PrivacyPage() {
                 rel="noreferrer"
                 className="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-colors group"
               >
-                <Phone size={20} className="text-[#C5A059] shrink-0" />
+                <Phone size={20} className="text-[#C6A56B] shrink-0" />
                 <div>
                   <p className="text-[10px] text-white/40 font-bold uppercase tracking-wide">واتساب</p>
-                  <p className="text-sm font-bold group-hover:text-[#C5A059] transition-colors">0560301744</p>
+                  <p className="text-sm font-bold group-hover:text-[#C6A56B] transition-colors">0560301744</p>
                 </div>
               </a>
 
               <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-                <MapPin size={20} className="text-[#D9A3AA] shrink-0" />
+                <MapPin size={20} className="text-[#E8B4BC] shrink-0" />
                 <div>
                   <p className="text-[10px] text-white/40 font-bold uppercase tracking-wide">الموقع</p>
                   <p className="text-sm font-bold">المملكة العربية السعودية، الأحساء</p>
@@ -425,7 +425,7 @@ export default function PrivacyPage() {
       </main>
 
       {/* ═══ تذييل الصفحة ══════════════════════════════════════════════════════ */}
-      <footer className="bg-[#4A4A4A] text-white py-10 text-center mt-10">
+      <footer className="bg-[#171717] text-white py-10 text-center mt-10">
         <div className="art-shell">
           <div className="bg-white/80 backdrop-blur-sm w-fit mx-auto p-3 rounded-2xl mb-6 border border-white/20 shadow-sm">
             <img src={logo} alt="Art Moment" className="h-12 w-auto object-contain" />
@@ -433,7 +433,7 @@ export default function PrivacyPage() {
           <p className="text-xs text-white/40 mb-4">
             © 2026 Art Moment — لحظة فن. جميع الحقوق محفوظة.
           </p>
-          <Link to="/" className="text-xs text-[#D9A3AA] hover:text-[#C5A059] transition-colors font-bold">
+          <Link to="/" className="text-xs text-[#E8B4BC] hover:text-[#C6A56B] transition-colors font-bold">
             ← العودة إلى الصفحة الرئيسية
           </Link>
         </div>

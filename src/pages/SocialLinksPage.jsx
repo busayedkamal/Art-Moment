@@ -102,12 +102,12 @@ export default function SocialLinksPage() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#F8F5F2] text-[#393737] font-['Tajawal']">
-      <header className="h-20 border-b border-[#D9A3AA]/20 bg-white/90">
+    <div dir="rtl" className="min-h-screen bg-[#FAF9F7] text-[#393737] font-['Tajawal']">
+      <header className="h-20 border-b border-[#E8B4BC]/20 bg-white/90">
         <div className="h-full w-full px-4 sm:px-7 lg:px-10 flex items-center justify-between">
           <Link
             to="/"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#D9A3AA]/25 bg-white text-[#4A4A4A] transition-colors hover:border-[#C5A059] hover:text-[#C5A059]"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#E8B4BC]/25 bg-white text-[#171717] transition-colors hover:border-[#C6A56B] hover:text-[#C6A56B]"
             aria-label="العودة إلى الصفحة الرئيسية"
           >
             <House size={19} />
@@ -116,7 +116,7 @@ export default function SocialLinksPage() {
           <Link to="/" className="flex items-center gap-3" aria-label="لحظة فن">
             <div className="text-left leading-tight">
               <p className="text-lg font-black">لحظة فن</p>
-              <p dir="ltr" className="text-[10px] font-bold tracking-[0.16em] text-[#C5A059]">
+              <p dir="ltr" className="text-[10px] font-bold tracking-[0.16em] text-[#C6A56B]">
                 ART MOMENT
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function SocialLinksPage() {
           <button
             type="button"
             onClick={sharePage}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#D9A3AA]/25 bg-white text-[#4A4A4A] transition-colors hover:border-[#D9A3AA] hover:text-[#D9A3AA]"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#E8B4BC]/25 bg-white text-[#171717] transition-colors hover:border-[#E8B4BC] hover:text-[#E8B4BC]"
             aria-label={copied ? 'تم نسخ رابط الصفحة' : 'مشاركة الصفحة'}
           >
             {copied ? <Check size={19} /> : <Share2 size={19} />}
@@ -141,9 +141,9 @@ export default function SocialLinksPage() {
             alt="شعار لحظة فن"
             className="mx-auto h-24 w-24 object-contain sm:h-28 sm:w-28"
           />
-          <p className="mt-4 text-xs font-black text-[#C5A059]">الحسابات الرسمية</p>
+          <p className="mt-4 text-xs font-black text-[#C6A56B]">الحسابات الرسمية</p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">لحظة فن في مكان واحد</h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[#4A4A4A]/65 sm:text-base">
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[#171717]/65 sm:text-base">
             تابعي جديد الطباعة والمنتجات، وتواصلي معنا مباشرة عبر حساباتنا الرسمية.
           </p>
         </section>
@@ -158,7 +158,7 @@ export default function SocialLinksPage() {
               href={social.url}
               target={social.url.startsWith('mailto:') ? '_self' : '_blank'}
               rel="noopener noreferrer"
-              className="group flex min-h-24 items-center gap-4 rounded-lg border border-[#D9A3AA]/20 bg-white p-4 shadow-[0_8px_26px_rgba(57,55,55,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#C5A059]/55 hover:shadow-[0_14px_34px_rgba(57,55,55,0.10)] focus:outline-none focus:ring-4 focus:ring-[#D9A3AA]/20"
+              className="group flex min-h-24 items-center gap-4 rounded-lg border border-[#E8B4BC]/20 bg-white p-4 shadow-[0_8px_26px_rgba(57,55,55,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#C6A56B]/55 hover:shadow-[0_14px_34px_rgba(57,55,55,0.10)] focus:outline-none focus:ring-4 focus:ring-[#E8B4BC]/20"
             >
               <span
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg"
@@ -175,17 +175,17 @@ export default function SocialLinksPage() {
                     style={{ backgroundColor: social.color }}
                   />
                 </span>
-                <span dir="ltr" className="mt-1 block truncate text-left text-xs font-bold text-[#4A4A4A]/75">
+                <span dir="ltr" className="mt-1 block truncate text-left text-xs font-bold text-[#171717]/75">
                   {social.account}
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-[#4A4A4A]/55">
+                <span className="mt-1 block text-xs leading-5 text-[#171717]/55">
                   {social.description}
                 </span>
               </span>
 
               <ExternalLink
                 size={18}
-                className="shrink-0 text-[#4A4A4A]/30 transition-colors group-hover:text-[#C5A059]"
+                className="shrink-0 text-[#171717]/30 transition-colors group-hover:text-[#C6A56B]"
               />
             </a>
           ))}
@@ -194,14 +194,14 @@ export default function SocialLinksPage() {
         <section className="mt-7 grid grid-cols-2 gap-3">
           <Link
             to="/store"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#4A4A4A] px-4 text-sm font-black text-white transition-colors hover:bg-[#393737]"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#171717] px-4 text-sm font-black text-white transition-colors hover:bg-[#393737]"
           >
             <ShoppingBag size={18} />
             المتجر
           </Link>
           <Link
             to="/"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#D9A3AA]/30 bg-white px-4 text-sm font-black text-[#4A4A4A] transition-colors hover:border-[#C5A059]"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#E8B4BC]/30 bg-white px-4 text-sm font-black text-[#171717] transition-colors hover:border-[#C6A56B]"
           >
             الصفحة الرئيسية
             <ArrowLeft size={18} />
@@ -218,7 +218,7 @@ export default function SocialLinksPage() {
         </button>
       </main>
 
-      <footer className="border-t border-[#D9A3AA]/15 px-4 py-6 text-center text-xs font-bold text-[#4A4A4A]/45">
+      <footer className="border-t border-[#E8B4BC]/15 px-4 py-6 text-center text-xs font-bold text-[#171717]/45">
         جميع الحقوق محفوظة للحظة فن © {new Date().getFullYear()}
       </footer>
     </div>

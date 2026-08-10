@@ -44,8 +44,8 @@ const Layout = lazy(() => import('./components/layout/Layout.jsx'))
 
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F5F2]">
-      <div className="w-9 h-9 border-4 border-[#D9A3AA]/25 border-t-[#D9A3AA] rounded-full animate-spin" />
+    <div className="min-h-screen flex items-center justify-center bg-[#FAF9F7]">
+      <div className="w-9 h-9 border-4 border-[#E8B4BC]/25 border-t-[#E8B4BC] rounded-full animate-spin" />
     </div>
   )
 }
@@ -54,7 +54,7 @@ function PageLoader() {
 function ProtectedRoute({ children }) {
   const { session, loading } = useAuth()
   
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8F5F2]"><div className="w-8 h-8 border-4 border-[#D9A3AA]/30 border-t-[#D9A3AA] rounded-full animate-spin"></div></div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#FAF9F7]"><div className="w-8 h-8 border-4 border-[#E8B4BC]/30 border-t-[#E8B4BC] rounded-full animate-spin"></div></div>
   
   if (!session) {
     return <Navigate to="/admin/login" replace />

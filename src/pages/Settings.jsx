@@ -67,15 +67,15 @@ function parseVariables(value) {
 
 function OperationRuleField({ icon, label, description, unit, value, onChange, min, max, step = 1 }) {
   return (
-    <label className="grid gap-3 border-b border-[#D9A3AA]/10 py-4 last:border-b-0 sm:grid-cols-[44px_1fr_140px] sm:items-center">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F8F5F2] text-[#C5A059]">
+    <label className="grid gap-3 border-b border-[#E8B4BC]/10 py-4 last:border-b-0 sm:grid-cols-[44px_1fr_140px] sm:items-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FAF9F7] text-[#C6A56B]">
         {React.createElement(icon, { size: 19 })}
       </span>
       <span>
-        <span className="block text-sm font-black text-[#4A4A4A]">{label}</span>
-        <span className="mt-1 block text-xs leading-5 text-[#4A4A4A]/50">{description}</span>
+        <span className="block text-sm font-black text-[#171717]">{label}</span>
+        <span className="mt-1 block text-xs leading-5 text-[#171717]/50">{description}</span>
       </span>
-      <span className="flex h-11 items-center overflow-hidden rounded-xl border border-[#D9A3AA]/20 bg-[#F8F5F2] focus-within:border-[#C5A059]">
+      <span className="flex h-11 items-center overflow-hidden rounded-xl border border-[#E8B4BC]/20 bg-[#FAF9F7] focus-within:border-[#C6A56B]">
         <input
           type="number"
           min={min}
@@ -86,7 +86,7 @@ function OperationRuleField({ icon, label, description, unit, value, onChange, m
           className="h-full min-w-0 flex-1 bg-transparent px-3 text-center text-sm font-black outline-none"
           dir="ltr"
         />
-        <span className="border-r border-[#D9A3AA]/15 px-3 text-[11px] font-bold text-[#4A4A4A]/45">{unit}</span>
+        <span className="border-r border-[#E8B4BC]/15 px-3 text-[11px] font-bold text-[#171717]/45">{unit}</span>
       </span>
     </label>
   );
@@ -385,59 +385,59 @@ export default function Settings() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-32">
-      <Loader2 className="animate-spin text-[#D9A3AA] mb-4" size={36}/>
-      <p className="text-sm text-[#4A4A4A]/50 font-medium">جاري التحميل...</p>
+      <Loader2 className="animate-spin text-[#E8B4BC] mb-4" size={36}/>
+      <p className="text-sm text-[#171717]/50 font-medium">جاري التحميل...</p>
     </div>
   );
 
   return (
-    <div className="w-full space-y-8 pb-10 text-[#4A4A4A]">
+    <div className="w-full space-y-8 pb-10 text-[#171717]">
 
       <div className="flex items-center gap-3 pt-1">
-        <div className="p-3 bg-[#4A4A4A] text-white rounded-xl shadow-lg shadow-[#4A4A4A]/20">
+        <div className="p-3 bg-[#171717] text-white rounded-xl shadow-lg shadow-[#171717]/20">
           <SettingsIcon size={22}/>
         </div>
         <div>
-          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">الإعدادات العامة</h1>
-          <p className="text-sm text-[#4A4A4A]/50">التحكم في قواعد التشغيل، الأسعار، المخزون، الرسائل، وأكواد الخصم</p>
+          <h1 className="text-2xl font-black text-[#171717] tracking-tight">الإعدادات العامة</h1>
+          <p className="text-sm text-[#171717]/50">التحكم في قواعد التشغيل، الأسعار، المخزون، الرسائل، وأكواد الخصم</p>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 items-start">
         
         {/* 1. قسم الأسعار وواتساب */}
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm space-y-6">
-          <h3 className="font-bold text-[#4A4A4A] mb-2 flex items-center gap-2">💰 تسعير وخدمات</h3>
+        <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm space-y-6">
+          <h3 className="font-bold text-[#171717] mb-2 flex items-center gap-2">💰 تسعير وخدمات</h3>
           
           <form onSubmit={handleSavePrices} className="space-y-6">
             
             {/* الأسعار الأساسية */}
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">سعر طباعة A4</label>
-                <input type="number" step="0.5" value={prices.a4_price} onChange={e => setPrices({...prices, a4_price: e.target.value})} className="w-full bg-[#F8F5F2] border rounded-xl px-4 py-2"/>
+                <label className="text-xs font-bold text-[#171717]/60 block mb-1">سعر طباعة A4</label>
+                <input type="number" step="0.5" value={prices.a4_price} onChange={e => setPrices({...prices, a4_price: e.target.value})} className="w-full bg-[#FAF9F7] border rounded-xl px-4 py-2"/>
               </div>
               <div>
-                <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">سعر طباعة 4x6 (الأساسي)</label>
-                <input type="number" step="0.5" value={prices.photo_4x6_price} onChange={e => setPrices({...prices, photo_4x6_price: e.target.value})} className="w-full bg-[#F8F5F2] border rounded-xl px-4 py-2"/>
+                <label className="text-xs font-bold text-[#171717]/60 block mb-1">سعر طباعة 4x6 (الأساسي)</label>
+                <input type="number" step="0.5" value={prices.photo_4x6_price} onChange={e => setPrices({...prices, photo_4x6_price: e.target.value})} className="w-full bg-[#FAF9F7] border rounded-xl px-4 py-2"/>
               </div>
               <div>
-                <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">سعر التوصيل الافتراضي</label>
-                <input type="number" value={prices.delivery_fee_default} onChange={e => setPrices({...prices, delivery_fee_default: e.target.value})} className="w-full bg-[#F8F5F2] border rounded-xl px-4 py-2"/>
+                <label className="text-xs font-bold text-[#171717]/60 block mb-1">سعر التوصيل الافتراضي</label>
+                <input type="number" value={prices.delivery_fee_default} onChange={e => setPrices({...prices, delivery_fee_default: e.target.value})} className="w-full bg-[#FAF9F7] border rounded-xl px-4 py-2"/>
               </div>
             </div>
 
-            <hr className="border-[#D9A3AA]/15" />
+            <hr className="border-[#E8B4BC]/15" />
 
             {/* قسم واتساب الجديد */}
             <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <MessageCircle size={18} className="text-emerald-600"/>
-                  <span className="font-bold text-[#4A4A4A] text-sm">ربط واتساب (API)</span>
+                  <span className="font-bold text-[#171717] text-sm">ربط واتساب (API)</span>
                 </div>
                 <button type="button" onClick={() => setPrices({...prices, whatsapp_enabled: !prices.whatsapp_enabled})} className="text-emerald-600 hover:text-emerald-700">
-                  {prices.whatsapp_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-[#4A4A4A]/50"/>}
+                  {prices.whatsapp_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-[#171717]/50"/>}
                 </button>
               </div>
               
@@ -460,14 +460,14 @@ export default function Settings() {
             </div>
 
             {/* قسم التسعير الديناميكي */}
-            <div className="bg-[#D9A3AA]/10 p-4 rounded-xl border border-[#D9A3AA]/20">
+            <div className="bg-[#E8B4BC]/10 p-4 rounded-xl border border-[#E8B4BC]/20">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Calculator size={18} className="text-[#D9A3AA]"/>
-                  <span className="font-bold text-[#4A4A4A] text-sm">التسعير الذكي (الكميات)</span>
+                  <Calculator size={18} className="text-[#E8B4BC]"/>
+                  <span className="font-bold text-[#171717] text-sm">التسعير الذكي (الكميات)</span>
                 </div>
-                <button type="button" onClick={toggleDynamicPricing} className="text-[#D9A3AA] hover:text-[#C5A059]">
-                  {prices.is_dynamic_pricing_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-[#4A4A4A]/50"/>}
+                <button type="button" onClick={toggleDynamicPricing} className="text-[#E8B4BC] hover:text-[#C6A56B]">
+                  {prices.is_dynamic_pricing_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-[#171717]/50"/>}
                 </button>
               </div>
 
@@ -475,56 +475,56 @@ export default function Settings() {
                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="space-y-1">
-                      <label className="font-bold text-[#4A4A4A]/60">من 1 إلى</label>
+                      <label className="font-bold text-[#171717]/60">من 1 إلى</label>
                       <input type="number" value={prices.tier_1_limit} onChange={e => setPrices({...prices, tier_1_limit: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center"/>
                     </div>
                     <div className="space-y-1">
-                      <label className="font-bold text-[#4A4A4A]/60">السعر (ريال)</label>
-                      <input type="number" step="0.1" value={prices.tier_1_price} onChange={e => setPrices({...prices, tier_1_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#D9A3AA]"/>
+                      <label className="font-bold text-[#171717]/60">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_1_price} onChange={e => setPrices({...prices, tier_1_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#E8B4BC]"/>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="space-y-1">
-                      <label className="font-bold text-[#4A4A4A]/60">من {Number(prices.tier_1_limit) + 1} إلى</label>
+                      <label className="font-bold text-[#171717]/60">من {Number(prices.tier_1_limit) + 1} إلى</label>
                       <input type="number" value={prices.tier_2_limit} onChange={e => setPrices({...prices, tier_2_limit: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center"/>
                     </div>
                     <div className="space-y-1">
-                      <label className="font-bold text-[#4A4A4A]/60">السعر (ريال)</label>
-                      <input type="number" step="0.1" value={prices.tier_2_price} onChange={e => setPrices({...prices, tier_2_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#D9A3AA]"/>
+                      <label className="font-bold text-[#171717]/60">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_2_price} onChange={e => setPrices({...prices, tier_2_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#E8B4BC]"/>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="space-y-1 flex items-center h-full pt-4">
-                      <span className="font-bold text-[#4A4A4A]/80">أكثر من {prices.tier_2_limit} صورة</span>
+                      <span className="font-bold text-[#171717]/80">أكثر من {prices.tier_2_limit} صورة</span>
                     </div>
                     <div className="space-y-1">
-                      <label className="font-bold text-[#4A4A4A]/60">السعر (ريال)</label>
-                      <input type="number" step="0.1" value={prices.tier_3_price} onChange={e => setPrices({...prices, tier_3_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#D9A3AA]"/>
+                      <label className="font-bold text-[#171717]/60">السعر (ريال)</label>
+                      <input type="number" step="0.1" value={prices.tier_3_price} onChange={e => setPrices({...prices, tier_3_price: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-center font-bold text-[#E8B4BC]"/>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            <button type="submit" className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#4A4A4A]/90 flex justify-center gap-2">
+            <button type="submit" className="w-full bg-[#171717] text-white py-3 rounded-xl font-bold hover:bg-[#171717]/90 flex justify-center gap-2">
               <Save size={18}/> حفظ التغييرات
             </button>
           </form>
         </div>
 
         {/* 2. قسم المخزون */}
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
-          <h3 className="font-bold text-[#4A4A4A] mb-4 flex items-center gap-2"><Package className="text-[#C5A059]"/> إدارة المخزون</h3>
+        <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">
+          <h3 className="font-bold text-[#171717] mb-4 flex items-center gap-2"><Package className="text-[#C6A56B]"/> إدارة المخزون</h3>
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
             {inventory.length === 0 ? (
-              <p className="text-center text-[#4A4A4A]/50 py-4">لا توجد مواد في المخزون</p>
+              <p className="text-center text-[#171717]/50 py-4">لا توجد مواد في المخزون</p>
             ) : (
               inventory.map((item) => (
-                <div key={item.id} className="p-3 border border-[#D9A3AA]/15 rounded-xl bg-[#F8F5F2]/50">
+                <div key={item.id} className="p-3 border border-[#E8B4BC]/15 rounded-xl bg-[#FAF9F7]/50">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-[#4A4A4A]/80">{item.item_name}</span>
+                    <span className="font-bold text-[#171717]/80">{item.item_name}</span>
                     {item.quantity <= item.threshold && (
                       <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold animate-pulse">
                         <AlertTriangle size={10}/> منخفض
@@ -533,21 +533,21 @@ export default function Settings() {
                   </div>
                   <div className="flex gap-2">
                     <div className="flex-1">
-                      <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الكمية الحالية</label>
+                      <label className="text-[10px] text-[#171717]/50 block mb-1">الكمية الحالية</label>
                       <input 
                         type="number" 
                         value={item.quantity} 
                         onChange={(e) => handleUpdateStock(item.id, 'quantity', e.target.value)}
-                        className={`w-full border rounded-lg px-2 py-1.5 text-center font-bold outline-none focus:ring-2 ${item.quantity <= item.threshold ? 'border-red-300 text-red-600 bg-red-50' : 'border-[#D9A3AA]/25'}`}
+                        className={`w-full border rounded-lg px-2 py-1.5 text-center font-bold outline-none focus:ring-2 ${item.quantity <= item.threshold ? 'border-red-300 text-red-600 bg-red-50' : 'border-[#E8B4BC]/25'}`}
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">حد التنبيه</label>
+                      <label className="text-[10px] text-[#171717]/50 block mb-1">حد التنبيه</label>
                       <input 
                         type="number" 
                         value={item.threshold} 
                         onChange={(e) => handleUpdateStock(item.id, 'threshold', e.target.value)}
-                        className="w-full border border-[#D9A3AA]/25 rounded-lg px-2 py-1.5 text-center bg-white outline-none focus:border-[#C5A059]"
+                        className="w-full border border-[#E8B4BC]/25 rounded-lg px-2 py-1.5 text-center bg-white outline-none focus:border-[#C6A56B]"
                       />
                     </div>
                   </div>
@@ -558,20 +558,20 @@ export default function Settings() {
         </div>
 
         {/* 3. قواعد التشغيل */}
-        <form onSubmit={handleSaveOperationRules} className="md:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-[#D9A3AA]/15 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <form onSubmit={handleSaveOperationRules} className="md:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-[#E8B4BC]/15 pb-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="flex items-center gap-2 font-black text-[#4A4A4A]">
-                <Clock3 size={20} className="text-[#C5A059]" /> قواعد التشغيل
+              <h3 className="flex items-center gap-2 font-black text-[#171717]">
+                <Clock3 size={20} className="text-[#C6A56B]" /> قواعد التشغيل
               </h3>
-              <p className="mt-1 text-xs leading-5 text-[#4A4A4A]/50">
+              <p className="mt-1 text-xs leading-5 text-[#171717]/50">
                 تحدد متى يظهر التنبيه، ومتى تتحول المهمة المتأخرة إلى عاجلة، وما الحدود المسموحة للعميل والإدارة.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setOperationRules(DEFAULT_OPERATION_RULES)}
-              className="shrink-0 text-xs font-black text-[#4A4A4A]/55 hover:text-[#C5A059]"
+              className="shrink-0 text-xs font-black text-[#171717]/55 hover:text-[#C6A56B]"
             >
               استعادة القيم الافتراضية
             </button>
@@ -640,27 +640,27 @@ export default function Settings() {
             />
           </div>
 
-          <div className="mt-5 flex flex-col gap-4 border-t border-[#D9A3AA]/15 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-5 flex flex-col gap-4 border-t border-[#E8B4BC]/15 pt-5 sm:flex-row sm:items-center sm:justify-between">
             <label className="flex items-center justify-between gap-4 sm:justify-start">
               <button
                 type="button"
                 onClick={() => updateOperationRule('overdueTasksUrgent', !operationRules.overdueTasksUrgent)}
-                className="text-[#D9A3AA]"
+                className="text-[#E8B4BC]"
                 aria-label="تبديل تصعيد المهام المتأخرة"
               >
                 {operationRules.overdueTasksUrgent
                   ? <ToggleRight size={34} />
-                  : <ToggleLeft size={34} className="text-[#4A4A4A]/35" />}
+                  : <ToggleLeft size={34} className="text-[#171717]/35" />}
               </button>
               <span>
                 <span className="block text-sm font-black">إظهار المهام المتجاوزة للمهلة كعاجلة</span>
-                <span className="mt-1 block text-xs text-[#4A4A4A]/45">ينعكس مباشرة على عدّاد المهام العاجلة والتنبيه في الرئيسية.</span>
+                <span className="mt-1 block text-xs text-[#171717]/45">ينعكس مباشرة على عدّاد المهام العاجلة والتنبيه في الرئيسية.</span>
               </span>
             </label>
             <button
               type="submit"
               disabled={savingOperationRules}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-6 text-sm font-black text-white hover:bg-[#C5A059] disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#171717] px-6 text-sm font-black text-white hover:bg-[#C6A56B] disabled:opacity-60"
             >
               {savingOperationRules ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
               حفظ قواعد التشغيل
@@ -669,13 +669,13 @@ export default function Settings() {
         </form>
 
         {/* 4. نظام المكافآت */}
-        <form onSubmit={handleSaveRewardRules} className="md:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-[#D9A3AA]/15 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <form onSubmit={handleSaveRewardRules} className="md:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-[#E8B4BC]/15 pb-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="flex items-center gap-2 font-black text-[#4A4A4A]">
-                <Award size={20} className="text-[#C5A059]" /> نظام المكافآت والنقاط
+              <h3 className="flex items-center gap-2 font-black text-[#171717]">
+                <Award size={20} className="text-[#C6A56B]" /> نظام المكافآت والنقاط
               </h3>
-              <p className="mt-1 text-xs leading-5 text-[#4A4A4A]/50">
+              <p className="mt-1 text-xs leading-5 text-[#171717]/50">
                 نقطتان لكل ريال مدفوع، وكل 100 نقطة تساوي ريالاً واحداً، وتنتهي كل دفعة نقاط بعد 4 أشهر.
               </p>
             </div>
@@ -686,7 +686,7 @@ export default function Settings() {
               <button
                 type="button"
                 onClick={() => setRewardRules(DEFAULT_REWARD_RULES)}
-                className="text-xs font-black text-[#4A4A4A]/55 hover:text-[#C5A059]"
+                className="text-xs font-black text-[#171717]/55 hover:text-[#C6A56B]"
               >
                 استعادة القيم الافتراضية
               </button>
@@ -759,27 +759,27 @@ export default function Settings() {
             />
           </div>
 
-          <div className="mt-5 grid gap-4 border-t border-[#D9A3AA]/15 pt-5 sm:grid-cols-2">
-            <label className="flex items-center justify-between gap-4 rounded-xl bg-[#F8F5F2] px-4 py-3">
+          <div className="mt-5 grid gap-4 border-t border-[#E8B4BC]/15 pt-5 sm:grid-cols-2">
+            <label className="flex items-center justify-between gap-4 rounded-xl bg-[#FAF9F7] px-4 py-3">
               <span>
                 <span className="block text-sm font-black">تشغيل برنامج المكافآت</span>
-                <span className="mt-1 block text-xs text-[#4A4A4A]/50">يوقف الكسب والاستبدال الجديد مع إبقاء الأرصدة محفوظة.</span>
+                <span className="mt-1 block text-xs text-[#171717]/50">يوقف الكسب والاستبدال الجديد مع إبقاء الأرصدة محفوظة.</span>
               </span>
               <button type="button" onClick={() => updateRewardRule('enabled', !rewardRules.enabled)} aria-label="تبديل برنامج المكافآت">
                 {rewardRules.enabled
-                  ? <ToggleRight size={34} className="text-[#D9A3AA]" />
-                  : <ToggleLeft size={34} className="text-[#4A4A4A]/35" />}
+                  ? <ToggleRight size={34} className="text-[#E8B4BC]" />
+                  : <ToggleLeft size={34} className="text-[#171717]/35" />}
               </button>
             </label>
-            <label className="flex items-center justify-between gap-4 rounded-xl bg-[#F8F5F2] px-4 py-3">
+            <label className="flex items-center justify-between gap-4 rounded-xl bg-[#FAF9F7] px-4 py-3">
               <span>
                 <span className="block text-sm font-black">مكافأة أول شراء</span>
-                <span className="mt-1 block text-xs text-[#4A4A4A]/50">تمنع المكافأة الحسابات غير النشطة لأنها لا تُضاف قبل اكتمال الطلب.</span>
+                <span className="mt-1 block text-xs text-[#171717]/50">تمنع المكافأة الحسابات غير النشطة لأنها لا تُضاف قبل اكتمال الطلب.</span>
               </span>
               <button type="button" onClick={() => updateRewardRule('signupBonusEnabled', !rewardRules.signupBonusEnabled)} aria-label="تبديل مكافأة أول شراء">
                 {rewardRules.signupBonusEnabled
-                  ? <ToggleRight size={34} className="text-[#D9A3AA]" />
-                  : <ToggleLeft size={34} className="text-[#4A4A4A]/35" />}
+                  ? <ToggleRight size={34} className="text-[#E8B4BC]" />
+                  : <ToggleLeft size={34} className="text-[#171717]/35" />}
               </button>
             </label>
           </div>
@@ -788,7 +788,7 @@ export default function Settings() {
             <button
               type="submit"
               disabled={savingRewardRules}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-6 text-sm font-black text-white hover:bg-[#C5A059] disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#171717] px-6 text-sm font-black text-white hover:bg-[#C6A56B] disabled:opacity-60"
             >
               {savingRewardRules ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
               حفظ نظام المكافآت
@@ -797,12 +797,12 @@ export default function Settings() {
         </form>
 
         {/* 5. قسم أكواد الخصم */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
-          <h3 className="font-bold text-[#4A4A4A] mb-6 flex items-center gap-2"><Tag className="text-[#D9A3AA]"/> أكواد الخصم</h3>
+        <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">
+          <h3 className="font-bold text-[#171717] mb-6 flex items-center gap-2"><Tag className="text-[#E8B4BC]"/> أكواد الخصم</h3>
           
-          <form onSubmit={handleAddCoupon} className="flex flex-col md:flex-row gap-4 mb-8 bg-[#F8F5F2] p-4 rounded-xl border border-[#D9A3AA]/15">
+          <form onSubmit={handleAddCoupon} className="flex flex-col md:flex-row gap-4 mb-8 bg-[#FAF9F7] p-4 rounded-xl border border-[#E8B4BC]/15">
             <div className="flex-1">
-              <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">الكود</label>
+              <label className="text-xs font-bold text-[#171717]/60 block mb-1">الكود</label>
               <input 
                 type="text" 
                 placeholder="مثلاً SALE20" 
@@ -812,7 +812,7 @@ export default function Settings() {
               />
             </div>
             <div className="w-full md:w-40">
-              <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">النوع</label>
+              <label className="text-xs font-bold text-[#171717]/60 block mb-1">النوع</label>
               <select 
                 className="w-full border rounded-xl px-4 py-2 bg-white"
                 value={newCoupon.discount_type}
@@ -823,7 +823,7 @@ export default function Settings() {
               </select>
             </div>
             <div className="w-full md:w-32">
-              <label className="text-xs font-bold text-[#4A4A4A]/60 block mb-1">القيمة</label>
+              <label className="text-xs font-bold text-[#171717]/60 block mb-1">القيمة</label>
               <input 
                 type="number" 
                 placeholder="0" 
@@ -833,7 +833,7 @@ export default function Settings() {
               />
             </div>
             <div className="flex items-end">
-              <button type="submit" className="bg-[#D9A3AA]/100 hover:bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white px-6 py-2 rounded-xl font-bold h-[42px] flex items-center gap-2 w-full md:w-auto justify-center">
+              <button type="submit" className="bg-[#E8B4BC]/100 hover:bg-gradient-to-b from-[#E8B4BC] to-[#C6A56B] text-white px-6 py-2 rounded-xl font-bold h-[42px] flex items-center gap-2 w-full md:w-auto justify-center">
                 <Plus size={18}/> إضافة
               </button>
             </div>
@@ -841,25 +841,25 @@ export default function Settings() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {coupons.length === 0 ? (
-              <p className="col-span-full text-center text-[#4A4A4A]/50 py-4">لا توجد أكواد خصم حالياً</p>
+              <p className="col-span-full text-center text-[#171717]/50 py-4">لا توجد أكواد خصم حالياً</p>
             ) : (
               coupons.map(coupon => (
-                <div key={coupon.id} className={`p-4 rounded-xl border flex justify-between items-center ${coupon.is_active ? 'bg-white border-[#D9A3AA]/20' : 'bg-[#F8F5F2] border-[#D9A3AA]/15 opacity-70'}`}>
+                <div key={coupon.id} className={`p-4 rounded-xl border flex justify-between items-center ${coupon.is_active ? 'bg-white border-[#E8B4BC]/20' : 'bg-[#FAF9F7] border-[#E8B4BC]/15 opacity-70'}`}>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-black text-[#4A4A4A] text-lg">{coupon.code}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${coupon.is_active ? 'bg-[#D9A3AA]/15 text-[#D9A3AA]' : 'bg-[#D9A3AA]/10 text-[#4A4A4A]/60'}`}>
+                      <span className="font-black text-[#171717] text-lg">{coupon.code}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${coupon.is_active ? 'bg-[#E8B4BC]/15 text-[#E8B4BC]' : 'bg-[#E8B4BC]/10 text-[#171717]/60'}`}>
                         {coupon.is_active ? 'نشط' : 'معطل'}
                       </span>
                     </div>
-                    <div className="text-sm text-[#4A4A4A]/60 mt-1 flex items-center gap-1">
-                      خصم: <span className="font-bold text-[#4A4A4A]/80">{coupon.discount_amount}</span> 
+                    <div className="text-sm text-[#171717]/60 mt-1 flex items-center gap-1">
+                      خصم: <span className="font-bold text-[#171717]/80">{coupon.discount_amount}</span>
                       {coupon.discount_type === 'percent' ? <Percent size={12}/> : <RiyalSign size="0.8em" />}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => toggleCouponStatus(coupon.id, coupon.is_active)} className="text-[#4A4A4A]/50 hover:text-[#4A4A4A]/70">
-                      {coupon.is_active ? <ToggleRight size={28} className="text-[#D9A3AA]"/> : <ToggleLeft size={28}/>}
+                    <button onClick={() => toggleCouponStatus(coupon.id, coupon.is_active)} className="text-[#171717]/50 hover:text-[#171717]/70">
+                      {coupon.is_active ? <ToggleRight size={28} className="text-[#E8B4BC]"/> : <ToggleLeft size={28}/>}
                     </button>
                     <button onClick={() => deleteCoupon(coupon.id)} className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg">
                       <Trash2 size={18}/>
@@ -872,37 +872,37 @@ export default function Settings() {
         </div>
 
         {/* 5. قوالب الرسائل */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
+        <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
             <div>
-              <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
-                <FileText className="text-[#C5A059]" /> قوالب رسائل العملاء
+              <h3 className="font-bold text-[#171717] flex items-center gap-2">
+                <FileText className="text-[#C6A56B]" /> قوالب رسائل العملاء
               </h3>
-              <p className="text-xs text-[#4A4A4A]/50 mt-1">
+              <p className="text-xs text-[#171717]/50 mt-1">
                 قوالب موحدة للطلبات، الدفع، الشحن، الاسترجاع، الحساب، والحملات التسويقية.
               </p>
             </div>
             <button
               type="button"
               onClick={resetTemplateForm}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F8F5F2] border border-[#D9A3AA]/20 px-4 py-2 text-xs font-bold hover:bg-[#D9A3AA]/10 transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#FAF9F7] border border-[#E8B4BC]/20 px-4 py-2 text-xs font-bold hover:bg-[#E8B4BC]/10 transition-colors"
             >
               <Plus size={15} /> قالب جديد
             </button>
           </div>
 
           <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6">
-            <form onSubmit={saveTemplate} className="bg-[#F8F5F2] border border-[#D9A3AA]/15 rounded-2xl p-4 space-y-4">
+            <form onSubmit={saveTemplate} className="bg-[#FAF9F7] border border-[#E8B4BC]/15 rounded-2xl p-4 space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <h4 className="font-black text-[#4A4A4A] flex items-center gap-2">
-                  {editingTemplateId ? <Edit3 size={16} className="text-[#D9A3AA]" /> : <Plus size={16} className="text-[#D9A3AA]" />}
+                <h4 className="font-black text-[#171717] flex items-center gap-2">
+                  {editingTemplateId ? <Edit3 size={16} className="text-[#E8B4BC]" /> : <Plus size={16} className="text-[#E8B4BC]" />}
                   {editingTemplateId ? 'تعديل قالب' : 'إضافة قالب'}
                 </h4>
                 {editingTemplateId && (
                   <button
                     type="button"
                     onClick={resetTemplateForm}
-                    className="p-2 rounded-lg text-[#4A4A4A]/45 hover:text-red-500 hover:bg-white transition-colors"
+                    className="p-2 rounded-lg text-[#171717]/45 hover:text-red-500 hover:bg-white transition-colors"
                     title="إلغاء التحرير"
                   >
                     <XCircle size={17} />
@@ -912,30 +912,30 @@ export default function Settings() {
 
               <div className="grid md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">مفتاح القالب</label>
+                  <label className="block text-xs font-bold text-[#171717]/60 mb-1">مفتاح القالب</label>
                   <input
                     value={templateForm.template_key}
                     onChange={(e) => setTemplateForm((current) => ({ ...current, template_key: normalizeTemplateKey(e.target.value) }))}
                     placeholder="payment_reminder"
                     dir="ltr"
-                    className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-[#D9A3AA]"
+                    className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-[#E8B4BC]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">اسم القالب</label>
+                  <label className="block text-xs font-bold text-[#171717]/60 mb-1">اسم القالب</label>
                   <input
                     value={templateForm.name}
                     onChange={(e) => setTemplateForm((current) => ({ ...current, name: e.target.value }))}
                     placeholder="تذكير بالدفع"
-                    className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                    className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#E8B4BC]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">التصنيف</label>
+                  <label className="block text-xs font-bold text-[#171717]/60 mb-1">التصنيف</label>
                   <select
                     value={templateForm.category}
                     onChange={(e) => setTemplateForm((current) => ({ ...current, category: e.target.value }))}
-                    className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                    className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#E8B4BC]"
                   >
                     {templateCategories.map((category) => (
                       <option key={category.value} value={category.value}>{category.label}</option>
@@ -943,11 +943,11 @@ export default function Settings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">القناة</label>
+                  <label className="block text-xs font-bold text-[#171717]/60 mb-1">القناة</label>
                   <select
                     value={templateForm.channel}
                     onChange={(e) => setTemplateForm((current) => ({ ...current, channel: e.target.value }))}
-                    className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                    className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#E8B4BC]"
                   >
                     {Object.entries(channelLabels).map(([value, label]) => (
                       <option key={value} value={value}>{label}</option>
@@ -957,52 +957,52 @@ export default function Settings() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">عنوان البريد</label>
+                <label className="block text-xs font-bold text-[#171717]/60 mb-1">عنوان البريد</label>
                 <input
                   value={templateForm.subject}
                   onChange={(e) => setTemplateForm((current) => ({ ...current, subject: e.target.value }))}
                   placeholder="تم تحديث طلبك #{order_number}"
-                  className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                  className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#E8B4BC]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">نص الرسالة</label>
+                <label className="block text-xs font-bold text-[#171717]/60 mb-1">نص الرسالة</label>
                 <textarea
                   value={templateForm.body}
                   onChange={(e) => setTemplateForm((current) => ({ ...current, body: e.target.value }))}
                   rows={8}
                   placeholder="مرحباً {customer_name}..."
-                  className="w-full resize-none bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-3 text-sm font-bold leading-7 outline-none focus:border-[#D9A3AA]"
+                  className="w-full resize-none bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-3 text-sm font-bold leading-7 outline-none focus:border-[#E8B4BC]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#4A4A4A]/60 mb-1">المتغيرات</label>
+                <label className="block text-xs font-bold text-[#171717]/60 mb-1">المتغيرات</label>
                 <input
                   value={templateForm.variablesText}
                   onChange={(e) => setTemplateForm((current) => ({ ...current, variablesText: e.target.value }))}
                   placeholder="customer_name, order_number, total_amount"
                   dir="ltr"
-                  className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-[#D9A3AA]"
+                  className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-[#E8B4BC]"
                 />
               </div>
 
-              <label className="flex items-center justify-between gap-3 bg-white border border-[#D9A3AA]/15 rounded-xl px-4 py-3">
-                <span className="text-sm font-bold text-[#4A4A4A]">القالب نشط</span>
+              <label className="flex items-center justify-between gap-3 bg-white border border-[#E8B4BC]/15 rounded-xl px-4 py-3">
+                <span className="text-sm font-bold text-[#171717]">القالب نشط</span>
                 <button
                   type="button"
                   onClick={() => setTemplateForm((current) => ({ ...current, is_active: !current.is_active }))}
-                  className="text-[#D9A3AA]"
+                  className="text-[#E8B4BC]"
                 >
-                  {templateForm.is_active ? <ToggleRight size={30} /> : <ToggleLeft size={30} className="text-[#4A4A4A]/40" />}
+                  {templateForm.is_active ? <ToggleRight size={30} /> : <ToggleLeft size={30} className="text-[#171717]/40" />}
                 </button>
               </label>
 
               <button
                 type="submit"
                 disabled={savingTemplate}
-                className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#333] disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full bg-[#171717] text-white py-3 rounded-xl font-bold hover:bg-[#333] disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {savingTemplate ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                 حفظ القالب
@@ -1011,42 +1011,42 @@ export default function Settings() {
 
             <div className="space-y-3 max-h-[660px] overflow-y-auto pr-1 custom-scrollbar">
               {messageTemplates.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[#D9A3AA]/25 bg-[#F8F5F2]/60 p-8 text-center">
-                  <FileText size={30} className="mx-auto mb-3 text-[#D9A3AA]/50" />
-                  <p className="text-sm font-bold text-[#4A4A4A]/55">لا توجد قوالب بعد. شغّل SQL الخاص بالقوالب أو أضف قالباً جديداً.</p>
+                <div className="rounded-2xl border border-dashed border-[#E8B4BC]/25 bg-[#FAF9F7]/60 p-8 text-center">
+                  <FileText size={30} className="mx-auto mb-3 text-[#E8B4BC]/50" />
+                  <p className="text-sm font-bold text-[#171717]/55">لا توجد قوالب بعد. شغّل SQL الخاص بالقوالب أو أضف قالباً جديداً.</p>
                 </div>
               ) : (
                 messageTemplates.map((template) => {
                   const category = templateCategories.find((item) => item.value === template.category);
                   return (
-                    <div key={template.id} className={`rounded-2xl border p-4 transition-colors ${template.is_active ? 'bg-white border-[#D9A3AA]/15' : 'bg-[#F8F5F2] border-[#D9A3AA]/10 opacity-75'}`}>
+                    <div key={template.id} className={`rounded-2xl border p-4 transition-colors ${template.is_active ? 'bg-white border-[#E8B4BC]/15' : 'bg-[#FAF9F7] border-[#E8B4BC]/10 opacity-75'}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h4 className="font-black text-[#4A4A4A]">{template.name}</h4>
-                            <span className="px-2 py-0.5 rounded-lg bg-[#D9A3AA]/10 text-[#D9A3AA] text-[10px] font-black">
+                            <h4 className="font-black text-[#171717]">{template.name}</h4>
+                            <span className="px-2 py-0.5 rounded-lg bg-[#E8B4BC]/10 text-[#E8B4BC] text-[10px] font-black">
                               {category?.label || template.category}
                             </span>
-                            <span className="px-2 py-0.5 rounded-lg bg-[#F8F5F2] text-[#4A4A4A]/55 text-[10px] font-black flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-lg bg-[#FAF9F7] text-[#171717]/55 text-[10px] font-black flex items-center gap-1">
                               <Mail size={10} /> {channelLabels[template.channel] || template.channel}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs font-mono text-[#4A4A4A]/45 truncate" dir="ltr">{template.template_key}</p>
+                          <p className="mt-1 text-xs font-mono text-[#171717]/45 truncate" dir="ltr">{template.template_key}</p>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => editTemplate(template)}
-                            className="p-2 rounded-lg text-[#4A4A4A]/50 hover:text-[#D9A3AA] hover:bg-[#D9A3AA]/10 transition-colors"
+                            className="p-2 rounded-lg text-[#171717]/50 hover:text-[#E8B4BC] hover:bg-[#E8B4BC]/10 transition-colors"
                             title="تعديل"
                           >
                             <Edit3 size={16} />
                           </button>
                           <button
                             onClick={() => toggleTemplateStatus(template)}
-                            className="p-1 rounded-lg text-[#D9A3AA] hover:bg-[#D9A3AA]/10 transition-colors"
+                            className="p-1 rounded-lg text-[#E8B4BC] hover:bg-[#E8B4BC]/10 transition-colors"
                             title={template.is_active ? 'تعطيل' : 'تفعيل'}
                           >
-                            {template.is_active ? <ToggleRight size={27} /> : <ToggleLeft size={27} className="text-[#4A4A4A]/35" />}
+                            {template.is_active ? <ToggleRight size={27} /> : <ToggleLeft size={27} className="text-[#171717]/35" />}
                           </button>
                           <button
                             onClick={() => deleteTemplate(template)}
@@ -1059,17 +1059,17 @@ export default function Settings() {
                       </div>
 
                       {template.subject && (
-                        <p className="mt-3 text-sm font-bold text-[#4A4A4A] bg-[#F8F5F2] rounded-xl px-3 py-2">
+                        <p className="mt-3 text-sm font-bold text-[#171717] bg-[#FAF9F7] rounded-xl px-3 py-2">
                           {template.subject}
                         </p>
                       )}
-                      <p className="mt-3 text-xs leading-6 text-[#4A4A4A]/65 whitespace-pre-line line-clamp-4">
+                      <p className="mt-3 text-xs leading-6 text-[#171717]/65 whitespace-pre-line line-clamp-4">
                         {template.body}
                       </p>
                       {Array.isArray(template.variables) && template.variables.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-1.5">
                           {template.variables.map((variable) => (
-                            <span key={variable} className="rounded-lg bg-[#C5A059]/10 px-2 py-1 text-[10px] font-mono text-[#C5A059]" dir="ltr">
+                            <span key={variable} className="rounded-lg bg-[#C6A56B]/10 px-2 py-1 text-[10px] font-mono text-[#C6A56B]" dir="ltr">
                               {'{'}{variable}{'}'}
                             </span>
                           ))}

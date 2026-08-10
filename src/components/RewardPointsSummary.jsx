@@ -24,21 +24,21 @@ export function RewardPointsSummary({ rewards, compact = false, embedded = false
   const activities = rewards.activities || [];
 
   return (
-    <section className={embedded ? 'py-2' : 'rounded-[1.75rem] border border-[#C5A059]/20 bg-white p-5 shadow-sm'}>
+    <section className={embedded ? 'py-2' : 'rounded-[1.75rem] border border-[#C6A56B]/20 bg-white p-5 shadow-sm'}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-xs font-black text-[#C5A059]"><Sparkles size={15} /> برنامج مكافآت لحظة فن</p>
-          <h2 className="mt-1 text-xl font-black text-[#4A4A4A]">تفاصيل النقاط</h2>
-          <p className="mt-1 text-xs text-[#4A4A4A]/55">كل ريال مدفوع مؤهل يمنح {Number(rewards.pointsPerRiyal || 2)} نقطة، والنقاط صالحة {Number(rewards.expiryMonths || 4)} أشهر.</p>
+          <p className="flex items-center gap-2 text-xs font-black text-[#C6A56B]"><Sparkles size={15} /> برنامج مكافآت لحظة فن</p>
+          <h2 className="mt-1 text-xl font-black text-[#171717]">تفاصيل النقاط</h2>
+          <p className="mt-1 text-xs text-[#171717]/55">كل ريال مدفوع مؤهل يمنح {Number(rewards.pointsPerRiyal || 2)} نقطة، والنقاط صالحة {Number(rewards.expiryMonths || 4)} أشهر.</p>
         </div>
         {actions}
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-2xl bg-[#F8F5F2] p-4">
-          <span className="text-[10px] font-bold text-[#4A4A4A]/50">الرصيد المتاح</span>
-          <p className="mt-1 text-xl font-black text-[#D9A3AA]">{Number(rewards.points || 0).toLocaleString()} نقطة</p>
-          <span className="text-[10px] text-[#4A4A4A]/45">تعادل {Number(rewards.valueSar || 0).toFixed(2)} ر.س</span>
+        <div className="rounded-2xl bg-[#FAF9F7] p-4">
+          <span className="text-[10px] font-bold text-[#171717]/50">الرصيد المتاح</span>
+          <p className="mt-1 text-xl font-black text-[#E8B4BC]">{Number(rewards.points || 0).toLocaleString()} نقطة</p>
+          <span className="text-[10px] text-[#171717]/45">تعادل {Number(rewards.valueSar || 0).toFixed(2)} ر.س</span>
         </div>
         <div className="rounded-2xl bg-emerald-50 p-4">
           <span className="text-[10px] font-bold text-emerald-700/60">المكتسبة إجمالاً</span>
@@ -50,10 +50,10 @@ export function RewardPointsSummary({ rewards, compact = false, embedded = false
           <p className="mt-1 text-xl font-black text-violet-700">{Number(rewards.redeemedPointsTotal || 0).toLocaleString()}</p>
           <span className="text-[10px] text-violet-700/50">استبدال يبدأ من {Number(rewards.minimumRedemptionPoints || 500).toLocaleString()}</span>
         </div>
-        <div className={`rounded-2xl p-4 ${Number(rewards.expiring30DaysPoints || 0) > 0 ? 'bg-red-50' : 'bg-[#F8F5F2]'}`}>
-          <span className={`text-[10px] font-bold ${Number(rewards.expiring30DaysPoints || 0) > 0 ? 'text-red-700/60' : 'text-[#4A4A4A]/50'}`}>تنتهي خلال 30 يوماً</span>
-          <p className={`mt-1 text-xl font-black ${Number(rewards.expiring30DaysPoints || 0) > 0 ? 'text-red-600' : 'text-[#4A4A4A]/35'}`}>{Number(rewards.expiring30DaysPoints || 0).toLocaleString()}</p>
-          <span className="text-[10px] text-[#4A4A4A]/45">المنتهية سابقاً: {Number(rewards.expiredPointsTotal || 0).toLocaleString()}</span>
+        <div className={`rounded-2xl p-4 ${Number(rewards.expiring30DaysPoints || 0) > 0 ? 'bg-red-50' : 'bg-[#FAF9F7]'}`}>
+          <span className={`text-[10px] font-bold ${Number(rewards.expiring30DaysPoints || 0) > 0 ? 'text-red-700/60' : 'text-[#171717]/50'}`}>تنتهي خلال 30 يوماً</span>
+          <p className={`mt-1 text-xl font-black ${Number(rewards.expiring30DaysPoints || 0) > 0 ? 'text-red-600' : 'text-[#171717]/35'}`}>{Number(rewards.expiring30DaysPoints || 0).toLocaleString()}</p>
+          <span className="text-[10px] text-[#171717]/45">المنتهية سابقاً: {Number(rewards.expiredPointsTotal || 0).toLocaleString()}</span>
         </div>
       </div>
 
@@ -66,17 +66,17 @@ export function RewardPointsSummary({ rewards, compact = false, embedded = false
 
       {lots.length > 0 && (
         <div className="mt-5">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-[#4A4A4A]"><CalendarClock size={16} className="text-[#C5A059]" /> دفعات النقاط المتاحة</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-[#171717]"><CalendarClock size={16} className="text-[#C6A56B]" /> دفعات النقاط المتاحة</h3>
           <div className="grid gap-2 sm:grid-cols-2">
             {lots.slice(0, compact ? 2 : 6).map((lot) => (
-              <div key={lot.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#D9A3AA]/10 bg-[#F8F5F2] px-3 py-2.5 text-xs">
+              <div key={lot.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#E8B4BC]/10 bg-[#FAF9F7] px-3 py-2.5 text-xs">
                 <div>
-                  <p className="font-black text-[#4A4A4A]">{Number(lot.points || 0).toLocaleString()} نقطة</p>
-                  <p className="text-[#4A4A4A]/45">بقيمة {Number(lot.valueSar || 0).toFixed(2)} ر.س</p>
+                  <p className="font-black text-[#171717]">{Number(lot.points || 0).toLocaleString()} نقطة</p>
+                  <p className="text-[#171717]/45">بقيمة {Number(lot.valueSar || 0).toFixed(2)} ر.س</p>
                 </div>
                 <div className="text-left">
-                  <p className={`font-black ${Number(lot.daysRemaining) <= 7 ? 'text-red-600' : 'text-[#C5A059]'}`}>{Number(lot.daysRemaining)} يوم</p>
-                  <p className="text-[10px] text-[#4A4A4A]/45">{formatDate(lot.expiresAt)}</p>
+                  <p className={`font-black ${Number(lot.daysRemaining) <= 7 ? 'text-red-600' : 'text-[#C6A56B]'}`}>{Number(lot.daysRemaining)} يوم</p>
+                  <p className="text-[10px] text-[#171717]/45">{formatDate(lot.expiresAt)}</p>
                 </div>
               </div>
             ))}
@@ -85,14 +85,14 @@ export function RewardPointsSummary({ rewards, compact = false, embedded = false
       )}
 
       {!compact && activities.length > 0 && (
-        <div className="mt-5 border-t border-[#D9A3AA]/15 pt-4">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-[#4A4A4A]"><History size={16} className="text-[#D9A3AA]" /> أحدث حركات النقاط</h3>
+        <div className="mt-5 border-t border-[#E8B4BC]/15 pt-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-[#171717]"><History size={16} className="text-[#E8B4BC]" /> أحدث حركات النقاط</h3>
           <div className="space-y-2">
             {activities.slice(0, 6).map((activity) => (
               <div key={activity.id} className="flex items-center justify-between gap-3 text-xs">
                 <div>
-                  <p className="font-bold text-[#4A4A4A]">{ACTIVITY_LABELS[activity.type] || 'حركة نقاط'}</p>
-                  <p className="text-[10px] text-[#4A4A4A]/45">{formatDate(activity.createdAt)}</p>
+                  <p className="font-bold text-[#171717]">{ACTIVITY_LABELS[activity.type] || 'حركة نقاط'}</p>
+                  <p className="text-[10px] text-[#171717]/45">{formatDate(activity.createdAt)}</p>
                 </div>
                 <span className={`font-black ${Number(activity.pointsDelta) > 0 ? 'text-emerald-600' : 'text-red-500'}`} dir="ltr">
                   {Number(activity.pointsDelta) > 0 ? '+' : ''}{Number(activity.pointsDelta || 0).toLocaleString()}
@@ -134,12 +134,12 @@ export function RewardRedemptionForm({ order, rewards, onApply, submitting = fal
   const invalidMaximum = requested > limits.maximum;
 
   return (
-    <div className="mt-4 rounded-2xl border border-[#C5A059]/25 bg-[#C5A059]/5 p-4">
+    <div className="mt-4 rounded-2xl border border-[#C6A56B]/25 bg-[#C6A56B]/5 p-4">
       <div className="flex items-start gap-3">
-        <Wallet size={18} className="mt-0.5 shrink-0 text-[#C5A059]" />
+        <Wallet size={18} className="mt-0.5 shrink-0 text-[#C6A56B]" />
         <div className="flex-1">
-          <p className="text-sm font-black text-[#4A4A4A]">استخدام نقاط المكافآت</p>
-          <p className="mt-1 text-[11px] text-[#4A4A4A]/55">المتاح لهذا الطلب حتى {limits.maximum.toLocaleString()} نقطة. لا تشمل النقاط تكلفة التوصيل.</p>
+          <p className="text-sm font-black text-[#171717]">استخدام نقاط المكافآت</p>
+          <p className="mt-1 text-[11px] text-[#171717]/55">المتاح لهذا الطلب حتى {limits.maximum.toLocaleString()} نقطة. لا تشمل النقاط تكلفة التوصيل.</p>
         </div>
       </div>
       <div className="mt-3 flex gap-2">
@@ -151,12 +151,12 @@ export function RewardRedemptionForm({ order, rewards, onApply, submitting = fal
           value={points}
           onChange={(event) => setPoints(event.target.value.replace(/\D/g, ''))}
           placeholder="0"
-          className="min-w-0 flex-1 rounded-xl border border-[#D9A3AA]/20 bg-white px-3 py-2.5 text-center font-black outline-none focus:border-[#C5A059]"
+          className="min-w-0 flex-1 rounded-xl border border-[#E8B4BC]/20 bg-white px-3 py-2.5 text-center font-black outline-none focus:border-[#C6A56B]"
         />
-        <button type="button" onClick={() => setPoints(String(limits.maximum))} className="rounded-xl border border-[#C5A059]/25 bg-white px-3 text-xs font-black text-[#C5A059]">الحد الأعلى</button>
+        <button type="button" onClick={() => setPoints(String(limits.maximum))} className="rounded-xl border border-[#C6A56B]/25 bg-white px-3 text-xs font-black text-[#C6A56B]">الحد الأعلى</button>
       </div>
       <div className="mt-2 flex items-center justify-between gap-3 text-[11px]">
-        <span className="text-[#4A4A4A]/50">القيمة: {(requested * limits.pointValue).toFixed(2)} ر.س</span>
+        <span className="text-[#171717]/50">القيمة: {(requested * limits.pointValue).toFixed(2)} ر.س</span>
         {currentPoints > 0 && <button type="button" onClick={() => setPoints('0')} className="font-bold text-red-500">إلغاء النقاط</button>}
       </div>
       {(invalidMinimum || invalidMaximum) && (
@@ -168,7 +168,7 @@ export function RewardRedemptionForm({ order, rewards, onApply, submitting = fal
         type="button"
         onClick={() => onApply?.(requested)}
         disabled={submitting || invalidMinimum || invalidMaximum || requested === currentPoints}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#171717] px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Gift size={16} /> {submitting ? 'جاري التحديث...' : currentPoints > 0 ? 'تحديث النقاط المستخدمة' : 'تطبيق النقاط'}
       </button>

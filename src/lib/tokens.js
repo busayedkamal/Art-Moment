@@ -10,27 +10,27 @@
 
 export const COLORS = {
   // ── الوردي الناعم — Memory Pink ─────────────
-  pink:       '#D9A3AA',
-  pinkLight:  '#EDD4D7',
-  pinkDark:   '#C48A92',
+  pink:       '#E8B4BC',
+  pinkLight:  '#F5DEE2',
+  pinkDark:   '#B96F7D',
 
   // ── الذهبي المطفي — Matte Gold ───────────────
-  gold:       '#C5A059',
-  goldLight:  '#DFC08A',
-  goldDark:   '#A8893C',
+  gold:       '#C6A56B',
+  goldLight:  '#E5CF9F',
+  goldDark:   '#8F713C',
 
   // ── الرمادي الفحمي — Charcoal Grey ──────────
-  charcoal:   '#4A4A4A',
-  charcoal60: 'rgba(74,74,74,0.60)',
-  charcoal40: 'rgba(74,74,74,0.40)',
-  charcoal15: 'rgba(74,74,74,0.15)',
-  charcoal08: 'rgba(74,74,74,0.08)',
+  charcoal:   '#171717',
+  charcoal60: 'rgba(23,23,23,0.60)',
+  charcoal40: 'rgba(23,23,23,0.40)',
+  charcoal15: 'rgba(23,23,23,0.15)',
+  charcoal08: 'rgba(23,23,23,0.08)',
 
   // ── الأسطح — Surfaces ────────────────────────
-  bg:         '#F8F5F2',   // خلفية التطبيق (Off-white)
+  bg:         '#FAF9F7',   // خلفية التطبيق (Off-white)
   card:       '#FFFFFF',   // بطاقات ونوافذ
-  divider:    'rgba(74,74,74,0.12)',
-  overlay:    'rgba(74,74,74,0.40)',
+  divider:    'rgba(23,23,23,0.12)',
+  overlay:    'rgba(23,23,23,0.40)',
 };
 
 /**
@@ -50,8 +50,8 @@ export const CHART_COLORS = {
  * الظلال — Box Shadows
  */
 export const SHADOWS = {
-  card:    '0 2px 12px rgba(74,74,74,0.06)',
-  cardMd:  '0 4px 20px rgba(74,74,74,0.10)',
-  pink:    '0 4px 14px rgba(217,163,170,0.35)',
-  gold:    '0 4px 14px rgba(197,160,89,0.35)',
+  card:    '0 2px 12px rgba(23,23,23,0.05)',
+  cardMd:  '0 10px 28px rgba(23,23,23,0.08)',
+  pink:    '0 4px 14px rgba(232,180,188,0.24)',
+  gold:    '0 4px 14px rgba(198,165,107,0.24)',
 };

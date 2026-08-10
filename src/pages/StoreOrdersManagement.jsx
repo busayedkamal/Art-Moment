@@ -1010,27 +1010,27 @@ export default function StoreOrdersManagement() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="text-[#4A4A4A]" dir="rtl">
+    <div className="text-[#171717]" dir="rtl">
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl font-black flex items-center gap-2">
-            <ShoppingBag size={22} className="text-[#D9A3AA]" /> طلبات المتجر
+            <ShoppingBag size={22} className="text-[#E8B4BC]" /> طلبات المتجر
           </h1>
-          <p className="text-sm text-[#4A4A4A]/50 mt-0.5">إدارة الطلبات الواردة من متجر لحظة فن</p>
+          <p className="text-sm text-[#171717]/50 mt-0.5">إدارة الطلبات الواردة من متجر لحظة فن</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => navigate('/app/store-orders/new')}
-            className="flex items-center gap-2 rounded-xl bg-[#4A4A4A] px-4 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C5A059]"
+            className="flex items-center gap-2 rounded-xl bg-[#171717] px-4 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C6A56B]"
           >
             <Plus size={15} /> طلب يدوي جديد
           </button>
           <button
             onClick={fetchOrders}
-            className="flex items-center gap-2 bg-white border border-[#D9A3AA]/25 px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#D9A3AA]/5 transition-colors shadow-sm"
+            className="flex items-center gap-2 bg-white border border-[#E8B4BC]/25 px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#E8B4BC]/5 transition-colors shadow-sm"
           >
             <RefreshCw size={15} /> تحديث
           </button>
@@ -1039,12 +1039,12 @@ export default function StoreOrdersManagement() {
 
       {/* ── Financial Summary Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-[#E8B4BC]/20 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">إجمالي المبيعات</p>
-            <h3 className="text-2xl font-black text-[#4A4A4A]">{totalOrdersValue.toFixed(2)} <span className="text-sm">ر.س</span></h3>
+            <p className="text-xs text-[#171717]/60 font-bold mb-1">إجمالي المبيعات</p>
+            <h3 className="text-2xl font-black text-[#171717]">{totalOrdersValue.toFixed(2)} <span className="text-sm">ر.س</span></h3>
           </div>
-          <div className="w-12 h-12 rounded-full bg-[#D9A3AA]/10 flex items-center justify-center text-[#D9A3AA]"><ShoppingBag size={24} /></div>
+          <div className="w-12 h-12 rounded-full bg-[#E8B4BC]/10 flex items-center justify-center text-[#E8B4BC]"><ShoppingBag size={24} /></div>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
           <div>
@@ -1068,8 +1068,8 @@ export default function StoreOrdersManagement() {
           onClick={() => setFilterStatus('all')}
           className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all ${
             filterStatus === 'all'
-              ? 'bg-[#4A4A4A] text-white border-[#4A4A4A]'
-              : 'bg-white text-[#4A4A4A]/60 border-[#D9A3AA]/20 hover:border-[#D9A3AA]'
+              ? 'bg-[#171717] text-white border-[#171717]'
+              : 'bg-white text-[#171717]/60 border-[#E8B4BC]/20 hover:border-[#E8B4BC]'
           }`}
         >
           الكل ({orders.length})
@@ -1084,7 +1084,7 @@ export default function StoreOrdersManagement() {
               className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all ${
                 filterStatus === key
                   ? `${cfg.bgClass} ${cfg.textClass} border-current`
-                  : 'bg-white text-[#4A4A4A]/60 border-[#D9A3AA]/20 hover:border-[#D9A3AA]'
+                  : 'bg-white text-[#171717]/60 border-[#E8B4BC]/20 hover:border-[#E8B4BC]'
               }`}
             >
               {cfg.label} ({count})
@@ -1095,40 +1095,40 @@ export default function StoreOrdersManagement() {
 
       {/* ── Orders Table ── */}
       {loading ? (
-        <div className="flex items-center justify-center py-24 text-[#4A4A4A]/40">
-          <div className="w-8 h-8 border-4 border-[#D9A3AA]/30 border-t-[#D9A3AA] rounded-full animate-spin" />
+        <div className="flex items-center justify-center py-24 text-[#171717]/40">
+          <div className="w-8 h-8 border-4 border-[#E8B4BC]/30 border-t-[#E8B4BC] rounded-full animate-spin" />
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-[#4A4A4A]/40">
+        <div className="flex flex-col items-center justify-center py-24 text-[#171717]/40">
           <ShoppingBag size={40} className="mb-3 opacity-30" />
           <p className="font-bold">لا توجد طلبات</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#E8B4BC]/20 shadow-sm overflow-hidden">
           {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#F8F5F2] border-b border-[#D9A3AA]/15">
-                  <th className="text-right py-3 px-5 font-bold text-[#4A4A4A]/60 text-xs">رقم الطلب</th>
-                  <th className="text-right py-3 px-4 font-bold text-[#4A4A4A]/60 text-xs">العميل</th>
-                  <th className="text-right py-3 px-4 font-bold text-[#4A4A4A]/60 text-xs">الجوال</th>
-                  <th className="text-right py-3 px-4 font-bold text-[#4A4A4A]/60 text-xs">الإجمالي</th>
-                  <th className="text-right py-3 px-4 font-bold text-[#4A4A4A]/60 text-xs">التاريخ</th>
-                  <th className="text-right py-3 px-4 font-bold text-[#4A4A4A]/60 text-xs">الحالة</th>
+                <tr className="bg-[#FAF9F7] border-b border-[#E8B4BC]/15">
+                  <th className="text-right py-3 px-5 font-bold text-[#171717]/60 text-xs">رقم الطلب</th>
+                  <th className="text-right py-3 px-4 font-bold text-[#171717]/60 text-xs">العميل</th>
+                  <th className="text-right py-3 px-4 font-bold text-[#171717]/60 text-xs">الجوال</th>
+                  <th className="text-right py-3 px-4 font-bold text-[#171717]/60 text-xs">الإجمالي</th>
+                  <th className="text-right py-3 px-4 font-bold text-[#171717]/60 text-xs">التاريخ</th>
+                  <th className="text-right py-3 px-4 font-bold text-[#171717]/60 text-xs">الحالة</th>
                   <th className="py-3 px-4" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F8F5F2]">
+              <tbody className="divide-y divide-[#FAF9F7]">
                 {filteredOrders.map(order => (
-                  <tr key={order.id} className="hover:bg-[#F8F5F2]/60 transition-colors">
-                    <td className="py-3.5 px-5 font-mono text-xs text-[#4A4A4A]/50">
+                  <tr key={order.id} className="hover:bg-[#FAF9F7]/60 transition-colors">
+                    <td className="py-3.5 px-5 font-mono text-xs text-[#171717]/50">
                       #{order.id.toString().slice(0, 6)}
                     </td>
                     <td className="py-3.5 px-4 font-bold">{order.customer_name}</td>
-                    <td className="py-3.5 px-4 font-mono text-sm text-[#4A4A4A]/70">{order.phone}</td>
+                    <td className="py-3.5 px-4 font-mono text-sm text-[#171717]/70">{order.phone}</td>
                     <td className="py-3.5 px-4">
-                      <div className="font-black text-[#C5A059] text-sm leading-tight">
+                      <div className="font-black text-[#C6A56B] text-sm leading-tight">
                         {(Number(order.total_amount || 0) + Number(order.delivery_fee || 0)).toFixed(2)} <span className="text-[10px] font-normal">ر.س</span>
                       </div>
                       {(() => {
@@ -1140,7 +1140,7 @@ export default function StoreOrdersManagement() {
                         );
                       })()}
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-[#4A4A4A]/50 font-mono">
+                    <td className="py-3.5 px-4 text-xs text-[#171717]/50 font-mono">
                       {new Date(order.created_at).toLocaleDateString('en-GB')}
                     </td>
                     <td className="py-3.5 px-4">
@@ -1149,7 +1149,7 @@ export default function StoreOrdersManagement() {
                     <td className="py-3.5 px-4">
                       <button
                         onClick={() => openModal(order)}
-                        className="flex items-center gap-1.5 bg-[#4A4A4A]/5 hover:bg-[#D9A3AA]/15 text-[#4A4A4A] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                        className="flex items-center gap-1.5 bg-[#171717]/5 hover:bg-[#E8B4BC]/15 text-[#171717] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
                       >
                         <Eye size={13} /> تفاصيل
                       </button>
@@ -1161,7 +1161,7 @@ export default function StoreOrdersManagement() {
           </div>
 
           {/* Mobile cards */}
-          <div className="md:hidden divide-y divide-[#F8F5F2]">
+          <div className="md:hidden divide-y divide-[#FAF9F7]">
             {filteredOrders.map(order => (
               <div key={order.id} className="p-4 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
@@ -1169,9 +1169,9 @@ export default function StoreOrdersManagement() {
                     <span className="font-black text-sm truncate">{order.customer_name}</span>
                     <StatusBadge status={order.status} />
                   </div>
-                  <p className="font-mono text-xs text-[#4A4A4A]/50">{order.phone}</p>
+                  <p className="font-mono text-xs text-[#171717]/50">{order.phone}</p>
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                    <span className="font-black text-[#C5A059] text-sm">
+                    <span className="font-black text-[#C6A56B] text-sm">
                       {(Number(order.total_amount || 0) + Number(order.delivery_fee || 0)).toFixed(2)} ر.س
                     </span>
                     {(() => {
@@ -1182,16 +1182,16 @@ export default function StoreOrdersManagement() {
                         </span>
                       );
                     })()}
-                    <span className="text-[10px] text-[#4A4A4A]/40 font-mono">
+                    <span className="text-[10px] text-[#171717]/40 font-mono">
                       {new Date(order.created_at).toLocaleDateString('en-GB')}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => openModal(order)}
-                  className="p-2.5 bg-[#F8F5F2] rounded-xl hover:bg-[#D9A3AA]/15 transition-colors shrink-0"
+                  className="p-2.5 bg-[#FAF9F7] rounded-xl hover:bg-[#E8B4BC]/15 transition-colors shrink-0"
                 >
-                  <Eye size={16} className="text-[#4A4A4A]" />
+                  <Eye size={16} className="text-[#171717]" />
                 </button>
               </div>
             ))}
@@ -1208,14 +1208,14 @@ export default function StoreOrdersManagement() {
           <div className="bg-white w-full max-w-2xl rounded-t-[2rem] md:rounded-3xl shadow-2xl max-h-[85dvh] md:max-h-[90dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 md:slide-in-from-bottom-0 md:zoom-in-95 duration-200" dir="rtl">
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#D9A3AA]/15 shrink-0 bg-[#F8F5F2]/50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8B4BC]/15 shrink-0 bg-[#FAF9F7]/50">
               <div className="flex items-center gap-3">
-                <button onClick={closeModal} className="p-2 hover:bg-white rounded-xl transition-colors shadow-sm bg-[#F8F5F2]">
+                <button onClick={closeModal} className="p-2 hover:bg-white rounded-xl transition-colors shadow-sm bg-[#FAF9F7]">
                   <ArrowLeft size={18} />
                 </button>
                 <div>
                   <h2 className="font-black text-base flex items-center gap-2">تفاصيل الطلب</h2>
-                  <p className="text-xs font-mono text-[#4A4A4A]/50">#{selectedOrder.id.toString().slice(0, 6)}</p>
+                  <p className="text-xs font-mono text-[#171717]/50">#{selectedOrder.id.toString().slice(0, 6)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -1238,10 +1238,10 @@ export default function StoreOrdersManagement() {
               <div className="p-6 space-y-6">
 
                 {/* ── Customer Info (View / Edit Mode) ── */}
-                <div className="bg-[#F8F5F2] rounded-2xl p-4 space-y-4 shadow-sm border border-[#D9A3AA]/10">
+                <div className="bg-[#FAF9F7] rounded-2xl p-4 space-y-4 shadow-sm border border-[#E8B4BC]/10">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-sm text-[#4A4A4A]/60 flex items-center gap-1.5">
-                      <User size={14} className="text-[#D9A3AA]" /> بيانات العميل
+                    <h3 className="font-bold text-sm text-[#171717]/60 flex items-center gap-1.5">
+                      <User size={14} className="text-[#E8B4BC]" /> بيانات العميل
                     </h3>
                     {isEditing && (
                       <div className="flex gap-2">
@@ -1258,50 +1258,50 @@ export default function StoreOrdersManagement() {
                   {isEditing ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الاسم</label>
-                        <input type="text" value={editForm.customer_name} onChange={e => setEditForm({...editForm, customer_name: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">الاسم</label>
+                        <input type="text" value={editForm.customer_name} onChange={e => setEditForm({...editForm, customer_name: e.target.value})} className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]" />
                       </div>
                       <div>
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الجوال</label>
-                        <input type="text" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none font-mono focus:border-[#D9A3AA]" />
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">الجوال</label>
+                        <input type="text" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none font-mono focus:border-[#E8B4BC]" />
                       </div>
                       <div>
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الإجمالي (ر.س)</label>
-                        <input type="number" value={editForm.total_amount} onChange={e => setEditForm({...editForm, total_amount: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">الإجمالي (ر.س)</label>
+                        <input type="number" value={editForm.total_amount} onChange={e => setEditForm({...editForm, total_amount: e.target.value})} className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]" />
                       </div>
                       <div>
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">المدينة</label>
-                        <input type="text" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">المدينة</label>
+                        <input type="text" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]" />
                       </div>
                       <div>
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الحي</label>
-                        <input type="text" value={editForm.district} onChange={e => setEditForm({...editForm, district: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">الحي</label>
+                        <input type="text" value={editForm.district} onChange={e => setEditForm({...editForm, district: e.target.value})} className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]" />
                       </div>
                       <div>
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">الشارع</label>
-                        <input type="text" value={editForm.street} onChange={e => setEditForm({...editForm, street: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]" />
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">الشارع</label>
+                        <input type="text" value={editForm.street} onChange={e => setEditForm({...editForm, street: e.target.value})} className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]" />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">ملاحظات</label>
-                        <textarea value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] min-h-[60px] resize-none" />
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">ملاحظات</label>
+                        <textarea value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC] min-h-[60px] resize-none" />
                       </div>
                     </div>
                   ) : (
                     <>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">الاسم</span>
+                          <span className="text-[10px] text-[#171717]/50 block mb-0.5">الاسم</span>
                           <span className="font-bold text-sm">{selectedOrder.customer_name}</span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5 flex items-center gap-1">
+                          <span className="text-[10px] text-[#171717]/50 block mb-0.5 flex items-center gap-1">
                             <Phone size={10} /> الجوال
                           </span>
                           <span className="font-mono text-sm">{selectedOrder.phone}</span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">الإجمالي</span>
-                          <span className="font-black text-[#C5A059]">
+                          <span className="text-[10px] text-[#171717]/50 block mb-0.5">الإجمالي</span>
+                          <span className="font-black text-[#C6A56B]">
                             {(Number(selectedOrder.total_amount || 0) + Number(selectedOrder.delivery_fee || 0)).toFixed(2)} ر.س
                           </span>
                           {(() => {
@@ -1315,8 +1315,8 @@ export default function StoreOrdersManagement() {
                         </div>
 
                         {/* Payment edit inline */}
-                        <div className="col-span-2 border-t border-[#D9A3AA]/15 pt-3">
-                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-2 flex items-center gap-1">
+                        <div className="col-span-2 border-t border-[#E8B4BC]/15 pt-3">
+                          <span className="text-[10px] text-[#171717]/50 block mb-2 flex items-center gap-1">
                             <Banknote size={10} /> المبلغ المدفوع
                           </span>
                           {isEditingPayment ? (
@@ -1324,7 +1324,7 @@ export default function StoreOrdersManagement() {
                               <select
                                 value={editPaymentStatus}
                                 onChange={e => setEditPaymentStatus(e.target.value)}
-                                className="sm:col-span-2 bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                                className="sm:col-span-2 bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-[#E8B4BC]"
                               >
                                 {Object.entries(STORE_PAYMENT_STATUSES).map(([key, value]) => (
                                   <option key={key} value={key}>{value.label}</option>
@@ -1388,7 +1388,7 @@ export default function StoreOrdersManagement() {
                                   مسترد: {Number(selectedOrder.refunded_amount || 0).toFixed(2)} ر.س
                                 </span>
                               )}
-                              <span className="text-xs font-bold text-[#4A4A4A]/45">
+                              <span className="text-xs font-bold text-[#171717]/45">
                                 {getStorePaymentMethod(selectedOrder.payment_method)}
                               </span>
                               <button
@@ -1406,7 +1406,7 @@ export default function StoreOrdersManagement() {
                                   setEditPaymentStatus(payment.code);
                                   setIsEditingPayment(true);
                                 }}
-                                className="text-xs font-bold text-[#4A4A4A]/50 hover:text-[#D9A3AA] flex items-center gap-1 transition-colors"
+                                className="text-xs font-bold text-[#171717]/50 hover:text-[#E8B4BC] flex items-center gap-1 transition-colors"
                               >
                                 <Edit3 size={11} /> تعديل
                               </button>
@@ -1414,31 +1414,31 @@ export default function StoreOrdersManagement() {
                           )}
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-0.5">تاريخ الطلب</span>
+                          <span className="text-[10px] text-[#171717]/50 block mb-0.5">تاريخ الطلب</span>
                           <span className="font-mono text-xs">
                             {new Date(selectedOrder.created_at).toLocaleDateString('en-GB')}
                           </span>
                         </div>
                       </div>
                       {(selectedOrder.city || selectedOrder.district || selectedOrder.street) && (
-                        <div className="pt-3 mt-1 border-t border-[#D9A3AA]/15">
-                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 flex items-center gap-1">
+                        <div className="pt-3 mt-1 border-t border-[#E8B4BC]/15">
+                          <span className="text-[10px] text-[#171717]/50 block mb-1 flex items-center gap-1">
                             <Truck size={10} /> عنوان التوصيل
                           </span>
-                          <p className="text-sm font-bold text-[#4A4A4A]">
+                          <p className="text-sm font-bold text-[#171717]">
                             {selectedOrder.city} — حي {selectedOrder.district}
                             {selectedOrder.street && (
-                              <span className="text-[#4A4A4A]/70 font-normal">، {selectedOrder.street}</span>
+                              <span className="text-[#171717]/70 font-normal">، {selectedOrder.street}</span>
                             )}
                           </p>
                         </div>
                       )}
                       {selectedOrder.notes && (
-                        <div className="pt-3 border-t border-[#D9A3AA]/15">
-                          <span className="text-[10px] text-[#4A4A4A]/50 block mb-1 flex items-center gap-1">
+                        <div className="pt-3 border-t border-[#E8B4BC]/15">
+                          <span className="text-[10px] text-[#171717]/50 block mb-1 flex items-center gap-1">
                             <StickyNote size={10} /> ملاحظات
                           </span>
-                          <p className="text-sm text-[#4A4A4A]/80 leading-relaxed">{selectedOrder.notes}</p>
+                          <p className="text-sm text-[#171717]/80 leading-relaxed">{selectedOrder.notes}</p>
                         </div>
                       )}
                     </>
@@ -1446,29 +1446,29 @@ export default function StoreOrdersManagement() {
                 </div>
 
                 {/* ── Shipping & Tracking ── */}
-                <div className="bg-[#F8F5F2] rounded-2xl p-4">
-                  <h3 className="font-bold text-sm text-[#4A4A4A]/60 mb-3 flex items-center gap-1.5">
-                    <Truck size={14} className="text-[#D9A3AA]" /> معلومات الشحن والتتبع
+                <div className="bg-[#FAF9F7] rounded-2xl p-4">
+                  <h3 className="font-bold text-sm text-[#171717]/60 mb-3 flex items-center gap-1.5">
+                    <Truck size={14} className="text-[#E8B4BC]" /> معلومات الشحن والتتبع
                   </h3>
                   {selectedOrder.tracking_number ? (
-                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-[#D9A3AA]/20">
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-[#E8B4BC]/20">
                       <div>
-                        <p className="text-[10px] text-[#4A4A4A]/50 mb-0.5">شركة الشحن</p>
+                        <p className="text-[10px] text-[#171717]/50 mb-0.5">شركة الشحن</p>
                         <p className="font-bold text-sm">{selectedOrder.courier_name}</p>
                       </div>
                       <div className="text-left">
-                        <p className="text-[10px] text-[#4A4A4A]/50 mb-0.5">رقم التتبع</p>
-                        <p className="font-mono font-bold text-[#D9A3AA]">{selectedOrder.tracking_number}</p>
+                        <p className="text-[10px] text-[#171717]/50 mb-0.5">رقم التتبع</p>
+                        <p className="font-mono font-bold text-[#E8B4BC]">{selectedOrder.tracking_number}</p>
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col sm:flex-row gap-2 items-end">
                       <div className="w-full sm:w-36">
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">شركة الشحن</label>
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">شركة الشحن</label>
                         <select
                           value={courierName}
                           onChange={e => setCourierName(e.target.value)}
-                          className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"
+                          className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]"
                         >
                           <option value="سمسا">سمسا (SMSA)</option>
                           <option value="أرامكس">أرامكس (Aramex)</option>
@@ -1476,13 +1476,13 @@ export default function StoreOrdersManagement() {
                         </select>
                       </div>
                       <div className="flex-1">
-                        <label className="text-[10px] text-[#4A4A4A]/50 block mb-1">رقم التتبع</label>
+                        <label className="text-[10px] text-[#171717]/50 block mb-1">رقم التتبع</label>
                         <input
                           type="text"
                           value={trackingNumber}
                           onChange={e => setTrackingNumber(e.target.value)}
                           placeholder="أدخل رقم البوليصة..."
-                          className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none font-mono focus:border-[#D9A3AA]"
+                          className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none font-mono focus:border-[#E8B4BC]"
                         />
                       </div>
                     </div>
@@ -1491,15 +1491,15 @@ export default function StoreOrdersManagement() {
 
                 {/* ── Order Items ── */}
                 <div>
-                  <h3 className="font-bold text-sm text-[#4A4A4A]/60 mb-3 flex items-center gap-1.5">
+                  <h3 className="font-bold text-sm text-[#171717]/60 mb-3 flex items-center gap-1.5">
                     <Package size={14} /> المنتجات
                   </h3>
                   {itemsLoading ? (
                     <div className="flex justify-center py-8">
-                      <div className="w-6 h-6 border-4 border-[#D9A3AA]/30 border-t-[#D9A3AA] rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-4 border-[#E8B4BC]/30 border-t-[#E8B4BC] rounded-full animate-spin" />
                     </div>
                   ) : orderItems.length === 0 ? (
-                    <p className="text-sm text-[#4A4A4A]/40 text-center py-6">لا توجد منتجات مسجلة</p>
+                    <p className="text-sm text-[#171717]/40 text-center py-6">لا توجد منتجات مسجلة</p>
                   ) : (
                     <div className="space-y-3">
                       {orderItems.map((item, idx) => {
@@ -1508,16 +1508,16 @@ export default function StoreOrdersManagement() {
                           item.selected_options,
                         );
                         return (
-                        <div key={item.id || idx} className="flex items-center gap-3 bg-[#F8F5F2] rounded-2xl p-3">
-                          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-[#D9A3AA]/15">
+                        <div key={item.id || idx} className="flex items-center gap-3 bg-[#FAF9F7] rounded-2xl p-3">
+                          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-[#E8B4BC]/15">
                             {item.product?.image
                               ? <img src={item.product.image} alt={item.product?.name} className="w-full h-full object-cover" />
-                              : <ImageIcon size={18} className="text-[#D9A3AA]/30" />
+                              : <ImageIcon size={18} className="text-[#E8B4BC]/30" />
                             }
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-sm truncate">{item.product?.name || 'منتج محذوف'}</p>
-                            <p className="text-xs text-[#4A4A4A]/50 mt-0.5">
+                            <p className="text-xs text-[#171717]/50 mt-0.5">
                               {item.price_at_time} ر.س × {item.quantity}
                             </p>
                             {optionLabels.length > 0 && (
@@ -1526,16 +1526,16 @@ export default function StoreOrdersManagement() {
                               </p>
                             )}
                           </div>
-                          <span className="font-black text-[#C5A059] text-sm shrink-0">
+                          <span className="font-black text-[#C6A56B] text-sm shrink-0">
                             {(item.price_at_time * item.quantity).toFixed(2)} ر.س
                           </span>
                         </div>
                         );
                       })}
                       {/* Total row */}
-                      <div className="flex justify-between items-center pt-2 border-t border-[#D9A3AA]/15 px-1">
-                        <span className="text-sm font-bold text-[#4A4A4A]/60">الإجمالي</span>
-                        <span className="font-black text-[#C5A059]">
+                      <div className="flex justify-between items-center pt-2 border-t border-[#E8B4BC]/15 px-1">
+                        <span className="text-sm font-bold text-[#171717]/60">الإجمالي</span>
+                        <span className="font-black text-[#C6A56B]">
                           {Number(selectedOrder.total_amount || 0).toFixed(2)} ر.س
                         </span>
                       </div>
@@ -1544,60 +1544,60 @@ export default function StoreOrdersManagement() {
                 </div>
 
                 {/* ── Return Requests ── */}
-                <div className="bg-[#F8F5F2] rounded-2xl p-4 border border-[#D9A3AA]/10">
-                  <h3 className="font-bold text-sm text-[#4A4A4A]/60 mb-3 flex items-center gap-1.5">
-                    <RotateCcw size={14} className="text-[#C5A059]" /> طلبات الاسترجاع والاسترداد
+                <div className="bg-[#FAF9F7] rounded-2xl p-4 border border-[#E8B4BC]/10">
+                  <h3 className="font-bold text-sm text-[#171717]/60 mb-3 flex items-center gap-1.5">
+                    <RotateCcw size={14} className="text-[#C6A56B]" /> طلبات الاسترجاع والاسترداد
                   </h3>
                   {returnsLoading ? (
                     <div className="flex justify-center py-6">
-                      <div className="w-6 h-6 border-4 border-[#D9A3AA]/30 border-t-[#D9A3AA] rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-4 border-[#E8B4BC]/30 border-t-[#E8B4BC] rounded-full animate-spin" />
                     </div>
                   ) : returnRequests.length === 0 ? (
-                    <p className="text-sm text-[#4A4A4A]/40 text-center py-5">لا توجد طلبات استرجاع لهذا الطلب</p>
+                    <p className="text-sm text-[#171717]/40 text-center py-5">لا توجد طلبات استرجاع لهذا الطلب</p>
                   ) : (
                     <div className="space-y-3">
                       {returnRequests.map((request) => {
                         const nextStatuses = STORE_RETURN_TRANSITIONS[request.status] || [];
                         return (
-                          <div key={request.id} className="rounded-2xl bg-white border border-[#D9A3AA]/15 p-4 space-y-3">
+                          <div key={request.id} className="rounded-2xl bg-white border border-[#E8B4BC]/15 p-4 space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <ReturnStatusBadge status={request.status} />
-                              <span className="text-xs font-mono text-[#4A4A4A]/45">
+                              <span className="text-xs font-mono text-[#171717]/45">
                                 #{String(request.id).slice(0, 8)}
                               </span>
                             </div>
-                            <p className="text-sm font-bold text-[#4A4A4A] leading-relaxed">{request.reason}</p>
+                            <p className="text-sm font-bold text-[#171717] leading-relaxed">{request.reason}</p>
                             {request.details && (
-                              <p className="text-xs text-[#4A4A4A]/60 leading-relaxed bg-[#F8F5F2] rounded-xl p-3">
+                              <p className="text-xs text-[#171717]/60 leading-relaxed bg-[#FAF9F7] rounded-xl p-3">
                                 {request.details}
                               </p>
                             )}
                             <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div className="rounded-xl bg-[#F8F5F2] p-3">
-                                <span className="block text-[#4A4A4A]/45 mb-1">المطلوب</span>
-                                <span className="font-black text-[#C5A059]">{Number(request.requested_refund_amount || 0).toFixed(2)} ر.س</span>
+                              <div className="rounded-xl bg-[#FAF9F7] p-3">
+                                <span className="block text-[#171717]/45 mb-1">المطلوب</span>
+                                <span className="font-black text-[#C6A56B]">{Number(request.requested_refund_amount || 0).toFixed(2)} ر.س</span>
                               </div>
-                              <div className="rounded-xl bg-[#F8F5F2] p-3">
-                                <span className="block text-[#4A4A4A]/45 mb-1">المعتمد</span>
+                              <div className="rounded-xl bg-[#FAF9F7] p-3">
+                                <span className="block text-[#171717]/45 mb-1">المعتمد</span>
                                 <span className="font-black text-emerald-600">{Number(request.approved_refund_amount || 0).toFixed(2)} ر.س</span>
                               </div>
                             </div>
                             {request.store_return_request_items?.length > 0 && (
                               <div className="flex flex-wrap gap-2">
                                 {request.store_return_request_items.map((item) => (
-                                  <span key={item.id} className="rounded-full bg-[#F8F5F2] border border-[#D9A3AA]/10 px-3 py-1 text-[11px] font-bold">
+                                  <span key={item.id} className="rounded-full bg-[#FAF9F7] border border-[#E8B4BC]/10 px-3 py-1 text-[11px] font-bold">
                                     {(item.product?.name || item.products?.name || 'منتج')} × {item.quantity}
                                   </span>
                                 ))}
                               </div>
                             )}
                             {request.admin_note && (
-                              <p className="text-xs text-[#4A4A4A]/60 border-t border-[#D9A3AA]/10 pt-3">
+                              <p className="text-xs text-[#171717]/60 border-t border-[#E8B4BC]/10 pt-3">
                                 ملاحظة الإدارة: {request.admin_note}
                               </p>
                             )}
                             {nextStatuses.length > 0 && (
-                              <div className="flex flex-wrap gap-2 pt-2 border-t border-[#D9A3AA]/10">
+                              <div className="flex flex-wrap gap-2 pt-2 border-t border-[#E8B4BC]/10">
                                 {nextStatuses.map((status) => {
                                   const info = getStoreReturnStatus(status);
                                   return (
@@ -1622,13 +1622,13 @@ export default function StoreOrdersManagement() {
                 </div>
 
                 {/* ── Customer Notification Templates ── */}
-                <div className="bg-white rounded-2xl p-4 border border-[#D9A3AA]/15 shadow-sm">
+                <div className="bg-white rounded-2xl p-4 border border-[#E8B4BC]/15 shadow-sm">
                   <div className="flex items-center justify-between gap-3 mb-3">
-                    <h3 className="font-bold text-sm text-[#4A4A4A]/60 flex items-center gap-1.5">
-                      <Mail size={14} className="text-[#D9A3AA]" /> إشعار العميل
+                    <h3 className="font-bold text-sm text-[#171717]/60 flex items-center gap-1.5">
+                      <Mail size={14} className="text-[#E8B4BC]" /> إشعار العميل
                     </h3>
                     {selectedMessageTemplate && (
-                      <span className="text-[10px] font-black rounded-full bg-[#F8F5F2] text-[#C5A059] px-3 py-1 border border-[#D9A3AA]/10">
+                      <span className="text-[10px] font-black rounded-full bg-[#FAF9F7] text-[#C6A56B] px-3 py-1 border border-[#E8B4BC]/10">
                         {TEMPLATE_CATEGORY_LABELS[selectedMessageTemplate.category] || selectedMessageTemplate.category}
                       </span>
                     )}
@@ -1641,7 +1641,7 @@ export default function StoreOrdersManagement() {
                         setSelectedTemplateKey(event.target.value);
                         setTemplateContext({});
                       }}
-                      className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2.5 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+                      className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-3 py-2.5 text-sm font-bold outline-none focus:border-[#E8B4BC]"
                     >
                       <option value="">اختر قالب الإشعار</option>
                       {orderMessageTemplates.map((template) => (
@@ -1654,30 +1654,30 @@ export default function StoreOrdersManagement() {
                       type="button"
                       onClick={sendOrderTemplate}
                       disabled={templateSending || !selectedTemplateKey || orderMessageTemplates.length === 0}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-4 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C5A059] disabled:opacity-50 disabled:hover:bg-[#4A4A4A]"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#171717] px-4 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C6A56B] disabled:opacity-50 disabled:hover:bg-[#171717]"
                     >
                       <Send size={14} /> {templateSending ? 'جاري الإرسال' : 'إرسال'}
                     </button>
                   </div>
 
                   {selectedMessageTemplate ? (
-                    <div className="mt-3 rounded-xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
-                      <p className="text-[10px] text-[#4A4A4A]/45 mb-1">عنوان الرسالة</p>
-                      <p className="text-xs font-bold text-[#4A4A4A] leading-relaxed">
+                    <div className="mt-3 rounded-xl bg-[#FAF9F7] border border-[#E8B4BC]/10 p-3">
+                      <p className="text-[10px] text-[#171717]/45 mb-1">عنوان الرسالة</p>
+                      <p className="text-xs font-bold text-[#171717] leading-relaxed">
                         {selectedMessageTemplate.subject || selectedMessageTemplate.name}
                       </p>
                     </div>
                   ) : (
-                    <p className="mt-3 text-xs text-[#4A4A4A]/45">
+                    <p className="mt-3 text-xs text-[#171717]/45">
                       لا توجد قوالب مرتبطة بالطلبات مفعلة حالياً.
                     </p>
                   )}
 
-                  <div className="mt-4 border-t border-[#D9A3AA]/10 pt-4">
+                  <div className="mt-4 border-t border-[#E8B4BC]/10 pt-4">
                     <div className="flex items-center justify-between gap-3 mb-2">
-                      <p className="text-xs font-black text-[#4A4A4A]/60">سجل إشعارات العميل</p>
+                      <p className="text-xs font-black text-[#171717]/60">سجل إشعارات العميل</p>
                       {orderMessageLogs.length > 0 && (
-                        <span className="text-[10px] font-bold text-[#4A4A4A]/40">
+                        <span className="text-[10px] font-bold text-[#171717]/40">
                           آخر {Math.min(orderMessageLogs.length, 8)}
                         </span>
                       )}
@@ -1685,10 +1685,10 @@ export default function StoreOrdersManagement() {
 
                     {messageLogsLoading ? (
                       <div className="flex justify-center py-4">
-                        <div className="w-5 h-5 rounded-full border-4 border-[#D9A3AA]/25 border-t-[#D9A3AA] animate-spin" />
+                        <div className="w-5 h-5 rounded-full border-4 border-[#E8B4BC]/25 border-t-[#E8B4BC] animate-spin" />
                       </div>
                     ) : orderMessageLogs.length === 0 ? (
-                      <p className="rounded-xl bg-[#F8F5F2] p-3 text-center text-xs text-[#4A4A4A]/40">
+                      <p className="rounded-xl bg-[#FAF9F7] p-3 text-center text-xs text-[#171717]/40">
                         لا توجد إشعارات مسجلة لهذا العميل حتى الآن.
                       </p>
                     ) : (
@@ -1696,16 +1696,16 @@ export default function StoreOrdersManagement() {
                         {orderMessageLogs.slice(0, 4).map((log) => {
                           const statusMeta = getMessageStatusMeta(log.status);
                           return (
-                            <div key={log.id} className="rounded-xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
+                            <div key={log.id} className="rounded-xl bg-[#FAF9F7] border border-[#E8B4BC]/10 p-3">
                               <div className="flex items-center justify-between gap-3">
-                                <p className="min-w-0 truncate text-xs font-black text-[#4A4A4A]">
+                                <p className="min-w-0 truncate text-xs font-black text-[#171717]">
                                   {log.subject || MESSAGE_TYPE_LABELS[log.type] || log.type}
                                 </p>
                                 <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${statusMeta.className}`}>
                                   {statusMeta.label}
                                 </span>
                               </div>
-                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-bold text-[#4A4A4A]/45">
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-bold text-[#171717]/45">
                                 <span>{MESSAGE_TYPE_LABELS[log.type] || log.type}</span>
                                 <span>•</span>
                                 <span>
@@ -1728,13 +1728,13 @@ export default function StoreOrdersManagement() {
                 </div>
 
                 {/* ── Admin Activity ── */}
-                <div className="bg-white rounded-2xl p-4 border border-[#D9A3AA]/15 shadow-sm">
+                <div className="bg-white rounded-2xl p-4 border border-[#E8B4BC]/15 shadow-sm">
                   <div className="flex items-center justify-between gap-3 mb-3">
-                    <h3 className="font-bold text-sm text-[#4A4A4A]/60 flex items-center gap-1.5">
-                      <History size={14} className="text-[#C5A059]" /> آخر نشاط إداري
+                    <h3 className="font-bold text-sm text-[#171717]/60 flex items-center gap-1.5">
+                      <History size={14} className="text-[#C6A56B]" /> آخر نشاط إداري
                     </h3>
                     {orderActivityLogs.length > 0 && (
-                      <span className="text-[10px] font-bold text-[#4A4A4A]/40">
+                      <span className="text-[10px] font-bold text-[#171717]/40">
                         {orderActivityLogs.length} أحداث
                       </span>
                     )}
@@ -1742,25 +1742,25 @@ export default function StoreOrdersManagement() {
 
                   {activityLogsLoading ? (
                     <div className="flex justify-center py-4">
-                      <div className="w-5 h-5 rounded-full border-4 border-[#C5A059]/25 border-t-[#C5A059] animate-spin" />
+                      <div className="w-5 h-5 rounded-full border-4 border-[#C6A56B]/25 border-t-[#C6A56B] animate-spin" />
                     </div>
                   ) : orderActivityLogs.length === 0 ? (
-                    <p className="rounded-xl bg-[#F8F5F2] p-3 text-center text-xs text-[#4A4A4A]/40">
+                    <p className="rounded-xl bg-[#FAF9F7] p-3 text-center text-xs text-[#171717]/40">
                       لا يوجد نشاط إداري مسجل لهذا الطلب بعد.
                     </p>
                   ) : (
                     <div className="space-y-2">
                       {orderActivityLogs.slice(0, 4).map((log) => (
-                        <div key={log.id} className="rounded-xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
+                        <div key={log.id} className="rounded-xl bg-[#FAF9F7] border border-[#E8B4BC]/10 p-3">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="min-w-0 truncate text-xs font-black text-[#4A4A4A]">
+                            <p className="min-w-0 truncate text-xs font-black text-[#171717]">
                               {getActivityActionLabel(log.action)}
                             </p>
-                            <span className="shrink-0 text-[10px] font-bold text-[#4A4A4A]/45">
+                            <span className="shrink-0 text-[10px] font-bold text-[#171717]/45">
                               {log.created_at ? new Date(log.created_at).toLocaleString('ar-SA') : '—'}
                             </span>
                           </div>
-                          <p className="mt-1 truncate text-[10px] font-bold text-[#4A4A4A]/45">
+                          <p className="mt-1 truncate text-[10px] font-bold text-[#171717]/45">
                             {log.actor_email || 'الحساب الإداري'}
                           </p>
                         </div>
@@ -1770,12 +1770,12 @@ export default function StoreOrdersManagement() {
                 </div>
 
                 {/* ── FSM Action Buttons ── */}
-                <div className="bg-[#F8F5F2] rounded-2xl p-4">
-                  <h3 className="font-bold text-sm text-[#4A4A4A]/60 mb-3 flex items-center gap-1.5">
-                    <AlertCircle size={14} className="text-[#D9A3AA]" /> تغيير الحالة
+                <div className="bg-[#FAF9F7] rounded-2xl p-4">
+                  <h3 className="font-bold text-sm text-[#171717]/60 mb-3 flex items-center gap-1.5">
+                    <AlertCircle size={14} className="text-[#E8B4BC]" /> تغيير الحالة
                   </h3>
                   {(VALID_TRANSITIONS[selectedOrder.status] || []).length === 0 ? (
-                    <p className="text-xs text-[#4A4A4A]/40 text-center py-2">
+                    <p className="text-xs text-[#171717]/40 text-center py-2">
                       لا توجد انتقالات متاحة لهذه الحالة
                     </p>
                   ) : (
@@ -1802,10 +1802,10 @@ export default function StoreOrdersManagement() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 pt-4 pb-8 md:pb-4 border-t border-[#D9A3AA]/15 shrink-0 bg-white">
+            <div className="px-6 pt-4 pb-8 md:pb-4 border-t border-[#E8B4BC]/15 shrink-0 bg-white">
               <button
                 onClick={closeModal}
-                className="w-full py-2.5 rounded-xl bg-[#F8F5F2] text-[#4A4A4A] font-bold text-sm hover:bg-[#D9A3AA]/10 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-[#FAF9F7] text-[#171717] font-bold text-sm hover:bg-[#E8B4BC]/10 transition-colors"
               >
                 إغلاق
               </button>

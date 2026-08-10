@@ -52,31 +52,31 @@ const ACTIVITY_ACTION_LABELS = {
 
 function CustomerActivityPanel({ logs = [], loading = false }) {
   return (
-    <div className="bg-white/80 border border-[#C5A059]/15 rounded-xl p-3">
-      <div className="mb-2 flex items-center gap-2 text-xs font-black text-[#C5A059]">
+    <div className="bg-white/80 border border-[#C6A56B]/15 rounded-xl p-3">
+      <div className="mb-2 flex items-center gap-2 text-xs font-black text-[#C6A56B]">
         <History size={13} /> آخر نشاط إداري
       </div>
       {loading ? (
         <div className="flex justify-center py-3">
-          <Loader2 size={16} className="animate-spin text-[#C5A059]" />
+          <Loader2 size={16} className="animate-spin text-[#C6A56B]" />
         </div>
       ) : logs.length === 0 ? (
-        <p className="rounded-lg bg-[#F8F5F2] px-3 py-2 text-center text-[11px] font-bold text-[#4A4A4A]/40">
+        <p className="rounded-lg bg-[#FAF9F7] px-3 py-2 text-center text-[11px] font-bold text-[#171717]/40">
           لا يوجد نشاط مسجل لهذا العميل.
         </p>
       ) : (
         <div className="space-y-2">
           {logs.slice(0, 3).map((log) => (
-            <div key={log.id} className="rounded-lg bg-[#F8F5F2] px-3 py-2 text-[11px]">
+            <div key={log.id} className="rounded-lg bg-[#FAF9F7] px-3 py-2 text-[11px]">
               <div className="flex items-center justify-between gap-3">
-                <p className="truncate font-black text-[#4A4A4A]">
+                <p className="truncate font-black text-[#171717]">
                   {ACTIVITY_ACTION_LABELS[log.action] || log.action}
                 </p>
-                <span className="shrink-0 text-[#4A4A4A]/45">
+                <span className="shrink-0 text-[#171717]/45">
                   {log.created_at ? new Date(log.created_at).toLocaleDateString('en-GB') : '—'}
                 </span>
               </div>
-              <p className="truncate text-[#4A4A4A]/45">{log.actor_email || 'الحساب الإداري'}</p>
+              <p className="truncate text-[#171717]/45">{log.actor_email || 'الحساب الإداري'}</p>
             </div>
           ))}
         </div>
@@ -1390,15 +1390,15 @@ export default function Customers() {
   ), [customersData]);
 
   return (
-    <div className="w-full pb-20 space-y-6 text-[#4A4A4A]">
+    <div className="w-full pb-20 space-y-6 text-[#171717]">
 
       {/* Header */}
       <div className="flex justify-between items-start pt-1 gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-black text-[#4A4A4A] tracking-tight flex items-center gap-2">
-            <Users size={20} className="text-[#D9A3AA] shrink-0" /> سجل ولاء العملاء
+          <h1 className="text-xl sm:text-2xl font-black text-[#171717] tracking-tight flex items-center gap-2">
+            <Users size={20} className="text-[#E8B4BC] shrink-0" /> سجل ولاء العملاء
           </h1>
-          <p className="text-xs sm:text-sm text-[#4A4A4A]/50 mt-0.5">إدارة متقدمة لبيانات ومحافظ العملاء</p>
+          <p className="text-xs sm:text-sm text-[#171717]/50 mt-0.5">إدارة متقدمة لبيانات ومحافظ العملاء</p>
         </div>
         <div className="flex gap-2 shrink-0">
           <button
@@ -1420,40 +1420,40 @@ export default function Customers() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-[#4A4A4A]/50 text-xs font-bold mb-2">
+        <div className="bg-white border border-[#E8B4BC]/20 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 text-[#171717]/50 text-xs font-bold mb-2">
             <Users size={13} /> إجمالي العملاء
           </div>
-          <div className="text-3xl font-black text-[#4A4A4A]">{stats.totalCustomers}</div>
+          <div className="text-3xl font-black text-[#171717]">{stats.totalCustomers}</div>
         </div>
-        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-[#E8B4BC]/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 text-amber-600/80 text-xs font-bold mb-2">
             <Crown size={13} /> كبار العملاء VIP
           </div>
           <div className="text-3xl font-black text-amber-600">{stats.vipCustomers}</div>
         </div>
-        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-[#E8B4BC]/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 text-violet-500/80 text-xs font-bold mb-2">
             <Wallet size={13} /> رصيد النقاط
           </div>
-          <div className="text-3xl font-black text-[#4A4A4A]">
+          <div className="text-3xl font-black text-[#171717]">
             {customersData.reduce((sum, c) => sum + Number(c.rewardPoints || 0), 0).toLocaleString()}
-            <span className="text-sm font-normal text-[#4A4A4A]/40 mr-1">نقطة</span>
+            <span className="text-sm font-normal text-[#171717]/40 mr-1">نقطة</span>
           </div>
         </div>
-        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-[#E8B4BC]/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 text-blue-500/80 text-xs font-bold mb-2">
             <ShieldCheck size={13} /> حسابات المتجر
           </div>
           <div className="text-3xl font-black text-blue-600">{stats.storeCustomers}</div>
-          <div className="text-[10px] text-[#4A4A4A]/45 mt-1">{stats.storeRevenue.toFixed(0)} <RiyalSign size="0.8em" /> مدفوعات</div>
+          <div className="text-[10px] text-[#171717]/45 mt-1">{stats.storeRevenue.toFixed(0)} <RiyalSign size="0.8em" /> مدفوعات</div>
         </div>
-        <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-[#E8B4BC]/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 text-emerald-500/80 text-xs font-bold mb-2">
             <Mail size={13} /> موافقات التسويق
           </div>
           <div className="text-3xl font-black text-emerald-600">{stats.marketingCustomers}</div>
-          <div className="text-[10px] text-[#4A4A4A]/45 mt-1">جاهزون لحملات Resend</div>
+          <div className="text-[10px] text-[#171717]/45 mt-1">جاهزون لحملات Resend</div>
         </div>
         <div className="bg-gradient-to-br from-amber-500 to-amber-400 rounded-2xl p-5 shadow-lg shadow-amber-500/20">
           <div className="flex items-center gap-2 text-white/70 text-xs font-bold mb-2">
@@ -1475,40 +1475,40 @@ export default function Customers() {
       </div>
 
       {/* Controls */}
-      <div className="bg-white border border-[#D9A3AA]/20 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
+      <div className="bg-white border border-[#E8B4BC]/20 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           <div className="relative w-full md:w-80">
             {search ? (
-              <X size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/60 cursor-pointer hover:text-red-500 transition-colors" onClick={() => setSearch("")} />
+              <X size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171717]/60 cursor-pointer hover:text-red-500 transition-colors" onClick={() => setSearch("")} />
             ) : (
-              <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4A4A]/40" />
+              <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171717]/40" />
             )}
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="بحث بالاسم أو الجوال أو البريد أو رقم الاشتراك..."
-              className="w-full border border-[#D9A3AA]/20 rounded-xl px-4 py-2.5 pr-9 outline-none focus:border-[#D9A3AA] focus:ring-2 focus:ring-[#D9A3AA]/20 text-sm bg-[#F8F5F2]/40"
+              className="w-full border border-[#E8B4BC]/20 rounded-xl px-4 py-2.5 pr-9 outline-none focus:border-[#E8B4BC] focus:ring-2 focus:ring-[#E8B4BC]/20 text-sm bg-[#FAF9F7]/40"
             />
           </div>
-          <button onClick={() => setFilter("all")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border transition-all ${filter === "all" ? "bg-[#4A4A4A] text-white border-[#4A4A4A]" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-[#4A4A4A]/30"}`}>
+          <button onClick={() => setFilter("all")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border transition-all ${filter === "all" ? "bg-[#171717] text-white border-[#171717]" : "bg-white text-[#171717]/70 border-[#E8B4BC]/20 hover:border-[#171717]/30"}`}>
             الكل
           </button>
-          <button onClick={() => setFilter("vip")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "vip" ? "bg-amber-500 text-white border-amber-500 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-amber-300"}`}>
+          <button onClick={() => setFilter("vip")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "vip" ? "bg-amber-500 text-white border-amber-500 shadow-sm" : "bg-white text-[#171717]/70 border-[#E8B4BC]/20 hover:border-amber-300"}`}>
             <Crown size={13} /> VIP
           </button>
-          <button onClick={() => setFilter("store")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "store" ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-blue-300"}`}>
+          <button onClick={() => setFilter("store")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "store" ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-white text-[#171717]/70 border-[#E8B4BC]/20 hover:border-blue-300"}`}>
             <ShieldCheck size={13} /> المتجر
           </button>
-          <button onClick={() => setFilter("marketing")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "marketing" ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-emerald-300"}`}>
+          <button onClick={() => setFilter("marketing")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "marketing" ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-white text-[#171717]/70 border-[#E8B4BC]/20 hover:border-emerald-300"}`}>
             <Mail size={13} /> التسويق
           </button>
-          <button onClick={() => setFilter("attention")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "attention" ? "bg-red-500 text-white border-red-500 shadow-sm" : "bg-white text-[#4A4A4A]/70 border-[#D9A3AA]/20 hover:border-red-300"}`}>
+          <button onClick={() => setFilter("attention")} className={`px-3 py-2.5 rounded-xl text-sm font-bold border flex items-center gap-1.5 transition-all ${filter === "attention" ? "bg-red-500 text-white border-red-500 shadow-sm" : "bg-white text-[#171717]/70 border-[#E8B4BC]/20 hover:border-red-300"}`}>
             <AlertTriangle size={13} /> متابعة
           </button>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-xs text-[#4A4A4A]/50 font-bold shrink-0">ترتيب حسب:</span>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-[#D9A3AA]/20 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#D9A3AA] bg-[#F8F5F2]/40 flex-1 md:flex-none">
+          <span className="text-xs text-[#171717]/50 font-bold shrink-0">ترتيب حسب:</span>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-[#E8B4BC]/20 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#E8B4BC] bg-[#FAF9F7]/40 flex-1 md:flex-none">
             <option value="netBalance">الرصيد الصافي</option>
             <option value="lifetimeValue">قيمة العميل</option>
             <option value="storePaid">مدفوعات المتجر</option>
@@ -1524,35 +1524,35 @@ export default function Customers() {
       {/* ══ بطاقات الجوال (أقل من md) ══ */}
       <div className="md:hidden space-y-3">
         {loading ? (
-          <div className="text-center py-12 text-[#4A4A4A]/50">جاري التحميل...</div>
+          <div className="text-center py-12 text-[#171717]/50">جاري التحميل...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-[#4A4A4A]/50">لا يوجد عملاء</div>
+          <div className="text-center py-12 text-[#171717]/50">لا يوجد عملاء</div>
         ) : filtered.map((customer) => {
           const isExpanded = expandedCustomerId === customer.id;
           const segment = getSegmentMeta(customer.segment);
           const SegmentIcon = segment.icon;
           return (
-            <div key={customer.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isExpanded ? 'border-[#D9A3AA]/40' : 'border-[#D9A3AA]/20'}`}>
+            <div key={customer.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isExpanded ? 'border-[#E8B4BC]/40' : 'border-[#E8B4BC]/20'}`}>
               {/* صف رئيسي */}
               <div
                 onClick={() => handleExpandRow(customer)}
-                className="flex items-center gap-3 p-4 cursor-pointer active:bg-[#F8F5F2]"
+                className="flex items-center gap-3 p-4 cursor-pointer active:bg-[#FAF9F7]"
               >
                 {/* الأفاتار */}
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${isExpanded ? 'bg-[#D9A3AA] text-white' : 'bg-[#D9A3AA]/10 text-[#D9A3AA]'}`}>
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${isExpanded ? 'bg-[#E8B4BC] text-white' : 'bg-[#E8B4BC]/10 text-[#E8B4BC]'}`}>
                   {(customer.name || "؟").slice(0, 1)}
                 </div>
 
                 {/* الاسم + الجوال */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-[#4A4A4A] text-sm leading-tight">{customer.name}</span>
+                    <span className="font-bold text-[#171717] text-sm leading-tight">{customer.name}</span>
                     {customer.isVip && <Crown size={12} className="text-amber-500 shrink-0"/>}
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black ${segment.className}`}>
                       <SegmentIcon size={10} /> {segment.label}
                     </span>
                   </div>
-                  <div className="text-xs text-[#4A4A4A]/40 font-mono mt-0.5" dir="ltr">{customer.email || customer.phone || "—"}</div>
+                  <div className="text-xs text-[#171717]/40 font-mono mt-0.5" dir="ltr">{customer.email || customer.phone || "—"}</div>
                   {/* الأرصدة */}
                   <div className="flex gap-2 mt-1.5 flex-wrap">
                     {customer.isStoreCustomer && (
@@ -1573,7 +1573,7 @@ export default function Customers() {
                     {customer.subscriptionCode && (
                       <button
                         onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(customer.subscriptionCode); toast.success(`كود: ${customer.subscriptionCode}`); }}
-                        className="text-[10px] font-black bg-[#4A4A4A] text-white px-2 py-0.5 rounded-lg tracking-widest font-mono"
+                        className="text-[10px] font-black bg-[#171717] text-white px-2 py-0.5 rounded-lg tracking-widest font-mono"
                       >{customer.subscriptionCode}</button>
                     )}
                     {customer.packageBalance > 0.5 && (
@@ -1606,7 +1606,7 @@ export default function Customers() {
                   )}
                   <button
                     onClick={() => handleExpandRow(customer)}
-                    className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-[#D9A3AA]/15 text-[#D9A3AA] rotate-180' : 'text-[#4A4A4A]/40'}`}>
+                    className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-[#E8B4BC]/15 text-[#E8B4BC] rotate-180' : 'text-[#171717]/40'}`}>
                     <ChevronDown size={16}/>
                   </button>
                 </div>
@@ -1614,34 +1614,34 @@ export default function Customers() {
 
               {/* التفاصيل الموسّعة — جوال */}
               {isExpanded && (
-                <div className="border-t border-[#D9A3AA]/15 bg-[#F8F5F2]/50 p-4 space-y-4 animate-in slide-in-from-top-1 fade-in duration-200">
+                <div className="border-t border-[#E8B4BC]/15 bg-[#FAF9F7]/50 p-4 space-y-4 animate-in slide-in-from-top-1 fade-in duration-200">
                   {/* رقم الاشتراك إذا لم يكن موجوداً */}
                   {!customer.subscriptionCode && (
                     <button onClick={(e) => handleGenerateCode(customer, e)}
                       disabled={generatingCodeFor === customer.id}
-                      className="w-full flex items-center justify-center gap-2 text-xs font-bold text-[#D9A3AA] border border-dashed border-[#D9A3AA]/40 rounded-xl py-2 hover:bg-[#D9A3AA]/5">
+                      className="w-full flex items-center justify-center gap-2 text-xs font-bold text-[#E8B4BC] border border-dashed border-[#E8B4BC]/40 rounded-xl py-2 hover:bg-[#E8B4BC]/5">
                       {generatingCodeFor === customer.id ? <Loader2 size={13} className="animate-spin"/> : <Sparkles size={13}/>}
                       توليد رقم اشتراك
                     </button>
                   )}
                   {/* ملخص النشاط */}
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
-                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">قيمة العميل</span>
-                      <span className="font-black text-[#4A4A4A] text-sm">{Number(customer.lifetimeValue || 0).toFixed(0)}</span>
-                      <span className="text-[9px] text-[#4A4A4A]/40 block"><RiyalSign size="0.8em" /></span>
+                    <div className="bg-white rounded-xl p-3 text-center border border-[#E8B4BC]/15">
+                      <span className="text-[9px] text-[#171717]/50 block mb-1">قيمة العميل</span>
+                      <span className="font-black text-[#171717] text-sm">{Number(customer.lifetimeValue || 0).toFixed(0)}</span>
+                      <span className="text-[9px] text-[#171717]/40 block"><RiyalSign size="0.8em" /></span>
                     </div>
-                    <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
-                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">طلبات المتجر</span>
+                    <div className="bg-white rounded-xl p-3 text-center border border-[#E8B4BC]/15">
+                      <span className="text-[9px] text-[#171717]/50 block mb-1">طلبات المتجر</span>
                       <span className="font-black text-blue-600 text-sm">{customer.storeOrdersCount}</span>
                     </div>
                     <div className="bg-white rounded-xl p-3 text-center border border-red-100">
                       <span className="text-[9px] text-red-400 block mb-1">استرجاعات</span>
-                      <span className={`font-black text-sm ${customer.openReturnRequests > 0 ? 'text-red-500' : 'text-[#4A4A4A]/30'}`}>{customer.openReturnRequests || '—'}</span>
+                      <span className={`font-black text-sm ${customer.openReturnRequests > 0 ? 'text-red-500' : 'text-[#171717]/30'}`}>{customer.openReturnRequests || '—'}</span>
                     </div>
-                    <div className="bg-white rounded-xl p-3 text-center border border-[#D9A3AA]/15">
-                      <span className="text-[9px] text-[#4A4A4A]/50 block mb-1">طلبات الطباعة</span>
-                      <span className="font-black text-[#4A4A4A] text-sm">{customer.printOrdersCount}</span>
+                    <div className="bg-white rounded-xl p-3 text-center border border-[#E8B4BC]/15">
+                      <span className="text-[9px] text-[#171717]/50 block mb-1">طلبات الطباعة</span>
+                      <span className="font-black text-[#171717] text-sm">{customer.printOrdersCount}</span>
                     </div>
                     <div className="bg-white rounded-xl p-3 text-center border border-emerald-100">
                       <span className="text-[9px] text-emerald-500 block mb-1">مدفوعات المتجر</span>
@@ -1649,7 +1649,7 @@ export default function Customers() {
                     </div>
                     <div className="bg-white rounded-xl p-3 text-center border border-red-100">
                       <span className="text-[9px] text-red-400 block mb-1">مديونية</span>
-                      <span className={`font-black text-sm ${customer.debt + customer.storeDebt > 0.5 ? 'text-red-500' : 'text-[#4A4A4A]/30'}`}>
+                      <span className={`font-black text-sm ${customer.debt + customer.storeDebt > 0.5 ? 'text-red-500' : 'text-[#171717]/30'}`}>
                         {customer.debt + customer.storeDebt > 0.5 ? (customer.debt + customer.storeDebt).toFixed(1) : '—'}
                       </span>
                     </div>
@@ -1663,7 +1663,7 @@ export default function Customers() {
                         type="button"
                         onClick={() => handleSendRewardExpiryReminder(customer)}
                         disabled={sendingRewardReminderFor === customer.id || !customer.email || !customer.rewardDetails?.nextExpiryAt}
-                        className="flex items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-3 py-2 text-xs font-black text-white disabled:opacity-40"
+                        className="flex items-center justify-center gap-2 rounded-xl bg-[#171717] px-3 py-2 text-xs font-black text-white disabled:opacity-40"
                       >
                         {sendingRewardReminderFor === customer.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                         إرسال تنبيه الانتهاء
@@ -1699,9 +1699,9 @@ export default function Customers() {
                       </div>
                       <div className="space-y-2">
                         {customer.messageLogs.slice(0, 2).map((log) => (
-                          <div key={log.id} className="rounded-lg bg-[#F8F5F2] px-3 py-2 text-[11px]">
-                            <div className="font-black text-[#4A4A4A] truncate">{log.subject || MESSAGE_TYPE_LABELS[log.type] || log.type}</div>
-                            <div className="text-[#4A4A4A]/45">
+                          <div key={log.id} className="rounded-lg bg-[#FAF9F7] px-3 py-2 text-[11px]">
+                            <div className="font-black text-[#171717] truncate">{log.subject || MESSAGE_TYPE_LABELS[log.type] || log.type}</div>
+                            <div className="text-[#171717]/45">
                               {MESSAGE_TYPE_LABELS[log.type] || log.type} · {log.sent_at || log.created_at ? new Date(log.sent_at || log.created_at).toLocaleDateString('en-GB') : '—'}
                             </div>
                           </div>
@@ -1713,17 +1713,17 @@ export default function Customers() {
                   {/* العنوان والملاحظات */}
                   <div className="space-y-3">
                     <div>
-                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/60 mb-1"><MapPin size={10}/> العنوان</label>
+                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#171717]/60 mb-1"><MapPin size={10}/> العنوان</label>
                       <input type="text" placeholder="العنوان / موقع التوصيل" value={customerDetails.address}
                         onChange={(e) => setCustomerDetails({ ...customerDetails, address: e.target.value })}
-                        className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"/>
+                        className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]"/>
                     </div>
                     <div>
-                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/60 mb-1"><Tag size={10}/> الحالة الإدارية</label>
+                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#171717]/60 mb-1"><Tag size={10}/> الحالة الإدارية</label>
                       <select
                         value={customerDetails.adminStatus}
                         onChange={(e) => setCustomerDetails({ ...customerDetails, adminStatus: e.target.value })}
-                        className="w-full bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"
+                        className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]"
                       >
                         {CRM_STATUS_OPTIONS.map(option => (
                           <option key={option.value} value={option.value}>{option.label}</option>
@@ -1731,13 +1731,13 @@ export default function Customers() {
                       </select>
                     </div>
                     <div>
-                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/60 mb-1"><StickyNote size={10}/> ملاحظات</label>
+                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#171717]/60 mb-1"><StickyNote size={10}/> ملاحظات</label>
                       <textarea placeholder="ملاحظات خاصة بالعميل..." value={customerDetails.notes}
                         onChange={(e) => setCustomerDetails({ ...customerDetails, notes: e.target.value })}
-                        className="w-full h-16 resize-none bg-white border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA]"/>
+                        className="w-full h-16 resize-none bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC]"/>
                     </div>
                     <button onClick={() => handleSaveCustomerDetails(customer)} disabled={isSavingDetails}
-                      className="w-full bg-[#4A4A4A] text-white text-sm font-bold py-2.5 rounded-xl flex items-center justify-center gap-2">
+                      className="w-full bg-[#171717] text-white text-sm font-bold py-2.5 rounded-xl flex items-center justify-center gap-2">
                       {isSavingDetails ? <Loader2 size={14} className="animate-spin"/> : <Save size={14}/>} حفظ
                     </button>
                   </div>
@@ -1749,35 +1749,35 @@ export default function Customers() {
       </div>
 
       {/* ══ جدول الديسكتوب (md فأعلى) ══ */}
-      <div className="hidden md:block bg-white border border-[#D9A3AA]/20 rounded-2xl shadow-sm overflow-hidden">
+      <div className="hidden md:block bg-white border border-[#E8B4BC]/20 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
         <table className="min-w-full text-right">
-          <thead className="bg-[#F8F5F2] border-b border-[#D9A3AA]/20">
-            <tr className="text-sm font-bold text-[#4A4A4A]/70 select-none">
-              <th className="px-6 py-4 cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('name')}>
-                <div className="flex items-center gap-2">بيانات العميل <ArrowUpDown size={12} className={sortBy === 'name' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+          <thead className="bg-[#FAF9F7] border-b border-[#E8B4BC]/20">
+            <tr className="text-sm font-bold text-[#171717]/70 select-none">
+              <th className="px-6 py-4 cursor-pointer hover:bg-[#E8B4BC]/10 transition-colors" onClick={() => handleSort('name')}>
+                <div className="flex items-center gap-2">بيانات العميل <ArrowUpDown size={12} className={sortBy === 'name' ? 'text-[#E8B4BC]' : 'opacity-30'} /></div>
               </th>
-              <th className="px-6 py-4 cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('phone')}>
-                <div className="flex items-center justify-end gap-2">رقم الجوال <ArrowUpDown size={12} className={sortBy === 'phone' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              <th className="px-6 py-4 cursor-pointer hover:bg-[#E8B4BC]/10 transition-colors" onClick={() => handleSort('phone')}>
+                <div className="flex items-center justify-end gap-2">رقم الجوال <ArrowUpDown size={12} className={sortBy === 'phone' ? 'text-[#E8B4BC]' : 'opacity-30'} /></div>
               </th>
-              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('subscriptionCode')}>
-                <div className="flex items-center justify-center gap-2">رقم الاشتراك <ArrowUpDown size={12} className={sortBy === 'subscriptionCode' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#E8B4BC]/10 transition-colors" onClick={() => handleSort('subscriptionCode')}>
+                <div className="flex items-center justify-center gap-2">رقم الاشتراك <ArrowUpDown size={12} className={sortBy === 'subscriptionCode' ? 'text-[#E8B4BC]' : 'opacity-30'} /></div>
               </th>
-              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('packageBalance')}>
-                <div className="flex items-center justify-center gap-2">رصيد الباقات <ArrowUpDown size={12} className={sortBy === 'packageBalance' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#E8B4BC]/10 transition-colors" onClick={() => handleSort('packageBalance')}>
+                <div className="flex items-center justify-center gap-2">رصيد الباقات <ArrowUpDown size={12} className={sortBy === 'packageBalance' ? 'text-[#E8B4BC]' : 'opacity-30'} /></div>
               </th>
-              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#D9A3AA]/10 transition-colors" onClick={() => handleSort('rewardPoints')}>
-                <div className="flex items-center justify-center gap-2">رصيد النقاط <ArrowUpDown size={12} className={sortBy === 'rewardPoints' ? 'text-[#D9A3AA]' : 'opacity-30'} /></div>
+              <th className="px-6 py-4 text-center cursor-pointer hover:bg-[#E8B4BC]/10 transition-colors" onClick={() => handleSort('rewardPoints')}>
+                <div className="flex items-center justify-center gap-2">رصيد النقاط <ArrowUpDown size={12} className={sortBy === 'rewardPoints' ? 'text-[#E8B4BC]' : 'opacity-30'} /></div>
               </th>
               <th className="px-6 py-4 text-left">إجراءات</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[#D9A3AA]/10">
+          <tbody className="divide-y divide-[#E8B4BC]/10">
             {loading ? (
-              <tr><td className="p-8 text-center text-[#4A4A4A]/70" colSpan={6}>جاري التحميل...</td></tr>
+              <tr><td className="p-8 text-center text-[#171717]/70" colSpan={6}>جاري التحميل...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td className="p-8 text-center text-[#4A4A4A]/70" colSpan={6}>لا يوجد عملاء</td></tr>
+              <tr><td className="p-8 text-center text-[#171717]/70" colSpan={6}>لا يوجد عملاء</td></tr>
             ) : (
               filtered.map((customer) => {
                 const isExpanded = expandedCustomerId === customer.id;
@@ -1787,15 +1787,15 @@ export default function Customers() {
                   <React.Fragment key={customer.id}>
                     <tr
                       onClick={() => handleExpandRow(customer)}
-                      className={`hover:bg-[#F8F5F2] cursor-pointer transition-colors group ${isExpanded ? 'bg-[#F8F5F2]/50' : ''}`}
+                      className={`hover:bg-[#FAF9F7] cursor-pointer transition-colors group ${isExpanded ? 'bg-[#FAF9F7]/50' : ''}`}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg transition-transform ${isExpanded ? 'bg-[#D9A3AA] text-white scale-110' : 'bg-[#D9A3AA]/10 text-[#D9A3AA] group-hover:scale-105'}`}>
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg transition-transform ${isExpanded ? 'bg-[#E8B4BC] text-white scale-110' : 'bg-[#E8B4BC]/10 text-[#E8B4BC] group-hover:scale-105'}`}>
                             {(customer.name || "؟").slice(0, 1)}
                           </div>
                           <div>
-                            <div className="font-bold text-[#4A4A4A] text-base flex items-center gap-2">
+                            <div className="font-bold text-[#171717] text-base flex items-center gap-2">
                               {customer.name}
                               {customer.isVip && (
                                 <span className="bg-amber-100 text-amber-700 p-1 rounded-full" title="عميل VIP">
@@ -1818,12 +1818,12 @@ export default function Customers() {
                                 </span>
                               )}
                             </div>
-                            {customer.email && <div className="text-[11px] text-[#4A4A4A]/45 mt-1 dir-ltr text-right">{customer.email}</div>}
+                            {customer.email && <div className="text-[11px] text-[#171717]/45 mt-1 dir-ltr text-right">{customer.email}</div>}
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 font-mono text-sm text-[#4A4A4A]/80 dir-ltr text-right">
+                      <td className="px-6 py-4 font-mono text-sm text-[#171717]/80 dir-ltr text-right">
                         {customer.phone || "-"}
                       </td>
 
@@ -1832,7 +1832,7 @@ export default function Customers() {
                         {customer.subscriptionCode ? (
                           <button
                             onClick={() => { navigator.clipboard.writeText(customer.subscriptionCode); toast.success(`تم نسخ الكود: ${customer.subscriptionCode}`); }}
-                            className="inline-flex items-center gap-1.5 bg-[#4A4A4A] text-white px-3 py-1.5 rounded-xl text-sm font-black tracking-widest hover:bg-[#333] transition-colors shadow-sm font-mono"
+                            className="inline-flex items-center gap-1.5 bg-[#171717] text-white px-3 py-1.5 rounded-xl text-sm font-black tracking-widest hover:bg-[#333] transition-colors shadow-sm font-mono"
                             title="انقر لنسخ رقم الاشتراك"
                           >
                             {customer.subscriptionCode}
@@ -1841,7 +1841,7 @@ export default function Customers() {
                           <button
                             onClick={(e) => handleGenerateCode(customer, e)}
                             disabled={generatingCodeFor === customer.id}
-                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#4A4A4A]/50 hover:text-[#D9A3AA] border border-dashed border-[#D9A3AA]/30 hover:border-[#D9A3AA] px-2 py-1 rounded-lg transition-all"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#171717]/50 hover:text-[#E8B4BC] border border-dashed border-[#E8B4BC]/30 hover:border-[#E8B4BC] px-2 py-1 rounded-lg transition-all"
                           >
                             {generatingCodeFor === customer.id ? <Loader2 size={11} className="animate-spin"/> : <Sparkles size={11}/>}
                             توليد
@@ -1857,7 +1857,7 @@ export default function Customers() {
                             {customer.packageBalance.toFixed(1)} <RiyalSign />
                           </span>
                         ) : (
-                          <span className="text-[#4A4A4A]/30 text-xs font-bold">—</span>
+                          <span className="text-[#171717]/30 text-xs font-bold">—</span>
                         )}
                       </td>
 
@@ -1868,7 +1868,7 @@ export default function Customers() {
                             {Number(customer.rewardPoints).toLocaleString()} نقطة
                           </span>
                         ) : (
-                          <span className="text-[#4A4A4A]/30 text-xs font-bold">—</span>
+                          <span className="text-[#171717]/30 text-xs font-bold">—</span>
                         )}
                       </td>
 
@@ -1896,7 +1896,7 @@ export default function Customers() {
                               <Package size={18} />
                             </button>
                           )}
-                          <button className={`p-2 rounded-xl text-[#4A4A4A]/50 transition-all ${isExpanded ? 'bg-[#D9A3AA]/10 text-[#D9A3AA] rotate-180' : 'group-hover:bg-[#F8F5F2]'}`}>
+                          <button className={`p-2 rounded-xl text-[#171717]/50 transition-all ${isExpanded ? 'bg-[#E8B4BC]/10 text-[#E8B4BC] rotate-180' : 'group-hover:bg-[#FAF9F7]'}`}>
                             <ChevronDown size={18} />
                           </button>
                         </div>
@@ -1905,44 +1905,44 @@ export default function Customers() {
 
                     {/* القائمة المنسدلة */}
                     {isExpanded && (
-                      <tr className="bg-[#F8F5F2]/40 border-b-2 border-[#D9A3AA]/20">
+                      <tr className="bg-[#FAF9F7]/40 border-b-2 border-[#E8B4BC]/20">
                         <td colSpan="6" className="p-0">
                           <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-top-2 fade-in duration-300">
 
                             {/* القسم الأيمن */}
-                            <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
-                              <h4 className="font-bold text-[#4A4A4A] mb-4 flex items-center gap-2 border-b border-[#F8F5F2] pb-3">
-                                <ShoppingBag size={18} className="text-[#C5A059]" /> ملخص نشاط العميل
+                            <div className="bg-white p-5 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">
+                              <h4 className="font-bold text-[#171717] mb-4 flex items-center gap-2 border-b border-[#FAF9F7] pb-3">
+                                <ShoppingBag size={18} className="text-[#C6A56B]" /> ملخص نشاط العميل
                               </h4>
                               <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-[#F8F5F2] p-3 rounded-xl">
-                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">مشتريات الطباعة</span>
-                                  <span className="font-black text-[#4A4A4A] text-lg">{Number(customer.totalRequired || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
+                                <div className="bg-[#FAF9F7] p-3 rounded-xl">
+                                  <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">مشتريات الطباعة</span>
+                                  <span className="font-black text-[#171717] text-lg">{Number(customer.totalRequired || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
                                 </div>
-                                <div className="bg-[#F8F5F2] p-3 rounded-xl">
-                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">طلبات الطباعة</span>
-                                  <span className="font-black text-[#4A4A4A] text-lg">{customer.printOrdersCount} <span className="text-xs font-normal">طلبات</span></span>
+                                <div className="bg-[#FAF9F7] p-3 rounded-xl">
+                                  <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">طلبات الطباعة</span>
+                                  <span className="font-black text-[#171717] text-lg">{customer.printOrdersCount} <span className="text-xs font-normal">طلبات</span></span>
                                 </div>
-                                <div className="bg-[#F8F5F2] p-3 rounded-xl">
-                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">تاريخ آخر طلب</span>
-                                  <span className="font-bold text-[#4A4A4A] text-sm mt-1 block">
+                                <div className="bg-[#FAF9F7] p-3 rounded-xl">
+                                  <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">تاريخ آخر طلب</span>
+                                  <span className="font-bold text-[#171717] text-sm mt-1 block">
                                     {customer.lastOrderDate ? customer.lastOrderDate.toLocaleDateString("en-GB") : "-"}
                                   </span>
                                 </div>
 
                                 {/* تفصيل الرصيد */}
-                                <div className="bg-[#F8F5F2] p-3 rounded-xl relative group">
-                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">تفصيل الرصيد</span>
+                                <div className="bg-[#FAF9F7] p-3 rounded-xl relative group">
+                                  <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">تفصيل الرصيد</span>
 
                                   {editingBalanceId === customer.id ? (
                                     <div className="mt-1 animate-in fade-in">
                                       <div className="flex items-center gap-1 mb-1">
-                                        <span className="text-[10px] font-bold text-[#4A4A4A]">النقاط:</span>
+                                        <span className="text-[10px] font-bold text-[#171717]">النقاط:</span>
                                         <input
                                           type="number"
                                           value={editWalletBalance}
                                           onChange={(e) => setEditWalletBalance(e.target.value)}
-                                          className="w-full h-6 text-xs text-center border border-[#D9A3AA]/40 rounded outline-none font-bold text-violet-600 bg-white"
+                                          className="w-full h-6 text-xs text-center border border-[#E8B4BC]/40 rounded outline-none font-bold text-violet-600 bg-white"
                                         />
                                       </div>
                                       <div className="flex items-center gap-1 mt-2">
@@ -1956,16 +1956,16 @@ export default function Customers() {
                                     </div>
                                   ) : (
                                     <>
-                                      <span className="font-bold text-[#4A4A4A] text-[11px] mt-1 block leading-tight">
+                                      <span className="font-bold text-[#171717] text-[11px] mt-1 block leading-tight">
                                         نقاط: <span className="text-violet-600">{Number(customer.rewardPoints || 0).toLocaleString()}</span>
-                                        <span className="text-[#4A4A4A]/40"> ({Number(customer.walletBalance || 0).toFixed(2)} ر.س)</span><br />
+                                        <span className="text-[#171717]/40"> ({Number(customer.walletBalance || 0).toFixed(2)} ر.س)</span><br />
                                         رصيد متجر: <span className="text-emerald-600">{Number(customer.storeCredit || 0).toFixed(2)} ر.س</span><br />
                                         باقات: <span className="text-amber-600">{Number(customer.packageBalance || 0).toFixed(1)}</span><br />
                                         مديونية: <span className="text-red-500">{Number(customer.debt || 0).toFixed(1)}</span>
                                       </span>
                                       <button
                                         onClick={() => { setEditingBalanceId(customer.id); setEditWalletBalance(customer.rewardPoints || 0); }}
-                                        className="absolute top-2 left-2 p-1 bg-white border border-[#D9A3AA]/20 rounded shadow-sm text-[#4A4A4A]/50 hover:text-[#D9A3AA] opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute top-2 left-2 p-1 bg-white border border-[#E8B4BC]/20 rounded shadow-sm text-[#171717]/50 hover:text-[#E8B4BC] opacity-0 group-hover:opacity-100 transition-opacity"
                                         title="تعديل رصيد النقاط"
                                       >
                                         <Edit2 size={12} />
@@ -1988,9 +1988,9 @@ export default function Customers() {
                                   <span className="block text-[10px] text-rose-600/70 font-bold mb-1">استرجاعات مفتوحة</span>
                                   <span className="font-black text-rose-700 text-lg">{customer.openReturnRequests}</span>
                                 </div>
-                                <div className="bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3 rounded-xl">
-                                  <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">قيمة العميل</span>
-                                  <span className="font-black text-[#4A4A4A] text-lg">{Number(customer.lifetimeValue || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
+                                <div className="bg-[#FAF9F7] border border-[#E8B4BC]/10 p-3 rounded-xl">
+                                  <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">قيمة العميل</span>
+                                  <span className="font-black text-[#171717] text-lg">{Number(customer.lifetimeValue || 0).toFixed(0)} <RiyalSign size="0.65em" /></span>
                                 </div>
                               </div>
 
@@ -2003,7 +2003,7 @@ export default function Customers() {
                                       type="button"
                                       onClick={() => handleSendRewardExpiryReminder(customer)}
                                       disabled={sendingRewardReminderFor === customer.id || !customer.email || !customer.rewardDetails?.nextExpiryAt}
-                                      className="flex items-center justify-center gap-2 rounded-xl bg-[#4A4A4A] px-4 py-2.5 text-xs font-black text-white disabled:opacity-40"
+                                      className="flex items-center justify-center gap-2 rounded-xl bg-[#171717] px-4 py-2.5 text-xs font-black text-white disabled:opacity-40"
                                     >
                                       {sendingRewardReminderFor === customer.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                                       إرسال تنبيه انتهاء النقاط
@@ -2024,19 +2024,19 @@ export default function Customers() {
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                                     <div className="bg-white/80 rounded-lg p-2">
-                                      <span className="text-[#4A4A4A]/45 block mb-0.5">البريد</span>
+                                      <span className="text-[#171717]/45 block mb-0.5">البريد</span>
                                       <span className="font-bold dir-ltr text-right block">{customer.email || 'غير مسجل'}</span>
                                     </div>
                                     <div className="bg-white/80 rounded-lg p-2">
-                                      <span className="text-[#4A4A4A]/45 block mb-0.5">التواصل المفضل</span>
+                                      <span className="text-[#171717]/45 block mb-0.5">التواصل المفضل</span>
                                       <span className="font-bold">{CONTACT_METHOD_LABELS[customer.preferredContactMethod] || 'واتساب'}</span>
                                     </div>
                                     <div className="bg-white/80 rounded-lg p-2">
-                                      <span className="text-[#4A4A4A]/45 block mb-0.5">العناوين المحفوظة</span>
+                                      <span className="text-[#171717]/45 block mb-0.5">العناوين المحفوظة</span>
                                       <span className="font-bold">{customer.savedAddresses?.length || 0}</span>
                                     </div>
                                     <div className="bg-white/80 rounded-lg p-2">
-                                      <span className="text-[#4A4A4A]/45 block mb-0.5">آخر دخول</span>
+                                      <span className="text-[#171717]/45 block mb-0.5">آخر دخول</span>
                                       <span className="font-bold">{customer.lastLoginAt ? new Date(customer.lastLoginAt).toLocaleDateString('en-GB') : '—'}</span>
                                     </div>
                                   </div>
@@ -2062,12 +2062,12 @@ export default function Customers() {
                                       </div>
                                       <div className="space-y-2">
                                         {customer.messageLogs.slice(0, 3).map((log) => (
-                                          <div key={log.id} className="flex items-center justify-between gap-3 rounded-lg bg-[#F8F5F2] px-3 py-2 text-[11px]">
+                                          <div key={log.id} className="flex items-center justify-between gap-3 rounded-lg bg-[#FAF9F7] px-3 py-2 text-[11px]">
                                             <div className="min-w-0">
-                                              <p className="font-black text-[#4A4A4A] truncate">{log.subject || MESSAGE_TYPE_LABELS[log.type] || log.type}</p>
-                                              <p className="text-[#4A4A4A]/45">{MESSAGE_TYPE_LABELS[log.type] || log.type} · {log.status}</p>
+                                              <p className="font-black text-[#171717] truncate">{log.subject || MESSAGE_TYPE_LABELS[log.type] || log.type}</p>
+                                              <p className="text-[#171717]/45">{MESSAGE_TYPE_LABELS[log.type] || log.type} · {log.status}</p>
                                             </div>
-                                            <span className="shrink-0 text-[#4A4A4A]/45">
+                                            <span className="shrink-0 text-[#171717]/45">
                                               {log.sent_at || log.created_at ? new Date(log.sent_at || log.created_at).toLocaleDateString('en-GB') : '—'}
                                             </span>
                                           </div>
@@ -2098,13 +2098,13 @@ export default function Customers() {
                             </div>
 
                             {/* القسم الأيسر: التفاصيل القابلة للتعديل */}
-                            <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex flex-col">
-                              <h4 className="font-bold text-[#4A4A4A] mb-4 flex items-center gap-2 border-b border-[#F8F5F2] pb-3">
-                                <StickyNote size={18} className="text-[#D9A3AA]" /> تفاصيل وشحن العميل
+                            <div className="bg-white p-5 rounded-2xl border border-[#E8B4BC]/20 shadow-sm flex flex-col">
+                              <h4 className="font-bold text-[#171717] mb-4 flex items-center gap-2 border-b border-[#FAF9F7] pb-3">
+                                <StickyNote size={18} className="text-[#E8B4BC]" /> تفاصيل وشحن العميل
                               </h4>
                               <div className="space-y-4 flex-1">
                                 <div>
-                                  <label className="flex items-center gap-1 text-xs font-bold text-[#4A4A4A]/70 mb-1.5">
+                                  <label className="flex items-center gap-1 text-xs font-bold text-[#171717]/70 mb-1.5">
                                     <MapPin size={12} /> العنوان / موقع التوصيل
                                   </label>
                                   <input
@@ -2112,17 +2112,17 @@ export default function Customers() {
                                     placeholder="مثال: الرميلة، العمران، شارع..."
                                     value={customerDetails.address}
                                     onChange={(e) => setCustomerDetails({ ...customerDetails, address: e.target.value })}
-                                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] transition-colors"
+                                    className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC] transition-colors"
                                   />
                                 </div>
                                 <div>
-                                  <label className="flex items-center gap-1 text-xs font-bold text-[#4A4A4A]/70 mb-1.5">
+                                  <label className="flex items-center gap-1 text-xs font-bold text-[#171717]/70 mb-1.5">
                                     <Tag size={12} /> الحالة الإدارية
                                   </label>
                                   <select
                                     value={customerDetails.adminStatus}
                                     onChange={(e) => setCustomerDetails({ ...customerDetails, adminStatus: e.target.value })}
-                                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] transition-colors"
+                                    className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC] transition-colors"
                                   >
                                     {CRM_STATUS_OPTIONS.map(option => (
                                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -2130,18 +2130,18 @@ export default function Customers() {
                                   </select>
                                 </div>
                                 <div className="flex-1">
-                                  <label className="flex items-center gap-1 text-xs font-bold text-[#4A4A4A]/70 mb-1.5">
+                                  <label className="flex items-center gap-1 text-xs font-bold text-[#171717]/70 mb-1.5">
                                     <StickyNote size={12} /> ملاحظات خاصة بالعميل
                                   </label>
                                   <textarea
                                     placeholder="مثال: يفضل التغليف الوردي، يطلب دائماً طباعة مطفية..."
                                     value={customerDetails.notes}
                                     onChange={(e) => setCustomerDetails({ ...customerDetails, notes: e.target.value })}
-                                    className="w-full h-20 resize-none bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D9A3AA] transition-colors"
+                                    className="w-full h-20 resize-none bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#E8B4BC] transition-colors"
                                   ></textarea>
                                 </div>
                               </div>
-                              <div className="mt-4 pt-4 border-t border-[#F8F5F2] flex justify-between items-center">
+                              <div className="mt-4 pt-4 border-t border-[#FAF9F7] flex justify-between items-center">
                                 <button
                                   onClick={() => handleDeleteCustomer(customer)}
                                   disabled={isDeletingCustomer || Number(customer.debt || 0) > 0.5}
@@ -2154,7 +2154,7 @@ export default function Customers() {
                                 <button
                                   onClick={() => handleSaveCustomerDetails(customer)}
                                   disabled={isSavingDetails}
-                                  className="bg-[#4A4A4A] hover:bg-[#333333] text-white text-sm font-bold py-2 px-6 rounded-xl transition-all flex items-center gap-2 disabled:opacity-70"
+                                  className="bg-[#171717] hover:bg-[#333333] text-white text-sm font-bold py-2 px-6 rounded-xl transition-all flex items-center gap-2 disabled:opacity-70"
                                 >
                                   {isSavingDetails ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                                   حفظ التعديلات
@@ -2186,7 +2186,7 @@ export default function Customers() {
                 </h3>
                 <p className="text-emerald-700/70 text-sm mt-1">{marketingRecipients.length} عميل موافق لديه بريد إلكتروني</p>
               </div>
-              <button onClick={() => setIsMarketingModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A] hover:bg-red-50 hover:text-red-500 transition-colors relative z-10 shadow-sm"><X size={16} /></button>
+              <button onClick={() => setIsMarketingModalOpen(false)} className="p-2 bg-white rounded-full text-[#171717] hover:bg-red-50 hover:text-red-500 transition-colors relative z-10 shadow-sm"><X size={16} /></button>
             </div>
 
             <form onSubmit={handleSendMarketingCampaign} className="p-6 space-y-4">
@@ -2196,50 +2196,50 @@ export default function Customers() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">قالب جاهز</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1.5">قالب جاهز</label>
                 <select
                   value={selectedMarketingTemplateId}
                   onChange={(event) => applyMarketingTemplate(event.target.value)}
-                  className="w-full border border-[#D9A3AA]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold bg-white"
+                  className="w-full border border-[#E8B4BC]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold bg-white"
                 >
                   <option value="">كتابة رسالة بدون قالب</option>
                   {marketingTemplates.map((template) => (
                     <option key={template.id} value={template.id}>{template.name}</option>
                   ))}
                 </select>
-                <p className="text-[11px] text-[#4A4A4A]/45 mt-1">
+                <p className="text-[11px] text-[#171717]/45 mt-1">
                   يمكن استخدام المتغير {'{customer_name}'} داخل القالب وسيتم استبداله باسم العميل.
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">عنوان البريد</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1.5">عنوان البريد</label>
                 <input
                   value={campaignForm.subject}
                   onChange={(event) => setCampaignForm((current) => ({ ...current, subject: event.target.value }))}
                   maxLength={140}
-                  className="w-full border border-[#D9A3AA]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold"
+                  className="w-full border border-[#E8B4BC]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold"
                   placeholder="مثال: عرض خاص على الألبومات"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">العنوان داخل الرسالة</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1.5">العنوان داخل الرسالة</label>
                 <input
                   value={campaignForm.title}
                   onChange={(event) => setCampaignForm((current) => ({ ...current, title: event.target.value }))}
                   maxLength={160}
-                  className="w-full border border-[#D9A3AA]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold"
+                  className="w-full border border-[#E8B4BC]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold"
                   placeholder="يُستخدم عنوان البريد إذا ترك فارغاً"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1.5">نص الرسالة</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1.5">نص الرسالة</label>
                 <textarea
                   value={campaignForm.message}
                   onChange={(event) => setCampaignForm((current) => ({ ...current, message: event.target.value }))}
                   maxLength={5000}
                   rows={7}
-                  className="w-full resize-none border border-[#D9A3AA]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold leading-7"
+                  className="w-full resize-none border border-[#E8B4BC]/25 rounded-xl px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 ring-emerald-400/10 font-bold leading-7"
                   placeholder="اكتب نص الحملة هنا..."
                   required
                 />
@@ -2249,7 +2249,7 @@ export default function Customers() {
                 <button
                   type="button"
                   onClick={() => setIsMarketingModalOpen(false)}
-                  className="flex-1 bg-[#F8F5F2] text-[#4A4A4A] py-3 rounded-xl font-bold hover:bg-gray-100"
+                  className="flex-1 bg-[#FAF9F7] text-[#171717] py-3 rounded-xl font-bold hover:bg-gray-100"
                 >
                   إغلاق
                 </button>
@@ -2279,7 +2279,7 @@ export default function Customers() {
                 </h3>
                 <p className="text-amber-700/70 text-sm mt-1">{selectedCustomer.name}</p>
               </div>
-              <button onClick={() => setIsBonusModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A] hover:bg-red-50 hover:text-red-500 transition-colors relative z-10 shadow-sm"><X size={16} /></button>
+              <button onClick={() => setIsBonusModalOpen(false)} className="p-2 bg-white rounded-full text-[#171717] hover:bg-red-50 hover:text-red-500 transition-colors relative z-10 shadow-sm"><X size={16} /></button>
             </div>
 
             <form onSubmit={handleChargePackage} className="p-6 space-y-5">
@@ -2289,12 +2289,12 @@ export default function Customers() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (<RiyalSign />):</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1">المبلغ المدفوع (<RiyalSign />):</label>
                 <input
                   type="number" min="1" required
                   value={paidAmount}
                   onChange={(e) => setPaidAmount(e.target.value)}
-                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 font-bold text-lg text-amber-600"
+                  className="w-full border border-[#E8B4BC]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 font-bold text-lg text-amber-600"
                   placeholder="0"
                 />
                 {paidAmount && Number(paidAmount) > 0 && (
@@ -2311,12 +2311,12 @@ export default function Customers() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">ملاحظة / اسم الباقة:</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1">ملاحظة / اسم الباقة:</label>
                 <input
                   type="text" required
                   value={packageNote}
                   onChange={(e) => setPackageNote(e.target.value)}
-                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 text-sm"
+                  className="w-full border border-[#E8B4BC]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 ring-amber-400/10 text-sm"
                 />
               </div>
 
@@ -2343,25 +2343,25 @@ export default function Customers() {
                 <h3 className="text-lg font-black text-amber-800 flex items-center gap-2"><Package size={18} /> شحن باقة / عميل جديد</h3>
                 <p className="text-amber-700/70 text-xs mt-0.5">إضافة رصيد باقات لعميل جديد</p>
               </div>
-              <button onClick={() => setIsNewCustomerModalOpen(false)} className="p-2 bg-white rounded-full text-[#4A4A4A] hover:bg-red-50 hover:text-red-500 transition-colors shadow-sm"><X size={16} /></button>
+              <button onClick={() => setIsNewCustomerModalOpen(false)} className="p-2 bg-white rounded-full text-[#171717] hover:bg-red-50 hover:text-red-500 transition-colors shadow-sm"><X size={16} /></button>
             </div>
             <form onSubmit={handleNewCustomerCharge} className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">اسم العميل:</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1">اسم العميل:</label>
                 <input type="text" required value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)}
-                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-2.5 outline-none focus:border-amber-400 text-sm"
+                  className="w-full border border-[#E8B4BC]/30 rounded-xl px-4 py-2.5 outline-none focus:border-amber-400 text-sm"
                   placeholder="أدخل اسم العميل" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">رقم الجوال:</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1">رقم الجوال:</label>
                 <input type="tel" required dir="ltr" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)}
-                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-2.5 outline-none focus:border-amber-400 text-sm text-right"
+                  className="w-full border border-[#E8B4BC]/30 rounded-xl px-4 py-2.5 outline-none focus:border-amber-400 text-sm text-right"
                   placeholder="05xxxxxxxx" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">المبلغ المدفوع (<RiyalSign />):</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1">المبلغ المدفوع (<RiyalSign />):</label>
                 <input type="number" min="1" required value={newCustomerPaid} onChange={e => setNewCustomerPaid(e.target.value)}
-                  className="w-full border border-[#D9A3AA]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 font-bold text-lg text-amber-600" />
+                  className="w-full border border-[#E8B4BC]/30 rounded-xl px-4 py-3 outline-none focus:border-amber-400 font-bold text-lg text-amber-600" />
                 {newCustomerPaid && Number(newCustomerPaid) > 0 && (
                   <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700 font-medium">
                     💰 الرصيد المضاف:
@@ -2399,7 +2399,7 @@ export default function Customers() {
                 <span className="font-black text-orange-600">{Number(editPkgCustomer.packageBalance || 0).toFixed(2)} <RiyalSign /></span>
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#4A4A4A] mb-1">الرصيد الجديد (<RiyalSign />):</label>
+                <label className="block text-sm font-bold text-[#171717] mb-1">الرصيد الجديد (<RiyalSign />):</label>
                 <input type="number" min="0" step="0.01" required value={editPkgAmount} onChange={e => setEditPkgAmount(e.target.value)}
                   className="w-full border border-orange-200 rounded-xl px-4 py-3 outline-none focus:border-orange-400 font-bold text-lg text-orange-600 text-center" />
               </div>

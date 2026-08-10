@@ -81,7 +81,7 @@ const PRIORITY_META = {
   },
   low: {
     label: 'متابعة',
-    tone: 'bg-[#F8F5F2] text-[#4A4A4A]/65 border-[#D9A3AA]/15',
+    tone: 'bg-[#FAF9F7] text-[#171717]/65 border-[#E8B4BC]/15',
     rank: 1,
   },
 };
@@ -96,9 +96,9 @@ const ACTION_ICON_MAP = {
 
 function StatCard({ label, value, icon: Icon, tone = 'neutral' }) {
   const tones = {
-    neutral: 'bg-white border-[#D9A3AA]/15 text-[#4A4A4A]',
+    neutral: 'bg-white border-[#E8B4BC]/15 text-[#171717]',
     red: 'bg-red-50 border-red-100 text-red-600',
-    gold: 'bg-[#C5A059]/10 border-[#C5A059]/20 text-[#C5A059]',
+    gold: 'bg-[#C6A56B]/10 border-[#C6A56B]/20 text-[#C6A56B]',
     green: 'bg-emerald-50 border-emerald-100 text-emerald-700',
   };
 
@@ -125,7 +125,7 @@ function TaskCard({ task, onRetryNotification, retryingTaskId }) {
   const isRetrying = retryingTaskId === task.id;
 
   return (
-    <article className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 shadow-sm">
+    <article className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-4 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3 min-w-0">
           <span className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border ${category.tone}`}>
@@ -148,13 +148,13 @@ function TaskCard({ task, onRetryNotification, retryingTaskId }) {
                 </span>
               )}
             </div>
-            <h2 className="text-base font-black text-[#4A4A4A] truncate">{task.title}</h2>
-            <p className="text-sm font-bold text-[#4A4A4A]/55 mt-1 leading-6">{task.description}</p>
+            <h2 className="text-base font-black text-[#171717] truncate">{task.title}</h2>
+            <p className="text-sm font-bold text-[#171717]/55 mt-1 leading-6">{task.description}</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {task.meta.map((item) => (
-                <div key={`${task.id}-${item.label}`} className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 px-3 py-2">
-                  <p className="text-[10px] font-black text-[#4A4A4A]/40">{item.label}</p>
-                  <p className="text-xs font-black text-[#4A4A4A] mt-1 truncate">{item.value}</p>
+                <div key={`${task.id}-${item.label}`} className="rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/10 px-3 py-2">
+                  <p className="text-[10px] font-black text-[#171717]/40">{item.label}</p>
+                  <p className="text-xs font-black text-[#171717] mt-1 truncate">{item.value}</p>
                 </div>
               ))}
             </div>
@@ -167,7 +167,7 @@ function TaskCard({ task, onRetryNotification, retryingTaskId }) {
               type="button"
               onClick={() => onRetryNotification(task)}
               disabled={isRetrying}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#D9A3AA] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#C5A059] disabled:opacity-60 transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#E8B4BC] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#C6A56B] disabled:opacity-60 transition-colors"
             >
               {isRetrying ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
               {task.directAction.label}
@@ -175,7 +175,7 @@ function TaskCard({ task, onRetryNotification, retryingTaskId }) {
           )}
           <Link
             to={task.href}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#4A4A4A] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#C5A059] transition-colors"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#171717] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#C6A56B] transition-colors"
           >
             {task.actionLabel || 'فتح المعالجة'} <ActionIcon size={15} />
           </Link>
@@ -317,8 +317,8 @@ export default function AdminActionTasks() {
           <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-600 mb-3">
             <ClipboardList size={14} /> مركز التشغيل
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#4A4A4A]">مهام تحتاج إجراء</h1>
-          <p className="text-sm text-[#4A4A4A]/55 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#171717]">مهام تحتاج إجراء</h1>
+          <p className="text-sm text-[#171717]/55 mt-1">
             مكان واحد لمتابعة الدفع، الاسترجاع، الشحن، الإشعارات الفاشلة، ومخزون المتجر.
           </p>
         </div>
@@ -326,7 +326,7 @@ export default function AdminActionTasks() {
           type="button"
           onClick={fetchTasks}
           disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-[#D9A3AA]/20 px-4 py-3 text-sm font-black text-[#4A4A4A] shadow-sm hover:border-[#D9A3AA]/50 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-[#E8B4BC]/20 px-4 py-3 text-sm font-black text-[#171717] shadow-sm hover:border-[#E8B4BC]/50 disabled:opacity-50"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> تحديث
         </button>
@@ -339,15 +339,15 @@ export default function AdminActionTasks() {
         <StatCard label="الشحن والمخزون" value={stats.shipping + stats.inventory} icon={Package} tone="green" />
       </div>
 
-      <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 shadow-sm">
+      <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-4 shadow-sm">
         <div className="grid gap-3 xl:grid-cols-[1fr_auto]">
           <label className="relative block">
-            <Search size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/35" />
+            <Search size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#171717]/35" />
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="ابحث باسم العميل، رقم الطلب، المنتج، أو سبب المهمة..."
-              className="w-full rounded-2xl border border-[#D9A3AA]/15 bg-[#F8F5F2] py-3 pl-4 pr-11 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+              className="w-full rounded-2xl border border-[#E8B4BC]/15 bg-[#FAF9F7] py-3 pl-4 pr-11 text-sm font-bold outline-none focus:border-[#E8B4BC]"
             />
           </label>
 
@@ -359,8 +359,8 @@ export default function AdminActionTasks() {
                 onClick={() => setActiveFilter(filter.value)}
                 className={`shrink-0 rounded-2xl px-4 py-3 text-xs font-black border transition-colors ${
                   activeFilter === filter.value
-                    ? 'bg-[#4A4A4A] text-white border-[#4A4A4A]'
-                    : 'bg-[#F8F5F2] text-[#4A4A4A]/65 border-[#D9A3AA]/10 hover:border-[#D9A3AA]/40'
+                    ? 'bg-[#171717] text-white border-[#171717]'
+                    : 'bg-[#FAF9F7] text-[#171717]/65 border-[#E8B4BC]/10 hover:border-[#E8B4BC]/40'
                 }`}
               >
                 {filter.label}
@@ -371,14 +371,14 @@ export default function AdminActionTasks() {
       </div>
 
       {loading ? (
-        <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-10 flex justify-center">
-          <div className="w-8 h-8 rounded-full border-4 border-[#D9A3AA]/25 border-t-[#D9A3AA] animate-spin" />
+        <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-10 flex justify-center">
+          <div className="w-8 h-8 rounded-full border-4 border-[#E8B4BC]/25 border-t-[#E8B4BC] animate-spin" />
         </div>
       ) : filteredTasks.length === 0 ? (
-        <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-10 text-center">
+        <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-10 text-center">
           <AlertTriangle size={38} className="mx-auto text-emerald-400/60 mb-3" />
-          <p className="font-black text-[#4A4A4A]">لا توجد مهام مطابقة الآن</p>
-          <p className="text-sm text-[#4A4A4A]/45 mt-1">
+          <p className="font-black text-[#171717]">لا توجد مهام مطابقة الآن</p>
+          <p className="text-sm text-[#171717]/45 mt-1">
             الوضع هادئ. جرّب تغيير الفلتر أو تحديث اللوحة بعد قليل.
           </p>
         </div>

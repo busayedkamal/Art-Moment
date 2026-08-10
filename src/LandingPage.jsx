@@ -28,6 +28,7 @@ import { localizeProductOptions } from './utils/productOptions';
 import { useLanguage } from './contexts/LanguageContext';
 
 import promoVideo from './assets/printing-quality.mp4';
+import printedPhotos from './assets/printed-photos.png';
 import logo from './assets/logo-art-moment.svg';
 import fallbackLogo from './assets/logo.png';
 import instagramIcon from './assets/instagram icon.svg';
@@ -299,39 +300,39 @@ export default function LandingPage() {
       id: 0, icon: Plane, title: 'ذكريات السفر',
       desc: 'لا تخلي صور السفرة محبوسة بالجوال! وثق أجمل أيامك في ألبوم يجمع كل تفاصيلها لتعيشها كل ما فتحته.',
       contents: ['ألبوم صور أنيق ومقاوم', '100 صورة مقاس 4x6', 'ألوان زاهية وتفاصيل دقيقة'],
-      color: 'from-blue-500 to-cyan-400',
+      color: 'bg-[#171717]',
       msg: 'مرحباً، مهتم بطلب "باقة ذكريات السفر" (ألبوم + 100 صورة)',
     },
     {
       id: 1, icon: Gift, title: 'الهدية المثالية',
       desc: 'أجمل هدية ممكن تقدمها لشخص غالي هي ذكرياتكم المشتركة. جهزناها لك بعناية لتكون مفاجأة لا تُنسى.',
       contents: ['ألبوم فاخر لحفظ الصور', '50 صورة لأجمل لحظاتكم', 'تغليف هدايا فاخر + كرت إهداء'],
-      color: 'from-[#D9A3AA] to-pink-500',
+      color: 'bg-[#B96F7D]',
       msg: 'مرحباً، مهتم بطلب "باقة الهدية المثالية" (مع التغليف)',
     },
     {
       id: 2, icon: Smartphone, title: 'تفريغ زحمة الجوال',
       desc: 'الجوالات تخرب وتضيع، لكن الصور المطبوعة تعيش للأبد. نظف مساحة جوالك واحفظ ذكرياتك بأمان.',
       contents: ['200 صورة مقاس 4x6', 'طباعة عالية الجودة تدوم طويلاً', 'توفير ممتاز للكميات'],
-      color: 'from-[#C5A059] to-amber-600',
+      color: 'bg-[#8F713C]',
       msg: 'مرحباً، مهتم بطلب "باقة تفريغ الجوال" (200 صورة)',
     },
     {
       id: 3, icon: LayoutDashboard, title: 'جدار الذكريات',
       desc: 'جدد غرفتك أو مكتبك بصورك المفضلة! صور بحجم كبير تناسب البراويز وتضيف روح للمكان.',
       contents: ['6 صور كبيرة مقاس A4', 'دقة استثنائية تناسب البراويز', 'جاهزة للتعليق فوراً'],
-      color: 'from-emerald-500 to-teal-400',
+      color: 'bg-[#171717]',
       msg: 'مرحباً، مهتم بطلب "باقة جدار الذكريات" (6 صور A4)',
     },
   ];
   const activePkg = packages[activePackage];
 
   return (
-    <div className="art-page min-h-screen font-[Tajawal] relative overflow-x-hidden selection:bg-[#D9A3AA] selection:text-white" dir="rtl">
+    <div className="art-page min-h-screen font-[Tajawal] relative overflow-x-hidden selection:bg-[#E8B4BC] selection:text-white" dir="rtl">
 
       {/* Toast notification */}
       {toastMsg && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#C5A059] text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#C6A56B] text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-5">
           <CheckCircle size={18} /> {toastMsg}
         </div>
       )}
@@ -339,17 +340,17 @@ export default function LandingPage() {
       {/* iOS PWA instructions modal */}
       {showIOSInstructions && (
         <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-[#F8F5F2] w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
-            <button onClick={() => setShowIOSInstructions(false)} className="absolute top-4 left-4 text-[#4A4A4A] hover:text-[#C5A059]"><X size={24} /></button>
+          <div className="bg-[#FAF9F7] w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+            <button onClick={() => setShowIOSInstructions(false)} className="absolute top-4 left-4 text-[#171717] hover:text-[#C6A56B]"><X size={24} /></button>
             <div className="text-center mb-6">
               <img src={logo} alt="App Icon" className="w-16 h-16 mx-auto mb-2 object-contain" />
-              <h3 className="text-xl font-black text-[#4A4A4A]">تثبيت تطبيق لحظة فن</h3>
+              <h3 className="text-xl font-black text-[#171717]">تثبيت تطبيق لحظة فن</h3>
             </div>
-            <div className="space-y-4 text-sm font-medium text-[#4A4A4A]">
-              <div className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"><Share size={20} className="text-[#C5A059]" /> <span>1. اضغط زر "مشاركة"</span></div>
-              <div className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"><PlusSquare size={20} className="text-[#C5A059]" /> <span>2. اختر "إضافة للشاشة الرئيسية"</span></div>
+            <div className="space-y-4 text-sm font-medium text-[#171717]">
+              <div className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"><Share size={20} className="text-[#C6A56B]" /> <span>1. اضغط زر "مشاركة"</span></div>
+              <div className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"><PlusSquare size={20} className="text-[#C6A56B]" /> <span>2. اختر "إضافة للشاشة الرئيسية"</span></div>
             </div>
-            <button onClick={() => setShowIOSInstructions(false)} className="w-full mt-6 bg-[#D9A3AA] text-white py-3 rounded-xl font-bold hover:bg-[#C5A059] transition-colors">فهمت ذلك</button>
+            <button onClick={() => setShowIOSInstructions(false)} className="w-full mt-6 bg-[#E8B4BC] text-white py-3 rounded-xl font-bold hover:bg-[#C6A56B] transition-colors">فهمت ذلك</button>
           </div>
         </div>
       )}
@@ -363,7 +364,7 @@ export default function LandingPage() {
           {/* Right Side: Mobile Menu + Logo */}
           <div className="flex items-center gap-1 sm:gap-3">
             <button
-              className="md:hidden p-1 -mr-2 text-[#4A4A4A]"
+              className="md:hidden p-1 -mr-2 text-[#171717]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
               title={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
@@ -373,10 +374,10 @@ export default function LandingPage() {
             <div className="flex items-center gap-2 sm:gap-3">
               <img src={logo} alt="Art Moment Logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
               <div className="flex flex-col">
-                <h1 className="text-lg sm:text-xl font-black text-[#4A4A4A] leading-none">
+                <h1 className="text-lg sm:text-xl font-black text-[#171717] leading-none">
                   {language === 'en' ? 'Art Moment' : 'لحظة فن'}
                 </h1>
-                <span className="text-[9px] sm:text-[10px] text-[#C5A059] font-bold tracking-widest uppercase">
+                <span className="text-[9px] sm:text-[10px] text-[#C6A56B] font-bold tracking-widest uppercase">
                   {language === 'en' ? 'Photo Printing & Gifts' : 'Art Moment'}
                 </span>
               </div>
@@ -384,29 +385,29 @@ export default function LandingPage() {
           </div>
 
           {/* Center: Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#4A4A4A]/80">
-            <a href="#products" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1.5">
-              <ShoppingBag size={15} className="text-[#D9A3AA]" /> المتجر
+          <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#171717]/80">
+            <a href="#products" className="hover:text-[#E8B4BC] transition-colors flex items-center gap-1.5">
+              <ShoppingBag size={15} className="text-[#E8B4BC]" /> المتجر
             </a>
-            <a href="#services" className="hover:text-[#D9A3AA] transition-colors">الباقات</a>
-            <a href="#services" className="hover:text-[#D9A3AA] transition-colors">الطباعة</a>
-            <a href="#services" className="hover:text-[#D9A3AA] transition-colors flex items-center gap-1.5">
-              <Wallet size={15} className="text-[#C5A059]" /> شحن المحفظة
+            <a href="#services" className="hover:text-[#E8B4BC] transition-colors">الباقات</a>
+            <a href="#services" className="hover:text-[#E8B4BC] transition-colors">الطباعة</a>
+            <a href="#services" className="hover:text-[#E8B4BC] transition-colors flex items-center gap-1.5">
+              <Wallet size={15} className="text-[#C6A56B]" /> شحن المحفظة
             </a>
-            <Link to="/store/orders" className="hover:text-[#D9A3AA] transition-colors">طلباتي</Link>
-            <Link to="/track" className="hover:text-[#D9A3AA] transition-colors">تتبع الطلب</Link>
+            <Link to="/store/orders" className="hover:text-[#E8B4BC] transition-colors">طلباتي</Link>
+            <Link to="/track" className="hover:text-[#E8B4BC] transition-colors">تتبع الطلب</Link>
           </nav>
 
           {/* Left Side: Icons */}
           <div className="flex items-center gap-2 sm:gap-3">
             {(isInstallable || isIOS) && (
-              <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#D9A3AA] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C5A059] transition-all">
+              <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#E8B4BC] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C6A56B] transition-all">
                 <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
               </button>
             )}
 
 
-            <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm">
+            <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#171717] border border-[#E8B4BC]/20 px-3 py-2 rounded-full hover:text-[#E8B4BC] transition-all shadow-sm">
               <Lock size={16} />
             </button>
 
@@ -414,10 +415,10 @@ export default function LandingPage() {
 
             {customer ? (
               <div className="flex items-center gap-1 sm:gap-2">
-                <button onClick={() => setIsAccountSidebarOpen(true)} className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#4A4A4A] bg-white px-3 py-2 rounded-full border border-[#D9A3AA]/20 hover:bg-[#D9A3AA]/10 transition-colors shadow-sm">
-                  <User size={16} className="text-[#C5A059]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
+                <button onClick={() => setIsAccountSidebarOpen(true)} className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#171717] bg-white px-3 py-2 rounded-full border border-[#E8B4BC]/20 hover:bg-[#E8B4BC]/10 transition-colors shadow-sm">
+                  <User size={16} className="text-[#C6A56B]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
                 </button>
-                <button onClick={() => setIsAccountSidebarOpen(true)} className="sm:hidden p-2 text-[#4A4A4A] bg-white rounded-full border border-[#D9A3AA]/20 transition-colors" title="حسابي">
+                <button onClick={() => setIsAccountSidebarOpen(true)} className="sm:hidden p-2 text-[#171717] bg-white rounded-full border border-[#E8B4BC]/20 transition-colors" title="حسابي">
                   <User size={16} />
                 </button>
                 <button onClick={handleLogout} className="hidden sm:flex p-2 text-red-400 hover:text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors" title="تسجيل الخروج">
@@ -425,7 +426,7 @@ export default function LandingPage() {
                 </button>
               </div>
             ) : (
-              <button onClick={() => setIsAuthModalOpen(true)} className="flex items-center gap-1.5 bg-white text-[#4A4A4A] border border-[#D9A3AA]/20 px-3 py-2 rounded-full hover:text-[#D9A3AA] transition-all shadow-sm text-xs font-bold">
+              <button onClick={() => setIsAuthModalOpen(true)} className="flex items-center gap-1.5 bg-white text-[#171717] border border-[#E8B4BC]/20 px-3 py-2 rounded-full hover:text-[#E8B4BC] transition-all shadow-sm text-xs font-bold">
                 <User size={16} /> <span className="hidden sm:inline">دخول</span>
               </button>
             )}
@@ -434,24 +435,24 @@ export default function LandingPage() {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-[#F8F5F2] border-t border-[#D9A3AA]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
-            <a href="#products" className="flex items-center gap-2 py-2 text-[#D9A3AA] font-bold" onClick={() => setIsMobileMenuOpen(false)}><ShoppingBag size={16} /> المتجر</a>
-            <a href="#services" className="block py-2 text-[#4A4A4A] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
-            <a href="#services" className="block py-2 text-[#4A4A4A]"           onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
-            <a href="#services" className="flex items-center gap-2 py-2 text-[#C5A059] font-bold" onClick={() => setIsMobileMenuOpen(false)}><Wallet size={16} /> شحن المحفظة</a>
-            <Link to="/store/orders" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
-            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
-            <Link to="/links" className="flex w-full items-center justify-center gap-2 py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#D9A3AA]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}><Share2 size={16} className="text-[#C5A059]" /> حساباتنا</Link>
+          <div className="md:hidden bg-[#FAF9F7] border-t border-[#E8B4BC]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
+            <a href="#products" className="flex items-center gap-2 py-2 text-[#E8B4BC] font-bold" onClick={() => setIsMobileMenuOpen(false)}><ShoppingBag size={16} /> المتجر</a>
+            <a href="#services" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الباقات</a>
+            <a href="#services" className="block py-2 text-[#171717]"           onClick={() => setIsMobileMenuOpen(false)}>خدمات الطباعة</a>
+            <a href="#services" className="flex items-center gap-2 py-2 text-[#C6A56B] font-bold" onClick={() => setIsMobileMenuOpen(false)}><Wallet size={16} /> شحن المحفظة</a>
+            <Link to="/store/orders" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
+            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
+            <Link to="/links" className="flex w-full items-center justify-center gap-2 py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}><Share2 size={16} className="text-[#C6A56B]" /> حساباتنا</Link>
             {customer && (
               <button
                 onClick={() => { setIsMobileMenuOpen(false); setIsAccountSidebarOpen(true); }}
-                className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#4A4A4A] border border-[#C5A059]/20 shadow-sm"
+                className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#C6A56B]/20 shadow-sm"
               >
                 حسابي
               </button>
             )}
             <button onClick={(e) => { setIsMobileMenuOpen(false); handleAdminClick(e); }}
-              className="w-full text-center py-3 rounded-xl font-bold text-[#4A4A4A]/60 hover:bg-white hover:text-[#D9A3AA] transition-all flex items-center justify-center gap-2">
+              className="w-full text-center py-3 rounded-xl font-bold text-[#171717]/60 hover:bg-white hover:text-[#E8B4BC] transition-all flex items-center justify-center gap-2">
               <Lock size={16} /> دخول المسؤول
             </button>
           </div>
@@ -462,17 +463,23 @@ export default function LandingPage() {
           1. HERO SECTION (Banner Style)
       ══════════════════════════════════ */}
       <section className="pt-6 pb-8 art-shell">
-        <div className="art-hero-card relative rounded-[2rem] md:rounded-[2.5rem] overflow-hidden p-8 md:py-12 flex justify-center text-center text-white">
+        <div className="art-hero-card art-crop-marks relative min-h-[500px] sm:min-h-[540px] overflow-hidden rounded-lg p-7 sm:p-10 md:p-14 flex items-end sm:items-center justify-center text-center text-white">
+          <img
+            src={printedPhotos}
+            alt="مجموعة صور مطبوعة من لحظة فن"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-[#171717]/60" />
           <div className="max-w-4xl mx-auto relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] text-[10px] sm:text-xs font-bold border border-[#D9A3AA]/30 mx-auto shadow-sm">
-              <Sparkles size={14} className="text-[#C5A059]" /> طباعة صور فوتوغرافية في الأحساء
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 text-[#171717] text-[10px] sm:text-xs font-bold border border-white mx-auto shadow-sm">
+              <Sparkles size={14} className="text-[#C6A56B]" /> طباعة صور فوتوغرافية في الأحساء
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight md:leading-tight">
               {language === 'en' ? (
-                <>Art Moment <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">Platform</span></>
+                <>Art Moment <span className="text-[#E8B4BC]">Platform</span></>
               ) : (
-                <>منصة <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">لحظة فن</span> Art Moment</>
+                <>منصة <span className="text-[#E8B4BC]">لحظة فن</span> Art Moment</>
               )}
             </h1>
 
@@ -484,18 +491,18 @@ export default function LandingPage() {
               <a href="https://wa.me/966560301744" target="_blank" rel="noreferrer" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-[#25D366]/40">
                 <MessageCircle size={20} /> واتساب
               </a>
-              <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
-                <Search size={20} className="text-[#C5A059]" /> تتبع طلبك
+              <Link to="/track" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#171717] border border-white font-bold hover:bg-[#FAF9F7] flex items-center justify-center gap-2 transition-colors">
+                <Search size={20} className="text-[#C6A56B]" /> تتبع طلبك
               </Link>
-              <Link to="/links" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
-                <Share2 size={20} className="text-[#D9A3AA]" /> حساباتنا
+              <Link to="/links" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/10 border border-white/50 text-white font-bold hover:bg-white/20 flex items-center justify-center gap-2 transition-colors">
+                <Share2 size={20} className="text-[#E8B4BC]" /> حساباتنا
               </Link>
             </div>
 
             <div className="pt-2 flex flex-wrap gap-4 justify-center text-[10px] sm:text-xs font-bold text-white/60">
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> ورق فاخر</span>
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دقة عالية</span>
-              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C5A059]" /> دفع عند الاستلام</span>
+              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C6A56B]" /> ورق فاخر</span>
+              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C6A56B]" /> دقة عالية</span>
+              <span className="flex items-center gap-1"><CheckCircle size={14} className="text-[#C6A56B]" /> دفع عند الاستلام</span>
             </div>
           </div>
         </div>
@@ -505,7 +512,7 @@ export default function LandingPage() {
           1.5 VIDEO PROMO SECTION
       ══════════════════════════════════ */}
       <section className="art-shell mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
-        <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-[4px] border-white h-[350px] md:h-[450px] flex items-center justify-center group bg-[#4A4A4A]">
+        <div className="art-crop-marks relative rounded-lg overflow-hidden shadow-xl border-[8px] border-white h-[350px] md:h-[450px] flex items-center justify-center group bg-[#171717]">
 
           {/* Video Background */}
           <video
@@ -519,20 +526,19 @@ export default function LandingPage() {
             متصفحك لا يدعم تشغيل الفيديو.
           </video>
 
-          {/* Dark Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#4A4A4A]/90 via-[#4A4A4A]/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-[#171717]/35"></div>
 
           {/* Text Content */}
           <div className="relative z-10 text-center px-6 mt-auto pb-10 w-full">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold border border-white/20 mx-auto mb-4 shadow-sm">
-              <Sparkles size={14} className="text-[#C5A059]" /> جودة لا تضاهى
+              <Sparkles size={14} className="text-[#C6A56B]" /> جودة لا تضاهى
             </div>
 
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-white mb-3 drop-shadow-md">
               {language === 'en' ? (
-                <>See the magic in every <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">detail</span></>
+                <>See the magic in every <span className="text-[#E8B4BC]">detail</span></>
               ) : (
-                <>شاهد سحر <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D9A3AA] to-[#C5A059]">التفاصيل</span></>
+                <>شاهد سحر <span className="text-[#E8B4BC]">التفاصيل</span></>
               )}
             </h2>
 
@@ -554,10 +560,10 @@ export default function LandingPage() {
       ══════════════════════════════════ */}
       <main id="products" className="art-shell py-12 sm:py-14">
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl font-black text-[#4A4A4A] mb-4">
+          <h2 className="text-3xl sm:text-4xl font-black text-[#171717] mb-4">
             الأكثر مبيعاً 🌟
           </h2>
-          <p className="text-sm sm:text-base text-[#4A4A4A]/60 leading-relaxed">
+          <p className="text-sm sm:text-base text-[#171717]/60 leading-relaxed">
             تشكيلة من أفضل منتجاتنا الجاهزة والأكثر طلباً لتوثيق لحظاتكم السعيدة.
           </p>
         </div>
@@ -565,7 +571,7 @@ export default function LandingPage() {
         {/* Product grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 lg:gap-8">
           {products.length === 0 ? (
-            <div className="col-span-full text-center py-20 text-[#4A4A4A]/50 font-bold">لا توجد منتجات بعد</div>
+            <div className="col-span-full text-center py-20 text-[#171717]/50 font-bold">لا توجد منتجات بعد</div>
           ) : (
             products.filter(p => p.isBestSeller).slice(0, 6).map(product => {
               const productQty = getProductQty(product.id);
@@ -576,7 +582,7 @@ export default function LandingPage() {
               <div key={product.id} className={`art-product-card p-3 sm:p-4 lg:p-5 group flex flex-col relative overflow-hidden ${productAvailable ? '' : 'opacity-75 cursor-not-allowed'}`}>
                 <div
                   onClick={() => productAvailable && navigate(`/store/products/${product.id}`)}
-                  className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${productAvailable ? 'cursor-pointer group-hover:scale-105' : 'grayscale'}`}
+                  className={`art-product-media aspect-square rounded mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${productAvailable ? 'cursor-pointer group-hover:scale-[1.02]' : 'grayscale'}`}
                 >
                   {product.image ? (
                     <>
@@ -597,31 +603,31 @@ export default function LandingPage() {
                   )}
                   <span className={`absolute bottom-2 right-2 z-20 text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm border ${
                     productAvailable
-                      ? 'bg-white/90 text-[#4A4A4A] border-[#D9A3AA]/20'
+                      ? 'bg-white/90 text-[#171717] border-[#E8B4BC]/20'
                       : 'bg-red-500 text-white border-red-400'
                   }`}>
                     {getStockLabel(product)}
                   </span>
                   {productAvailable && productQty > 0 && (
-                    <span className="absolute top-2 right-2 bg-[#C5A059] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
+                    <span className="absolute top-2 right-2 bg-[#C6A56B] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
                       في السلة: {productQty}
                     </span>
                   )}
                 </div>
 
                 <div className="flex-1 flex flex-col">
-                  <h3 className="font-black text-[#4A4A4A] text-sm md:text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
-                  <p className="text-[#4A4A4A]/50 text-xs line-clamp-2 mb-3 flex-1">{product.description}</p>
-                  <div className="mt-auto pt-3 border-t border-[#F8F5F2] space-y-3">
+                  <h3 className="font-black text-[#171717] text-sm md:text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
+                  <p className="text-[#171717]/50 text-xs line-clamp-2 mb-3 flex-1">{product.description}</p>
+                  <div className="mt-auto pt-3 border-t border-[#FAF9F7] space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-black text-[#D9A3AA]">{product.price} <span className="text-[10px]">ر.س</span></span>
+                      <span className="font-black text-[#E8B4BC]">{product.price} <span className="text-[10px]">ر.س</span></span>
                     </div>
                     <button
                       onClick={() => addToCart(product)}
                       disabled={!canAddProduct}
                       className={`w-full py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-black ${
                         canAddProduct
-                          ? 'bg-[#4A4A4A] text-white hover:bg-[#D9A3AA] shadow-md'
+                          ? 'bg-[#171717] text-white hover:bg-[#E8B4BC] shadow-md'
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
                     >
@@ -646,7 +652,7 @@ export default function LandingPage() {
               <ShoppingBag size={24} className="group-hover:scale-110 transition-transform" />
               تصفح المتجر ({products.length})
             </Link>
-            <p className="mt-4 text-xs font-bold text-[#4A4A4A]/40">
+            <p className="mt-4 text-xs font-bold text-[#171717]/40">
               اكتشف المزيد من الألبومات، الإطارات، والتوزيعات الحصرية.
             </p>
           </div>
@@ -657,74 +663,74 @@ export default function LandingPage() {
           3. EXPANDABLE SERVICES ACCORDION
       ══════════════════════════════════ */}
       <section id="services" className="art-shell py-12">
-        <h2 className="text-xl font-black text-center mb-6 text-[#4A4A4A]">اكتشف خدماتنا</h2>
+        <h2 className="text-xl font-black text-center mb-6 text-[#171717]">اكتشف خدماتنا</h2>
         <div className="space-y-3">
 
           {/* WALLET PACKAGES */}
-          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('wallet')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('wallet')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#C5A059]/10 rounded-xl flex items-center justify-center text-[#C5A059]"><Wallet size={20} /></div>
+                <div className="w-10 h-10 bg-[#C6A56B]/10 rounded-xl flex items-center justify-center text-[#C6A56B]"><Wallet size={20} /></div>
                 <div>
-                  <div className="font-black text-[#4A4A4A]">شحن المحفظة</div>
-                  <div className="text-xs text-[#4A4A4A]/50">باقات برونزية وفضية وذهبية</div>
+                  <div className="font-black text-[#171717]">شحن المحفظة</div>
+                  <div className="text-xs text-[#171717]/50">باقات برونزية وفضية وذهبية</div>
                 </div>
               </div>
-              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'wallet' ? 'rotate-180' : ''}`} />
+              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'wallet' ? 'rotate-180' : ''}`} />
             </button>
             {activeExpandable === 'wallet' && (
-              <div className="bg-[#F8F5F2] border-t border-[#D9A3AA]/10">
+              <div className="bg-[#FAF9F7] border-t border-[#E8B4BC]/10">
                 <div className="py-10 px-4">
                   <div className="text-center mb-10 max-w-2xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-bold text-xs mb-4 border border-[#C5A059]/20">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C6A56B]/10 text-[#C6A56B] font-bold text-xs mb-4 border border-[#C6A56B]/20">
                       <Wallet size={16} /> رصيد ذكرياتك.. يعطيك أكثر!
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-black text-[#4A4A4A] mb-3 leading-tight">اشحن محفظتك، <span className="text-[#C5A059]">واطبع براحتك</span></h3>
-                    <p className="text-[#4A4A4A]/70 text-sm leading-relaxed mb-4">بدل ما تنتظر العروض، اشحن محفظتك في <span className="font-bold text-[#D9A3AA]">لحظة فن</span> واحصل على رصيد إضافي تستخدمه بكل حرية.</p>
-                    <div className="flex flex-wrap justify-center gap-3 text-xs font-bold text-[#4A4A4A]/80">
-                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> الرصيد لا ينتهي صلاحيته</span>
-                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> تقسم طلباتك براحتك</span>
-                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#D9A3AA]/10"><CheckCircle size={14} className="text-emerald-500" /> هدايا وميزات حصرية</span>
+                    <h3 className="text-2xl md:text-3xl font-black text-[#171717] mb-3 leading-tight">اشحن محفظتك، <span className="text-[#C6A56B]">واطبع براحتك</span></h3>
+                    <p className="text-[#171717]/70 text-sm leading-relaxed mb-4">بدل ما تنتظر العروض، اشحن محفظتك في <span className="font-bold text-[#E8B4BC]">لحظة فن</span> واحصل على رصيد إضافي تستخدمه بكل حرية.</p>
+                    <div className="flex flex-wrap justify-center gap-3 text-xs font-bold text-[#171717]/80">
+                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#E8B4BC]/10"><CheckCircle size={14} className="text-emerald-500" /> الرصيد لا ينتهي صلاحيته</span>
+                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#E8B4BC]/10"><CheckCircle size={14} className="text-emerald-500" /> تقسم طلباتك براحتك</span>
+                      <span className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-[#E8B4BC]/10"><CheckCircle size={14} className="text-emerald-500" /> هدايا وميزات حصرية</span>
                     </div>
                   </div>
                   <div className="grid md:grid-cols-3 gap-5 lg:gap-6">
                     <div className="bg-white rounded-[2rem] p-8 border border-orange-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-orange-400 to-orange-200"></div>
+              <div className="absolute top-0 right-0 w-2 h-full bg-orange-400"></div>
                       <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:scale-110 transition-transform"><CreditCard size={28} /></div>
-                      <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة البرونزية</h3>
+                      <h3 className="text-xl font-black text-[#171717] mb-2">الباقة البرونزية</h3>
                       <div className="mb-6"><span className="text-3xl font-black text-orange-600">299</span> <RiyalSign size="0.7em" /></div>
                       <div className="bg-orange-50 rounded-xl p-4 mb-6 border border-orange-100">
-                        <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                        <span className="text-2xl font-black text-[#4A4A4A]">333 <RiyalSign size="0.7em" /></span>
+                        <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
+                        <span className="text-2xl font-black text-[#171717]">333 <RiyalSign size="0.7em" /></span>
                       </div>
-                      <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!</p>
+                      <p className="text-sm text-[#171717]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يطبع لك أكثر من 30 صورة مجانية.. أو 6 صور A4!</p>
                       <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة البرونزية بـ 299 ريال" target="_blank" rel="noreferrer"
                         className="w-full py-3 rounded-xl bg-orange-100 text-orange-700 font-bold hover:bg-orange-600 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
                     </div>
                     <div className="bg-white rounded-[2rem] p-8 border-2 border-slate-300 shadow-xl flex flex-col relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-l from-slate-400 to-slate-200"></div>
+              <div className="absolute top-0 right-0 w-full h-2 bg-slate-400"></div>
                       <div className="absolute top-4 left-4 bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full border border-slate-200">الأكثر طلباً</div>
                       <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 mb-6 group-hover:scale-110 transition-transform"><Award size={28} /></div>
-                      <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الفضية</h3>
+                      <h3 className="text-xl font-black text-[#171717] mb-2">الباقة الفضية</h3>
                       <div className="mb-6"><span className="text-4xl font-black text-slate-600">699</span> <RiyalSign size="0.7em" /></div>
                       <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200">
                         <span className="block text-[10px] text-slate-500 font-bold mb-1">يصير رصيدك في المحفظة:</span>
                         <span className="text-3xl font-black text-slate-700">808 <RiyalSign size="0.7em" /></span>
                       </div>
-                      <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!</p>
+                      <p className="text-sm text-[#171717]/70 mb-8 flex-1 leading-relaxed">المبلغ الإضافي يغطي لك قيمة ألبوم فاخر أو صندوق هدايا متكامل لأحبابك!</p>
                       <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة الفضية بـ 699 ريال" target="_blank" rel="noreferrer"
                         className="w-full py-4 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-md">اشحن الآن</a>
                     </div>
                     <div className="bg-white rounded-[2rem] p-8 border border-amber-200/50 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-amber-400 to-amber-200"></div>
+              <div className="absolute top-0 right-0 w-2 h-full bg-[#C6A56B]"></div>
                       <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-6 group-hover:scale-110 transition-transform"><Gem size={28} /></div>
-                      <h3 className="text-xl font-black text-[#4A4A4A] mb-2">الباقة الذهبية</h3>
+                      <h3 className="text-xl font-black text-[#171717] mb-2">الباقة الذهبية</h3>
                       <div className="mb-6"><span className="text-3xl font-black text-amber-600">999</span> <RiyalSign size="0.7em" /></div>
                       <div className="bg-amber-50 rounded-xl p-4 mb-6 border border-amber-100">
-                        <span className="block text-[10px] text-[#4A4A4A]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
-                        <span className="text-2xl font-black text-[#4A4A4A]">1,202 <RiyalSign size="0.7em" /></span>
+                        <span className="block text-[10px] text-[#171717]/60 font-bold mb-1">يصير رصيدك في المحفظة:</span>
+                        <span className="text-2xl font-black text-[#171717]">1,202 <RiyalSign size="0.7em" /></span>
                       </div>
-                      <p className="text-sm text-[#4A4A4A]/70 mb-8 flex-1 leading-relaxed">رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!</p>
+                      <p className="text-sm text-[#171717]/70 mb-8 flex-1 leading-relaxed">رصيد يوثق مناسباتك لسنة كاملة، مع أولوية في التنفيذ وتوصيل مجاني!</p>
                       <a href="https://wa.me/966560301744?text=مرحباً، أرغب بشحن الباقة الذهبية بـ 999 ريال" target="_blank" rel="noreferrer"
                         className="w-full py-3 rounded-xl bg-amber-100 text-amber-700 font-bold hover:bg-amber-500 hover:text-white transition-colors flex justify-center items-center gap-2">اشحن الآن</a>
                     </div>
@@ -735,28 +741,26 @@ export default function LandingPage() {
           </div>
 
           {/* MEMORY PACKAGES */}
-          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('packages')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('packages')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#D9A3AA]/10 rounded-xl flex items-center justify-center text-[#D9A3AA]"><Gift size={20} /></div>
+                <div className="w-10 h-10 bg-[#E8B4BC]/10 rounded-xl flex items-center justify-center text-[#E8B4BC]"><Gift size={20} /></div>
                 <div>
-                  <div className="font-black text-[#4A4A4A]">باقات الذكريات</div>
-                  <div className="text-xs text-[#4A4A4A]/50">رحلة، هدية، صور هاتف، معرض جداري</div>
+                  <div className="font-black text-[#171717]">باقات الذكريات</div>
+                  <div className="text-xs text-[#171717]/50">رحلة، هدية، صور هاتف، معرض جداري</div>
                 </div>
               </div>
-              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'packages' ? 'rotate-180' : ''}`} />
+              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'packages' ? 'rotate-180' : ''}`} />
             </button>
             {activeExpandable === 'packages' && (
-              <div className="bg-[#4A4A4A] text-white border-t border-white/10 overflow-hidden relative">
-                <div className="absolute top-0 left-0 w-64 h-64 bg-[#D9A3AA]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-                <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#C5A059]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
+              <div className="bg-[#171717] text-white border-t border-white/10 overflow-hidden relative">
                 <div className="px-4 sm:px-6 lg:px-8 py-10 relative z-10">
                   <div className="text-center mb-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C5A059]/20 text-[#C5A059] font-bold text-xs mb-3 border border-[#C5A059]/30">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#C6A56B]/20 text-[#C6A56B] font-bold text-xs mb-3 border border-[#C6A56B]/30">
                       <Sparkles size={14} /> حلك الجاهز عندنا
                     </div>
                     <h3 className="text-2xl md:text-3xl font-black leading-tight mb-3">
-                      محتار وش تطبع؟ <br /><span className="text-[#C5A059]">اختر المناسبة وخلي الباقي علينا!</span>
+                      محتار وش تطبع؟ <br /><span className="text-[#C6A56B]">اختر المناسبة وخلي الباقي علينا!</span>
                     </h3>
                     <p className="text-white/70 max-w-xl mx-auto text-sm">صممنا لك باقات ذكية ومدروسة توفر عليك التفكير، وتضمن لك توثيق ذكرياتك بأفضل شكل وبأنسب سعر.</p>
                   </div>
@@ -764,26 +768,26 @@ export default function LandingPage() {
                     <div className="md:col-span-4 space-y-3">
                       {packages.map((pkg) => (
                         <button key={pkg.id} onClick={() => setActivePackage(pkg.id)}
-                          className={`w-full text-right p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 border ${activePackage === pkg.id ? 'bg-white text-[#4A4A4A] border-white shadow-xl scale-105' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
+                          className={`w-full text-right p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 border ${activePackage === pkg.id ? 'bg-white text-[#171717] border-white shadow-xl scale-105' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
                         >
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${pkg.color} shadow-md`}>
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${pkg.color} shadow-md`}>
                             <pkg.icon size={24} />
                           </div>
-                          <h4 className={`font-black ${activePackage === pkg.id ? 'text-[#4A4A4A]' : 'text-white'}`}>{pkg.title}</h4>
+                          <h4 className={`font-black ${activePackage === pkg.id ? 'text-[#171717]' : 'text-white'}`}>{pkg.title}</h4>
                         </button>
                       ))}
                     </div>
                     <div className="md:col-span-8">
                       <div className="bg-white/5 backdrop-blur-md rounded-[2rem] p-8 border border-white/10 shadow-2xl relative overflow-hidden" key={activePkg.id}>
-                        <div className={`absolute top-0 right-0 w-2 h-full bg-gradient-to-b ${activePkg.color}`}></div>
+                    <div className={`absolute top-0 right-0 w-2 h-full ${activePkg.color}`}></div>
                         <h3 className="text-3xl font-black text-white mb-4">{activePkg.title}</h3>
                         <p className="text-white/70 leading-relaxed mb-8">{activePkg.desc}</p>
-                        <div className="bg-[#F8F5F2]/10 rounded-2xl p-6 mb-8 border border-white/5">
-                          <h4 className="font-bold text-[#C5A059] mb-4 text-sm uppercase tracking-wider">محتويات الباقة الافتراضية:</h4>
+                        <div className="bg-[#FAF9F7]/10 rounded-2xl p-6 mb-8 border border-white/5">
+                          <h4 className="font-bold text-[#C6A56B] mb-4 text-sm uppercase tracking-wider">محتويات الباقة الافتراضية:</h4>
                           <ul className="space-y-3">
                             {activePkg.contents.map((item, idx) => (
                               <li key={idx} className="flex items-center gap-3 text-white/90">
-                                <CheckCircle size={18} className="text-[#D9A3AA]" />
+                                <CheckCircle size={18} className="text-[#E8B4BC]" />
                                 <span className="font-medium">{item}</span>
                               </li>
                             ))}
@@ -791,7 +795,7 @@ export default function LandingPage() {
                         </div>
                         <a href={`https://wa.me/966560301744?text=${encodeURIComponent(activePkg.msg)}`}
                           target="_blank" rel="noreferrer"
-                          className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-[#4A4A4A] font-black hover:bg-[#F8F5F2] hover:scale-105 transition-all shadow-xl">
+                          className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-[#171717] font-black hover:bg-[#FAF9F7] hover:scale-105 transition-all shadow-xl">
                           <MessageCircle size={20} /> اطلب هذه الباقة الآن
                         </a>
                       </div>
@@ -803,35 +807,35 @@ export default function LandingPage() {
           </div>
 
           {/* PRINT SERVICES */}
-          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('print')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('print')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#4A4A4A]/10 rounded-xl flex items-center justify-center text-[#4A4A4A]"><Printer size={20} /></div>
+                <div className="w-10 h-10 bg-[#171717]/10 rounded-xl flex items-center justify-center text-[#171717]"><Printer size={20} /></div>
                 <div>
-                  <div className="font-black text-[#4A4A4A]">خدمات الطباعة</div>
-                  <div className="text-xs text-[#4A4A4A]/50">صور 4×6، A4، ألبومات — مع حاسبة السعر</div>
+                  <div className="font-black text-[#171717]">خدمات الطباعة</div>
+                  <div className="text-xs text-[#171717]/50">صور 4×6، A4، ألبومات — مع حاسبة السعر</div>
                 </div>
               </div>
-              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'print' ? 'rotate-180' : ''}`} />
+              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'print' ? 'rotate-180' : ''}`} />
             </button>
             {activeExpandable === 'print' && (
-              <div className="bg-white border-t border-[#D9A3AA]/10">
+              <div className="bg-white border-t border-[#E8B4BC]/10">
                 <div className="py-10 px-4 sm:px-6 lg:px-8">
                   <div className="grid md:grid-cols-3 gap-5 lg:gap-8 mb-12">
                     {[
-                      { icon: ImageIcon, title: 'صور 4×6', desc: 'المقاس الأشهر والأكثر طلباً. مثالي لحفظ يومياتك وتوثيق اللحظات العفوية والرحلات.', features: ['ورق تصوير فاخر مقاوم للبهتان', 'ألوان زاهية وواقعية تدوم طويلاً', 'المقاس المثالي للألبومات الكلاسيكية'], color: 'text-[#D9A3AA]', bg: 'bg-[#D9A3AA]/10' },
-                      { icon: FileText, title: 'صور A4', desc: 'لصورك الاحترافية واللوحات الفنية. المقاس الأفضل لإبراز أدق التفاصيل وتزيين المكان.', features: ['دقة طباعة استثنائية للتفاصيل', 'حجم كبير مناسب للبراويز الجدارية', 'مثالية لصور التخرج والمناسبات الكبرى'], color: 'text-[#C5A059]', bg: 'bg-[#C5A059]/10' },
-                      { icon: BookOpen, title: 'الألبومات', desc: 'لا تترك صورك متناثرة. اختر من تشكيلتنا الأنيقة لحفظ ذكرياتك بطريقة فخمة ومرتبة.', features: ['تصاميم عصرية وأغلفة متينة', 'سعات مختلفة تناسب كمية صورك', 'حماية تامة للصور من الغبار والتلف'], color: 'text-[#4A4A4A]', bg: 'bg-[#4A4A4A]/10' },
+                      { icon: ImageIcon, title: 'صور 4×6', desc: 'المقاس الأشهر والأكثر طلباً. مثالي لحفظ يومياتك وتوثيق اللحظات العفوية والرحلات.', features: ['ورق تصوير فاخر مقاوم للبهتان', 'ألوان زاهية وواقعية تدوم طويلاً', 'المقاس المثالي للألبومات الكلاسيكية'], color: 'text-[#E8B4BC]', bg: 'bg-[#E8B4BC]/10' },
+                      { icon: FileText, title: 'صور A4', desc: 'لصورك الاحترافية واللوحات الفنية. المقاس الأفضل لإبراز أدق التفاصيل وتزيين المكان.', features: ['دقة طباعة استثنائية للتفاصيل', 'حجم كبير مناسب للبراويز الجدارية', 'مثالية لصور التخرج والمناسبات الكبرى'], color: 'text-[#C6A56B]', bg: 'bg-[#C6A56B]/10' },
+                      { icon: BookOpen, title: 'الألبومات', desc: 'لا تترك صورك متناثرة. اختر من تشكيلتنا الأنيقة لحفظ ذكرياتك بطريقة فخمة ومرتبة.', features: ['تصاميم عصرية وأغلفة متينة', 'سعات مختلفة تناسب كمية صورك', 'حماية تامة للصور من الغبار والتلف'], color: 'text-[#171717]', bg: 'bg-[#171717]/10' },
                     ].map((service, i) => (
-                      <div key={i} className="bg-[#F8F5F2] rounded-3xl p-8 hover:shadow-xl hover:shadow-[#D9A3AA]/10 transition-all border border-transparent hover:border-[#D9A3AA]/30 group flex flex-col">
+                      <div key={i} className="bg-[#FAF9F7] rounded-3xl p-8 hover:shadow-xl hover:shadow-[#E8B4BC]/10 transition-all border border-transparent hover:border-[#E8B4BC]/30 group flex flex-col">
                         <div className={`w-14 h-14 ${service.bg} rounded-2xl flex items-center justify-center ${service.color} mb-6 group-hover:scale-110 transition-transform`}>
                           <service.icon size={32} />
                         </div>
-                        <h3 className="text-xl font-bold text-[#4A4A4A] mb-3">{service.title}</h3>
-                        <p className="text-[#4A4A4A]/60 text-sm leading-relaxed mb-6 flex-1">{service.desc}</p>
-                        <ul className="space-y-3 pt-4 border-t border-[#D9A3AA]/10">
+                        <h3 className="text-xl font-bold text-[#171717] mb-3">{service.title}</h3>
+                        <p className="text-[#171717]/60 text-sm leading-relaxed mb-6 flex-1">{service.desc}</p>
+                        <ul className="space-y-3 pt-4 border-t border-[#E8B4BC]/10">
                           {service.features.map((f, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm text-[#4A4A4A]/80 font-medium">
+                            <li key={idx} className="flex items-start gap-2 text-sm text-[#171717]/80 font-medium">
                               <CheckCircle size={16} className={`shrink-0 mt-0.5 ${service.color}`} />
                               <span>{f}</span>
                             </li>
@@ -842,40 +846,39 @@ export default function LandingPage() {
                   </div>
                   {pricingSettings?.is_dynamic_pricing_enabled && (
                     <div className="max-w-6xl mx-auto">
-                      <div className="bg-[#4A4A4A] rounded-[3rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+                      <div className="bg-[#171717] rounded-lg p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
                           <div className="flex-1 text-center md:text-right">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D9A3AA]/20 text-[#D9A3AA] font-bold text-xs mb-3 border border-[#D9A3AA]/30">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8B4BC]/20 text-[#E8B4BC] font-bold text-xs mb-3 border border-[#E8B4BC]/30">
                               <Sparkles size={14} className="animate-pulse" /> وفر أكثر
                             </div>
-                            <h3 className="text-3xl font-black mb-4">كل ما طبعت أكثر، <span className="text-[#C5A059]">وفرت أكثر!</span></h3>
+                            <h3 className="text-3xl font-black mb-4">كل ما طبعت أكثر، <span className="text-[#C6A56B]">وفرت أكثر!</span></h3>
                             <p className="text-white/70 text-sm mb-8">حرك المؤشر وشوف السعر يتغير تلقائياً.</p>
                             <div className="space-y-6">
                               <input type="range" min="1" max="100" value={calcQty} onChange={e => setCalcQty(Number(e.target.value))}
-                                className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#D9A3AA]" />
+                                className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#E8B4BC]" />
                               <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10">
                                 <span className="text-sm font-bold text-white/80">العدد المختار:</span>
                                 <div className="flex items-center gap-3">
                                   <button onClick={() => setCalcQty(Math.max(1, calcQty - 1))} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center font-bold">-</button>
-                                  <span className="text-2xl font-black w-12 text-center text-[#C5A059]">{calcQty}</span>
+                                  <span className="text-2xl font-black w-12 text-center text-[#C6A56B]">{calcQty}</span>
                                   <button onClick={() => setCalcQty(calcQty + 1)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center font-bold">+</button>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          <div className="w-full md:w-80 bg-white text-[#4A4A4A] rounded-3xl p-8 shadow-2xl transform md:rotate-2">
-                            <div className="text-center pb-6 border-b border-[#F8F5F2] mb-6">
-                              <span className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wider block mb-1">سعر الصورة الواحدة</span>
-                              <span className="text-5xl font-black text-[#D9A3AA]">{calcResult.unit} <RiyalSign size="0.55em" /></span>
+                          <div className="w-full md:w-80 bg-white text-[#171717] rounded-3xl p-8 shadow-2xl transform md:rotate-2">
+                            <div className="text-center pb-6 border-b border-[#FAF9F7] mb-6">
+                              <span className="text-xs text-[#171717]/50 font-bold uppercase tracking-wider block mb-1">سعر الصورة الواحدة</span>
+                              <span className="text-5xl font-black text-[#E8B4BC]">{calcResult.unit} <RiyalSign size="0.55em" /></span>
                             </div>
                             <div className="space-y-4 mb-8">
                               <div className="flex justify-between text-sm font-bold">
-                                <span className="text-[#4A4A4A]/60">الإجمالي</span>
+                                <span className="text-[#171717]/60">الإجمالي</span>
                                 <span>{calcResult.total.toFixed(2)} <RiyalSign /></span>
                               </div>
                               {calcResult.savings > 0 && (
-                                <div className="flex justify-between text-sm font-bold text-[#C5A059] bg-[#C5A059]/10 px-4 py-2 rounded-xl">
+                                <div className="flex justify-between text-sm font-bold text-[#C6A56B] bg-[#C6A56B]/10 px-4 py-2 rounded-xl">
                                   <span className="flex items-center gap-1"><Sparkles size={14} /> وفرتي</span>
                                   <span>{calcResult.savings.toFixed(2)} <RiyalSign /></span>
                                 </div>
@@ -883,7 +886,7 @@ export default function LandingPage() {
                             </div>
                             <a href={`https://wa.me/966560301744?text=${encodeURIComponent(`مرحباً، أرغب بطباعة ${calcQty} صورة`)}`}
                               target="_blank" rel="noreferrer"
-                              className="block w-full bg-[#4A4A4A] text-white text-center py-4 rounded-xl font-bold hover:bg-[#C5A059] transition-colors shadow-lg">اطلبي بهذا السعر</a>
+                              className="block w-full bg-[#171717] text-white text-center py-4 rounded-xl font-bold hover:bg-[#C6A56B] transition-colors shadow-lg">اطلبي بهذا السعر</a>
                           </div>
                         </div>
                       </div>
@@ -895,57 +898,57 @@ export default function LandingPage() {
           </div>
 
           {/* REVIEWS + FEEDBACK */}
-          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('reviews')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('reviews')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#C5A059]/10 rounded-xl flex items-center justify-center text-[#C5A059]"><Star size={20} /></div>
+                <div className="w-10 h-10 bg-[#C6A56B]/10 rounded-xl flex items-center justify-center text-[#C6A56B]"><Star size={20} /></div>
                 <div>
-                  <div className="font-black text-[#4A4A4A]">آراء العملاء وتواصل معنا</div>
-                  <div className="text-xs text-[#4A4A4A]/50">تقييمات حقيقية + أرسل ملاحظاتك للإدارة</div>
+                  <div className="font-black text-[#171717]">آراء العملاء وتواصل معنا</div>
+                  <div className="text-xs text-[#171717]/50">تقييمات حقيقية + أرسل ملاحظاتك للإدارة</div>
                 </div>
               </div>
-              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'reviews' ? 'rotate-180' : ''}`} />
+              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'reviews' ? 'rotate-180' : ''}`} />
             </button>
             {activeExpandable === 'reviews' && (
-              <div className="bg-[#F8F5F2] border-t border-[#D9A3AA]/10">
+              <div className="bg-[#FAF9F7] border-t border-[#E8B4BC]/10">
                 <div className="py-10 px-4 sm:px-6 lg:px-8">
                   <div className="text-center mb-8">
-                    <h3 className="text-2xl font-black text-[#4A4A4A] mb-3">ماذا يقول <span className="text-[#D9A3AA]">عملاؤنا؟</span></h3>
-                    <div className="flex justify-center gap-1 mb-8 text-[#C5A059]">
+                    <h3 className="text-2xl font-black text-[#171717] mb-3">ماذا يقول <span className="text-[#E8B4BC]">عملاؤنا؟</span></h3>
+                    <div className="flex justify-center gap-1 mb-8 text-[#C6A56B]">
                       {[...Array(5)].map((_, i) => <Star key={i} size={20} fill="currentColor" />)}
                     </div>
                     <div className="grid md:grid-cols-3 gap-6 mb-10">
                       {REVIEWS.map(review => (
-                        <div key={review.id} className="bg-white p-8 rounded-[2rem] border border-[#D9A3AA]/10 relative hover:-translate-y-2 transition-transform duration-300 shadow-sm">
-                          <Quote className="absolute top-6 left-6 text-[#F8F5F2]" size={40} />
-                          <p className="text-[#4A4A4A]/80 font-medium leading-relaxed mb-6 relative z-10">"{review.comment}"</p>
+                        <div key={review.id} className="bg-white p-8 rounded-[2rem] border border-[#E8B4BC]/10 relative hover:-translate-y-2 transition-transform duration-300 shadow-sm">
+                          <Quote className="absolute top-6 left-6 text-[#FAF9F7]" size={40} />
+                          <p className="text-[#171717]/80 font-medium leading-relaxed mb-6 relative z-10">"{review.comment}"</p>
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-white font-bold">{review.name.charAt(0)}</div>
+                          <div className="w-10 h-10 bg-[#171717] ring-2 ring-[#E8B4BC] rounded-full flex items-center justify-center text-white font-bold">{review.name.charAt(0)}</div>
                             <div className="text-right">
-                              <div className="font-bold text-[#4A4A4A]">{review.name}</div>
-                              <div className="text-xs text-[#D9A3AA]">عميل موثوق ✅</div>
+                              <div className="font-bold text-[#171717]">{review.name}</div>
+                              <div className="text-xs text-[#E8B4BC]">عميل موثوق ✅</div>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div className="max-w-2xl mx-auto bg-white rounded-[2rem] p-8 shadow-xl border border-[#D9A3AA]/20 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-[#D9A3AA] to-[#C5A059]"></div>
-                      <h3 className="text-xl font-black text-[#4A4A4A] flex items-center justify-center gap-2 mb-2"><MessageSquarePlus className="text-[#C5A059]" /> الإدارة في خدمتك دائماً</h3>
-                      <p className="text-[#4A4A4A]/60 text-sm mb-6 text-center">نستقبل تقييماتك، مقترحاتك، أو حتى شكواك بصدر رحب.</p>
+                    <div className="max-w-2xl mx-auto bg-white rounded-[2rem] p-8 shadow-xl border border-[#E8B4BC]/20 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-2 h-full bg-[#C6A56B]"></div>
+                      <h3 className="text-xl font-black text-[#171717] flex items-center justify-center gap-2 mb-2"><MessageSquarePlus className="text-[#C6A56B]" /> الإدارة في خدمتك دائماً</h3>
+                      <p className="text-[#171717]/60 text-sm mb-6 text-center">نستقبل تقييماتك، مقترحاتك، أو حتى شكواك بصدر رحب.</p>
                       <div className="space-y-4">
                         <div className="flex flex-wrap gap-3 justify-center">
                           {['تقييم ⭐️', 'اقتراح 💡', 'شكوى ⚠️'].map(type => (
                             <button key={type} onClick={() => setFeedbackType(type)}
-                              className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${feedbackType === type ? 'bg-[#4A4A4A] text-white border-[#4A4A4A] shadow-md scale-105' : 'bg-white text-[#4A4A4A]/60 border-[#D9A3AA]/30 hover:border-[#4A4A4A]/50 hover:bg-[#F8F5F2]'}`}
+                              className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${feedbackType === type ? 'bg-[#171717] text-white border-[#171717] shadow-md scale-105' : 'bg-white text-[#171717]/60 border-[#E8B4BC]/30 hover:border-[#171717]/50 hover:bg-[#FAF9F7]'}`}
                             >{type}</button>
                           ))}
                         </div>
                         <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)}
                           placeholder="اكتب رسالتك هنا بكل شفافية وسرية تامة..."
-                          className="w-full h-32 bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl p-4 text-[#4A4A4A] outline-none focus:border-[#D9A3AA] focus:ring-4 focus:ring-[#D9A3AA]/10 resize-none transition-all" />
+                          className="w-full h-32 bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl p-4 text-[#171717] outline-none focus:border-[#E8B4BC] focus:ring-4 focus:ring-[#E8B4BC]/10 resize-none transition-all" />
                         <button onClick={handleSendFeedback} disabled={!feedbackText.trim()}
-                          className="w-full bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white py-4 rounded-xl font-bold hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                          className="w-full bg-[#171717] text-white py-4 rounded-xl font-bold hover:bg-[#2b2b2b] hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
                           <Send size={18} /> إرسال الرسالة للإدارة
                         </button>
                       </div>
@@ -957,28 +960,28 @@ export default function LandingPage() {
           </div>
 
           {/* FAQ */}
-          <div className="rounded-2xl border border-[#D9A3AA]/15 overflow-hidden shadow-sm">
-            <button onClick={() => toggleExpandable('faq')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#F8F5F2] transition-colors">
+          <div className="rounded-2xl border border-[#E8B4BC]/15 overflow-hidden shadow-sm">
+            <button onClick={() => toggleExpandable('faq')} className="w-full flex justify-between items-center p-5 text-right bg-white hover:bg-[#FAF9F7] transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#D9A3AA]/10 rounded-xl flex items-center justify-center text-[#D9A3AA]"><MessageCircle size={20} /></div>
+                <div className="w-10 h-10 bg-[#E8B4BC]/10 rounded-xl flex items-center justify-center text-[#E8B4BC]"><MessageCircle size={20} /></div>
                 <div>
-                  <div className="font-black text-[#4A4A4A]">الأسئلة الشائعة</div>
-                  <div className="text-xs text-[#4A4A4A]/50">إجابات على أكثر الأسئلة المطروحة</div>
+                  <div className="font-black text-[#171717]">الأسئلة الشائعة</div>
+                  <div className="text-xs text-[#171717]/50">إجابات على أكثر الأسئلة المطروحة</div>
                 </div>
               </div>
-              <ChevronDown size={20} className={`text-[#D9A3AA] transition-transform duration-300 ${activeExpandable === 'faq' ? 'rotate-180' : ''}`} />
+              <ChevronDown size={20} className={`text-[#E8B4BC] transition-transform duration-300 ${activeExpandable === 'faq' ? 'rotate-180' : ''}`} />
             </button>
             {activeExpandable === 'faq' && (
-              <div className="bg-[#F8F5F2] border-t border-[#D9A3AA]/10">
+              <div className="bg-[#FAF9F7] border-t border-[#E8B4BC]/10">
                 <div className="py-8 px-4 max-w-2xl mx-auto space-y-3">
                   {FAQS.map((faq, idx) => (
-                    <div key={idx} className="bg-white rounded-2xl border border-[#D9A3AA]/15 overflow-hidden">
+                    <div key={idx} className="bg-white rounded-2xl border border-[#E8B4BC]/15 overflow-hidden">
                       <button onClick={() => setOpenFaq(openFaq === idx ? null : idx)} className="w-full flex justify-between items-center p-5 text-right">
-                        <span className="font-bold text-[#4A4A4A] text-sm">{faq.q}</span>
-                        <ChevronDown size={18} className={`text-[#D9A3AA] transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
+                        <span className="font-bold text-[#171717] text-sm">{faq.q}</span>
+                        <ChevronDown size={18} className={`text-[#E8B4BC] transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
                       </button>
                       {openFaq === idx && (
-                        <div className="p-5 pt-0 text-sm text-[#4A4A4A]/70 leading-relaxed border-t border-[#F8F5F2]">{faq.a}</div>
+                        <div className="p-5 pt-0 text-sm text-[#171717]/70 leading-relaxed border-t border-[#FAF9F7]">{faq.a}</div>
                       )}
                     </div>
                   ))}
@@ -993,20 +996,20 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           8. TRUST & COMPLIANCE
       ══════════════════════════════════ */}
-      <section className="bg-[#4A4A4A] text-white py-12">
+      <section className="bg-[#171717] text-white py-12">
         <div className="art-shell grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 text-center">
           <div className="flex flex-col items-center">
-            <ShieldCheck size={40} className="text-[#D9A3AA] mb-4" />
+            <ShieldCheck size={40} className="text-[#E8B4BC] mb-4" />
             <h3 className="font-black text-lg mb-2">تسوق آمن وموثق</h3>
             <p className="text-sm text-white/70">متجر موثق في المركز السعودي للأعمال، لضمان حقوقك وتجربة تسوق موثوقة.</p>
           </div>
           <div className="flex flex-col items-center">
-            <Scale size={40} className="text-[#C5A059] mb-4" />
+            <Scale size={40} className="text-[#C6A56B] mb-4" />
             <h3 className="font-black text-lg mb-2">سياسة استرجاع عادلة</h3>
             <p className="text-sm text-white/70">حق الاسترجاع مكفول خلال 7 أيام للمنتجات الجاهزة بحالتها الأصلية.</p>
           </div>
           <div className="flex flex-col items-center">
-            <Truck size={40} className="text-[#D9A3AA] mb-4" />
+            <Truck size={40} className="text-[#E8B4BC] mb-4" />
             <h3 className="font-black text-lg mb-2">ضمان التوصيل</h3>
             <p className="text-sm text-white/70">نلتزم بتوصيل طلباتك بأسرع وقت، مع ضمان التسليم خلال المدة النظامية.</p>
           </div>
@@ -1016,36 +1019,36 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           9. PROFESSIONAL FOOTER
       ══════════════════════════════════ */}
-      <footer className="bg-white border-t border-[#D9A3AA]/20 pt-16 pb-32 sm:pb-8">
+      <footer className="bg-white border-t border-[#E8B4BC]/20 pt-16 pb-32 sm:pb-8">
         <div className="art-shell grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img src={logo} alt="لحظة فن" className="w-10 h-10 object-contain grayscale opacity-80" />
-              <h2 className="text-xl font-black text-[#4A4A4A]">لحظة فن</h2>
+              <h2 className="text-xl font-black text-[#171717]">لحظة فن</h2>
             </div>
-            <p className="text-sm text-[#4A4A4A]/70 leading-relaxed mb-6">نوثق أجمل لحظاتك بأعلى جودة. تشكيلة من الألبومات والإطارات الفاخرة التي تليق بذكرياتك.</p>
-            <div className="flex items-center gap-2 bg-[#F8F5F2] w-max px-4 py-2 rounded-xl border border-[#D9A3AA]/20">
+            <p className="text-sm text-[#171717]/70 leading-relaxed mb-6">نوثق أجمل لحظاتك بأعلى جودة. تشكيلة من الألبومات والإطارات الفاخرة التي تليق بذكرياتك.</p>
+            <div className="flex items-center gap-2 bg-[#FAF9F7] w-max px-4 py-2 rounded-xl border border-[#E8B4BC]/20">
               <ShieldCheck size={18} className="text-emerald-500" />
               <div className="text-right">
-                <p className="text-[10px] text-[#4A4A4A]/60 font-bold">سيوثق في</p>
-                <p className="text-xs font-black text-[#4A4A4A]">المركز السعودي للأعمال</p>
+                <p className="text-[10px] text-[#171717]/60 font-bold">سيوثق في</p>
+                <p className="text-xs font-black text-[#171717]">المركز السعودي للأعمال</p>
               </div>
             </div>
           </div>
 
           <div>
-            <h3 className="font-black text-[#4A4A4A] mb-4">روابط هامة</h3>
+            <h3 className="font-black text-[#171717] mb-4">روابط هامة</h3>
             <ul className="space-y-3">
-              <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">سياسة الاسترجاع والاستبدال</button></li>
-              <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">الشروط والأحكام</button></li>
-              <li><Link to="/track"      className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">تتبع الطلب</Link></li>
-              <li><Link to="/links"      className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">حساباتنا الرسمية</Link></li>
-              <li><Link to="/store/cart" className="text-sm text-[#4A4A4A]/70 hover:text-[#D9A3AA] font-bold transition-colors">سلة التسوق</Link></li>
+              <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">سياسة الاسترجاع والاستبدال</button></li>
+              <li><button onClick={() => setOpenPolicyModal(true)} className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">الشروط والأحكام</button></li>
+              <li><Link to="/track"      className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">تتبع الطلب</Link></li>
+              <li><Link to="/links"      className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">حساباتنا الرسمية</Link></li>
+              <li><Link to="/store/cart" className="text-sm text-[#171717]/70 hover:text-[#E8B4BC] font-bold transition-colors">سلة التسوق</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-black text-[#4A4A4A] mb-4">تواصل معنا</h3>
+            <h3 className="font-black text-[#171717] mb-4">تواصل معنا</h3>
             <div className="flex gap-2 flex-wrap">
               {[
                 { id: 'whatsapp',  icon: whatsappIcon,  url: 'https://wa.me/966560301744',                alt: 'WhatsApp' },
@@ -1057,20 +1060,20 @@ export default function LandingPage() {
               ].map(social => (
                 <a key={social.id} href={social.url}
                   target={social.url.startsWith('mailto') ? '_self' : '_blank'} rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full bg-[#F8F5F2] border border-[#D9A3AA]/20 flex items-center justify-center hover:bg-[#D9A3AA]/10 hover:-translate-y-1 transition-all duration-300">
+                  className="w-9 h-9 rounded-full bg-[#FAF9F7] border border-[#E8B4BC]/20 flex items-center justify-center hover:bg-[#E8B4BC]/10 hover:-translate-y-1 transition-all duration-300">
                   <img src={social.icon} alt={social.alt} className="w-5 h-5 object-contain" />
                 </a>
               ))}
             </div>
           </div>
         </div>
-        <div className="art-shell flex flex-col items-center gap-4 border-t border-[#F8F5F2] pt-8 text-center">
-          <p className="text-xs font-bold text-[#4A4A4A]/50">جميع الحقوق محفوظة لمتجر لحظة فن © {new Date().getFullYear()}</p>
+        <div className="art-shell flex flex-col items-center gap-4 border-t border-[#FAF9F7] pt-8 text-center">
+          <p className="text-xs font-bold text-[#171717]/50">جميع الحقوق محفوظة لمتجر لحظة فن © {new Date().getFullYear()}</p>
           <a
-            href="https://waseet-shop.vercel.app/"
+            href="https://waseet-shop.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs font-bold text-[#4A4A4A]/60 transition-colors hover:text-[#056ab3]"
+            className="inline-flex items-center gap-2 text-xs font-bold text-[#171717]/60 transition-colors hover:text-[#056ab3]"
             aria-label="زيارة منصة وسيط شوب"
           >
             <span>{language === 'en' ? 'Website designed by Waseet Shop' : 'تم تصميم الموقع بواسطة منصة (وسيط شوب)'}</span>
@@ -1086,48 +1089,48 @@ export default function LandingPage() {
           <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col my-auto animate-in zoom-in-95 duration-300 overflow-hidden relative">
 
             <button onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 left-4 z-10 p-2 bg-white/80 backdrop-blur rounded-full hover:bg-white text-[#4A4A4A] transition-colors shadow-sm">
+              className="absolute top-4 left-4 z-10 p-2 bg-white/80 backdrop-blur rounded-full hover:bg-white text-[#171717] transition-colors shadow-sm">
               <X size={20} />
             </button>
 
             <div className="grid md:grid-cols-2">
-              <div className="bg-[#F8F5F2] aspect-square md:aspect-auto md:min-h-80 relative flex items-center justify-center overflow-hidden">
+              <div className="bg-[#FAF9F7] aspect-square md:aspect-auto md:min-h-80 relative flex items-center justify-center overflow-hidden">
                 {selectedProduct.image
                   ? <img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
                   : <img src={fallbackLogo} alt={selectedProduct.name} className="w-full h-full object-contain p-12 opacity-20 grayscale mix-blend-multiply" />}
               </div>
               <div className="p-6 md:p-8 flex flex-col">
-                <span className="text-[#D9A3AA] text-xs font-bold px-3 py-1 bg-[#D9A3AA]/10 rounded-full w-max mb-3">
+                <span className="text-[#E8B4BC] text-xs font-bold px-3 py-1 bg-[#E8B4BC]/10 rounded-full w-max mb-3">
                   {getCategoryLabel(selectedProduct.category)}
                 </span>
-                <h2 className="text-2xl font-black text-[#4A4A4A] mb-3">{selectedProduct.name}</h2>
-                <p className="text-2xl font-black text-[#C5A059] mb-6">{selectedProduct.price} <span className="text-sm font-normal">ر.س</span></p>
-                <p className="text-sm text-[#4A4A4A]/70 leading-relaxed mb-8 flex-1">
+                <h2 className="text-2xl font-black text-[#171717] mb-3">{selectedProduct.name}</h2>
+                <p className="text-2xl font-black text-[#C6A56B] mb-6">{selectedProduct.price} <span className="text-sm font-normal">ر.س</span></p>
+                <p className="text-sm text-[#171717]/70 leading-relaxed mb-8 flex-1">
                   {selectedProduct.description || 'تصميم فريد بجودة عالية، صُنع خصيصاً ليحفظ أجمل لحظاتك بأناقة.'}
                 </p>
                 <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
-                  className="w-full bg-[#4A4A4A] text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-[#D9A3AA] transition-all shadow-lg hover:-translate-y-1">
+                  className="w-full bg-[#171717] text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-[#E8B4BC] transition-all shadow-lg hover:-translate-y-1">
                   <ShoppingCart size={20} /> أضف إلى السلة
                 </button>
               </div>
             </div>
 
             {getRelatedProducts(selectedProduct).length > 0 && (
-              <div className="bg-[#F8F5F2]/50 p-6 md:p-8 border-t border-[#D9A3AA]/15">
-                <h3 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
-                  <Star size={18} className="text-[#C5A059]" /> أكملي مجموعتك الفنية
+              <div className="bg-[#FAF9F7]/50 p-6 md:p-8 border-t border-[#E8B4BC]/15">
+                <h3 className="font-black text-[#171717] mb-4 flex items-center gap-2">
+                  <Star size={18} className="text-[#C6A56B]" /> أكملي مجموعتك الفنية
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {getRelatedProducts(selectedProduct).map(related => (
                     <div key={related.id} onClick={() => setSelectedProduct(related)}
-                      className="bg-white rounded-2xl p-3 border border-[#D9A3AA]/10 shadow-sm cursor-pointer hover:shadow-md hover:border-[#D9A3AA]/40 transition-all group">
-                      <div className="aspect-square bg-[#F8F5F2] rounded-xl mb-3 overflow-hidden flex items-center justify-center">
+                      className="bg-white rounded-2xl p-3 border border-[#E8B4BC]/10 shadow-sm cursor-pointer hover:shadow-md hover:border-[#E8B4BC]/40 transition-all group">
+                      <div className="aspect-square bg-[#FAF9F7] rounded-xl mb-3 overflow-hidden flex items-center justify-center">
                         {related.image
                           ? <img src={related.image} alt={related.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                          : <ImageIcon size={24} className="text-[#D9A3AA]/30" />}
+                          : <ImageIcon size={24} className="text-[#E8B4BC]/30" />}
                       </div>
-                      <p className="font-bold text-[#4A4A4A] text-xs line-clamp-1 mb-1">{related.name}</p>
-                      <p className="font-black text-[#C5A059] text-xs">{related.price} ر.س</p>
+                      <p className="font-bold text-[#171717] text-xs line-clamp-1 mb-1">{related.name}</p>
+                      <p className="font-black text-[#C6A56B] text-xs">{related.price} ر.س</p>
                     </div>
                   ))}
                 </div>
@@ -1142,15 +1145,15 @@ export default function LandingPage() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={e => e.target === e.currentTarget && setOpenPolicyModal(false)}>
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-[#F8F5F2] flex justify-between items-center bg-[#F8F5F2]/50">
-              <h2 className="text-xl font-black text-[#4A4A4A] flex items-center gap-2">
-                <FileText size={20} className="text-[#D9A3AA]" /> السياسات والأحكام
+            <div className="p-6 border-b border-[#FAF9F7] flex justify-between items-center bg-[#FAF9F7]/50">
+              <h2 className="text-xl font-black text-[#171717] flex items-center gap-2">
+                <FileText size={20} className="text-[#E8B4BC]" /> السياسات والأحكام
               </h2>
               <button onClick={() => setOpenPolicyModal(false)} className="p-2 hover:bg-white rounded-full transition-colors"><X size={18} /></button>
             </div>
-            <div className="p-6 overflow-y-auto space-y-6 text-sm text-[#4A4A4A]/80 leading-relaxed">
+            <div className="p-6 overflow-y-auto space-y-6 text-sm text-[#171717]/80 leading-relaxed">
               <div>
-                <h3 className="font-black text-[#4A4A4A] text-base mb-2">1. سياسة الاسترجاع والاستبدال للمنتجات الجاهزة</h3>
+                <h3 className="font-black text-[#171717] text-base mb-2">1. سياسة الاسترجاع والاستبدال للمنتجات الجاهزة</h3>
                 <p>نلتزم في "لحظة فن" بنظام التجارة الإلكترونية السعودي. يحق للعميل استرجاع أو استبدال المنتجات الجاهزة (مثل الألبومات الفارغة والإطارات) خلال <strong>7 أيام</strong> من تاريخ الاستلام، بشرط أن يكون المنتج بحالته الأصلية غير مستخدم وفي تغليفه الأصلي. يتحمل العميل تكاليف الشحن المترتبة على الاسترجاع ما لم يكن المنتج معيباً.</p>
               </div>
               <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
@@ -1158,17 +1161,17 @@ export default function LandingPage() {
                 <p className="text-red-600/80">استناداً إلى اللوائح المنظمة، <strong>يُستثنى حق الاسترجاع أو الفسخ</strong> للطلبات التي تُصنع خصيصاً للعميل (مثل طباعة الصور الشخصية). بمجرد تأكيد طلب الطباعة وبدء التنفيذ، لا يمكن إلغاء الطلب أو استرجاع المبلغ، نظراً لخصوصية المنتج وعدم إمكانية إعادة بيعه.</p>
               </div>
               <div>
-                <h3 className="font-black text-[#4A4A4A] text-base mb-2">3. ضمان التوصيل (شرط الـ 15 يوماً)</h3>
+                <h3 className="font-black text-[#171717] text-base mb-2">3. ضمان التوصيل (شرط الـ 15 يوماً)</h3>
                 <p>نسعى دائماً لتوصيل طلباتكم في أسرع وقت ممكن (عادة خلال 24-48 ساعة داخل الأحساء). ونلتزم قانونياً بتسليم الطلب في مدة لا تتجاوز 15 يوماً من تاريخ التأكيد. في حال تجاوز هذه المدة، يحق للعميل إلغاء الطلب واسترداد كامل المبلغ.</p>
               </div>
               <div>
-                <h3 className="font-black text-[#4A4A4A] text-base mb-2">4. الخصوصية وسرية البيانات</h3>
+                <h3 className="font-black text-[#171717] text-base mb-2">4. الخصوصية وسرية البيانات</h3>
                 <p>نولي في "لحظة فن" خصوصية صوركم وبياناتكم الشخصية أولوية قصوى. تُعالج الصور المرفوعة بسرية تامة لغرض الطباعة فقط، ولا تُشارك مع أي طرف ثالث وتُحذف من خوادمنا بشكل دوري بعد تسليم الطلب.</p>
               </div>
             </div>
-            <div className="p-6 border-t border-[#F8F5F2] bg-[#F8F5F2]/30">
+            <div className="p-6 border-t border-[#FAF9F7] bg-[#FAF9F7]/30">
               <button onClick={() => setOpenPolicyModal(false)}
-                className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#D9A3AA] transition-colors">
+                className="w-full bg-[#171717] text-white py-3 rounded-xl font-bold hover:bg-[#E8B4BC] transition-colors">
                 قرأت وموافق
               </button>
             </div>
@@ -1179,7 +1182,7 @@ export default function LandingPage() {
       {/* Floating Cart Button — redirects to full store for cross-selling */}
       {cartCount > 0 && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-10">
-          <Link to="/store" className="flex items-center gap-3 bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white px-6 py-3.5 rounded-full font-black hover:shadow-2xl hover:scale-105 transition-all shadow-lg border-2 border-white group">
+        <Link to="/store" className="flex items-center gap-3 bg-[#171717] text-white px-6 py-3.5 rounded-full font-black hover:shadow-2xl hover:scale-105 transition-all shadow-lg border-2 border-white group">
             <ShoppingBag size={20} className="group-hover:-translate-y-1 transition-transform" />
             أكمل طلبك من المتجر ({cartCount})
             <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
@@ -1193,13 +1196,13 @@ export default function LandingPage() {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setIsAccountSidebarOpen(false)}
           />
-          <div className="relative w-full max-w-sm bg-[#F8F5F2] h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col" dir="rtl">
+          <div className="relative w-full max-w-sm bg-[#FAF9F7] h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col" dir="rtl">
             <div className="art-auth-header text-white p-6 pb-8 relative overflow-hidden shrink-0 rounded-bl-3xl">
               <button onClick={() => setIsAccountSidebarOpen(false)} className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-20">
                 <X size={18} />
               </button>
               <div className="flex items-center gap-4 mt-6 relative z-10">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#D9A3AA] to-[#C5A059] rounded-full flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white shrink-0">
+            <div className="w-16 h-16 bg-[#E8B4BC] text-[#171717] rounded-full flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white shrink-0">
                   {customer.name ? customer.name.charAt(0) : <User size={28} />}
                 </div>
                 <div className="min-w-0">
@@ -1211,45 +1214,45 @@ export default function LandingPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="grid grid-cols-2 gap-3">
-                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#D9A3AA]/10 flex flex-col items-center justify-center gap-2 hover:border-[#D9A3AA]/40 transition-colors group">
-                  <div className="w-12 h-12 bg-[#D9A3AA]/10 rounded-full flex items-center justify-center text-[#D9A3AA] group-hover:scale-110 transition-transform">
+                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#E8B4BC]/10 flex flex-col items-center justify-center gap-2 hover:border-[#E8B4BC]/40 transition-colors group">
+                  <div className="w-12 h-12 bg-[#E8B4BC]/10 rounded-full flex items-center justify-center text-[#E8B4BC] group-hover:scale-110 transition-transform">
                     <ShoppingBag size={22} />
                   </div>
-                  <span className="font-bold text-sm text-[#4A4A4A]">طلباتي</span>
+                  <span className="font-bold text-sm text-[#171717]">طلباتي</span>
                 </Link>
-                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C5A059]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C5A059]/40 transition-colors group">
-                  <div className="w-12 h-12 bg-[#C5A059]/10 rounded-full flex items-center justify-center text-[#C5A059] group-hover:scale-110 transition-transform">
+                <Link to="/store/orders" onClick={() => setIsAccountSidebarOpen(false)} className="bg-white p-4 rounded-2xl shadow-sm border border-[#C6A56B]/10 flex flex-col items-center justify-center gap-2 hover:border-[#C6A56B]/40 transition-colors group">
+                  <div className="w-12 h-12 bg-[#C6A56B]/10 rounded-full flex items-center justify-center text-[#C6A56B] group-hover:scale-110 transition-transform">
                     <Wallet size={22} />
                   </div>
-                  <span className="font-bold text-sm text-[#4A4A4A]">المحفظة</span>
+                  <span className="font-bold text-sm text-[#171717]">المحفظة</span>
                 </Link>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9A3AA]/10">
-                <h3 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
-                  <User size={16} className="text-[#C5A059]" /> بيانات الحساب
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#E8B4BC]/10">
+                <h3 className="font-black text-[#171717] mb-4 flex items-center gap-2">
+                  <User size={16} className="text-[#C6A56B]" /> بيانات الحساب
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">الاسم</label>
-                    <input type="text" defaultValue={customer.name || ''} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none text-[#4A4A4A] font-bold" />
+                    <label className="text-[10px] font-bold text-[#171717]/50 block mb-1">الاسم</label>
+                    <input type="text" defaultValue={customer.name || ''} readOnly className="w-full bg-[#FAF9F7] border border-transparent rounded-xl px-4 py-3 text-sm outline-none text-[#171717] font-bold" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-[#4A4A4A]/50 block mb-1">البريد الإلكتروني</label>
-                    <input type="email" defaultValue={customer.email || 'غير مسجل'} readOnly className="w-full bg-[#F8F5F2] border border-transparent rounded-xl px-4 py-3 text-sm outline-none dir-ltr text-right text-[#4A4A4A] font-bold" />
+                    <label className="text-[10px] font-bold text-[#171717]/50 block mb-1">البريد الإلكتروني</label>
+                    <input type="email" defaultValue={customer.email || 'غير مسجل'} readOnly className="w-full bg-[#FAF9F7] border border-transparent rounded-xl px-4 py-3 text-sm outline-none dir-ltr text-right text-[#171717] font-bold" />
                   </div>
                   <Link
                     to="/store/account"
                     onClick={() => setIsAccountSidebarOpen(false)}
-                    className="w-full py-3 mt-2 bg-[#F8F5F2] text-[#4A4A4A] font-bold text-xs rounded-xl hover:bg-[#D9A3AA]/10 transition-colors border border-[#D9A3AA]/20 flex items-center justify-center gap-2"
+                    className="w-full py-3 mt-2 bg-[#FAF9F7] text-[#171717] font-bold text-xs rounded-xl hover:bg-[#E8B4BC]/10 transition-colors border border-[#E8B4BC]/20 flex items-center justify-center gap-2"
                   >
-                    <User size={15} className="text-[#C5A059]" /> إدارة الحساب
+                    <User size={15} className="text-[#C6A56B]" /> إدارة الحساب
                   </Link>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 bg-white border-t border-[#D9A3AA]/10 shrink-0">
+            <div className="p-6 bg-white border-t border-[#E8B4BC]/10 shrink-0">
               <button
                 onClick={() => { setIsAccountSidebarOpen(false); handleLogout(); }}
                 className="w-full py-4 bg-red-50 text-red-500 font-black text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors shadow-sm"

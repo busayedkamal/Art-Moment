@@ -393,7 +393,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
           type="button"
           onClick={onClose}
           aria-label="إغلاق"
-          className="absolute top-4 left-4 z-10 w-8 h-8 bg-white/60 backdrop-blur rounded-full flex items-center justify-center text-[#4A4A4A] hover:bg-white transition-colors"
+          className="absolute top-4 left-4 z-10 w-8 h-8 bg-white/60 backdrop-blur rounded-full flex items-center justify-center text-[#171717] hover:bg-white transition-colors"
         >
           <X size={18} />
         </button>
@@ -406,18 +406,18 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
         </div>
 
         {(isLogin || isSignup) && (
-          <div className="flex bg-white mx-6 -mt-4 relative z-20 rounded-xl shadow-sm p-1 border border-[#D9A3AA]/10">
+          <div className="flex bg-white mx-6 -mt-4 relative z-20 rounded-xl shadow-sm p-1 border border-[#E8B4BC]/10">
             <button
               type="button"
               onClick={() => changeMode('login')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${isLogin ? 'bg-[#D9A3AA] text-white shadow-md' : 'text-[#4A4A4A]/60 hover:bg-[#F8F5F2]'}`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${isLogin ? 'bg-[#E8B4BC] text-white shadow-md' : 'text-[#171717]/60 hover:bg-[#FAF9F7]'}`}
             >
               تسجيل الدخول
             </button>
             <button
               type="button"
               onClick={() => changeMode('signup')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${isSignup ? 'bg-[#C5A059] text-white shadow-md' : 'text-[#4A4A4A]/60 hover:bg-[#F8F5F2]'}`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${isSignup ? 'bg-[#C6A56B] text-white shadow-md' : 'text-[#171717]/60 hover:bg-[#FAF9F7]'}`}
             >
               إنشاء حساب
             </button>
@@ -427,7 +427,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
         <form onSubmit={handleSubmit} className="p-6 space-y-4 mt-2">
           {isSignup && (
             <div className="relative animate-in slide-in-from-top-2">
-              <User className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/60" size={18} />
+              <User className="absolute right-4 top-1/2 -translate-y-1/2 text-[#E8B4BC]/60" size={18} />
               <input
                 type="text"
                 placeholder="الاسم"
@@ -440,7 +440,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
 
           {isSignup && (
             <div className="relative animate-in slide-in-from-top-2">
-              <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/60" size={18} />
+              <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-[#E8B4BC]/60" size={18} />
               <input
                 type="email"
                 required
@@ -454,7 +454,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
 
           {isSignup && (
             <div className="relative">
-              <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/60" size={18} />
+              <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-[#E8B4BC]/60" size={18} />
               <input
                 type="tel"
                 required
@@ -469,9 +469,9 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
           {(isLogin || isForgot || isReset) && (
             <div className="relative">
               {formData.identifier.includes('@') ? (
-                <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/60" size={18} />
+                <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-[#E8B4BC]/60" size={18} />
               ) : (
-                <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/60" size={18} />
+                <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-[#E8B4BC]/60" size={18} />
               )}
               <input
                 type="text"
@@ -482,7 +482,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
                 className="art-input w-full h-12 pr-12 pl-4 rounded-xl outline-none text-sm dir-ltr text-right"
               />
               {isLogin && accountCheck !== 'idle' && (
-                <p className={`mt-1.5 px-1 text-[10px] font-bold ${accountCheck === 'exists' ? 'text-emerald-600' : 'text-[#C5A059]'}`}>
+                <p className={`mt-1.5 px-1 text-[10px] font-bold ${accountCheck === 'exists' ? 'text-emerald-600' : 'text-[#C6A56B]'}`}>
                   {accountCheck === 'checking' ? 'جاري التحقق من البريد...' : 'الحساب موجود، أدخلي كلمة المرور للمتابعة.'}
                 </p>
               )}
@@ -490,14 +490,14 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
           )}
 
           {isSignup && accountCheck === 'new' && (
-            <div className="rounded-xl border border-[#C5A059]/20 bg-[#C5A059]/10 px-3 py-2 text-xs font-bold leading-relaxed text-[#8A6A2F]">
+            <div className="rounded-xl border border-[#C6A56B]/20 bg-[#C6A56B]/10 px-3 py-2 text-xs font-bold leading-relaxed text-[#8A6A2F]">
               البريد غير مسجل لدينا. بقي إدخال الاسم ورقم الجوال وكلمة المرور لإنشاء حسابك.
             </div>
           )}
 
           {isReset && (
             <div className="relative">
-              <KeyRound className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C5A059]/70" size={18} />
+              <KeyRound className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C6A56B]/70" size={18} />
               <input
                 type="text"
                 required
@@ -513,7 +513,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
 
           {(isLogin || isSignup || isReset) && (
             <div className="relative">
-              <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/60" size={18} />
+              <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-[#E8B4BC]/60" size={18} />
               <input
                 type="password"
                 required
@@ -528,7 +528,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
 
           {isReset && (
             <div className="relative">
-              <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D9A3AA]/60" size={18} />
+              <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-[#E8B4BC]/60" size={18} />
               <input
                 type="password"
                 required
@@ -547,14 +547,14 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
                 <button
                   type="button"
                   onClick={() => toggle('rememberMe')}
-                  className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors border ${formData.rememberMe ? 'bg-[#C5A059] border-[#C5A059] text-white' : 'bg-white border-[#D9A3AA]/30'}`}
+                  className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors border ${formData.rememberMe ? 'bg-[#C6A56B] border-[#C6A56B] text-white' : 'bg-white border-[#E8B4BC]/30'}`}
                 >
                   {formData.rememberMe && <Check size={13} strokeWidth={3} />}
                 </button>
                 <button
                   type="button"
                   onClick={() => toggle('rememberMe')}
-                  className="text-xs font-bold text-[#4A4A4A]/70"
+                  className="text-xs font-bold text-[#171717]/70"
                 >
                   حفظ الدخول
                 </button>
@@ -564,7 +564,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
                 <button
                   type="button"
                   onClick={() => changeMode('forgot')}
-                  className="text-xs font-black text-[#D9A3AA] hover:text-[#C5A059] transition-colors"
+                  className="text-xs font-black text-[#E8B4BC] hover:text-[#C6A56B] transition-colors"
                 >
                   نسيت كلمة المرور؟
                 </button>
@@ -573,18 +573,18 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
           )}
 
           {isSignup && (
-            <div className="flex items-start gap-2 rounded-2xl bg-[#F8F5F2] px-3 py-3">
+            <div className="flex items-start gap-2 rounded-2xl bg-[#FAF9F7] px-3 py-3">
               <button
                 type="button"
                 onClick={() => toggle('marketingOptIn')}
-                className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors border ${formData.marketingOptIn ? 'bg-[#D9A3AA] border-[#D9A3AA] text-white' : 'bg-white border-[#D9A3AA]/30'}`}
+                className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors border ${formData.marketingOptIn ? 'bg-[#E8B4BC] border-[#E8B4BC] text-white' : 'bg-white border-[#E8B4BC]/30'}`}
               >
                 {formData.marketingOptIn && <Check size={13} strokeWidth={3} />}
               </button>
               <button
                 type="button"
                 onClick={() => toggle('marketingOptIn')}
-                className="text-right text-xs leading-relaxed font-bold text-[#4A4A4A]/70"
+                className="text-right text-xs leading-relaxed font-bold text-[#171717]/70"
               >
                 أرغب باستقبال العروض والتحديثات على بريدي الإلكتروني.
               </button>
@@ -609,7 +609,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
             <button
               type="button"
               onClick={() => changeMode('login')}
-              className="w-full h-10 rounded-xl text-xs font-black text-[#4A4A4A]/60 hover:text-[#4A4A4A] flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-10 rounded-xl text-xs font-black text-[#171717]/60 hover:text-[#171717] flex items-center justify-center gap-2 transition-colors"
             >
               <ArrowRight size={16} /> العودة لتسجيل الدخول
             </button>
@@ -620,7 +620,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
               type="button"
               disabled={loading}
               onClick={handleResendResetCode}
-              className="w-full text-xs font-bold text-[#D9A3AA] hover:text-[#C5A059] disabled:opacity-50 transition-colors"
+              className="w-full text-xs font-bold text-[#E8B4BC] hover:text-[#C6A56B] disabled:opacity-50 transition-colors"
             >
               إرسال كود جديد
             </button>

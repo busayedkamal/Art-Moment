@@ -179,21 +179,21 @@ export default function Expenses() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-32">
-      <div className="w-9 h-9 border-4 border-[#D9A3AA]/20 border-t-[#D9A3AA] rounded-full animate-spin mb-4"></div>
-      <p className="text-sm text-[#4A4A4A]/50 font-medium">جاري تحميل سجل المصروفات...</p>
+      <div className="w-9 h-9 border-4 border-[#E8B4BC]/20 border-t-[#E8B4BC] rounded-full animate-spin mb-4"></div>
+      <p className="text-sm text-[#171717]/50 font-medium">جاري تحميل سجل المصروفات...</p>
     </div>
   );
 
   return (
-    <div className="w-full space-y-8 pb-10 text-[#4A4A4A]">
+    <div className="w-full space-y-8 pb-10 text-[#171717]">
 
       <div className="flex items-center gap-3 pt-1">
-        <div className="p-3 bg-[#4A4A4A] text-white rounded-xl shadow-lg shadow-[#4A4A4A]/20">
+        <div className="p-3 bg-[#171717] text-white rounded-xl shadow-lg shadow-[#171717]/20">
           <Wallet size={22}/>
         </div>
         <div>
-          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">سجل المصروفات</h1>
-          <p className="text-sm text-[#4A4A4A]/50">إدارة وتتبع التكاليف التشغيلية للمشروع</p>
+          <h1 className="text-2xl font-black text-[#171717] tracking-tight">سجل المصروفات</h1>
+          <p className="text-sm text-[#171717]/50">إدارة وتتبع التكاليف التشغيلية للمشروع</p>
         </div>
       </div>
 
@@ -212,25 +212,25 @@ export default function Expenses() {
         </div>
 
         {/* 2. مصروفات الشهر الحالي */}
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-amber-50 rounded-xl text-amber-600"><Calendar size={24}/></div>
-            <span className="text-xs font-bold bg-[#F8F5F2] text-[#4A4A4A] px-2 py-1 rounded-lg">الشهر الحالي</span>
+            <span className="text-xs font-bold bg-[#FAF9F7] text-[#171717] px-2 py-1 rounded-lg">الشهر الحالي</span>
           </div>
-          <p className="text-[#4A4A4A]/70 text-sm mb-1 font-bold">ما تم صرفه هذا الشهر</p>
-          <h3 className="text-3xl font-black text-[#4A4A4A]">{stats.currentMonth.toLocaleString()} <RiyalSign size="0.7em" /></h3>
+          <p className="text-[#171717]/70 text-sm mb-1 font-bold">ما تم صرفه هذا الشهر</p>
+          <h3 className="text-3xl font-black text-[#171717]">{stats.currentMonth.toLocaleString()} <RiyalSign size="0.7em" /></h3>
         </div>
 
         {/* 3. أعلى بند مكلف */}
-        <div className="bg-[#4A4A4A] p-6 rounded-2xl border border-[#4A4A4A] shadow-sm text-white relative overflow-hidden">
+        <div className="bg-[#171717] p-6 rounded-2xl border border-[#171717] shadow-sm text-white relative overflow-hidden">
           <div className="absolute -left-6 -bottom-6 opacity-10"><PieChart size={120}/></div>
           <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="p-3 bg-white/10 rounded-xl text-[#C5A059]"><PieChart size={24}/></div>
-            <span className="text-xs font-bold bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/30 px-2 py-1 rounded-lg">تنبيه تكاليف</span>
+            <div className="p-3 bg-white/10 rounded-xl text-[#C6A56B]"><PieChart size={24}/></div>
+            <span className="text-xs font-bold bg-[#C6A56B]/20 text-[#C6A56B] border border-[#C6A56B]/30 px-2 py-1 rounded-lg">تنبيه تكاليف</span>
           </div>
           <p className="text-white/70 text-sm mb-1 font-bold">أكثر بند يستنزف الميزانية</p>
           <h3 className="text-xl font-black text-white relative z-10 truncate" title={stats.highestTitle}>{stats.highestTitle}</h3>
-          <p className="text-[#D9A3AA] font-bold text-sm mt-1">{stats.highestAmount.toLocaleString()} <RiyalSign /></p>
+          <p className="text-[#E8B4BC] font-bold text-sm mt-1">{stats.highestAmount.toLocaleString()} <RiyalSign /></p>
         </div>
       </div>
 
@@ -238,27 +238,27 @@ export default function Expenses() {
         
         {/* نموذج الإضافة */}
         <div className="md:col-span-4 h-fit">
-          <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/20 shadow-sm sticky top-6">
-            <h3 className="font-bold text-[#4A4A4A] mb-4 flex items-center gap-2">
-              <Plus className="text-[#C5A059]"/> تسجيل مصروف جديد
+          <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm sticky top-6">
+            <h3 className="font-bold text-[#171717] mb-4 flex items-center gap-2">
+              <Plus className="text-[#C6A56B]"/> تسجيل مصروف جديد
             </h3>
             <form onSubmit={handleAddExpense} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">تاريخ المصروف</label>
+                <label className="text-xs font-bold text-[#171717]/70 block mb-1">تاريخ المصروف</label>
                 <input 
                   type="date" 
-                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA]"
+                  className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC]"
                   value={newExpense.date}
                   onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">بيان المصروف</label>
+                <label className="text-xs font-bold text-[#171717]/70 block mb-1">بيان المصروف</label>
                 <input 
                   type="text" 
                   list="expense-titles" 
                   placeholder="مثلاً: حبر طابعة، إيجار..." 
-                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA]"
+                  className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC]"
                   value={newExpense.title}
                   onChange={(e) => setNewExpense({...newExpense, title: e.target.value})}
                 />
@@ -269,16 +269,16 @@ export default function Expenses() {
                 </datalist>
               </div>
               <div>
-                <label className="text-xs font-bold text-[#4A4A4A]/70 block mb-1">المبلغ (<RiyalSign />)</label>
+                <label className="text-xs font-bold text-[#171717]/70 block mb-1">المبلغ (<RiyalSign />)</label>
                 <input 
                   type="number" 
                   placeholder="0.00" 
-                  className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl px-4 py-3 outline-none focus:border-[#D9A3AA] font-bold text-[#4A4A4A]"
+                  className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-4 py-3 outline-none focus:border-[#E8B4BC] font-bold text-[#171717]"
                   value={newExpense.amount}
                   onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
                 />
               </div>
-              <button type="submit" className="w-full bg-[#4A4A4A] text-white py-3 rounded-xl font-bold hover:bg-[#3F3F3F] flex justify-center items-center gap-2">
+              <button type="submit" className="w-full bg-[#171717] text-white py-3 rounded-xl font-bold hover:bg-[#3F3F3F] flex justify-center items-center gap-2">
                 تسجيل المصروف
               </button>
             </form>
@@ -287,43 +287,43 @@ export default function Expenses() {
 
         {/* السجل والقائمة */}
         <div className="md:col-span-8">
-          <div className="bg-white rounded-2xl border border-[#D9A3AA]/20 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#E8B4BC]/20 shadow-sm overflow-hidden">
             
             {/* شريط الأدوات والفرز */}
-            <div className="p-4 border-b border-[#D9A3AA]/10 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="p-4 border-b border-[#E8B4BC]/10 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2"><FileText className="text-[#D9A3AA]" size={20}/> القائمة المفصلة</h3>
-                <span className="text-xs text-[#4A4A4A]/55 font-mono bg-[#F8F5F2] px-2 py-1 rounded">{expenses.length} عملية</span>
+                <h3 className="font-bold text-[#171717] flex items-center gap-2"><FileText className="text-[#E8B4BC]" size={20}/> القائمة المفصلة</h3>
+                <span className="text-xs text-[#171717]/55 font-mono bg-[#FAF9F7] px-2 py-1 rounded">{expenses.length} عملية</span>
               </div>
               
-              <div className="flex items-center gap-2 bg-[#F8F5F2] p-1 rounded-xl">
+              <div className="flex items-center gap-2 bg-[#FAF9F7] p-1 rounded-xl">
                 <button 
                   onClick={() => setSortBy('date')} 
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'date' ? 'bg-white shadow text-[#4A4A4A]' : 'text-[#4A4A4A]/70 hover:text-[#4A4A4A]/80'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'date' ? 'bg-white shadow text-[#171717]' : 'text-[#171717]/70 hover:text-[#171717]/80'}`}
                 >
                   <Calendar size={12}/> التاريخ
                 </button>
                 <button 
                   onClick={() => setSortBy('amount')} 
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'amount' ? 'bg-white shadow text-[#4A4A4A]' : 'text-[#4A4A4A]/70 hover:text-[#4A4A4A]/80'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'amount' ? 'bg-white shadow text-[#171717]' : 'text-[#171717]/70 hover:text-[#171717]/80'}`}
                 >
                   <ArrowUpDown size={12}/> المبلغ
                 </button>
                 <button 
                   onClick={() => setSortBy('title')} 
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'title' ? 'bg-white shadow text-[#4A4A4A]' : 'text-[#4A4A4A]/70 hover:text-[#4A4A4A]/80'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${sortBy === 'title' ? 'bg-white shadow text-[#171717]' : 'text-[#171717]/70 hover:text-[#171717]/80'}`}
                 >
                   <Filter size={12}/> الاسم
                 </button>
               </div>
             </div>
             
-            <div className="divide-y divide-[#D9A3AA]/10 max-h-[600px] overflow-y-auto custom-scrollbar">
+            <div className="divide-y divide-[#E8B4BC]/10 max-h-[600px] overflow-y-auto custom-scrollbar">
               {sortedExpenses.length === 0 ? (
-                <div className="p-10 text-center text-[#4A4A4A]/55">لا توجد مصروفات مسجلة</div>
+                <div className="p-10 text-center text-[#171717]/55">لا توجد مصروفات مسجلة</div>
               ) : (
                 sortedExpenses.map((item) => (
-                  <div key={item.id} className="p-4 hover:bg-[#F8F5F2] transition-colors group">
+                  <div key={item.id} className="p-4 hover:bg-[#FAF9F7] transition-colors group">
                     
                     {/* وضع التعديل */}
                     {editingId === item.id ? (
@@ -332,26 +332,26 @@ export default function Expenses() {
                           type="date" 
                           value={editFormData.date} 
                           onChange={(e) => setEditFormData({...editFormData, date: e.target.value})}
-                          className="w-full sm:w-32 bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm outline-none"
+                          className="w-full sm:w-32 bg-white border border-[#E8B4BC]/40 rounded-lg px-2 py-1.5 text-sm outline-none"
                         />
                         <input 
                           type="text" 
                           value={editFormData.title} 
                           list="expense-titles" 
                           onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
-                          className="flex-1 w-full bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm outline-none text-[#4A4A4A]"
+                          className="flex-1 w-full bg-white border border-[#E8B4BC]/40 rounded-lg px-2 py-1.5 text-sm outline-none text-[#171717]"
                           placeholder="البيان"
                         />
                         <input 
                           type="number" 
                           value={editFormData.amount} 
                           onChange={(e) => setEditFormData({...editFormData, amount: e.target.value})}
-                          className="w-full sm:w-24 bg-white border border-[#D9A3AA]/40 rounded-lg px-2 py-1.5 text-sm font-bold text-left outline-none text-[#4A4A4A]"
+                          className="w-full sm:w-24 bg-white border border-[#E8B4BC]/40 rounded-lg px-2 py-1.5 text-sm font-bold text-left outline-none text-[#171717]"
                           placeholder="المبلغ"
                         />
                         <div className="flex gap-1">
-                          <button onClick={() => saveEdit(item.id)} className="p-2 bg-[#D9A3AA] text-white rounded-lg hover:bg-[#C5A059]"><Check size={16}/></button>
-                          <button onClick={cancelEdit} className="p-2 bg-[#F8F5F2] text-[#4A4A4A]/75 rounded-lg hover:bg-white/80"><X size={16}/></button>
+                          <button onClick={() => saveEdit(item.id)} className="p-2 bg-[#E8B4BC] text-white rounded-lg hover:bg-[#C6A56B]"><Check size={16}/></button>
+                          <button onClick={cancelEdit} className="p-2 bg-[#FAF9F7] text-[#171717]/75 rounded-lg hover:bg-white/80"><X size={16}/></button>
                         </div>
                       </div>
                     ) : (
@@ -362,8 +362,8 @@ export default function Expenses() {
                             <TrendingDown size={18}/>
                           </div>
                           <div>
-                            <p className="font-bold text-[#4A4A4A]">{item.title}</p>
-                            <p className="text-xs text-[#4A4A4A]/55 flex items-center gap-1 font-mono">
+                            <p className="font-bold text-[#171717]">{item.title}</p>
+                            <p className="text-xs text-[#171717]/55 flex items-center gap-1 font-mono">
                               <Calendar size={10}/> {new Date(item.date || item.created_at).toLocaleDateString('en-GB')}
                             </p>
                           </div>
@@ -375,14 +375,14 @@ export default function Expenses() {
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               onClick={() => startEdit(item)}
-                              className="p-2 text-[#4A4A4A]/55 hover:text-[#D9A3AA] hover:bg-[#D9A3AA]/10 rounded-lg transition-colors"
+                              className="p-2 text-[#171717]/55 hover:text-[#E8B4BC] hover:bg-[#E8B4BC]/10 rounded-lg transition-colors"
                               title="تعديل"
                             >
                               <Edit2 size={16}/>
                             </button>
                             <button 
                               onClick={() => handleDelete(item.id)}
-                              className="p-2 text-[#4A4A4A]/55 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 text-[#171717]/55 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="حذف"
                             >
                               <Trash2 size={16}/>

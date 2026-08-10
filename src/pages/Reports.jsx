@@ -248,7 +248,7 @@ export default function Reports() {
   }, [storeOrders]);
 
   // ألوان الرسوم البيانية — متوافقة مع هوية لحظة فن
-  const CHART_COLORS = ['#D9A3AA', '#C5A059', '#4A4A4A', '#ef4444', '#C48A92'];
+  const CHART_COLORS = ['#E8B4BC', '#C6A56B', '#171717', '#ef4444', '#C48A92'];
 
   const generateReturnOfferMsg = () => {
     const customersMap = {};
@@ -304,7 +304,7 @@ export default function Reports() {
     return { totalA4, total4x6, totalAlbums };
   }, [orders]);
 
-  const PIE_COLORS = ['#D9A3AA', '#C5A059', '#4A4A4A'];
+  const PIE_COLORS = ['#E8B4BC', '#C6A56B', '#171717'];
   const pieData = useMemo(() => [
     { name: 'صور 4x6', value: customerInsights.total4x6 },
     { name: 'صور A4', value: customerInsights.totalA4 },
@@ -345,13 +345,13 @@ export default function Reports() {
               .sort((a, b) => b[1] - a[1])
               .map(([name, amount]) => (
                 <li key={name} className="flex justify-between items-center gap-3 text-sm border-b border-emerald-50 pb-2 last:border-0 last:pb-0">
-                  <span className="text-[#4A4A4A]/80 font-medium truncate">{name}</span>
+                  <span className="text-[#171717]/80 font-medium truncate">{name}</span>
                   <span className="font-bold text-emerald-600 whitespace-nowrap">{amount.toLocaleString()} <RiyalSign /></span>
                 </li>
               ))}
           </ul>
         ) : (
-          <p className="text-xs text-[#4A4A4A]/40 text-center py-2">لا توجد دفعات مسجلة</p>
+          <p className="text-xs text-[#171717]/40 text-center py-2">لا توجد دفعات مسجلة</p>
         )}
       </section>
 
@@ -365,13 +365,13 @@ export default function Reports() {
               .sort((a, b) => b[1] - a[1])
               .map(([category, amount]) => (
                 <li key={category} className="flex justify-between items-center gap-3 text-sm border-b border-red-50 pb-2 last:border-0 last:pb-0">
-                  <span className="text-[#4A4A4A]/80 font-medium truncate">{category}</span>
+                  <span className="text-[#171717]/80 font-medium truncate">{category}</span>
                   <span className="font-bold text-red-500 whitespace-nowrap">{amount.toLocaleString()} <RiyalSign /></span>
                 </li>
               ))}
           </ul>
         ) : (
-          <p className="text-xs text-[#4A4A4A]/40 text-center py-2">لا توجد مصروفات مسجلة</p>
+          <p className="text-xs text-[#171717]/40 text-center py-2">لا توجد مصروفات مسجلة</p>
         )}
       </section>
     </div>
@@ -379,23 +379,23 @@ export default function Reports() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-32">
-      <div className="w-10 h-10 border-4 border-[#D9A3AA]/20 border-t-[#D9A3AA] rounded-full animate-spin mb-4"></div>
-      <p className="text-sm text-[#4A4A4A]/50 font-medium">جاري تحليل البيانات...</p>
+      <div className="w-10 h-10 border-4 border-[#E8B4BC]/20 border-t-[#E8B4BC] rounded-full animate-spin mb-4"></div>
+      <p className="text-sm text-[#171717]/50 font-medium">جاري تحليل البيانات...</p>
     </div>
   );
 
   return (
-    <div className="w-full space-y-8 pb-20 text-[#4A4A4A]">
+    <div className="w-full space-y-8 pb-20 text-[#171717]">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 pt-1">
         <div>
-          <h1 className="text-2xl font-black text-[#4A4A4A] tracking-tight">التقرير المالي الذكي</h1>
-          <p className="text-sm text-[#4A4A4A]/50 mt-0.5">نظرة شاملة على الأداء المالي مع تحليلات ذكية</p>
+          <h1 className="text-2xl font-black text-[#171717] tracking-tight">التقرير المالي الذكي</h1>
+          <p className="text-sm text-[#171717]/50 mt-0.5">نظرة شاملة على الأداء المالي مع تحليلات ذكية</p>
         </div>
         <button
           onClick={() => window.print()}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#4A4A4A] text-white rounded-xl hover:bg-[#333] transition-colors shadow-lg shadow-[#4A4A4A]/20 text-sm font-bold shrink-0"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#171717] text-white rounded-xl hover:bg-[#333] transition-colors shadow-lg shadow-[#171717]/20 text-sm font-bold shrink-0"
         >
           <Download size={16} /> طباعة التقرير
         </button>
@@ -405,27 +405,27 @@ export default function Reports() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
 
         {/* إجمالي الدخل */}
-        <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/15 shadow-sm col-span-1">
+        <div className="bg-white p-5 rounded-2xl border border-[#E8B4BC]/15 shadow-sm col-span-1">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wide">إجمالي الدخل</p>
-            <div className="w-8 h-8 bg-[#D9A3AA]/15 text-[#D9A3AA] rounded-xl flex items-center justify-center shrink-0">
+            <p className="text-xs text-[#171717]/50 font-bold uppercase tracking-wide">إجمالي الدخل</p>
+            <div className="w-8 h-8 bg-[#E8B4BC]/15 text-[#E8B4BC] rounded-xl flex items-center justify-center shrink-0">
               <TrendingUp size={15}/>
             </div>
           </div>
-          <h3 className="text-2xl font-black text-[#4A4A4A]">{analytics.totals.totalRevenue.toLocaleString()}</h3>
-          <span className="text-xs text-[#4A4A4A]/40">ريال</span>
+          <h3 className="text-2xl font-black text-[#171717]">{analytics.totals.totalRevenue.toLocaleString()}</h3>
+          <span className="text-xs text-[#171717]/40">ريال</span>
         </div>
 
         {/* إجمالي المصروفات */}
         <div className="bg-white p-5 rounded-2xl border border-red-100 shadow-sm col-span-1">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wide">المصروفات</p>
+            <p className="text-xs text-[#171717]/50 font-bold uppercase tracking-wide">المصروفات</p>
             <div className="w-8 h-8 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0">
               <TrendingDown size={15}/>
             </div>
           </div>
           <h3 className="text-2xl font-black text-red-500">{analytics.totals.totalExpenses.toLocaleString()}</h3>
-          <span className="text-xs text-[#4A4A4A]/40">ريال</span>
+          <span className="text-xs text-[#171717]/40">ريال</span>
         </div>
 
         {/* رصيد الباقات */}
@@ -446,13 +446,13 @@ export default function Reports() {
         {/* رصيد النقاط */}
         <div className="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm col-span-1">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wide">رصيد النقاط</p>
+            <p className="text-xs text-[#171717]/50 font-bold uppercase tracking-wide">رصيد النقاط</p>
             <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center shrink-0">
               <Wallet size={15}/>
             </div>
           </div>
           <h3 className="text-2xl font-black text-orange-500">{Number(analytics.totals.totalPointsBalance || 0).toLocaleString()} نقطة</h3>
-          <span className="text-xs text-[#4A4A4A]/40">تعادل {Number(analytics.totals.totalWalletBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ريال</span>
+          <span className="text-xs text-[#171717]/40">تعادل {Number(analytics.totals.totalWalletBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} ريال</span>
         </div>
 
         {/* الربح الكامل مع الديون */}
@@ -471,31 +471,31 @@ export default function Reports() {
         </div>
 
         {/* هامش الربح */}
-        <div className="bg-white p-5 rounded-2xl border border-[#C5A059]/20 shadow-sm col-span-1">
+        <div className="bg-white p-5 rounded-2xl border border-[#C6A56B]/20 shadow-sm col-span-1">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-xs text-[#4A4A4A]/50 font-bold uppercase tracking-wide">هامش الربح</p>
-            <div className="w-8 h-8 bg-[#C5A059]/10 text-[#C5A059] rounded-xl flex items-center justify-center shrink-0">
+            <p className="text-xs text-[#171717]/50 font-bold uppercase tracking-wide">هامش الربح</p>
+            <div className="w-8 h-8 bg-[#C6A56B]/10 text-[#C6A56B] rounded-xl flex items-center justify-center shrink-0">
               <PieIcon size={15}/>
             </div>
           </div>
-          <h3 className="text-2xl font-black text-[#C5A059]">{analytics.totals.profitMargin}%</h3>
-          <span className="text-xs text-[#4A4A4A]/40">من إجمالي الإيرادات</span>
+          <h3 className="text-2xl font-black text-[#C6A56B]">{analytics.totals.profitMargin}%</h3>
+          <span className="text-xs text-[#171717]/40">من إجمالي الإيرادات</span>
         </div>
 
       </div>
 
       {/* --- Store Financials Section --- */}
       <div className="mt-8 mb-4">
-        <h3 className="text-lg font-black text-[#4A4A4A] flex items-center gap-2 mb-4">
-          <ShoppingBag className="text-[#C5A059]" size={20} /> أداء المتجر (المنتجات الجاهزة)
+        <h3 className="text-lg font-black text-[#171717] flex items-center gap-2 mb-4">
+          <ShoppingBag className="text-[#C6A56B]" size={20} /> أداء المتجر (المنتجات الجاهزة)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-[#D9A3AA]/20 shadow-sm flex items-center justify-between">
+          <div className="bg-white p-5 rounded-2xl border border-[#E8B4BC]/20 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-xs text-[#4A4A4A]/60 font-bold mb-1">مبيعات المتجر</p>
-              <h3 className="text-xl font-black text-[#4A4A4A]">{storeStats.sales.toFixed(2)} <span className="text-xs">ر.س</span></h3>
+              <p className="text-xs text-[#171717]/60 font-bold mb-1">مبيعات المتجر</p>
+              <h3 className="text-xl font-black text-[#171717]">{storeStats.sales.toFixed(2)} <span className="text-xs">ر.س</span></h3>
             </div>
-            <div className="w-10 h-10 rounded-full bg-[#D9A3AA]/10 flex items-center justify-center text-[#D9A3AA]"><ShoppingBag size={20} /></div>
+            <div className="w-10 h-10 rounded-full bg-[#E8B4BC]/10 flex items-center justify-center text-[#E8B4BC]"><ShoppingBag size={20} /></div>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
             <div>
@@ -515,8 +515,8 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <h3 className="font-bold text-[#4A4A4A] mb-6">📈 اتجاهات الدخل والمصروفات</h3>
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#E8B4BC]/15 shadow-sm">
+          <h3 className="font-bold text-[#171717] mb-6">📈 اتجاهات الدخل والمصروفات</h3>
           <div className="h-72 w-full dir-ltr">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={analytics.monthlyData}>
@@ -542,8 +542,8 @@ export default function Reports() {
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm">
-          <h3 className="font-bold text-[#4A4A4A] mb-2">💸 توزيع المصروفات</h3>
+        <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/15 shadow-sm">
+          <h3 className="font-bold text-[#171717] mb-2">💸 توزيع المصروفات</h3>
           <div style={{ width: '100%', height: 300, direction: 'ltr' }}>
             {analytics.expenseData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -560,19 +560,19 @@ export default function Reports() {
                   <Legend verticalAlign="bottom" height={36} iconType="circle"/>
                 </PieChart>
               </ResponsiveContainer>
-            ) : <div className="flex items-center justify-center h-full text-[#4A4A4A]/50">لا توجد بيانات</div>}
+            ) : <div className="flex items-center justify-center h-full text-[#171717]/50">لا توجد بيانات</div>}
           </div>
         </div>
       </div>
 
       {/* بطاقة دراسة الجدوى */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm overflow-hidden relative">
+        <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/15 shadow-sm overflow-hidden relative">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
-              <Activity size={18} className="text-[#C5A059]"/> دراسة الجدوى الحية
+            <h3 className="font-bold text-[#171717] flex items-center gap-2">
+              <Activity size={18} className="text-[#C6A56B]"/> دراسة الجدوى الحية
             </h3>
-            <span className="text-[10px] bg-[#D9A3AA]/12 text-[#C5A059] px-2 py-1 rounded-lg border border-[#D9A3AA]/20">
+            <span className="text-[10px] bg-[#E8B4BC]/12 text-[#C6A56B] px-2 py-1 rounded-lg border border-[#E8B4BC]/20">
               تحليل فوري
             </span>
           </div>
@@ -580,14 +580,14 @@ export default function Reports() {
           <div className="space-y-6">
             {/* 1. كفاءة التشغيل */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/10">
-                <p className="text-[10px] text-[#4A4A4A]/60 mb-1">متوسط قيمة الطلب (AOV)</p>
-                <p className="text-lg font-bold text-[#4A4A4A]/80">
+              <div className="p-3 bg-[#FAF9F7] rounded-xl border border-[#E8B4BC]/10">
+                <p className="text-[10px] text-[#171717]/60 mb-1">متوسط قيمة الطلب (AOV)</p>
+                <p className="text-lg font-bold text-[#171717]/80">
                   {analytics.totals.avgOrderValue} <RiyalSign size="0.65em" />
                 </p>
               </div>
-              <div className="p-3 bg-[#F8F5F2] rounded-xl border border-[#D9A3AA]/10">
-                <p className="text-[10px] text-[#4A4A4A]/60 mb-1">صافي الربح لكل طلب</p>
+              <div className="p-3 bg-[#FAF9F7] rounded-xl border border-[#E8B4BC]/10">
+                <p className="text-[10px] text-[#171717]/60 mb-1">صافي الربح لكل طلب</p>
                 <p className={`text-lg font-bold ${analytics.totals.netProfit > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                   {Math.round(analytics.totals.netProfit / (analytics.totals.totalOrders || 1))} <RiyalSign size="0.65em" />
                 </p>
@@ -597,12 +597,12 @@ export default function Reports() {
             {/* 2. مؤشر الاستدامة (نقطة التعادل) */}
             <div>
               <div className="flex justify-between text-xs mb-2">
-                <span className="text-[#4A4A4A]/70 font-bold">تغطية المصروفات</span>
-                <span className="text-[#4A4A4A]/50">
+                <span className="text-[#171717]/70 font-bold">تغطية المصروفات</span>
+                <span className="text-[#171717]/50">
                   {Math.round((analytics.totals.totalRevenue / (analytics.totals.totalExpenses || 1)) * 100)}%
                 </span>
               </div>
-              <div className="w-full bg-[#D9A3AA]/15 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-[#E8B4BC]/15 rounded-full h-2.5 overflow-hidden">
                 <div 
                   className={`h-full rounded-full transition-all duration-1000 ${
                     analytics.totals.netProfit >= 0 ? 'bg-emerald-500' : 'bg-red-500'
@@ -610,7 +610,7 @@ export default function Reports() {
                   style={{ width: `${Math.min(100, (analytics.totals.totalRevenue / (analytics.totals.totalExpenses || 1)) * 100)}%` }}
                 ></div>
               </div>
-              <p className="text-[10px] text-[#4A4A4A]/50 mt-1.5">
+              <p className="text-[10px] text-[#171717]/50 mt-1.5">
                 {analytics.totals.netProfit >= 0 
                   ? "✅ المشروع يغطي تكاليفه ويحقق أرباحاً." 
                   : "⚠️ الدخل الحالي لا يغطي كامل المصروفات."}
@@ -618,7 +618,7 @@ export default function Reports() {
             </div>
 
             {/* 3. معدل النمو */}
-            <div className="pt-4 border-t border-[#D9A3AA]/10">
+            <div className="pt-4 border-t border-[#E8B4BC]/10">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   analytics.monthlyData.length > 1 && 
@@ -633,8 +633,8 @@ export default function Reports() {
                   }
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#4A4A4A]/80">مؤشر النمو الشهري</p>
-                  <p className="text-[10px] text-[#4A4A4A]/50">
+                  <p className="text-xs font-bold text-[#171717]/80">مؤشر النمو الشهري</p>
+                  <p className="text-[10px] text-[#171717]/50">
                     {analytics.monthlyData.length > 1 
                       ? `مقارنة بالشهر السابق (${analytics.monthlyData[analytics.monthlyData.length-2].name})`
                       : "لا توجد بيانات كافية للمقارنة"
@@ -644,16 +644,16 @@ export default function Reports() {
               </div>
             </div>
           </div>
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-[#D9A3AA]/10 rounded-full blur-2xl"></div>
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-[#E8B4BC]/10 rounded-full blur-2xl"></div>
         </div>
 
 {/* بطاقة محفز النمو وفرص المبيعات (كبديل للمناطق الجغرافية) */}
-        <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/15 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/15 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-[#4A4A4A] flex items-center gap-2">
-              <TrendingUp size={18} className="text-[#C5A059]"/> محفز النمو الشهري
+            <h3 className="font-bold text-[#171717] flex items-center gap-2">
+              <TrendingUp size={18} className="text-[#C6A56B]"/> محفز النمو الشهري
             </h3>
-            <span className="text-[10px] bg-[#C5A059]/10 text-[#C5A059] px-2 py-1 rounded-lg font-bold">
+            <span className="text-[10px] bg-[#C6A56B]/10 text-[#C6A56B] px-2 py-1 rounded-lg font-bold">
               الهدف: +20%
             </span>
           </div>
@@ -680,13 +680,13 @@ export default function Reports() {
                 {/* شريط تقدم الهدف المالي */}
                 <div>
                   <div className="flex justify-between text-xs mb-2">
-                    <span className="text-[#4A4A4A]/70 font-bold">تخطي مبيعات الشهر الماضي</span>
-                    <span className="font-bold text-[#C5A059]">{target.toLocaleString(undefined, {maximumFractionDigits: 0})} <RiyalSign /></span>
+                    <span className="text-[#171717]/70 font-bold">تخطي مبيعات الشهر الماضي</span>
+                    <span className="font-bold text-[#C6A56B]">{target.toLocaleString(undefined, {maximumFractionDigits: 0})} <RiyalSign /></span>
                   </div>
-                  <div className="w-full bg-[#F8F5F2] rounded-full h-3 mb-2 overflow-hidden border border-[#D9A3AA]/10 relative">
-                    <div className="bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+                  <div className="w-full bg-[#FAF9F7] rounded-full h-3 mb-2 overflow-hidden border border-[#E8B4BC]/10 relative">
+                    <div className="bg-gradient-to-r from-[#E8B4BC] to-[#C6A56B] h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                   </div>
-                  <p className="text-[10px] text-[#4A4A4A]/60 text-center">
+                  <p className="text-[10px] text-[#171717]/60 text-center">
                     {remaining > 0 
                       ? <span>باقي {remaining.toLocaleString(undefined, {maximumFractionDigits: 0})} <RiyalSign /> لتحطيم الرقم القياسي 💪</span>
                       : '🎉 بطل! لقد حققت هدف النمو بنجاح!'}
@@ -714,15 +714,15 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-[#4A4A4A] to-[#343434] rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="bg-gradient-to-r from-[#171717] to-[#343434] rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex-1">
-          <h3 className="text-lg font-bold flex items-center gap-2 mb-2"><Users className="text-[#C5A059]"/> استعادة العملاء (Churn)</h3>
+          <h3 className="text-lg font-bold flex items-center gap-2 mb-2"><Users className="text-[#C6A56B]"/> استعادة العملاء (Churn)</h3>
           <p className="text-sm text-white/80 mb-4">هؤلاء العملاء لم يطلبوا منذ 3 أشهر. انسخ كود الخصم وأرسله لهم!</p>
           <div className="flex flex-wrap gap-2">
             {analytics.churnedList.length > 0 ? analytics.churnedList.map(c => (
               <div key={c.phone} className="bg-white/10 px-3 py-1.5 rounded-lg text-xs flex items-center gap-2">
                 <span>{c.name}</span>
-                <span className="text-[#4A4A4A]/50">|</span>
+                <span className="text-[#171717]/50">|</span>
                 <span className="font-mono">{format(c.date, 'MM/yy')}</span>
               </div>
             )) : <span className="text-sm text-emerald-400 font-bold">رائع! جميع عملائك نشطون 👏</span>}
@@ -730,22 +730,22 @@ export default function Reports() {
         </div>
         <button 
           onClick={() => { navigator.clipboard.writeText("اشتقنا لك! استخدم كود WELCOMEBACK لخصم 15% على طلبك القادم."); toast.success("تم نسخ الرسالة"); }}
-          className="bg-white text-[#4A4A4A] px-6 py-3 rounded-xl font-bold text-sm hover:bg-[#D9A3AA]/10 transition-colors flex items-center gap-2 shadow-lg"
+          className="bg-white text-[#171717] px-6 py-3 rounded-xl font-bold text-sm hover:bg-[#E8B4BC]/10 transition-colors flex items-center gap-2 shadow-lg"
         >
           <Copy size={16}/> نسخ عرض العودة
         </button>
       </div>
 
       {/* ✅ جدول التفاصيل الشهرية الديناميكي ✅ */}
-      <div className="bg-white rounded-2xl border border-[#D9A3AA]/15 overflow-hidden">
-        <div className="p-4 border-b border-[#D9A3AA]/10 bg-[#F8F5F2]/50"><h3 className="font-bold text-[#4A4A4A]/80 text-sm">التفاصيل الشهرية</h3></div>
+      <div className="bg-white rounded-2xl border border-[#E8B4BC]/15 overflow-hidden">
+        <div className="p-4 border-b border-[#E8B4BC]/10 bg-[#FAF9F7]/50"><h3 className="font-bold text-[#171717]/80 text-sm">التفاصيل الشهرية</h3></div>
         <div className="md:hidden p-3 space-y-3">
           {monthlyDetails.map((row) => {
             const isExpanded = expandedMonth === row.name;
             const monthLabel = isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name;
 
             return (
-              <article key={row.name} className="rounded-xl border border-[#D9A3AA]/15 bg-white overflow-hidden shadow-sm">
+              <article key={row.name} className="rounded-xl border border-[#E8B4BC]/15 bg-white overflow-hidden shadow-sm">
                 <button
                   type="button"
                   onClick={() => setExpandedMonth(isExpanded ? null : row.name)}
@@ -753,32 +753,32 @@ export default function Reports() {
                   aria-expanded={isExpanded}
                 >
                   <div className="flex items-center justify-between gap-3 mb-4">
-                    <span className="font-black text-sm text-[#4A4A4A]">{monthLabel}</span>
-                    <span className={`w-7 h-7 inline-flex items-center justify-center rounded-full text-[#D9A3AA] bg-[#D9A3AA]/10 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                    <span className="font-black text-sm text-[#171717]">{monthLabel}</span>
+                    <span className={`w-7 h-7 inline-flex items-center justify-center rounded-full text-[#E8B4BC] bg-[#E8B4BC]/10 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
                       <ChevronDown size={15} />
                     </span>
                   </div>
                   <dl className="grid grid-cols-2 gap-x-5 gap-y-4 text-xs">
                     <div>
-                      <dt className="text-[#4A4A4A]/45 mb-1">الدخل</dt>
+                      <dt className="text-[#171717]/45 mb-1">الدخل</dt>
                       <dd className="font-black text-emerald-600">{row.revenue.toLocaleString()} <RiyalSign /></dd>
                     </div>
                     <div>
-                      <dt className="text-[#4A4A4A]/45 mb-1">المصروفات</dt>
+                      <dt className="text-[#171717]/45 mb-1">المصروفات</dt>
                       <dd className="font-black text-red-500">{row.expenses.toLocaleString()} <RiyalSign /></dd>
                     </div>
                     <div>
-                      <dt className="text-[#4A4A4A]/45 mb-1">الصافي</dt>
+                      <dt className="text-[#171717]/45 mb-1">الصافي</dt>
                       <dd className={`font-black ${(row.profit || 0) >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{(row.profit || 0).toLocaleString()} <RiyalSign /></dd>
                     </div>
                     <div>
-                      <dt className="text-[#4A4A4A]/45 mb-1">الطلبات</dt>
-                      <dd className="font-black text-[#4A4A4A]">{row.orders}</dd>
+                      <dt className="text-[#171717]/45 mb-1">الطلبات</dt>
+                      <dd className="font-black text-[#171717]">{row.orders}</dd>
                     </div>
                   </dl>
                 </button>
                 {isExpanded && (
-                  <div className="px-4 border-t border-[#D9A3AA]/10 bg-[#F8F5F2]/35 animate-in slide-in-from-top-2 fade-in duration-300">
+                  <div className="px-4 border-t border-[#E8B4BC]/10 bg-[#FAF9F7]/35 animate-in slide-in-from-top-2 fade-in duration-300">
                     {renderMonthBreakdown(row, true)}
                   </div>
                 )}
@@ -789,7 +789,7 @@ export default function Reports() {
 
         <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-right text-sm min-w-[500px]">
-          <thead className="bg-[#F8F5F2] text-[#4A4A4A]/60">
+          <thead className="bg-[#FAF9F7] text-[#171717]/60">
             <tr>
               <th className="px-6 py-4">الشهر</th>
               <th className="px-6 py-4">الدخل</th>
@@ -798,7 +798,7 @@ export default function Reports() {
               <th className="px-6 py-4">الطلبات</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#D9A3AA]/10">
+          <tbody className="divide-y divide-[#E8B4BC]/10">
             {monthlyDetails.map((row) => {
               const isExpanded = expandedMonth === row.name;
 
@@ -806,10 +806,10 @@ export default function Reports() {
                 <React.Fragment key={row.name}>
                   <tr 
                     onClick={() => setExpandedMonth(isExpanded ? null : row.name)}
-                    className="hover:bg-[#F8F5F2] cursor-pointer transition-colors group"
+                    className="hover:bg-[#FAF9F7] cursor-pointer transition-colors group"
                   >
                     <td className="px-6 py-4 font-bold flex items-center gap-2">
-                      <div className={`p-1 rounded-full transition-colors ${isExpanded ? 'bg-[#D9A3AA] text-white' : 'bg-[#D9A3AA]/10 text-[#D9A3AA] group-hover:bg-[#D9A3AA] group-hover:text-white'}`}>
+                      <div className={`p-1 rounded-full transition-colors ${isExpanded ? 'bg-[#E8B4BC] text-white' : 'bg-[#E8B4BC]/10 text-[#E8B4BC] group-hover:bg-[#E8B4BC] group-hover:text-white'}`}>
                          <ChevronDown size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                       </div>
                       {isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name}
@@ -821,7 +821,7 @@ export default function Reports() {
                   </tr>
 
                   {isExpanded && (
-                    <tr className="bg-[#F8F5F2]/40 border-b-2 border-[#D9A3AA]/20">
+                    <tr className="bg-[#FAF9F7]/40 border-b-2 border-[#E8B4BC]/20">
                       <td colSpan="5" className="p-0">
                         <div className="p-6 animate-in slide-in-from-top-2 fade-in duration-300">
                           {renderMonthBreakdown(row)}

@@ -57,21 +57,21 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center bg-[#F8F5F2] px-4 py-12">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-[#D9A3AA]/25 p-6 md:p-8 space-y-6">
+    <div className="min-h-[60vh] flex items-center justify-center bg-[#FAF9F7] px-4 py-12">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-[#E8B4BC]/25 p-6 md:p-8 space-y-6">
         
         {/* الترويسة والشعار */}
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] text-[#4A4A4A]/60 mb-1">لوحة التحكم</p>
-            <h1 className="text-lg md:text-xl font-semibold text-[#4A4A4A]">
+            <p className="text-[11px] text-[#171717]/60 mb-1">لوحة التحكم</p>
+            <h1 className="text-lg md:text-xl font-semibold text-[#171717]">
               تسجيل دخول المسؤول
             </h1>
           </div>
           <img
             src={logoImg}
             alt="Art Moment Logo"
-            className="w-12 h-12 rounded-2xl border border-[#D9A3AA]/25 object-contain bg-[#F8F5F2]"
+            className="w-12 h-12 rounded-2xl border border-[#E8B4BC]/25 object-contain bg-[#FAF9F7]"
           />
         </div>
 
@@ -80,14 +80,14 @@ export default function AdminLoginPage() {
           
           {/* حقل البريد الإلكتروني */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-[#4A4A4A]">
+            <label className="block text-xs font-medium text-[#171717]">
               البريد الإلكتروني
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-2xl border border-[#D9A3AA]/25 bg-[#F8F5F2] px-4 py-3 text-sm text-left dir-ltr focus:outline-none focus:ring-2 focus:ring-[#D9A3AA] focus:border-[#D9A3AA] transition-all"
+              className="w-full rounded-2xl border border-[#E8B4BC]/25 bg-[#FAF9F7] px-4 py-3 text-sm text-left dir-ltr focus:outline-none focus:ring-2 focus:ring-[#E8B4BC] focus:border-[#E8B4BC] transition-all"
               placeholder="admin@example.com"
               dir="ltr"
               required
@@ -96,14 +96,14 @@ export default function AdminLoginPage() {
 
           {/* حقل كلمة المرور */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-[#4A4A4A]">
+            <label className="block text-xs font-medium text-[#171717]">
               كلمة المرور
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-2xl border border-[#D9A3AA]/25 bg-[#F8F5F2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D9A3AA] focus:border-[#D9A3AA] transition-all"
+              className="w-full rounded-2xl border border-[#E8B4BC]/25 bg-[#FAF9F7] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8B4BC] focus:border-[#E8B4BC] transition-all"
               placeholder="••••••••"
               required
             />
@@ -113,7 +113,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-3 rounded-2xl text-sm font-bold bg-[#D9A3AA] text-white hover:bg-[#C5A059] disabled:opacity-70 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2"
+            className="w-full px-4 py-3 rounded-2xl text-sm font-bold bg-[#E8B4BC] text-white hover:bg-[#C6A56B] disabled:opacity-70 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2"
           >
             {loading ? (
               <>
@@ -132,7 +132,7 @@ export default function AdminLoginPage() {
           <button
             type="button"
             onClick={handleBackToHome}
-            className="w-full px-4 py-3 rounded-2xl text-sm font-medium border border-[#D9A3AA]/25 text-[#4A4A4A]/70 hover:bg-[#F8F5F2] transition-all"
+            className="w-full px-4 py-3 rounded-2xl text-sm font-medium border border-[#E8B4BC]/25 text-[#171717]/70 hover:bg-[#FAF9F7] transition-all"
           >
             الرجوع للصفحة الرئيسية
           </button>

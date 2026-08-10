@@ -28,37 +28,37 @@ html[dir='ltr'] [data-preserve-direction] {
 body {
   margin: 0;
   font-family: 'Tajawal', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #F8F5F2;   /* Off-white — خلفية التطبيق الأساسية */
-  color: #4A4A4A;         /* Charcoal Grey — النص الأساسي */
+  background: #FAF9F7;   /* Off-white — خلفية التطبيق الأساسية */
+  color: #171717;         /* Charcoal Grey — النص الأساسي */
 }
 
 /* ─── متغيرات CSS للهوية البصرية ──────────────── */
 :root {
-  --color-pink:        #D9A3AA;
-  --color-pink-light:  #EDD4D7;
-  --color-pink-dark:   #C48A92;
-  --color-gold:        #C5A059;
-  --color-gold-light:  #DFC08A;
-  --color-gold-dark:   #A8893C;
-  --color-charcoal:    #4A4A4A;
-  --color-bg:          #F8F5F2;
+  --color-pink:        #E8B4BC;
+  --color-pink-light:  #F5DEE2;
+  --color-pink-dark:   #B96F7D;
+  --color-gold:        #C6A56B;
+  --color-gold-light:  #E5CF9F;
+  --color-gold-dark:   #8F713C;
+  --color-charcoal:    #171717;
+  --color-bg:          #FAF9F7;
   --color-card:        #FFFFFF;
-  --shadow-card:       0 2px 12px rgba(74,74,74,0.06);
-  --shadow-card-md:    0 4px 20px rgba(74,74,74,0.10);
-  --shadow-pink:       0 4px 14px rgba(217,163,170,0.35);
-  --shadow-gold:       0 4px 14px rgba(197,160,89,0.35);
-  --am-rose:           #D9A3AA;
-  --am-rose-deep:      #B97882;
-  --am-gold:           #C5A059;
-  --am-gold-deep:      #9E7D35;
-  --am-ink:            #393737;
-  --am-muted:          rgba(57,55,55,0.64);
-  --am-bg:             #F8F5F2;
+  --shadow-card:       0 2px 12px rgba(23,23,23,0.05);
+  --shadow-card-md:    0 10px 28px rgba(23,23,23,0.08);
+  --shadow-pink:       0 4px 14px rgba(232,180,188,0.24);
+  --shadow-gold:       0 4px 14px rgba(198,165,107,0.24);
+  --am-rose:           #E8B4BC;
+  --am-rose-deep:      #B96F7D;
+  --am-gold:           #C6A56B;
+  --am-gold-deep:      #8F713C;
+  --am-ink:            #171717;
+  --am-muted:          rgba(23,23,23,0.62);
+  --am-bg:             #FAF9F7;
   --am-paper:          #FFFFFF;
-  --am-warm:           #F1E8DF;
-  --am-line:           rgba(57,55,55,0.10);
-  --am-shadow-soft:    0 18px 45px rgba(57,55,55,0.08);
-  --am-shadow-lift:    0 24px 70px rgba(57,55,55,0.14);
+  --am-warm:           #F3F0EC;
+  --am-line:           rgba(23,23,23,0.10);
+  --am-shadow-soft:    0 14px 36px rgba(23,23,23,0.07);
+  --am-shadow-lift:    0 24px 64px rgba(23,23,23,0.16);
 }
 
 /* ─── مكوّنات عامة — هوية لحظة فن ─────────────── */
@@ -66,9 +66,7 @@ body {
 
   .art-page {
     font-family: 'Tajawal', system-ui, -apple-system, "Segoe UI", sans-serif;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(248,245,242,0.96) 34%, #F8F5F2 100%),
-      repeating-linear-gradient(135deg, rgba(197,160,89,0.035) 0 1px, transparent 1px 22px);
+    background: var(--am-bg);
     color: var(--am-ink);
   }
 
@@ -77,22 +75,21 @@ body {
   }
 
   .art-nav {
-    background: rgba(248,245,242,0.72);
+    background: rgba(250,249,247,0.92);
     border-bottom: 1px solid transparent;
-    backdrop-filter: blur(18px);
+    backdrop-filter: blur(12px);
   }
 
   .art-nav-scrolled {
-    background: rgba(255,255,255,0.82);
+    background: rgba(250,249,247,0.97);
     border-bottom-color: var(--am-line);
-    box-shadow: 0 12px 32px rgba(57,55,55,0.06);
+    box-shadow: 0 8px 24px rgba(23,23,23,0.05);
   }
 
   .art-panel {
-    background: rgba(255,255,255,0.78);
-    border: 1px solid rgba(217,163,170,0.18);
+    background: var(--am-paper);
+    border: 1px solid var(--am-line);
     box-shadow: var(--am-shadow-soft);
-    backdrop-filter: blur(16px);
   }
 
   .art-section {
@@ -101,9 +98,9 @@ body {
 
   .art-section-kicker {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-black;
-    background: rgba(217,163,170,0.14);
+    background: rgba(232,180,188,0.18);
     color: var(--am-rose-deep);
-    border: 1px solid rgba(217,163,170,0.22);
+    border: 1px solid rgba(232,180,188,0.34);
   }
 
   .art-title {
@@ -118,69 +115,85 @@ body {
   }
 
   .art-hero-card {
-    background:
-      linear-gradient(135deg, rgba(57,55,55,0.98), rgba(70,61,57,0.94)),
-      linear-gradient(90deg, rgba(217,163,170,0.18), rgba(197,160,89,0.16));
-    border: 1px solid rgba(255,255,255,0.44);
+    background: var(--am-ink);
+    border: 8px solid var(--am-paper);
     box-shadow: var(--am-shadow-lift);
   }
 
+  .art-crop-marks::after {
+    content: '';
+    position: absolute;
+    inset: 14px;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.72;
+    background:
+      linear-gradient(#fff, #fff) left top / 22px 1px no-repeat,
+      linear-gradient(#fff, #fff) left top / 1px 22px no-repeat,
+      linear-gradient(#fff, #fff) right top / 22px 1px no-repeat,
+      linear-gradient(#fff, #fff) right top / 1px 22px no-repeat,
+      linear-gradient(#fff, #fff) left bottom / 22px 1px no-repeat,
+      linear-gradient(#fff, #fff) left bottom / 1px 22px no-repeat,
+      linear-gradient(#fff, #fff) right bottom / 22px 1px no-repeat,
+      linear-gradient(#fff, #fff) right bottom / 1px 22px no-repeat;
+  }
+
   .art-product-card {
-    border-radius: 24px;
-    border: 1px solid rgba(217,163,170,0.16);
-    background: rgba(255,255,255,0.86);
-    box-shadow: 0 12px 36px rgba(57,55,55,0.07);
+    border-radius: 8px;
+    border: 1px solid rgba(23,23,23,0.08);
+    background: var(--am-paper);
+    box-shadow: 0 10px 28px rgba(23,23,23,0.07);
     transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
   }
 
   .art-product-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(197,160,89,0.34);
-    box-shadow: 0 24px 60px rgba(57,55,55,0.12);
+    border-color: rgba(198,165,107,0.42);
+    box-shadow: 0 22px 48px rgba(23,23,23,0.12);
   }
 
   .art-product-media {
-    background:
-      linear-gradient(145deg, rgba(248,245,242,0.96), rgba(241,232,223,0.84));
-    border: 1px solid rgba(217,163,170,0.14);
+    background: var(--am-bg);
+    border: 8px solid var(--am-paper);
+    box-shadow: 0 1px 0 rgba(23,23,23,0.10), 0 8px 20px rgba(23,23,23,0.08);
   }
 
   .art-chip {
     @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-black transition-all;
     background: rgba(255,255,255,0.72);
     color: var(--am-ink);
-    border: 1px solid rgba(217,163,170,0.18);
+    border: 1px solid var(--am-line);
   }
 
   .art-chip-active {
-    background: linear-gradient(135deg, var(--am-rose), var(--am-gold));
+    background: var(--am-ink);
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 10px 24px rgba(197,160,89,0.22);
+    box-shadow: 0 10px 24px rgba(23,23,23,0.16);
   }
 
   .art-cta {
-    background: linear-gradient(135deg, var(--am-rose), var(--am-gold));
+    background: var(--am-ink);
     color: #fff;
-    box-shadow: 0 16px 32px rgba(197,160,89,0.24);
+    box-shadow: 0 14px 28px rgba(23,23,23,0.18);
   }
 
   .art-cta:hover {
-    box-shadow: 0 22px 46px rgba(197,160,89,0.32);
+    box-shadow: 0 20px 40px rgba(23,23,23,0.24);
     transform: translateY(-2px);
   }
 
   .art-input {
     background: rgba(255,255,255,0.78);
-    border: 1px solid rgba(217,163,170,0.22);
+    border: 1px solid rgba(232,180,188,0.28);
     color: var(--am-ink);
     transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
   }
 
   .art-input:focus {
     background: #fff;
-    border-color: rgba(197,160,89,0.56);
-    box-shadow: 0 0 0 4px rgba(197,160,89,0.12);
+    border-color: rgba(198,165,107,0.56);
+    box-shadow: 0 0 0 4px rgba(198,165,107,0.12);
   }
 
   .art-modal-backdrop {
@@ -189,16 +202,13 @@ body {
   }
 
   .art-auth-card {
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,245,242,0.98));
+    background: var(--am-paper);
     border: 1px solid rgba(255,255,255,0.74);
     box-shadow: var(--am-shadow-lift);
   }
 
   .art-auth-header {
-    background:
-      linear-gradient(135deg, rgba(57,55,55,0.98), rgba(70,61,57,0.96)),
-      linear-gradient(90deg, rgba(217,163,170,0.22), rgba(197,160,89,0.18));
+    background: var(--am-ink);
   }
 
   /* ── زر رئيسي (CTA) — وردي ناعم ────────────── */
@@ -206,10 +216,10 @@ body {
     @apply inline-flex items-center justify-center gap-1.5
       px-4 py-2.5
       rounded-xl text-sm font-bold
-      bg-[#D9A3AA] text-white
-      hover:bg-[#C48A92]
+      bg-[#E8B4BC] text-[#171717]
+      hover:bg-[#B96F7D] hover:text-white
       active:scale-95
-      shadow-[0_4px_14px_rgba(217,163,170,0.35)]
+      shadow-[0_4px_14px_rgba(232,180,188,0.24)]
       transition-all duration-200
       disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
   }
@@ -219,10 +229,10 @@ body {
     @apply inline-flex items-center justify-center gap-1.5
       px-4 py-2.5
       rounded-xl text-sm font-bold
-      bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white
-      hover:from-[#C48A92] hover:to-[#A8893C]
+      bg-[#C6A56B] text-[#171717]
+      hover:bg-[#8F713C] hover:text-white
       active:scale-95
-      shadow-[0_4px_14px_rgba(197,160,89,0.35)]
+      shadow-[0_4px_14px_rgba(198,165,107,0.24)]
       transition-all duration-200
       disabled:opacity-50 disabled:cursor-not-allowed;
   }
@@ -232,8 +242,8 @@ body {
     @apply inline-flex items-center justify-center gap-1.5
       px-4 py-2.5
       rounded-xl text-sm font-bold
-      border-2 border-[#D9A3AA]/50 text-[#4A4A4A]
-      hover:bg-[#D9A3AA]/10 hover:border-[#D9A3AA]
+      border-2 border-[#E8B4BC]/50 text-[#171717]
+      hover:bg-[#E8B4BC]/10 hover:border-[#E8B4BC]
       active:scale-95
       transition-all duration-200;
   }
@@ -243,31 +253,31 @@ body {
     @apply inline-flex items-center justify-center gap-1
       px-2.5 py-1.5
       rounded-xl text-xs font-medium
-      text-[#4A4A4A]/70 hover:bg-[#4A4A4A]/08 hover:text-[#4A4A4A]
+      text-[#171717]/70 hover:bg-[#171717]/08 hover:text-[#171717]
       transition-colors duration-150;
   }
 
   /* ── بطاقة (Card) ────────────────────────────── */
   .card {
     @apply bg-white rounded-2xl p-4 md:p-5
-      border border-[#4A4A4A]/[0.08]
-      shadow-[0_2px_12px_rgba(74,74,74,0.06)];
+      border border-[#171717]/[0.08]
+      shadow-[0_2px_12px_rgba(23,23,23,0.05)];
   }
 
   /* ── بطاقة مرتفعة (Elevated) ─────────────────── */
   .card-elevated {
     @apply bg-white rounded-2xl p-4 md:p-5
-      shadow-[0_4px_20px_rgba(74,74,74,0.10)];
+      shadow-[0_10px_28px_rgba(23,23,23,0.08)];
   }
 
   /* ── عنوان رئيسي ─────────────────────────────── */
   .heading-main {
-    @apply text-lg md:text-2xl font-bold text-[#4A4A4A];
+    @apply text-lg md:text-2xl font-bold text-[#171717];
   }
 
   /* ── خط فاصل ناعم ───────────────────────────── */
   .divider {
-    @apply border-t border-[#4A4A4A]/[0.12];
+    @apply border-t border-[#171717]/[0.12];
   }
 
   /* ── شارة (Badge) — وردية ──────────────────── */
@@ -275,7 +285,7 @@ body {
     @apply inline-flex items-center gap-1
       px-2 py-0.5 rounded-full
       text-xs font-bold
-      bg-[#D9A3AA]/15 text-[#C48A92];
+      bg-[#E8B4BC]/15 text-[#B96F7D];
   }
 
   /* ── شارة — ذهبية ──────────────────────────── */
@@ -283,17 +293,17 @@ body {
     @apply inline-flex items-center gap-1
       px-2 py-0.5 rounded-full
       text-xs font-bold
-      bg-[#C5A059]/15 text-[#A8893C];
+      bg-[#C6A56B]/15 text-[#8F713C];
   }
 
   /* ── ترويسة جدول ────────────────────────────── */
   .table-header {
-    @apply bg-[#D9A3AA]/10 text-[#4A4A4A] font-bold text-xs;
+    @apply bg-[#E8B4BC]/10 text-[#171717] font-bold text-xs;
   }
 
   /* ── صف جدول — hover ناعم ──────────────────── */
   .table-row-hover {
-    @apply hover:bg-[#F8F5F2] transition-colors duration-100;
+    @apply hover:bg-[#FAF9F7] transition-colors duration-100;
   }
 
 }

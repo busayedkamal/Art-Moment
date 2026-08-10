@@ -102,13 +102,13 @@ function buildReceiptHtml(order) {
       <title>إيصال طلب #${escapeHtml(order.shortId)}</title>
       <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
       <style>
-        body { font-family:'Tajawal', Arial, sans-serif; background:#F8F5F2; color:#4A4A4A; margin:0; padding:32px; }
+        body { font-family:'Tajawal', Arial, sans-serif; background:#FAF9F7; color:#171717; margin:0; padding:32px; }
         .receipt { max-width:760px; margin:auto; background:#fff; border:1px solid #ead8da; border-radius:24px; padding:28px; }
         h1 { margin:0 0 8px; font-size:28px; }
         .muted { color:#888; font-size:13px; }
-        .brand { color:#C5A059; font-weight:800; margin-bottom:20px; }
+        .brand { color:#C6A56B; font-weight:800; margin-bottom:20px; }
         .grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin:22px 0; }
-        .box { background:#F8F5F2; border-radius:16px; padding:14px; }
+        .box { background:#FAF9F7; border-radius:16px; padding:14px; }
         table { width:100%; border-collapse:collapse; margin:18px 0; }
         th, td { padding:12px; border-bottom:1px solid #f0e3e4; text-align:right; font-size:14px; }
         th { color:#9d6f74; }
@@ -358,13 +358,13 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
   };
 
   return (
-    <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 p-5 shadow-sm">
+    <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
-          <h2 className="font-black text-[#4A4A4A] flex items-center gap-2">
-            <RotateCcw size={18} className="text-[#C5A059]" /> الاسترجاع والاسترداد
+          <h2 className="font-black text-[#171717] flex items-center gap-2">
+            <RotateCcw size={18} className="text-[#C6A56B]" /> الاسترجاع والاسترداد
           </h2>
-          <p className="text-xs text-[#4A4A4A]/55 mt-1">
+          <p className="text-xs text-[#171717]/55 mt-1">
             اختاري المنتجات المراد استرجاعها وسيتم مراجعة الطلب من الإدارة.
           </p>
         </div>
@@ -372,21 +372,21 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
       </div>
 
       {latestRequest && (
-        <div className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-4 mb-4 space-y-3">
+        <div className="rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/10 p-4 mb-4 space-y-3">
           <div className="flex justify-between gap-3 text-sm">
-            <span className="text-[#4A4A4A]/55">قيمة الطلب</span>
-            <span className="font-black text-[#C5A059]">{formatCurrency(latestRequest.requestedRefundAmount)}</span>
+            <span className="text-[#171717]/55">قيمة الطلب</span>
+            <span className="font-black text-[#C6A56B]">{formatCurrency(latestRequest.requestedRefundAmount)}</span>
           </div>
-          <p className="text-sm font-bold text-[#4A4A4A]">{latestRequest.reason}</p>
+          <p className="text-sm font-bold text-[#171717]">{latestRequest.reason}</p>
           {latestRequest.adminNote && (
-            <p className="rounded-xl bg-white border border-[#D9A3AA]/10 p-3 text-xs text-[#4A4A4A]/70 leading-relaxed">
+            <p className="rounded-xl bg-white border border-[#E8B4BC]/10 p-3 text-xs text-[#171717]/70 leading-relaxed">
               {latestRequest.adminNote}
             </p>
           )}
           {latestRequest.items?.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {latestRequest.items.map((item) => (
-                <span key={item.id} className="rounded-full bg-white border border-[#D9A3AA]/10 px-3 py-1 text-[11px] font-bold">
+                <span key={item.id} className="rounded-full bg-white border border-[#E8B4BC]/10 px-3 py-1 text-[11px] font-bold">
                   {item.name} × {item.quantity}
                 </span>
               ))}
@@ -401,14 +401,14 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
             <button
               type="button"
               onClick={openReturnForm}
-              className="w-full py-3 rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/15 text-[#4A4A4A] font-black hover:bg-[#D9A3AA]/10 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/15 text-[#171717] font-black hover:bg-[#E8B4BC]/10 transition-colors flex items-center justify-center gap-2"
             >
               <RotateCcw size={17} /> طلب استرجاع
             </button>
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <p className="text-xs font-black text-[#4A4A4A]/60">حددي الكمية المراد استرجاعها من كل منتج</p>
+                <p className="text-xs font-black text-[#171717]/60">حددي الكمية المراد استرجاعها من كل منتج</p>
                 {order.items.map((item) => {
                   const selectedQuantity = Number(quantities[item.id] || 0);
                   const maxQuantity = Number(item.quantity || 0);
@@ -418,28 +418,28 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
                       key={item.id}
                       className={`flex flex-wrap items-center gap-3 rounded-2xl border p-3 transition-colors ${
                         selectedQuantity > 0
-                          ? 'bg-[#C5A059]/10 border-[#C5A059]/25'
-                          : 'bg-[#F8F5F2] border-[#D9A3AA]/10'
+                          ? 'bg-[#C6A56B]/10 border-[#C6A56B]/25'
+                          : 'bg-[#FAF9F7] border-[#E8B4BC]/10'
                       }`}
                     >
                       <div className="w-12 h-12 rounded-xl bg-white overflow-hidden shrink-0">
-                        {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-3 text-[#D9A3AA]/35" size={24} />}
+                        {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-3 text-[#E8B4BC]/35" size={24} />}
                       </div>
                       <div className="flex-1 min-w-[140px]">
                         <p className="text-sm font-black truncate">{item.name}</p>
-                        <p className="text-[11px] text-[#4A4A4A]/45">المتاح للاسترجاع: {maxQuantity}</p>
+                        <p className="text-[11px] text-[#171717]/45">المتاح للاسترجاع: {maxQuantity}</p>
                       </div>
-                      <div className="grid h-10 w-[116px] shrink-0 grid-cols-[36px_1fr_36px] items-center overflow-hidden rounded-xl border border-[#D9A3AA]/20 bg-white" dir="ltr">
+                      <div className="grid h-10 w-[116px] shrink-0 grid-cols-[36px_1fr_36px] items-center overflow-hidden rounded-xl border border-[#E8B4BC]/20 bg-white" dir="ltr">
                         <button
                           type="button"
                           onClick={() => setItemQuantity(item, selectedQuantity - 1)}
                           disabled={selectedQuantity <= 0}
                           aria-label={`تقليل كمية ${item.name}`}
-                          className="flex h-full items-center justify-center text-[#4A4A4A] hover:bg-[#D9A3AA]/10 disabled:opacity-25"
+                          className="flex h-full items-center justify-center text-[#171717] hover:bg-[#E8B4BC]/10 disabled:opacity-25"
                         >
                           <Minus size={15} />
                         </button>
-                        <output className="text-center text-sm font-black text-[#4A4A4A]" aria-live="polite">
+                        <output className="text-center text-sm font-black text-[#171717]" aria-live="polite">
                           {selectedQuantity}
                         </output>
                         <button
@@ -447,7 +447,7 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
                           onClick={() => setItemQuantity(item, selectedQuantity + 1)}
                           disabled={selectedQuantity >= maxQuantity}
                           aria-label={`زيادة كمية ${item.name}`}
-                          className="flex h-full items-center justify-center text-[#4A4A4A] hover:bg-[#D9A3AA]/10 disabled:opacity-25"
+                          className="flex h-full items-center justify-center text-[#171717] hover:bg-[#E8B4BC]/10 disabled:opacity-25"
                         >
                           <Plus size={15} />
                         </button>
@@ -478,7 +478,7 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
                 dir="ltr"
               />
 
-              <div className="rounded-2xl bg-[#C5A059]/10 border border-[#C5A059]/15 p-3 flex justify-between text-sm font-black">
+              <div className="rounded-2xl bg-[#C6A56B]/10 border border-[#C6A56B]/15 p-3 flex justify-between text-sm font-black">
                 <span>المبلغ المتوقع للمراجعة</span>
                 <span>{formatCurrency(requestedAmount)}</span>
               </div>
@@ -494,7 +494,7 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="py-3 rounded-2xl bg-[#F8F5F2] text-[#4A4A4A] font-black border border-[#D9A3AA]/15"
+                  className="py-3 rounded-2xl bg-[#FAF9F7] text-[#171717] font-black border border-[#E8B4BC]/15"
                 >
                   إلغاء
                 </button>
@@ -502,7 +502,7 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
                   type="button"
                   onClick={submitReturnRequest}
                   disabled={submitting}
-                  className="py-3 rounded-2xl bg-[#4A4A4A] text-white font-black disabled:opacity-45 disabled:pointer-events-none flex items-center justify-center gap-2"
+                  className="py-3 rounded-2xl bg-[#171717] text-white font-black disabled:opacity-45 disabled:pointer-events-none flex items-center justify-center gap-2"
                 >
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} {submitting ? 'جاري الإرسال' : 'إرسال'}
                 </button>
@@ -511,7 +511,7 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
           )}
         </>
       ) : !latestRequest ? (
-        <p className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-4 text-xs font-bold text-[#4A4A4A]/55 leading-relaxed">
+        <p className="rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/10 p-4 text-xs font-bold text-[#171717]/55 leading-relaxed">
           {returnWindowExpired
             ? `انتهت مهلة الاسترجاع لهذا الطلب بعد ${returnWindowDays} أيام من آخر تحديث.`
             : 'لا يتوفر طلب الاسترجاع لهذا الطلب حالياً. يمكن التواصل مع الدعم عند الحاجة.'}
@@ -535,7 +535,7 @@ function OrderTimeline({ status }) {
   }
 
   return (
-    <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 sm:p-5 shadow-sm">
+    <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-4 sm:p-5 shadow-sm">
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         {STORE_ORDER_STEPS.map((step, index) => {
           const info = getStoreOrderStatus(step);
@@ -546,12 +546,12 @@ function OrderTimeline({ status }) {
             <div key={step} className="flex flex-col items-center text-center gap-2">
               <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-colors ${
                 done
-                  ? 'bg-[#C5A059] text-white border-[#C5A059] shadow-sm'
-                  : 'bg-[#F8F5F2] text-[#4A4A4A]/30 border-[#D9A3AA]/10'
+                  ? 'bg-[#C6A56B] text-white border-[#C6A56B] shadow-sm'
+                  : 'bg-[#FAF9F7] text-[#171717]/30 border-[#E8B4BC]/10'
               }`}>
                 <Icon size={17} />
               </div>
-              <span className={`text-[10px] font-black leading-tight ${done ? 'text-[#4A4A4A]' : 'text-[#4A4A4A]/35'}`}>
+              <span className={`text-[10px] font-black leading-tight ${done ? 'text-[#171717]' : 'text-[#171717]/35'}`}>
                 {info.label}
               </span>
             </div>
@@ -575,13 +575,13 @@ function OrderCard({ order }) {
   return (
     <Link
       to={`/store/orders/${order.id}`}
-      className="block bg-white rounded-3xl border border-[#D9A3AA]/15 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden"
+      className="block bg-white rounded-3xl border border-[#E8B4BC]/15 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden"
     >
       <div className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div>
-            <p className="text-[11px] text-[#4A4A4A]/45 font-bold mb-1">رقم الطلب</p>
-            <h2 className="font-black text-xl text-[#4A4A4A]" dir="ltr">#{order.shortId}</h2>
+            <p className="text-[11px] text-[#171717]/45 font-bold mb-1">رقم الطلب</p>
+            <h2 className="font-black text-xl text-[#171717]" dir="ltr">#{order.shortId}</h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={order.status} />
@@ -591,16 +591,16 @@ function OrderCard({ order }) {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-3 mb-5">
-          <div className="bg-[#F8F5F2] rounded-2xl px-4 py-3">
-            <span className="text-[10px] font-bold text-[#4A4A4A]/45 block mb-1">التاريخ</span>
-            <span className="text-sm font-black text-[#4A4A4A]">{formatDate(order.createdAt)}</span>
+          <div className="bg-[#FAF9F7] rounded-2xl px-4 py-3">
+            <span className="text-[10px] font-bold text-[#171717]/45 block mb-1">التاريخ</span>
+            <span className="text-sm font-black text-[#171717]">{formatDate(order.createdAt)}</span>
           </div>
-          <div className="bg-[#F8F5F2] rounded-2xl px-4 py-3">
-            <span className="text-[10px] font-bold text-[#4A4A4A]/45 block mb-1">الإجمالي</span>
-            <span className="text-sm font-black text-[#C5A059]">{formatCurrency(Number(order.totalAmount) + Number(order.deliveryFee || 0))}</span>
+          <div className="bg-[#FAF9F7] rounded-2xl px-4 py-3">
+            <span className="text-[10px] font-bold text-[#171717]/45 block mb-1">الإجمالي</span>
+            <span className="text-sm font-black text-[#C6A56B]">{formatCurrency(Number(order.totalAmount) + Number(order.deliveryFee || 0))}</span>
           </div>
-          <div className="bg-[#F8F5F2] rounded-2xl px-4 py-3">
-            <span className="text-[10px] font-bold text-[#4A4A4A]/45 block mb-1">المتبقي</span>
+          <div className="bg-[#FAF9F7] rounded-2xl px-4 py-3">
+            <span className="text-[10px] font-bold text-[#171717]/45 block mb-1">المتبقي</span>
             <span className={`text-sm font-black ${remaining > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
               {remaining > 0 ? formatCurrency(remaining) : 'لا يوجد'}
             </span>
@@ -610,18 +610,18 @@ function OrderCard({ order }) {
         {itemsPreview.length > 0 && (
           <div className="flex items-center gap-2 overflow-hidden">
             {itemsPreview.map((item) => (
-              <div key={item.id || item.productId} className="flex items-center gap-2 bg-[#F8F5F2] rounded-2xl p-2 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-white overflow-hidden shrink-0 border border-[#D9A3AA]/10">
-                  {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-2 text-[#D9A3AA]/35" size={22} />}
+              <div key={item.id || item.productId} className="flex items-center gap-2 bg-[#FAF9F7] rounded-2xl p-2 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white overflow-hidden shrink-0 border border-[#E8B4BC]/10">
+                  {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-2 text-[#E8B4BC]/35" size={22} />}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#4A4A4A] truncate max-w-[9rem]">{item.name}</p>
-                  <p className="text-[10px] text-[#4A4A4A]/45">الكمية: {item.quantity}</p>
+                  <p className="text-xs font-bold text-[#171717] truncate max-w-[9rem]">{item.name}</p>
+                  <p className="text-[10px] text-[#171717]/45">الكمية: {item.quantity}</p>
                 </div>
               </div>
             ))}
             {order.items.length > itemsPreview.length && (
-              <span className="text-xs font-black text-[#D9A3AA] shrink-0">+{order.items.length - itemsPreview.length}</span>
+              <span className="text-xs font-black text-[#E8B4BC] shrink-0">+{order.items.length - itemsPreview.length}</span>
             )}
           </div>
         )}
@@ -642,12 +642,12 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
 
   return (
     <div className="space-y-6">
-      <Link to="/store/orders" className="inline-flex items-center gap-2 text-sm font-black text-[#4A4A4A]/60 hover:text-[#D9A3AA]">
+      <Link to="/store/orders" className="inline-flex items-center gap-2 text-sm font-black text-[#171717]/60 hover:text-[#E8B4BC]">
         <ArrowRight size={18} /> العودة إلى طلباتي
       </Link>
 
-      <section className="bg-[#4A4A4A] text-white rounded-[2rem] p-6 sm:p-8 relative overflow-hidden">
-        <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-[#C5A059]/20 blur-2xl" />
+      <section className="bg-[#171717] text-white rounded-[2rem] p-6 sm:p-8 relative overflow-hidden">
+        <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-[#C6A56B]/20 blur-2xl" />
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div>
             <p className="text-white/55 text-xs font-bold mb-2">طلب متجر لحظة فن</p>
@@ -665,16 +665,16 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
         <button
           type="button"
           onClick={() => onReorder?.(order)}
-          className="rounded-2xl bg-white border border-[#D9A3AA]/15 px-5 py-4 text-sm font-black text-[#4A4A4A] shadow-sm hover:border-[#D9A3AA]/40 hover:bg-[#F8F5F2] transition-colors flex items-center justify-center gap-2"
+          className="rounded-2xl bg-white border border-[#E8B4BC]/15 px-5 py-4 text-sm font-black text-[#171717] shadow-sm hover:border-[#E8B4BC]/40 hover:bg-[#FAF9F7] transition-colors flex items-center justify-center gap-2"
         >
-          <RefreshCw size={17} className="text-[#C5A059]" /> إعادة الطلب
+          <RefreshCw size={17} className="text-[#C6A56B]" /> إعادة الطلب
         </button>
         <button
           type="button"
           onClick={() => onDownloadReceipt?.(order)}
-          className="rounded-2xl bg-white border border-[#D9A3AA]/15 px-5 py-4 text-sm font-black text-[#4A4A4A] shadow-sm hover:border-[#D9A3AA]/40 hover:bg-[#F8F5F2] transition-colors flex items-center justify-center gap-2"
+          className="rounded-2xl bg-white border border-[#E8B4BC]/15 px-5 py-4 text-sm font-black text-[#171717] shadow-sm hover:border-[#E8B4BC]/40 hover:bg-[#FAF9F7] transition-colors flex items-center justify-center gap-2"
         >
-          <Download size={17} className="text-[#D9A3AA]" /> تحميل الإيصال
+          <Download size={17} className="text-[#E8B4BC]" /> تحميل الإيصال
         </button>
       </div>
 
@@ -683,20 +683,20 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
       <OrderTimeline status={order.status} />
 
       <div className="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)] gap-6">
-        <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 p-5 sm:p-6 shadow-sm">
-          <h2 className="font-black text-lg text-[#4A4A4A] mb-5 flex items-center gap-2">
-            <ShoppingBag size={20} className="text-[#C5A059]" /> المنتجات
+        <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 p-5 sm:p-6 shadow-sm">
+          <h2 className="font-black text-lg text-[#171717] mb-5 flex items-center gap-2">
+            <ShoppingBag size={20} className="text-[#C6A56B]" /> المنتجات
           </h2>
           <div className="space-y-3">
             {order.items.length === 0 ? (
-              <p className="text-sm text-[#4A4A4A]/45">لا توجد منتجات مسجلة لهذا الطلب.</p>
+              <p className="text-sm text-[#171717]/45">لا توجد منتجات مسجلة لهذا الطلب.</p>
             ) : order.items.map((item) => (
-              <div key={item.id || item.productId} className="flex items-center gap-4 bg-[#F8F5F2] rounded-2xl p-3 border border-[#D9A3AA]/10">
-                <div className="w-16 h-16 rounded-2xl bg-white overflow-hidden shrink-0 border border-[#D9A3AA]/15">
-                  {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-4 text-[#D9A3AA]/35" size={30} />}
+              <div key={item.id || item.productId} className="flex items-center gap-4 bg-[#FAF9F7] rounded-2xl p-3 border border-[#E8B4BC]/10">
+                <div className="w-16 h-16 rounded-2xl bg-white overflow-hidden shrink-0 border border-[#E8B4BC]/15">
+                  {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="m-4 text-[#E8B4BC]/35" size={30} />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-[#4A4A4A] truncate">{item.name}</h3>
+                  <h3 className="font-black text-[#171717] truncate">{item.name}</h3>
                   {getSelectedOptionLabels(item.productOptions, item.selectedOptions).length > 0 && (
                     <p className="mt-1 text-[10px] font-bold text-[#B97882]">
                       {getSelectedOptionLabels(item.productOptions, item.selectedOptions)
@@ -704,11 +704,11 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
                         .join(' • ')}
                     </p>
                   )}
-                  <p className="text-xs text-[#4A4A4A]/50 mt-1">الكمية: {item.quantity}</p>
+                  <p className="text-xs text-[#171717]/50 mt-1">الكمية: {item.quantity}</p>
                 </div>
                 <div className="text-left shrink-0">
-                  <p className="font-black text-[#C5A059]">{formatCurrency(item.price * item.quantity)}</p>
-                  <p className="text-[10px] text-[#4A4A4A]/40">{formatCurrency(item.price)} للقطعة</p>
+                  <p className="font-black text-[#C6A56B]">{formatCurrency(item.price * item.quantity)}</p>
+                  <p className="text-[10px] text-[#171717]/40">{formatCurrency(item.price)} للقطعة</p>
                 </div>
               </div>
             ))}
@@ -716,9 +716,9 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
         </section>
 
         <aside className="space-y-6">
-          <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 p-5 shadow-sm">
-            <h2 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
-              <ReceiptText size={18} className="text-[#D9A3AA]" /> ملخص الدفع
+          <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 p-5 shadow-sm">
+            <h2 className="font-black text-[#171717] mb-4 flex items-center gap-2">
+              <ReceiptText size={18} className="text-[#E8B4BC]" /> ملخص الدفع
             </h2>
             <div className={`mb-4 rounded-2xl border p-3 ${payment.tone}`}>
               <div className="flex items-center justify-between gap-3">
@@ -729,11 +729,11 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-[#4A4A4A]/55">طريقة الدفع</span>
+                <span className="text-[#171717]/55">طريقة الدفع</span>
                 <span className="font-bold">{getStorePaymentMethod(order.paymentMethod)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#4A4A4A]/55">المنتجات قبل الخصم</span>
+                <span className="text-[#171717]/55">المنتجات قبل الخصم</span>
                 <span className="font-bold">{formatCurrency(subtotalBeforeDiscount)}</span>
               </div>
               {discountAmount > 0 && (
@@ -743,11 +743,11 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-[#4A4A4A]/55">المنتجات بعد الخصم</span>
+                <span className="text-[#171717]/55">المنتجات بعد الخصم</span>
                 <span className="font-bold">{formatCurrency(order.totalAmount)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#4A4A4A]/55">الشحن</span>
+                <span className="text-[#171717]/55">الشحن</span>
                 <span className="font-bold">{Number(order.deliveryFee || 0) > 0 ? formatCurrency(order.deliveryFee) : 'يحدد لاحقاً'}</span>
               </div>
               <div className="flex justify-between text-emerald-600">
@@ -778,7 +778,7 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
                   <span className="font-bold">{formatCurrency(refunded)}</span>
                 </div>
               )}
-              <div className="border-t border-[#D9A3AA]/15 pt-3 flex justify-between font-black text-base">
+              <div className="border-t border-[#E8B4BC]/15 pt-3 flex justify-between font-black text-base">
                 <span>المتبقي</span>
                 <span className={remaining > 0 ? 'text-red-500' : 'text-emerald-600'}>
                   {remaining > 0 ? formatCurrency(remaining) : 'لا يوجد'}
@@ -793,30 +793,30 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
             />
           </section>
 
-          <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 p-5 shadow-sm">
-            <h2 className="font-black text-[#4A4A4A] mb-4 flex items-center gap-2">
-              <MapPin size={18} className="text-[#C5A059]" /> التوصيل
+          <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 p-5 shadow-sm">
+            <h2 className="font-black text-[#171717] mb-4 flex items-center gap-2">
+              <MapPin size={18} className="text-[#C6A56B]" /> التوصيل
             </h2>
             <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-2 text-[#4A4A4A]/70">
-                <CalendarDays size={16} className="mt-0.5 text-[#D9A3AA]" />
+              <div className="flex items-start gap-2 text-[#171717]/70">
+                <CalendarDays size={16} className="mt-0.5 text-[#E8B4BC]" />
                 <span>{formatDate(order.createdAt)}</span>
               </div>
-              <div className="flex items-start gap-2 text-[#4A4A4A]/70">
-                <MapPin size={16} className="mt-0.5 text-[#D9A3AA]" />
+              <div className="flex items-start gap-2 text-[#171717]/70">
+                <MapPin size={16} className="mt-0.5 text-[#E8B4BC]" />
                 <span>{[order.city, order.district, order.street].filter(Boolean).join(' - ') || 'لم يتم تسجيل عنوان مفصل'}</span>
               </div>
               {order.trackingNumber && (
-                <div className="rounded-2xl bg-[#F8F5F2] p-3 border border-[#D9A3AA]/10">
-                  <p className="text-[10px] font-bold text-[#4A4A4A]/45 mb-1">رقم التتبع</p>
+                <div className="rounded-2xl bg-[#FAF9F7] p-3 border border-[#E8B4BC]/10">
+                  <p className="text-[10px] font-bold text-[#171717]/45 mb-1">رقم التتبع</p>
                   {trackingUrl ? (
-                    <a href={trackingUrl} target="_blank" rel="noreferrer" className="font-black text-[#C5A059] underline" dir="ltr">
+                    <a href={trackingUrl} target="_blank" rel="noreferrer" className="font-black text-[#C6A56B] underline" dir="ltr">
                       {order.trackingNumber}
                     </a>
                   ) : (
-                    <span className="font-black text-[#C5A059]" dir="ltr">{order.trackingNumber}</span>
+                    <span className="font-black text-[#C6A56B]" dir="ltr">{order.trackingNumber}</span>
                   )}
-                  {order.courierName && <p className="text-xs text-[#4A4A4A]/50 mt-1">{order.courierName}</p>}
+                  {order.courierName && <p className="text-xs text-[#171717]/50 mt-1">{order.courierName}</p>}
                 </div>
               )}
             </div>
@@ -1042,17 +1042,17 @@ export default function CustomerOrdersPage() {
   }, [orders]);
 
   return (
-    <div className="art-page min-h-screen font-sans text-[#4A4A4A] pb-20" dir="rtl">
+    <div className="art-page min-h-screen font-sans text-[#171717] pb-20" dir="rtl">
       <header className="art-nav art-nav-scrolled sticky top-0 z-40">
         <div className="art-shell h-16 flex items-center justify-between">
-          <Link to="/store" className="inline-flex items-center gap-2 text-sm font-black text-[#4A4A4A]/65 hover:text-[#D9A3AA]">
+          <Link to="/store" className="inline-flex items-center gap-2 text-sm font-black text-[#171717]/65 hover:text-[#E8B4BC]">
             <ArrowRight size={18} /> المتجر
           </Link>
           <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="Art Moment" className="w-9 h-9 object-contain" />
             <span className="font-black">لحظة فن</span>
           </Link>
-          <Link to="/" className="w-10 h-10 rounded-full bg-white border border-[#D9A3AA]/15 flex items-center justify-center text-[#4A4A4A]/70 hover:text-[#D9A3AA]">
+          <Link to="/" className="w-10 h-10 rounded-full bg-white border border-[#E8B4BC]/15 flex items-center justify-center text-[#171717]/70 hover:text-[#E8B4BC]">
             <Home size={18} />
           </Link>
         </div>
@@ -1061,9 +1061,9 @@ export default function CustomerOrdersPage() {
       <main className="art-shell py-8 sm:py-10">
         <div className="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
           <div>
-            <p className="text-xs font-black text-[#C5A059] mb-2">حساب العميل</p>
-            <h1 className="text-3xl sm:text-4xl font-black text-[#4A4A4A] mb-2">طلباتي</h1>
-            <p className="text-[#4A4A4A]/60 text-sm max-w-2xl">
+            <p className="text-xs font-black text-[#C6A56B] mb-2">حساب العميل</p>
+            <h1 className="text-3xl sm:text-4xl font-black text-[#171717] mb-2">طلباتي</h1>
+            <p className="text-[#171717]/60 text-sm max-w-2xl">
               كل طلبات المتجر المرتبطة بحسابك، مع تفاصيل المنتجات والدفع والتوصيل في مكان واحد.
             </p>
           </div>
@@ -1073,7 +1073,7 @@ export default function CustomerOrdersPage() {
               type="button"
               onClick={loadOrders}
               disabled={loading}
-              className="w-fit px-4 py-2.5 rounded-full bg-white border border-[#D9A3AA]/20 text-sm font-black text-[#4A4A4A] hover:bg-[#F8F5F2] flex items-center gap-2 disabled:opacity-50"
+              className="w-fit px-4 py-2.5 rounded-full bg-white border border-[#E8B4BC]/20 text-sm font-black text-[#171717] hover:bg-[#FAF9F7] flex items-center gap-2 disabled:opacity-50"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> تحديث
             </button>
@@ -1081,12 +1081,12 @@ export default function CustomerOrdersPage() {
         </div>
 
         {!canLoadOrders ? (
-          <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 shadow-sm p-8 text-center max-w-xl mx-auto">
-            <div className="w-16 h-16 rounded-3xl bg-[#D9A3AA]/10 text-[#D9A3AA] flex items-center justify-center mx-auto mb-4">
+          <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 shadow-sm p-8 text-center max-w-xl mx-auto">
+            <div className="w-16 h-16 rounded-3xl bg-[#E8B4BC]/10 text-[#E8B4BC] flex items-center justify-center mx-auto mb-4">
               <LogIn size={30} />
             </div>
             <h2 className="font-black text-2xl mb-2">سجلي الدخول لعرض طلباتك</h2>
-            <p className="text-sm text-[#4A4A4A]/60 leading-relaxed mb-6">
+            <p className="text-sm text-[#171717]/60 leading-relaxed mb-6">
               نحتاج جلسة حساب آمنة حتى نعرض طلباتك بدون كشف بيانات العملاء الآخرين.
             </p>
             <button
@@ -1098,18 +1098,18 @@ export default function CustomerOrdersPage() {
             </button>
           </section>
         ) : loading ? (
-          <div className="min-h-[45vh] flex flex-col items-center justify-center text-[#4A4A4A]/55">
-            <Loader2 size={34} className="animate-spin text-[#D9A3AA] mb-4" />
+          <div className="min-h-[45vh] flex flex-col items-center justify-center text-[#171717]/55">
+            <Loader2 size={34} className="animate-spin text-[#E8B4BC] mb-4" />
             <p className="font-bold">جاري تحميل طلباتك...</p>
           </div>
         ) : error ? (
           <section className="bg-white rounded-[2rem] border border-red-100 shadow-sm p-8 text-center max-w-xl mx-auto">
             <AlertCircle size={38} className="mx-auto mb-4 text-red-500" />
             <h2 className="font-black text-xl mb-2">تعذر عرض الطلبات</h2>
-            <p className="text-sm text-[#4A4A4A]/60 mb-5">{error}</p>
+            <p className="text-sm text-[#171717]/60 mb-5">{error}</p>
             <div className="flex flex-wrap justify-center gap-3">
-              <button onClick={loadOrders} className="px-5 py-2.5 rounded-xl bg-[#4A4A4A] text-white font-bold">إعادة المحاولة</button>
-              <button onClick={() => setIsAuthModalOpen(true)} className="px-5 py-2.5 rounded-xl bg-[#F8F5F2] text-[#4A4A4A] font-bold border border-[#D9A3AA]/20">تسجيل الدخول</button>
+              <button onClick={loadOrders} className="px-5 py-2.5 rounded-xl bg-[#171717] text-white font-bold">إعادة المحاولة</button>
+              <button onClick={() => setIsAuthModalOpen(true)} className="px-5 py-2.5 rounded-xl bg-[#FAF9F7] text-[#171717] font-bold border border-[#E8B4BC]/20">تسجيل الدخول</button>
             </div>
           </section>
         ) : orderId ? (
@@ -1128,17 +1128,17 @@ export default function CustomerOrdersPage() {
         ) : (
           <div className="space-y-6">
             {friendshipCode && (
-              <section className="flex flex-col gap-4 rounded-3xl border border-[#C5A059]/25 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <section className="flex flex-col gap-4 rounded-3xl border border-[#C6A56B]/25 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#C5A059]/12 text-[#C5A059]">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#C6A56B]/12 text-[#C6A56B]">
                     <Gift size={21} />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-[#C5A059]">برنامج كود الصداقة</p>
-                    <h2 className="mt-1 text-lg font-black text-[#4A4A4A]">
+                    <p className="text-xs font-black text-[#C6A56B]">برنامج كود الصداقة</p>
+                    <h2 className="mt-1 text-lg font-black text-[#171717]">
                       كودك: <span className="tracking-widest" dir="ltr">{friendshipCode}</span>
                     </h2>
-                    <p className="mt-1 text-xs leading-6 text-[#4A4A4A]/55">
+                    <p className="mt-1 text-xs leading-6 text-[#171717]/55">
                       شاركي الكود مع صديقاتك. تحصل صديقتك على خصم 5% بكوبون WELCOME، وتحصلين على 200 نقطة عند أول طلب لها.
                     </p>
                   </div>
@@ -1154,7 +1154,7 @@ export default function CustomerOrdersPage() {
                         toast.error('تعذر نسخ الكود تلقائياً');
                       }
                     }}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#C5A059]/25 bg-[#F8F5F2] px-4 py-2.5 text-xs font-black text-[#4A4A4A] sm:flex-none"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#C6A56B]/25 bg-[#FAF9F7] px-4 py-2.5 text-xs font-black text-[#171717] sm:flex-none"
                   >
                     <Copy size={15} /> نسخ
                   </button>
@@ -1171,27 +1171,27 @@ export default function CustomerOrdersPage() {
             )}
 
             <div className="grid sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-3xl border border-[#D9A3AA]/15 p-5 shadow-sm">
-                <span className="text-xs font-bold text-[#4A4A4A]/45">عدد الطلبات</span>
+              <div className="bg-white rounded-3xl border border-[#E8B4BC]/15 p-5 shadow-sm">
+                <span className="text-xs font-bold text-[#171717]/45">عدد الطلبات</span>
                 <p className="text-3xl font-black mt-2">{orders.length}</p>
               </div>
-              <div className="bg-white rounded-3xl border border-[#D9A3AA]/15 p-5 shadow-sm">
-                <span className="text-xs font-bold text-[#4A4A4A]/45">طلبات نشطة</span>
-                <p className="text-3xl font-black mt-2 text-[#C5A059]">{stats.active}</p>
+              <div className="bg-white rounded-3xl border border-[#E8B4BC]/15 p-5 shadow-sm">
+                <span className="text-xs font-bold text-[#171717]/45">طلبات نشطة</span>
+                <p className="text-3xl font-black mt-2 text-[#C6A56B]">{stats.active}</p>
               </div>
-              <div className="bg-white rounded-3xl border border-[#D9A3AA]/15 p-5 shadow-sm">
-                <span className="text-xs font-bold text-[#4A4A4A]/45">إجمالي مشتريات المتجر</span>
-                <p className="text-2xl font-black mt-2 text-[#D9A3AA]">{formatCurrency(stats.total)}</p>
+              <div className="bg-white rounded-3xl border border-[#E8B4BC]/15 p-5 shadow-sm">
+                <span className="text-xs font-bold text-[#171717]/45">إجمالي مشتريات المتجر</span>
+                <p className="text-2xl font-black mt-2 text-[#E8B4BC]">{formatCurrency(stats.total)}</p>
               </div>
             </div>
 
             <RewardPointsSummary rewards={rewards} />
 
             {orders.length === 0 ? (
-              <section className="bg-white rounded-[2rem] border border-[#D9A3AA]/15 shadow-sm p-8 text-center">
-                <ShoppingBag size={42} className="mx-auto mb-4 text-[#D9A3AA]/45" />
+              <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 shadow-sm p-8 text-center">
+                <ShoppingBag size={42} className="mx-auto mb-4 text-[#E8B4BC]/45" />
                 <h2 className="font-black text-2xl mb-2">لا توجد طلبات متجر بعد</h2>
-                <p className="text-sm text-[#4A4A4A]/55 mb-6">ابدئي من المتجر، وستظهر طلباتك هنا تلقائياً بعد تأكيدها.</p>
+                <p className="text-sm text-[#171717]/55 mb-6">ابدئي من المتجر، وستظهر طلباتك هنا تلقائياً بعد تأكيدها.</p>
                 <Link to="/store" className="art-cta px-8 py-3 rounded-2xl font-black inline-flex items-center gap-2">
                   <ShoppingBag size={18} /> تصفح المتجر
                 </Link>

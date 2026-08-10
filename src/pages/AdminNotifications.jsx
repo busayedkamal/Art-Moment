@@ -84,7 +84,7 @@ function getStatusMeta(status) {
   return {
     label: status || 'غير محدد',
     icon: Mail,
-    className: 'bg-[#F8F5F2] text-[#4A4A4A]/70 border-[#D9A3AA]/15',
+    className: 'bg-[#FAF9F7] text-[#171717]/70 border-[#E8B4BC]/15',
   };
 }
 
@@ -296,11 +296,11 @@ export default function AdminNotifications() {
     <div dir="rtl" className="max-w-[1600px] mx-auto space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#D9A3AA]/10 px-3 py-1 text-xs font-black text-[#C5A059] mb-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#E8B4BC]/10 px-3 py-1 text-xs font-black text-[#C6A56B] mb-3">
             <Bell size={14} /> مركز المتابعة
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#4A4A4A]">إشعارات العملاء</h1>
-          <p className="text-sm text-[#4A4A4A]/55 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#171717]">إشعارات العملاء</h1>
+          <p className="text-sm text-[#171717]/55 mt-1">
             متابعة الرسائل الفاشلة وسجل الإرسال وإعادة إرسال القوالب عند الحاجة.
           </p>
         </div>
@@ -308,7 +308,7 @@ export default function AdminNotifications() {
           type="button"
           onClick={fetchLogs}
           disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-[#D9A3AA]/20 px-4 py-3 text-sm font-black text-[#4A4A4A] shadow-sm hover:border-[#D9A3AA]/50 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-[#E8B4BC]/20 px-4 py-3 text-sm font-black text-[#171717] shadow-sm hover:border-[#E8B4BC]/50 disabled:opacity-50"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> تحديث
         </button>
@@ -321,22 +321,22 @@ export default function AdminNotifications() {
         <StatCard label="قابلة للإعادة" value={stats.retryable} icon={RotateCcw} tone="gold" />
       </div>
 
-      <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 shadow-sm">
+      <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-4 shadow-sm">
         <div className="grid gap-3 xl:grid-cols-[1fr_auto_auto]">
           <label className="relative block">
-            <Search size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A4A4A]/35" />
+            <Search size={17} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#171717]/35" />
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="ابحث باسم العميل، البريد، العنوان، أو سبب الفشل..."
-              className="w-full rounded-2xl border border-[#D9A3AA]/15 bg-[#F8F5F2] py-3 pl-4 pr-11 text-sm font-bold outline-none focus:border-[#D9A3AA]"
+              className="w-full rounded-2xl border border-[#E8B4BC]/15 bg-[#FAF9F7] py-3 pl-4 pr-11 text-sm font-bold outline-none focus:border-[#E8B4BC]"
             />
           </label>
 
           <select
             value={typeFilter}
             onChange={(event) => setTypeFilter(event.target.value)}
-            className="rounded-2xl border border-[#D9A3AA]/15 bg-[#F8F5F2] px-4 py-3 text-sm font-black outline-none focus:border-[#D9A3AA]"
+            className="rounded-2xl border border-[#E8B4BC]/15 bg-[#FAF9F7] px-4 py-3 text-sm font-black outline-none focus:border-[#E8B4BC]"
           >
             <option value="all">كل الأنواع</option>
             {availableTypes.map((type) => (
@@ -352,8 +352,8 @@ export default function AdminNotifications() {
                 onClick={() => setStatusFilter(status.value)}
                 className={`shrink-0 rounded-2xl px-4 py-3 text-xs font-black border transition-colors ${
                   statusFilter === status.value
-                    ? 'bg-[#4A4A4A] text-white border-[#4A4A4A]'
-                    : 'bg-[#F8F5F2] text-[#4A4A4A]/65 border-[#D9A3AA]/10 hover:border-[#D9A3AA]/40'
+                    ? 'bg-[#171717] text-white border-[#171717]'
+                    : 'bg-[#FAF9F7] text-[#171717]/65 border-[#E8B4BC]/10 hover:border-[#E8B4BC]/40'
                 }`}
               >
                 {status.label}
@@ -365,14 +365,14 @@ export default function AdminNotifications() {
 
       <div className="space-y-3">
         {loading ? (
-          <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-10 flex justify-center">
-            <div className="w-8 h-8 rounded-full border-4 border-[#D9A3AA]/25 border-t-[#D9A3AA] animate-spin" />
+          <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-10 flex justify-center">
+            <div className="w-8 h-8 rounded-full border-4 border-[#E8B4BC]/25 border-t-[#E8B4BC] animate-spin" />
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-10 text-center">
-            <Bell size={38} className="mx-auto text-[#D9A3AA]/40 mb-3" />
-            <p className="font-black text-[#4A4A4A]">لا توجد رسائل مطابقة</p>
-            <p className="text-sm text-[#4A4A4A]/45 mt-1">غيّر الفلتر أو حدّث القائمة.</p>
+          <div className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-10 text-center">
+            <Bell size={38} className="mx-auto text-[#E8B4BC]/40 mb-3" />
+            <p className="font-black text-[#171717]">لا توجد رسائل مطابقة</p>
+            <p className="text-sm text-[#171717]/45 mt-1">غيّر الفلتر أو حدّث القائمة.</p>
           </div>
         ) : (
           filteredLogs.map((log) => {
@@ -386,32 +386,32 @@ export default function AdminNotifications() {
             const configurationError = isEmailConfigurationError(log.error_message);
 
             return (
-              <article key={log.id} className="rounded-3xl bg-white border border-[#D9A3AA]/15 p-4 shadow-sm">
+              <article key={log.id} className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-4 shadow-sm">
                 <div className="grid gap-4 lg:grid-cols-[1fr_260px_auto] lg:items-center">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-black ${statusMeta.className}`}>
                         <StatusIcon size={12} /> {statusMeta.label}
                       </span>
-                      <span className="rounded-full bg-[#F8F5F2] border border-[#D9A3AA]/10 px-3 py-1 text-[11px] font-black text-[#C5A059]">
+                      <span className="rounded-full bg-[#FAF9F7] border border-[#E8B4BC]/10 px-3 py-1 text-[11px] font-black text-[#C6A56B]">
                         {MESSAGE_TYPE_LABELS[log.type] || log.type}
                       </span>
                       {metadata.templateName && (
-                        <span className="rounded-full bg-[#D9A3AA]/10 px-3 py-1 text-[11px] font-bold text-[#4A4A4A]/60">
+                        <span className="rounded-full bg-[#E8B4BC]/10 px-3 py-1 text-[11px] font-bold text-[#171717]/60">
                           {metadata.templateName}
                         </span>
                       )}
                       {log.status === 'failed' && metadata.templateKey && (
-                        <span className="rounded-full bg-[#F8F5F2] border border-[#D9A3AA]/10 px-3 py-1 text-[11px] font-bold text-[#4A4A4A]/55">
+                        <span className="rounded-full bg-[#FAF9F7] border border-[#E8B4BC]/10 px-3 py-1 text-[11px] font-bold text-[#171717]/55">
                           المحاولات {retryCount}/{retryLimit}
                         </span>
                       )}
                     </div>
-                    <h2 className="truncate text-base font-black text-[#4A4A4A]">
+                    <h2 className="truncate text-base font-black text-[#171717]">
                       {log.subject || MESSAGE_TYPE_LABELS[log.type] || 'رسالة بدون عنوان'}
                     </h2>
                     {log.body && (
-                      <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-[#4A4A4A]/60">
+                      <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-[#171717]/60">
                         {log.body}
                       </p>
                     )}
@@ -423,7 +423,7 @@ export default function AdminNotifications() {
                             href="https://resend.com/domains"
                             target="_blank"
                             rel="noreferrer"
-                            className="mt-2 inline-flex text-[#4A4A4A] underline underline-offset-2"
+                            className="mt-2 inline-flex text-[#171717] underline underline-offset-2"
                           >
                             فتح إعداد النطاق في Resend
                           </a>
@@ -432,21 +432,21 @@ export default function AdminNotifications() {
                     )}
                   </div>
 
-                  <div className="rounded-2xl bg-[#F8F5F2] border border-[#D9A3AA]/10 p-3">
+                  <div className="rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/10 p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="w-8 h-8 rounded-full bg-white border border-[#D9A3AA]/15 flex items-center justify-center text-[#D9A3AA]">
+                      <span className="w-8 h-8 rounded-full bg-white border border-[#E8B4BC]/15 flex items-center justify-center text-[#E8B4BC]">
                         <User size={15} />
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-[#4A4A4A]">
+                        <p className="truncate text-sm font-black text-[#171717]">
                           {customer.name || 'عميل غير مرتبط'}
                         </p>
-                        <p className="truncate text-[11px] font-bold text-[#4A4A4A]/45">
+                        <p className="truncate text-[11px] font-bold text-[#171717]/45">
                           {customer.email || customer.phone || 'لا توجد بيانات اتصال'}
                         </p>
                       </div>
                     </div>
-                    <p className="text-[11px] font-bold text-[#4A4A4A]/45">
+                    <p className="text-[11px] font-bold text-[#171717]/45">
                       {formatDate(log.sent_at || log.created_at)}
                     </p>
                   </div>
@@ -455,7 +455,7 @@ export default function AdminNotifications() {
                     type="button"
                     onClick={() => retryMessage(log)}
                     disabled={retryingId === log.id || !retryable}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#4A4A4A] px-5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C5A059] disabled:opacity-45 disabled:hover:bg-[#4A4A4A]"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#171717] px-5 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#C6A56B] disabled:opacity-45 disabled:hover:bg-[#171717]"
                     title={retryable
                       ? 'إعادة إرسال الإشعار'
                       : retryCount >= retryLimit
@@ -477,10 +477,10 @@ export default function AdminNotifications() {
 
 function StatCard({ label, value, icon: Icon, tone = 'neutral' }) {
   const tones = {
-    neutral: 'bg-white text-[#4A4A4A] border-[#D9A3AA]/15',
+    neutral: 'bg-white text-[#171717] border-[#E8B4BC]/15',
     red: 'bg-red-50 text-red-600 border-red-100',
     green: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    gold: 'bg-[#C5A059]/10 text-[#C5A059] border-[#C5A059]/15',
+    gold: 'bg-[#C6A56B]/10 text-[#C6A56B] border-[#C6A56B]/15',
   };
 
   return (

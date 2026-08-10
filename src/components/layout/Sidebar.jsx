@@ -27,9 +27,9 @@ function NavItem({ to, label, icon: Icon }) {
         [
           'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all',
           // Base (dark sidebar)
-          'text-[#F8F5F2]/80 hover:text-[#F8F5F2] hover:bg-[#D9A3AA]/15',
+          'text-[#FAF9F7]/80 hover:text-[#FAF9F7] hover:bg-[#E8B4BC]/15',
           // Active
-          isActive ? 'bg-[#D9A3AA] text-white shadow-lg shadow-[#D9A3AA]/25' : '',
+          isActive ? 'bg-[#E8B4BC] text-white shadow-lg shadow-[#E8B4BC]/25' : '',
         ].join(' ')
       }
     >
@@ -56,13 +56,13 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 h-screen bg-[#4A4A4A] text-[#F8F5F2] flex flex-col border-r border-white/10">
+    <aside className="w-64 h-screen bg-[#171717] text-[#FAF9F7] flex flex-col border-r border-white/10">
       <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={logo} alt="Art Moment" className="w-10 h-10 object-contain brightness-0 invert opacity-90" />
           <div className="leading-tight">
             <div className="font-black tracking-wide">Art Moment</div>
-            <div className="text-xs text-[#F8F5F2]/60 font-bold">لوحة التحكم</div>
+            <div className="text-xs text-[#FAF9F7]/60 font-bold">لوحة التحكم</div>
           </div>
         </div>
       </div>
@@ -83,7 +83,7 @@ export default function Sidebar() {
       <div className="px-4 pb-6">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border border-[#D9A3AA]/50 text-[#F8F5F2] hover:bg-[#D9A3AA]/15 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border border-[#E8B4BC]/50 text-[#FAF9F7] hover:bg-[#E8B4BC]/15 transition-colors"
         >
           <LogOut size={18} />
           تسجيل خروج
@@ -91,7 +91,7 @@ export default function Sidebar() {
 
         <button
           onClick={() => navigate('/')}
-          className="w-full mt-3 px-4 py-3 rounded-xl text-sm font-black bg-[#D9A3AA] text-white hover:bg-[#C5A059] transition-colors shadow-md shadow-black/20"
+          className="w-full mt-3 px-4 py-3 rounded-xl text-sm font-black bg-[#E8B4BC] text-white hover:bg-[#C6A56B] transition-colors shadow-md shadow-black/20"
         >
           الرجوع للموقع
         </button>

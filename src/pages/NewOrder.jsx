@@ -539,7 +539,7 @@ export default function NewOrder() {
           <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
             الأسعار: <span className="bg-slate-100 px-2 rounded">A4 = {settings.a4_price}</span>
             {isDynamicApplied ?
-              <span className="bg-[#D9A3AA]/15 text-[#4A4A4A] px-2 rounded font-bold flex items-center gap-1"><Sparkles size={12} /> 4×6 = {active4x6Price}</span> :
+              <span className="bg-[#E8B4BC]/15 text-[#171717] px-2 rounded font-bold flex items-center gap-1"><Sparkles size={12} /> 4×6 = {active4x6Price}</span> :
               <span className="bg-slate-100 px-2 rounded">4×6 = {settings.photo_4x6_price}</span>
             }
           </p>
@@ -583,12 +583,12 @@ export default function NewOrder() {
             <div className={`grid gap-4 ${friendshipEligibility?.eligible ? 'md:grid-cols-3' : 'md:grid-cols-2'}`} ref={suggestionsRef}>
               {/* ── اسم العميل ── */}
               <div className="relative">
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#D9A3AA]/15 rounded-xl flex items-center justify-center pointer-events-none">
-                  <User size={16} className="text-[#D9A3AA]" />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#E8B4BC]/15 rounded-xl flex items-center justify-center pointer-events-none">
+                  <User size={16} className="text-[#E8B4BC]" />
                 </div>
                 <input
                   {...register('customerName', { required: 'مطلوب' })}
-                  className="w-full pr-14 pl-4 py-3.5 bg-[#F8F5F2] border-2 border-transparent rounded-2xl text-sm font-bold placeholder-slate-300 outline-none focus:border-[#D9A3AA] focus:bg-white transition-all"
+                  className="w-full pr-14 pl-4 py-3.5 bg-[#FAF9F7] border-2 border-transparent rounded-2xl text-sm font-bold placeholder-slate-300 outline-none focus:border-[#E8B4BC] focus:bg-white transition-all"
                   placeholder="اسم العميل *"
                   autoComplete="off"
                   onFocus={() => setShowSuggestions('name')}
@@ -601,9 +601,9 @@ export default function NewOrder() {
                   <div className="absolute z-50 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2">
                     {filteredSuggestions.map((c, idx) => (
                       <button key={idx} type="button" onClick={() => selectCustomer(c)}
-                        className="w-full text-right px-4 py-3 hover:bg-[#D9A3AA]/10 transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group">
+                        className="w-full text-right px-4 py-3 hover:bg-[#E8B4BC]/10 transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group">
                         <span className="font-bold text-sm">{c.name}</span>
-                        <span className="text-xs text-slate-400 group-hover:text-[#D9A3AA] dir-ltr">{c.phone}</span>
+                        <span className="text-xs text-slate-400 group-hover:text-[#E8B4BC] dir-ltr">{c.phone}</span>
                       </button>
                     ))}
                   </div>
@@ -619,7 +619,7 @@ export default function NewOrder() {
                 </div>
                 <input
                   {...register('phone')}
-                  className="w-full pr-14 pl-4 py-3.5 bg-[#F8F5F2] border-2 border-transparent rounded-2xl text-sm font-mono dir-ltr text-right placeholder-slate-300 outline-none focus:border-[#D9A3AA] focus:bg-white transition-all"
+                  className="w-full pr-14 pl-4 py-3.5 bg-[#FAF9F7] border-2 border-transparent rounded-2xl text-sm font-mono dir-ltr text-right placeholder-slate-300 outline-none focus:border-[#E8B4BC] focus:bg-white transition-all"
                   placeholder="05xxxxxxxx"
                   autoComplete="off"
                   onFocus={() => setShowSuggestions('phone')}
@@ -629,9 +629,9 @@ export default function NewOrder() {
                   <div className="absolute z-50 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2">
                     {filteredSuggestions.map((c, idx) => (
                       <button key={idx} type="button" onClick={() => selectCustomer(c)}
-                        className="w-full text-right px-4 py-3 hover:bg-[#D9A3AA]/10 transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group">
+                        className="w-full text-right px-4 py-3 hover:bg-[#E8B4BC]/10 transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group">
                         <span className="font-bold text-sm dir-ltr">{c.phone}</span>
-                        <span className="text-xs text-slate-400 group-hover:text-[#D9A3AA]">{c.name}</span>
+                        <span className="text-xs text-slate-400 group-hover:text-[#E8B4BC]">{c.name}</span>
                       </button>
                     ))}
                   </div>
@@ -640,8 +640,8 @@ export default function NewOrder() {
 
               {friendshipEligibility?.eligible && (
                 <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#C5A059]/15 rounded-xl flex items-center justify-center pointer-events-none">
-                    <Gift size={16} className="text-[#C5A059]" />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#C6A56B]/15 rounded-xl flex items-center justify-center pointer-events-none">
+                    <Gift size={16} className="text-[#C6A56B]" />
                   </div>
                   <input
                     {...register('friendshipCode', {
@@ -652,7 +652,7 @@ export default function NewOrder() {
                     })}
                     inputMode="numeric"
                     maxLength={4}
-                    className="w-full pr-14 pl-4 py-3.5 bg-[#C5A059]/5 border-2 border-[#C5A059]/20 rounded-2xl text-sm font-black tracking-widest placeholder-[#C5A059]/45 outline-none focus:border-[#C5A059] focus:bg-white transition-all"
+                    className="w-full pr-14 pl-4 py-3.5 bg-[#C6A56B]/5 border-2 border-[#C6A56B]/20 rounded-2xl text-sm font-black tracking-widest placeholder-[#C6A56B]/45 outline-none focus:border-[#C6A56B] focus:bg-white transition-all"
                     placeholder="كود الصداقة (اختياري)"
                     autoComplete="off"
                     onFocus={() => setShowSuggestions('friendship')}
@@ -662,7 +662,7 @@ export default function NewOrder() {
                     }}
                   />
                   {showSuggestions === 'friendship' && friendshipCodeQuery && (
-                    <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-[#C5A059]/20 bg-white shadow-xl animate-in fade-in slide-in-from-top-2">
+                    <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-[#C6A56B]/20 bg-white shadow-xl animate-in fade-in slide-in-from-top-2">
                       {matchingFriendshipOwners.length > 0 ? matchingFriendshipOwners.map((owner) => (
                         <button
                           key={owner.code}
@@ -672,12 +672,12 @@ export default function NewOrder() {
                             setShowSuggestions(null);
                             toast.success(`تم اختيار كود ${owner.name}`);
                           }}
-                          className="flex w-full items-center justify-between gap-3 border-b border-[#C5A059]/10 px-4 py-3 text-right transition-colors last:border-0 hover:bg-[#C5A059]/10"
+                          className="flex w-full items-center justify-between gap-3 border-b border-[#C6A56B]/10 px-4 py-3 text-right transition-colors last:border-0 hover:bg-[#C6A56B]/10"
                         >
-                          <span className="min-w-0 truncate text-xs font-black text-[#4A4A4A]">
+                          <span className="min-w-0 truncate text-xs font-black text-[#171717]">
                             {owner.name}
                           </span>
-                          <span className="shrink-0 rounded-lg bg-[#C5A059]/10 px-2.5 py-1 font-mono text-sm font-black tracking-wider text-[#9E7D35]" dir="ltr">
+                          <span className="shrink-0 rounded-lg bg-[#C6A56B]/10 px-2.5 py-1 font-mono text-sm font-black tracking-wider text-[#9E7D35]" dir="ltr">
                             {owner.code}
                           </span>
                         </button>
@@ -695,7 +695,7 @@ export default function NewOrder() {
                       <Gift size={11} /> صاحبة الكود: {selectedFriendshipOwner.name}
                     </p>
                   ) : (
-                    <p className="mt-1 pr-1 text-[10px] font-bold text-[#C5A059]">
+                    <p className="mt-1 pr-1 text-[10px] font-bold text-[#C6A56B]">
                       عميل جديد مؤهل. استخدمي كوبون WELCOME لخصم 5%.
                     </p>
                   )}
@@ -703,13 +703,13 @@ export default function NewOrder() {
               )}
             </div>
             {checkingFriendship && /^05\d{8}$/.test(normalizePhone(phoneWatcher)) && (
-              <p className="mt-3 flex items-center gap-2 text-[11px] text-[#4A4A4A]/45">
+              <p className="mt-3 flex items-center gap-2 text-[11px] text-[#171717]/45">
                 <Loader2 size={12} className="animate-spin" /> جارٍ التحقق من أهلية كود الصداقة...
               </p>
             )}
             {!checkingFriendship && friendshipEligibility?.reason === 'existing_customer' && (
-              <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#C5A059]/20 bg-[#C5A059]/5 px-3 py-2.5 text-[11px] font-bold text-[#4A4A4A]/70">
-                <Info size={14} className="mt-0.5 shrink-0 text-[#C5A059]" />
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#C6A56B]/20 bg-[#C6A56B]/5 px-3 py-2.5 text-[11px] font-bold text-[#171717]/70">
+                <Info size={14} className="mt-0.5 shrink-0 text-[#C6A56B]" />
                 <span>
                   هذا الرقم مسجل سابقاً في بيانات العملاء، لذلك لا يظهر حقل كود الصداقة. المكافأة متاحة للعميل الجديد فقط.
                 </span>
@@ -717,7 +717,7 @@ export default function NewOrder() {
             )}
             {!checkingFriendship && friendshipEligibility && !friendshipEligibility.eligible
               && friendshipEligibility.reason !== 'existing_customer' && (
-              <div className="mt-3 flex items-start gap-2 rounded-xl border border-slate-200 bg-[#F8F5F2] px-3 py-2.5 text-[11px] font-bold text-[#4A4A4A]/65">
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-slate-200 bg-[#FAF9F7] px-3 py-2.5 text-[11px] font-bold text-[#171717]/65">
                 <Info size={14} className="mt-0.5 shrink-0 text-slate-400" />
                 <span>كود الصداقة غير متاح لهذا الرقم وفق شروط البرنامج.</span>
               </div>
@@ -732,29 +732,29 @@ export default function NewOrder() {
 
           {/* تفاصيل الصور */}
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-[#D9A3AA]" /> تفاصيل الصور</h3>
+            <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-[#E8B4BC]" /> تفاصيل الصور</h3>
             <div className="grid grid-cols-2 gap-6 mb-6">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[#4A4A4A] block text-center flex items-center justify-center gap-2">
+                <label className="text-sm font-bold text-[#171717] block text-center flex items-center justify-center gap-2">
                   عدد 4×6 {isDynamicApplied && <Sparkles size={14} className="text-amber-400 animate-pulse" />}
                 </label>
                 <input type="number" min="0" {...register('photo4x6Qty')}
-                  className={`w-full bg-white border-2 rounded-2xl px-2 py-4 text-center font-black text-3xl shadow-sm outline-none focus:ring-4 placeholder-[#D9A3AA]/30 ${isDynamicApplied ? 'border-[#C5A059] text-[#C5A059] focus:ring-[#C5A059]/20' : 'border-[#D9A3AA] text-[#4A4A4A] focus:ring-[#D9A3AA]/20'}`}
+                  className={`w-full bg-white border-2 rounded-2xl px-2 py-4 text-center font-black text-3xl shadow-sm outline-none focus:ring-4 placeholder-[#E8B4BC]/30 ${isDynamicApplied ? 'border-[#C6A56B] text-[#C6A56B] focus:ring-[#C6A56B]/20' : 'border-[#E8B4BC] text-[#171717] focus:ring-[#E8B4BC]/20'}`}
                   placeholder="0" />
                 <div className="text-center text-[10px] text-slate-400 font-medium mt-1">مخزون: {inventory.find(i => i.item_name === 'ورق 4x6')?.quantity || '-'}</div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[#4A4A4A] block text-center">عدد A4</label>
+                <label className="text-sm font-bold text-[#171717] block text-center">عدد A4</label>
                 <input type="number" min="0" {...register('a4Qty')}
-                  className="w-full bg-white border-2 border-[#C5A059] rounded-2xl px-2 py-4 text-center font-black text-3xl text-[#C5A059] shadow-sm outline-none focus:ring-4 focus:ring-[#C5A059]/20 placeholder-[#C5A059]/40"
+                  className="w-full bg-white border-2 border-[#C6A56B] rounded-2xl px-2 py-4 text-center font-black text-3xl text-[#C6A56B] shadow-sm outline-none focus:ring-4 focus:ring-[#C6A56B]/20 placeholder-[#C6A56B]/40"
                   placeholder="0" />
                 <div className="text-center text-[10px] text-slate-400 font-medium mt-1">مخزون: {inventory.find(i => i.item_name === 'ورق A4')?.quantity || '-'}</div>
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#C5A059]">ملاحظات إضافية</label>
+              <label className="text-sm font-bold text-[#C6A56B]">ملاحظات إضافية</label>
               <textarea {...register('notes')} rows="4"
-                className="w-full bg-[#F8F5F2] border-2 border-[#C5A059]/30 rounded-2xl px-4 py-3 text-sm text-[#4A4A4A] placeholder-[#4A4A4A]/40 focus:bg-white focus:border-[#C5A059] focus:ring-4 focus:ring-[#C5A059]/20 outline-none resize-none transition-all"
+                className="w-full bg-[#FAF9F7] border-2 border-[#C6A56B]/30 rounded-2xl px-4 py-3 text-sm text-[#171717] placeholder-[#171717]/40 focus:bg-white focus:border-[#C6A56B] focus:ring-4 focus:ring-[#C6A56B]/20 outline-none resize-none transition-all"
                 placeholder="اكتبي ملاحظاتك هنا..." />
             </div>
           </div>
@@ -762,35 +762,35 @@ export default function NewOrder() {
 
         {/* ملخص الدفع */}
         <div className="xl:col-span-4 space-y-4 min-w-0">
-          <div className="bg-white text-[#4A4A4A] rounded-2xl p-6 shadow-lg border border-[#D9A3AA]/20 sticky top-6">
+          <div className="bg-white text-[#171717] rounded-2xl p-6 shadow-lg border border-[#E8B4BC]/20 sticky top-6">
             <h3 className="text-lg font-bold mb-4">ملخص الدفع</h3>
 
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between text-[#4A4A4A]/80">
+              <div className="flex justify-between text-[#171717]/80">
                 <span>صور (A4 + 4x6)</span>
                 <span>{((Number(a4Qty || 0) * settings.a4_price) + (Number(photo4x6Qty || 0) * active4x6Price)).toFixed(2)}</span>
               </div>
 
-              <div className="flex justify-between items-center text-[#4A4A4A]/80 pt-2">
+              <div className="flex justify-between items-center text-[#171717]/80 pt-2">
                 <span>تكاليف إضافية</span>
-                <input type="number" min="0" {...register('deliveryFee')} className="w-20 bg-white border border-[#D9A3AA]/30 rounded-lg px-2 py-1 text-right text-[#4A4A4A] focus:border-[#D9A3AA] outline-none" />
+                <input type="number" min="0" {...register('deliveryFee')} className="w-20 bg-white border border-[#E8B4BC]/30 rounded-lg px-2 py-1 text-right text-[#171717] focus:border-[#E8B4BC] outline-none" />
               </div>
 
               <div className="flex justify-between items-center text-red-600 pt-2">
                 <span className="flex items-center gap-1"><MinusCircle size={14} /> خصم إضافي</span>
-                <input type="number" min="0" {...register('manualDiscount')} className="w-20 bg-[#F8F5F2] border border-red-200 rounded-lg px-2 py-1 text-right text-red-600 focus:border-red-400 outline-none placeholder-red-300" placeholder="0" />
+                <input type="number" min="0" {...register('manualDiscount')} className="w-20 bg-[#FAF9F7] border border-red-200 rounded-lg px-2 py-1 text-right text-red-600 focus:border-red-400 outline-none placeholder-red-300" placeholder="0" />
               </div>
 
               {/* كوبون */}
-              <div className="py-2 border-y border-[#D9A3AA]/20 my-2">
+              <div className="py-2 border-y border-[#E8B4BC]/20 my-2">
                 <div className="flex gap-2 items-center mb-2">
-                  <Tag size={14} className="text-[#D9A3AA]" /> <span className="text-xs text-[#4A4A4A]/60">كود خصم</span>
+                  <Tag size={14} className="text-[#E8B4BC]" /> <span className="text-xs text-[#171717]/60">كود خصم</span>
                 </div>
                 <div className="flex gap-2">
                   <select
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
-                    className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-lg px-3 py-1.5 text-[#4A4A4A] text-sm outline-none focus:border-[#D9A3AA] appearance-none"
+                    className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-lg px-3 py-1.5 text-[#171717] text-sm outline-none focus:border-[#E8B4BC] appearance-none"
                   >
                     <option value="">اختر كود الخصم...</option>
                     {activeCoupons.map((coupon) => (
@@ -799,16 +799,16 @@ export default function NewOrder() {
                       </option>
                     ))}
                   </select>
-                  <button type="button" onClick={checkCoupon} className="bg-[#D9A3AA] hover:bg-[#C5A059] text-white px-3 py-1 rounded-lg text-sm">تحقق</button>
+                  <button type="button" onClick={checkCoupon} className="bg-[#E8B4BC] hover:bg-[#C6A56B] text-white px-3 py-1 rounded-lg text-sm">تحقق</button>
                 </div>
               </div>
 
               {/* خيار رصيد الباقات */}
               {packageBalance > 0 && (
-                <div className={`rounded-xl border transition-all overflow-hidden ${usePackage ? 'border-amber-300' : 'border-[#D9A3AA]/20'}`}>
+                <div className={`rounded-xl border transition-all overflow-hidden ${usePackage ? 'border-amber-300' : 'border-[#E8B4BC]/20'}`}>
                   {/* رأس الخيار */}
                   <button type="button" onClick={toggleUsePackage}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${usePackage ? 'bg-amber-50' : 'bg-[#F8F5F2] hover:bg-amber-50/50'}`}>
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${usePackage ? 'bg-amber-50' : 'bg-[#FAF9F7] hover:bg-amber-50/50'}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${usePackage ? 'bg-amber-500 border-amber-500' : 'border-amber-300'}`}>
                         {usePackage && <div className="w-2 h-2 bg-white rounded-full" />}
@@ -847,9 +847,9 @@ export default function NewOrder() {
 
               {/* الدفع من رصيد النقاط */}
               {wallet && !wallet.isNew && walletRewardPoints > 0 && (
-                <div className={`rounded-xl border transition-all overflow-hidden ${usePoints ? 'border-violet-300' : 'border-[#D9A3AA]/20'}`}>
+                <div className={`rounded-xl border transition-all overflow-hidden ${usePoints ? 'border-violet-300' : 'border-[#E8B4BC]/20'}`}>
                   <button type="button" onClick={toggleUsePoints} disabled={!rewardRedemptionLimit.canRedeem}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${!rewardRedemptionLimit.canRedeem ? 'cursor-not-allowed opacity-60' : ''} ${usePoints ? 'bg-violet-50' : 'bg-[#F8F5F2] hover:bg-violet-50/50'}`}>
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-right transition-colors ${!rewardRedemptionLimit.canRedeem ? 'cursor-not-allowed opacity-60' : ''} ${usePoints ? 'bg-violet-50' : 'bg-[#FAF9F7] hover:bg-violet-50/50'}`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${usePoints ? 'bg-violet-500 border-violet-500' : 'border-violet-300'}`}>
                         {usePoints && <div className="w-2 h-2 bg-white rounded-full" />}
@@ -892,13 +892,13 @@ export default function NewOrder() {
 
               {/* خصم الكوبون */}
               {couponDiscountValue > 0 && (
-                <div className="flex justify-between text-[#D9A3AA] font-bold animate-pulse">
+                <div className="flex justify-between text-[#E8B4BC] font-bold animate-pulse">
                   <span className="flex items-center gap-1">{couponData?.discount_type === 'percent' && <Percent size={12} />} خصم الكوبون</span>
                   <span>- {couponDiscountValue.toFixed(2)}</span>
                 </div>
               )}
 
-              <div className="pt-2 border-t border-[#D9A3AA]/20 flex justify-between text-lg font-bold text-[#4A4A4A]">
+              <div className="pt-2 border-t border-[#E8B4BC]/20 flex justify-between text-lg font-bold text-[#171717]">
                 <span>قيمة الطلب بعد الخصومات</span><span>{total.toFixed(2)} <RiyalSign /></span>
               </div>
               {pointsDiscountValue > 0 && (
@@ -909,26 +909,26 @@ export default function NewOrder() {
               )}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#D9A3AA]/20">
-              <label className="block text-xs text-[#4A4A4A]/60 mb-1">العربون المدفوع</label>
+            <div className="mt-6 pt-4 border-t border-[#E8B4BC]/20">
+              <label className="block text-xs text-[#171717]/60 mb-1">العربون المدفوع</label>
               <input type="number" min="0" {...register('deposit')}
-                className="w-full bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-xl px-4 py-2.5 text-[#4A4A4A] focus:border-[#D9A3AA] font-bold text-lg outline-none" />
+                className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-xl px-4 py-2.5 text-[#171717] focus:border-[#E8B4BC] font-bold text-lg outline-none" />
             </div>
 
-            <div className="mt-4 flex justify-between items-center bg-[#F8F5F2] border border-[#D9A3AA]/20 rounded-xl p-3">
-              <span className="text-sm text-[#4A4A4A]/60">المتبقي</span>
-              <span className={`text-xl font-bold ${remaining > 0 ? 'text-red-500' : 'text-[#C5A059]'}`}>{remaining.toFixed(2)}</span>
+            <div className="mt-4 flex justify-between items-center bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl p-3">
+              <span className="text-sm text-[#171717]/60">المتبقي</span>
+              <span className={`text-xl font-bold ${remaining > 0 ? 'text-red-500' : 'text-[#C6A56B]'}`}>{remaining.toFixed(2)}</span>
             </div>
 
             <button type="submit" disabled={isSubmitting}
-              className="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-[#D9A3AA] to-[#C5A059] text-white font-bold transition-all hover:opacity-95 disabled:opacity-50">
+              className="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-[#E8B4BC] to-[#C6A56B] text-white font-bold transition-all hover:opacity-95 disabled:opacity-50">
               {isSubmitting ? 'جاري الحفظ...' : 'حفظ'}
             </button>
           </div>
         </div>
       </form>
 
-      <style>{`.input-field { @apply w-full rounded-xl border border-[#D9A3AA]/30 px-4 py-2.5 text-sm text-[#4A4A4A] bg-[#F8F5F2] focus:ring-2 focus:ring-[#D9A3AA]/40 outline-none; }`}</style>
+      <style>{`.input-field { @apply w-full rounded-xl border border-[#E8B4BC]/30 px-4 py-2.5 text-sm text-[#171717] bg-[#FAF9F7] focus:ring-2 focus:ring-[#E8B4BC]/40 outline-none; }`}</style>
     </div>
   );
 }

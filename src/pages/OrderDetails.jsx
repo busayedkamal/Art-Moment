@@ -1136,13 +1136,13 @@ export default function OrderDetails() {
           <style>
             @page { size: 100mm 150mm; margin: 7mm; }
             * { box-sizing: border-box; }
-            body { margin: 0; color: #4A4A4A; font-family: Tajawal, Arial, sans-serif; }
-            .label { min-height: 136mm; border: 2px solid #D9A3AA; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+            body { margin: 0; color: #171717; font-family: Tajawal, Arial, sans-serif; }
+            .label { min-height: 136mm; border: 2px solid #E8B4BC; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
             .brand { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E9D7D9; padding-bottom: 12px; }
             .brand img { width: 54px; height: 54px; object-fit: contain; }
             h1 { margin: 0; font-size: 23px; }
             .order-number { color: #B0873F; font-size: 25px; font-weight: 900; direction: ltr; text-align: right; }
-            .customer { background: #F8F5F2; border-radius: 12px; padding: 14px; }
+            .customer { background: #FAF9F7; border-radius: 12px; padding: 14px; }
             .customer strong { display: block; font-size: 23px; margin-bottom: 5px; }
             .phone { font-size: 18px; font-weight: 800; direction: ltr; text-align: right; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1150,7 +1150,7 @@ export default function OrderDetails() {
             .field span { display: block; color: #8F8585; font-size: 11px; margin-bottom: 4px; }
             .field b { font-size: 15px; }
             .notes { flex: 1; white-space: pre-wrap; }
-            .footer { text-align: center; color: #9A8F8F; font-size: 11px; border-top: 1px dashed #D9A3AA; padding-top: 8px; }
+            .footer { text-align: center; color: #9A8F8F; font-size: 11px; border-top: 1px dashed #E8B4BC; padding-top: 8px; }
             @media print { .label { break-inside: avoid; } }
           </style>
         </head>
@@ -1304,17 +1304,17 @@ export default function OrderDetails() {
 
   return (
     <>
-      <div className="text-[#4A4A4A]">
+      <div className="text-[#171717]">
         <div className="w-full pb-20 space-y-6 print:hidden">
 
           {/* Header */}
-          <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-[#D9A3AA]/25 shadow-sm gap-3">
+          <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-[#E8B4BC]/25 shadow-sm gap-3">
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-              <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-[#D9A3AA]/10 rounded-xl shrink-0"><ArrowRight /></button>
+              <button onClick={() => navigate('/app/orders')} className="p-2 hover:bg-[#E8B4BC]/10 rounded-xl shrink-0"><ArrowRight /></button>
               <div className="min-w-0">
                 {/* اسم العميل */}
                 <div className="flex items-center gap-2 mb-0.5">
-                  <h1 className="text-base sm:text-lg font-black text-[#4A4A4A] truncate leading-tight">
+                  <h1 className="text-base sm:text-lg font-black text-[#171717] truncate leading-tight">
                     {order.customer_name || 'عميل'}
                   </h1>
                   {order.status && (
@@ -1332,19 +1332,19 @@ export default function OrderDetails() {
                   )}
                 </div>
                 {/* رقم الطلب */}
-                <p className="text-[10px] sm:text-xs text-[#4A4A4A]/45 font-mono tracking-wide">
+                <p className="text-[10px] sm:text-xs text-[#171717]/45 font-mono tracking-wide">
                   # {order.id.slice(0, 8)}
                 </p>
               </div>
             </div>
             <div className="flex gap-1.5 shrink-0">
-              <button onClick={handlePrintLabel} className="bg-[#D9A3AA]/10 text-[#4A4A4A] px-2 sm:px-4 py-2 rounded-xl font-bold hover:bg-[#D9A3AA]/15 flex items-center gap-1.5 transition-colors text-sm">
+              <button onClick={handlePrintLabel} className="bg-[#E8B4BC]/10 text-[#171717] px-2 sm:px-4 py-2 rounded-xl font-bold hover:bg-[#E8B4BC]/15 flex items-center gap-1.5 transition-colors text-sm">
                 <StickyNote size={16} /> <span className="hidden sm:inline">ملصق</span>
               </button>
               <button onClick={handleExportPDF} className="btn-secondary flex items-center gap-1.5 px-2 sm:px-4 text-sm">
                 <Download size={16} /> <span className="hidden sm:inline">PDF</span>
               </button>
-              <button onClick={handlePrint} title="طباعة مباشرة" className="bg-[#D9A3AA]/10 text-[#4A4A4A] px-2.5 py-2 rounded-xl hover:bg-[#D9A3AA]/20 transition-colors">
+              <button onClick={handlePrint} title="طباعة مباشرة" className="bg-[#E8B4BC]/10 text-[#171717] px-2.5 py-2 rounded-xl hover:bg-[#E8B4BC]/20 transition-colors">
                 <Printer size={16} />
               </button>
               <button onClick={handleDelete} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100"><Trash2 size={17} /></button>
@@ -1352,11 +1352,11 @@ export default function OrderDetails() {
           </div>
 
           {/* شريط الحالة — FSM */}
-          <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/25 shadow-sm">
+          <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/25 shadow-sm">
             {/* الحالة الحالية */}
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-sm text-[#4A4A4A]/55 flex items-center gap-2">
-                <AlertCircle size={16} className="text-[#D9A3AA]" /> حالة الطلب
+              <h3 className="font-bold text-sm text-[#171717]/55 flex items-center gap-2">
+                <AlertCircle size={16} className="text-[#E8B4BC]" /> حالة الطلب
               </h3>
               {(() => {
                 const cfg = STATUS_CONFIG[order.status] || { label: order.status, bgClass: 'bg-gray-100', textClass: 'text-gray-600' };
@@ -1372,7 +1372,7 @@ export default function OrderDetails() {
             {/* أزرار الانتقال المسموحة */}
             {(VALID_TRANSITIONS[order.status] || []).length > 0 && (
               <div className="mb-5">
-                <p className="text-[11px] text-[#4A4A4A]/40 mb-3 font-medium">الانتقال إلى:</p>
+                <p className="text-[11px] text-[#171717]/40 mb-3 font-medium">الانتقال إلى:</p>
                 <div className="flex flex-wrap gap-2">
                   {(VALID_TRANSITIONS[order.status] || []).map(nextStatus => {
                     const cfg = STATUS_CONFIG[nextStatus] || { label: nextStatus, btnClass: 'bg-gray-500 text-white' };
@@ -1383,7 +1383,7 @@ export default function OrderDetails() {
                         type="button"
                         onClick={() => setPendingStatus(nextStatus)}
                         disabled={isUpdatingStatus}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${cfg.btnClass} ${pendingStatus === nextStatus ? 'ring-2 ring-offset-2 ring-[#C5A059]' : ''}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${cfg.btnClass} ${pendingStatus === nextStatus ? 'ring-2 ring-offset-2 ring-[#C6A56B]' : ''}`}
                       >
                         {Icon && <Icon size={14} />} {cfg.label}
                       </button>
@@ -1394,12 +1394,12 @@ export default function OrderDetails() {
                   const currentConfig = STATUS_CONFIG[order.status] || { label: order.status };
                   const nextConfig = STATUS_CONFIG[pendingStatus] || { label: pendingStatus };
                   return (
-                    <div className="mt-4 rounded-xl border border-[#C5A059]/35 bg-[#F8F5F2] p-4">
+                    <div className="mt-4 rounded-xl border border-[#C6A56B]/35 bg-[#FAF9F7] p-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <p className="text-xs font-bold text-[#4A4A4A]">تأكيد تغيير حالة الطلب</p>
-                          <p className="mt-1 text-xs text-[#4A4A4A]/60">
-                            من <span className="font-bold">{currentConfig.label}</span> إلى <span className="font-bold text-[#C5A059]">{nextConfig.label}</span>
+                          <p className="text-xs font-bold text-[#171717]">تأكيد تغيير حالة الطلب</p>
+                          <p className="mt-1 text-xs text-[#171717]/60">
+                            من <span className="font-bold">{currentConfig.label}</span> إلى <span className="font-bold text-[#C6A56B]">{nextConfig.label}</span>
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1407,7 +1407,7 @@ export default function OrderDetails() {
                             type="button"
                             onClick={() => setPendingStatus(null)}
                             disabled={isUpdatingStatus}
-                            className="min-h-10 rounded-lg border border-[#D9A3AA]/30 bg-white px-4 text-xs font-bold text-[#4A4A4A] disabled:opacity-50"
+                            className="min-h-10 rounded-lg border border-[#E8B4BC]/30 bg-white px-4 text-xs font-bold text-[#171717] disabled:opacity-50"
                           >
                             إلغاء
                           </button>
@@ -1415,7 +1415,7 @@ export default function OrderDetails() {
                             type="button"
                             onClick={() => handleStatusChange(pendingStatus)}
                             disabled={isUpdatingStatus}
-                            className="flex min-h-10 items-center gap-2 rounded-lg bg-[#4A4A4A] px-4 text-xs font-bold text-white transition-colors hover:bg-[#C5A059] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="flex min-h-10 items-center gap-2 rounded-lg bg-[#171717] px-4 text-xs font-bold text-white transition-colors hover:bg-[#C6A56B] disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {isUpdatingStatus ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle size={15} />}
                             {isUpdatingStatus ? 'جاري الحفظ' : 'تأكيد التغيير'}
@@ -1430,19 +1430,19 @@ export default function OrderDetails() {
 
             {/* سجل التدقيق */}
             {statusHistory.length > 0 && (
-              <div className="pt-4 border-t border-[#D9A3AA]/15">
-                <p className="text-[11px] font-bold text-[#4A4A4A]/40 mb-3">سجل التغييرات</p>
+              <div className="pt-4 border-t border-[#E8B4BC]/15">
+                <p className="text-[11px] font-bold text-[#171717]/40 mb-3">سجل التغييرات</p>
                 <div className="space-y-2 max-h-44 overflow-y-auto custom-scrollbar">
                   {statusHistory.map((entry, idx) => {
                     const newCfg = STATUS_CONFIG[entry.new_status] || { label: entry.new_status, textClass: 'text-gray-600' };
                     const oldCfg = STATUS_CONFIG[entry.old_status] || { label: entry.old_status, textClass: 'text-gray-400' };
                     return (
                       <div key={entry.id || idx} className="flex items-center gap-2 text-xs">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#D9A3AA] shrink-0" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#E8B4BC] shrink-0" />
                         <span className={`font-bold ${newCfg.textClass}`}>{newCfg.label}</span>
-                        <span className="text-[#4A4A4A]/30 text-[10px]">←</span>
+                        <span className="text-[#171717]/30 text-[10px]">←</span>
                         <span className={`${oldCfg.textClass} opacity-60 text-[11px]`}>{oldCfg.label}</span>
-                        <span className="text-[#4A4A4A]/35 mr-auto font-mono text-[10px] shrink-0">
+                        <span className="text-[#171717]/35 mr-auto font-mono text-[10px] shrink-0">
                           {new Date(entry.created_at).toLocaleDateString('en-GB')}{' '}
                           {new Date(entry.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                         </span>
@@ -1457,7 +1457,7 @@ export default function OrderDetails() {
           {/* ══ بطاقتا العميل والإنتاج ══════════════════════════════════════ */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* بطاقة العميل */}
-            <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/25 shadow-sm h-full">
+            <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/25 shadow-sm h-full">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold flex items-center gap-2"><User size={18} className="text-blue-500" /> العميل</h3>
                 <button
@@ -1470,20 +1470,20 @@ export default function OrderDetails() {
 
               <div className="space-y-4 text-sm">
                 <div>
-                  <span className="text-[#4A4A4A]/70 text-xs block mb-1">الاسم</span>
+                  <span className="text-[#171717]/70 text-xs block mb-1">الاسم</span>
                   {isEditingCustomer ? (
                     <input
                       value={customerData.customer_name}
                       onChange={e => setCustomerData({ ...customerData, customer_name: e.target.value })}
-                      className="w-full border rounded px-2 py-1 font-bold text-[#4A4A4A]"
+                      className="w-full border rounded px-2 py-1 font-bold text-[#171717]"
                     />
                   ) : (
-                    <div className="font-bold text-[#4A4A4A] text-lg">{order.customer_name}</div>
+                    <div className="font-bold text-[#171717] text-lg">{order.customer_name}</div>
                   )}
                 </div>
 
                 <div>
-                  <span className="text-[#4A4A4A]/70 text-xs">الجوال</span>
+                  <span className="text-[#171717]/70 text-xs">الجوال</span>
                   {isEditingCustomer ? (
                     <input
                       value={customerData.phone}
@@ -1496,7 +1496,7 @@ export default function OrderDetails() {
                 </div>
 
                 <div>
-                  <span className="text-[#4A4A4A]/70 text-xs">تاريخ الطلب</span>
+                  <span className="text-[#171717]/70 text-xs">تاريخ الطلب</span>
                   {isEditingCustomer ? (
                     <input
                       type="date"
@@ -1505,7 +1505,7 @@ export default function OrderDetails() {
                       className="w-full border rounded px-2 py-1"
                     />
                   ) : (
-                    <div className="font-mono text-[#4A4A4A]">
+                    <div className="font-mono text-[#171717]">
                       {order.created_at ? new Date(order.created_at).toLocaleDateString('en-GB') : '-'}
                     </div>
                   )}
@@ -1513,7 +1513,7 @@ export default function OrderDetails() {
 
 
                 {!isEditingCustomer && order.phone && (
-                  <div className="pt-4 border-t border-[#D9A3AA]/10 space-y-2">
+                  <div className="pt-4 border-t border-[#E8B4BC]/10 space-y-2">
                     <a
                       href={`https://api.whatsapp.com/send?phone=966${String(order.phone).startsWith('0') ? String(order.phone).substring(1) : order.phone}`}
                       target="_blank"
@@ -1526,7 +1526,7 @@ export default function OrderDetails() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => sendWhatsApp('ready')}
-                        className="bg-[#D9A3AA]/10 text-[#C5A059] text-xs py-2 rounded-lg font-bold hover:bg-[#D9A3AA]/15 border border-emerald-100 flex flex-col items-center gap-1"
+                        className="bg-[#E8B4BC]/10 text-[#C6A56B] text-xs py-2 rounded-lg font-bold hover:bg-[#E8B4BC]/15 border border-emerald-100 flex flex-col items-center gap-1"
                       >
                         <CheckCircle size={14} /> جاهز للاستلام
                       </button>
@@ -1543,7 +1543,7 @@ export default function OrderDetails() {
             </div>
 
             {/* بطاقة الإنتاج */}
-            <div className="bg-white p-6 rounded-2xl border border-[#D9A3AA]/25 shadow-sm">
+            <div className="bg-white p-6 rounded-2xl border border-[#E8B4BC]/25 shadow-sm">
               <div className="flex justify-between mb-4">
                 <h3 className="font-bold flex items-center gap-2"><FileText size={18} className="text-orange-500" /> الإنتاج</h3>
                 <button
@@ -1555,8 +1555,8 @@ export default function OrderDetails() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-[#F8F5F2] p-2 rounded text-center">
-                  <span className="text-xs block text-[#4A4A4A]/55">4x6</span>
+                <div className="bg-[#FAF9F7] p-2 rounded text-center">
+                  <span className="text-xs block text-[#171717]/55">4x6</span>
                   {isEditingProduction ? (
                     <input
                       type="number"
@@ -1569,8 +1569,8 @@ export default function OrderDetails() {
                   )}
                 </div>
 
-                <div className="bg-[#F8F5F2] p-2 rounded text-center">
-                  <span className="text-xs block text-[#4A4A4A]/55">A4</span>
+                <div className="bg-[#FAF9F7] p-2 rounded text-center">
+                  <span className="text-xs block text-[#171717]/55">A4</span>
                   {isEditingProduction ? (
                     <input
                       type="number"
@@ -1587,7 +1587,7 @@ export default function OrderDetails() {
               {hasLegacyAlbum && (
                 <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100 mb-4 flex gap-2 text-center text-sm">
                   <div className="flex-1">
-                    <span className="block text-[10px] text-[#4A4A4A]/55">عدد الألبومات (طلب سابق)</span>
+                    <span className="block text-[10px] text-[#171717]/55">عدد الألبومات (طلب سابق)</span>
                     {isEditingProduction ? (
                       <input
                         type="number"
@@ -1601,7 +1601,7 @@ export default function OrderDetails() {
                   </div>
 
                   <div className="flex-1">
-                    <span className="block text-[10px] text-[#4A4A4A]/55">سعر الألبوم</span>
+                    <span className="block text-[10px] text-[#171717]/55">سعر الألبوم</span>
                     {isEditingProduction ? (
                       <input
                         type="number"
@@ -1630,23 +1630,23 @@ export default function OrderDetails() {
           </div>
 
           {/* ══ بطاقة الحسابات ══════════════════════════════════════════════ */}
-          <div className="bg-white text-[#4A4A4A] p-5 sm:p-6 rounded-2xl border border-[#D9A3AA]/25 shadow-[0_12px_35px_rgba(74,74,74,0.08)] w-full flex flex-col mt-6">
+          <div className="bg-white text-[#171717] p-5 sm:p-6 rounded-2xl border border-[#E8B4BC]/25 shadow-[0_12px_35px_rgba(74,74,74,0.08)] w-full flex flex-col mt-6">
 
             {/* ── عنوان البطاقة ── */}
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#D9A3AA]/20 pb-4">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#E8B4BC]/20 pb-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D9A3AA]/15 text-[#B97882]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8B4BC]/15 text-[#B97882]">
                   <Banknote size={19} />
                 </span>
                 <div>
                   <h3 className="font-black text-[#393737]">الحسابات</h3>
-                  <p className="mt-0.5 text-[11px] text-[#4A4A4A]/55">تفصيل السعر والخصومات والمدفوعات</p>
+                  <p className="mt-0.5 text-[11px] text-[#171717]/55">تفصيل السعر والخصومات والمدفوعات</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={showFinancialEditor ? () => setShowFinancialEditor(false) : openFinancialEditor}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#C5A059]/35 bg-[#C5A059]/10 px-3 py-2 text-xs font-bold text-[#9E7D35] transition-colors hover:bg-[#C5A059]/20"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#C6A56B]/35 bg-[#C6A56B]/10 px-3 py-2 text-xs font-bold text-[#9E7D35] transition-colors hover:bg-[#C6A56B]/20"
               >
                 {showFinancialEditor ? <X size={14} /> : <Pencil size={14} />}
                 {showFinancialEditor ? 'إلغاء التعديل' : 'تعديل تفصيل الحساب'}
@@ -1669,12 +1669,12 @@ export default function OrderDetails() {
             )}
 
             {showFinancialEditor && (
-              <div className="mb-6 rounded-2xl border border-[#C5A059]/30 bg-[#F8F5F2] p-4">
+              <div className="mb-6 rounded-2xl border border-[#C6A56B]/30 bg-[#FAF9F7] p-4">
                 <div className="mb-4 flex items-start gap-2">
-                  <Pencil size={16} className="mt-0.5 shrink-0 text-[#C5A059]" />
+                  <Pencil size={16} className="mt-0.5 shrink-0 text-[#C6A56B]" />
                   <div>
                     <h4 className="text-sm font-black text-[#393737]">تصحيح مصادر الخصم والدفع</h4>
-                    <p className="mt-1 text-[11px] leading-5 text-[#4A4A4A]/60">ضع صفرًا لإزالة المصدر الخاطئ. عند تخفيض النقاط أو الباقة يُعاد الفرق إلى رصيد العميل تلقائيًا.</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#171717]/60">ضع صفرًا لإزالة المصدر الخاطئ. عند تخفيض النقاط أو الباقة يُعاد الفرق إلى رصيد العميل تلقائيًا.</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -1685,33 +1685,33 @@ export default function OrderDetails() {
                     ['pointsUsed', 'مدفوع بالنقاط'],
                   ].map(([key, label]) => (
                     <label key={key} className="block">
-                      <span className="mb-1.5 block text-[11px] font-bold text-[#4A4A4A]/70">{label}</span>
+                      <span className="mb-1.5 block text-[11px] font-bold text-[#171717]/70">{label}</span>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={financialEdit[key]}
                         onChange={event => setFinancialEdit(prev => ({ ...prev, [key]: event.target.value }))}
-                        className="w-full rounded-xl border border-[#D9A3AA]/30 bg-white px-3 py-2 text-center text-sm font-bold text-[#393737] outline-none transition focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/15"
+                        className="w-full rounded-xl border border-[#E8B4BC]/30 bg-white px-3 py-2 text-center text-sm font-bold text-[#393737] outline-none transition focus:border-[#C6A56B] focus:ring-2 focus:ring-[#C6A56B]/15"
                       />
                     </label>
                   ))}
                   <label className="block">
-                    <span className="mb-1.5 block text-[11px] font-bold text-[#4A4A4A]/70">اسم كود الخصم</span>
+                    <span className="mb-1.5 block text-[11px] font-bold text-[#171717]/70">اسم كود الخصم</span>
                     <input
                       type="text"
                       value={financialEdit.couponCode}
                       onChange={event => setFinancialEdit(prev => ({ ...prev, couponCode: event.target.value }))}
                       placeholder="بدون كود"
-                      className="w-full rounded-xl border border-[#D9A3AA]/30 bg-white px-3 py-2 text-center text-sm font-bold uppercase text-[#393737] outline-none transition focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/15"
+                      className="w-full rounded-xl border border-[#E8B4BC]/30 bg-white px-3 py-2 text-center text-sm font-bold uppercase text-[#393737] outline-none transition focus:border-[#C6A56B] focus:ring-2 focus:ring-[#C6A56B]/15"
                     />
                   </label>
                 </div>
                 <div className="mt-4 flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowFinancialEditor(false)} className="rounded-xl border border-[#D9A3AA]/25 bg-white px-4 py-2 text-xs font-bold text-[#4A4A4A] hover:bg-[#D9A3AA]/10">
+                  <button type="button" onClick={() => setShowFinancialEditor(false)} className="rounded-xl border border-[#E8B4BC]/25 bg-white px-4 py-2 text-xs font-bold text-[#171717] hover:bg-[#E8B4BC]/10">
                     إلغاء
                   </button>
-                  <button type="button" onClick={handleSaveFinancialBreakdown} disabled={savingFinancialEditor} className="inline-flex items-center gap-1.5 rounded-xl bg-[#4A4A4A] px-4 py-2 text-xs font-bold text-white hover:bg-[#393737] disabled:opacity-50">
+                  <button type="button" onClick={handleSaveFinancialBreakdown} disabled={savingFinancialEditor} className="inline-flex items-center gap-1.5 rounded-xl bg-[#171717] px-4 py-2 text-xs font-bold text-white hover:bg-[#393737] disabled:opacity-50">
                     <Save size={14} /> {savingFinancialEditor ? 'جارٍ الحفظ...' : 'حفظ التصحيح'}
                   </button>
                 </div>
@@ -1722,16 +1722,16 @@ export default function OrderDetails() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6 items-start">
 
               {/* ════ العمود الأيمن: المدخلات والخصومات ════════════════════════ */}
-              <div className="space-y-3 text-sm border-b border-[#D9A3AA]/20 pb-6 lg:border-b-0 lg:pb-0 lg:border-l lg:border-[#D9A3AA]/20 lg:pl-6">
+              <div className="space-y-3 text-sm border-b border-[#E8B4BC]/20 pb-6 lg:border-b-0 lg:pb-0 lg:border-l lg:border-[#E8B4BC]/20 lg:pl-6">
 
                 {/* الإجمالي قبل الخصم */}
-                <div className="flex justify-between rounded-lg bg-[#F8F5F2] px-3 py-2 text-[#4A4A4A]/65 text-xs">
+                <div className="flex justify-between rounded-lg bg-[#FAF9F7] px-3 py-2 text-[#171717]/65 text-xs">
                   <span>الإجمالي قبل الخصم والتوصيل</span>
                   <span>{Number(order.subtotal || 0).toFixed(2)}</span>
                 </div>
 
                 {/* التوصيل */}
-                <div className="flex justify-between items-center text-[#4A4A4A]/75 text-xs px-1">
+                <div className="flex justify-between items-center text-[#171717]/75 text-xs px-1">
                   <span>التوصيل</span>
                   {isEditingDelivery ? (
                     <div className="flex gap-1">
@@ -1739,9 +1739,9 @@ export default function OrderDetails() {
                         type="number"
                         value={deliveryFee}
                         onChange={e => setDeliveryFee(Number(e.target.value))}
-                        className="w-16 rounded-lg border border-[#D9A3AA]/30 bg-[#F8F5F2] px-2 py-1 text-center text-xs text-[#393737] outline-none focus:border-[#C5A059]"
+                        className="w-16 rounded-lg border border-[#E8B4BC]/30 bg-[#FAF9F7] px-2 py-1 text-center text-xs text-[#393737] outline-none focus:border-[#C6A56B]"
                       />
-                      <button onClick={handleSaveDelivery} className="text-[#D9A3AA] text-xs">ok</button>
+                      <button onClick={handleSaveDelivery} className="text-[#E8B4BC] text-xs">ok</button>
                     </div>
                   ) : (
                     <button onClick={() => setIsEditingDelivery(true)} className="text-xs">{deliveryFee}</button>
@@ -1749,7 +1749,7 @@ export default function OrderDetails() {
                 </div>
 
                 {/* خصم إضافي */}
-                <div className="flex justify-between items-center text-[#4A4A4A]/75 text-xs px-1">
+                <div className="flex justify-between items-center text-[#171717]/75 text-xs px-1">
                   <span className="flex items-center gap-1"><Tag size={11} /> خصم مباشر</span>
                   <div className="flex gap-1 items-center">
                     <input
@@ -1757,101 +1757,101 @@ export default function OrderDetails() {
                       value={manualDiscount}
                       onChange={e => setManualDiscount(Number(e.target.value))}
                       onKeyDown={e => e.key === 'Enter' && handleSaveDiscount()}
-                      className="w-16 bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-lg text-center text-xs font-bold text-[#393737] focus:border-[#C5A059] outline-none py-1"
+                      className="w-16 bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-lg text-center text-xs font-bold text-[#393737] focus:border-[#C6A56B] outline-none py-1"
                     />
                     <button onClick={handleSaveDiscount}
-                      className="text-[10px] text-[#D9A3AA] bg-[#D9A3AA]/15 hover:bg-[#D9A3AA]/30 px-2 py-0.5 rounded-lg transition-colors">
+                      className="text-[10px] text-[#E8B4BC] bg-[#E8B4BC]/15 hover:bg-[#E8B4BC]/30 px-2 py-0.5 rounded-lg transition-colors">
                       حفظ
                     </button>
                   </div>
                 </div>
 
                 {/* خصم من رصيد الباقات */}
-                <div className={`rounded-xl border overflow-hidden transition-all ${customerPackageBalance <= 0 ? 'opacity-55' : ''} ${discountSource === 'package' ? 'border-[#C5A059]/55' : 'border-[#D9A3AA]/20'}`}>
+                <div className={`rounded-xl border overflow-hidden transition-all ${customerPackageBalance <= 0 ? 'opacity-55' : ''} ${discountSource === 'package' ? 'border-[#C6A56B]/55' : 'border-[#E8B4BC]/20'}`}>
                   <button type="button"
                     disabled={customerPackageBalance <= 0}
                     onClick={() => customerPackageBalance > 0 && setDiscountSource(discountSource === 'package' ? 'discount' : 'package')}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${customerPackageBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'package' ? 'bg-[#C5A059]/12' : 'bg-[#F8F5F2] hover:bg-[#C5A059]/10'}`}>
+                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${customerPackageBalance <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'package' ? 'bg-[#C6A56B]/12' : 'bg-[#FAF9F7] hover:bg-[#C6A56B]/10'}`}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'package' ? 'bg-[#C5A059] border-[#C5A059]' : 'border-[#C5A059]/45'}`}>
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'package' ? 'bg-[#C6A56B] border-[#C6A56B]' : 'border-[#C6A56B]/45'}`}>
                         {discountSource === 'package' && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                       </div>
                       <div className="text-right">
                         <span className="text-[11px] font-bold text-[#9E7D35] flex items-center gap-1">
                           <Package size={10} /> رصيد الباقات
                         </span>
-                        <span className="text-[10px] text-[#4A4A4A]/55">المتاح: {customerPackageBalance.toFixed(2)} <RiyalSign /></span>
+                        <span className="text-[10px] text-[#171717]/55">المتاح: {customerPackageBalance.toFixed(2)} <RiyalSign /></span>
                       </div>
                     </div>
                     {discountSource === 'package' && Number(packageDiscountInput) > 0 && (
-                      <span className="text-[#9E7D35] font-black text-xs bg-[#C5A059]/15 px-1.5 py-0.5 rounded">
+                      <span className="text-[#9E7D35] font-black text-xs bg-[#C6A56B]/15 px-1.5 py-0.5 rounded">
                         -{Number(packageDiscountInput).toFixed(2)} <RiyalSign />
                       </span>
                     )}
                   </button>
                   {discountSource === 'package' && (
-                    <div className="bg-[#C5A059]/8 border-t border-[#C5A059]/20 px-3 py-1.5 flex items-center gap-2">
+                    <div className="bg-[#C6A56B]/8 border-t border-[#C6A56B]/20 px-3 py-1.5 flex items-center gap-2">
                       <span className="text-[11px] text-[#9E7D35] shrink-0">المبلغ:</span>
                       <input
                         type="number" min="0.01" max={customerPackageBalance} step="0.01"
                         value={packageDiscountInput}
                         onChange={e => setPackageDiscountInput(e.target.value)}
-                        className="flex-1 text-center border border-[#C5A059]/35 rounded-lg px-2 py-1 text-xs font-bold text-[#393737] bg-white outline-none focus:ring-2 ring-[#C5A059]/20"
+                        className="flex-1 text-center border border-[#C6A56B]/35 rounded-lg px-2 py-1 text-xs font-bold text-[#393737] bg-white outline-none focus:ring-2 ring-[#C6A56B]/20"
                       />
                       <button type="button"
                         onClick={() => setPackageDiscountInput(Math.min(customerPackageBalance, Number(order.subtotal || 0) + Number(deliveryFee || 0)).toFixed(2))}
-                        className="text-[10px] text-[#9E7D35] bg-[#C5A059]/15 hover:bg-[#C5A059]/25 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
+                        className="text-[10px] text-[#9E7D35] bg-[#C6A56B]/15 hover:bg-[#C6A56B]/25 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
                       <button onClick={handleSavePackageDiscount}
-                        className="text-[10px] text-white bg-[#C5A059] hover:bg-[#A8893C] px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
+                        className="text-[10px] text-white bg-[#C6A56B] hover:bg-[#A8893C] px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
                     </div>
                   )}
                 </div>
 
                 {/* خصم من رصيد النقاط */}
-                <div className={`rounded-xl border overflow-hidden transition-all ${availableRewardPointsForOrder <= 0 ? 'opacity-55' : ''} ${discountSource === 'wallet' ? 'border-[#D9A3AA]/70' : 'border-[#D9A3AA]/20'}`}>
+                <div className={`rounded-xl border overflow-hidden transition-all ${availableRewardPointsForOrder <= 0 ? 'opacity-55' : ''} ${discountSource === 'wallet' ? 'border-[#E8B4BC]/70' : 'border-[#E8B4BC]/20'}`}>
                   <button type="button"
                     disabled={availableRewardPointsForOrder <= 0}
                     onClick={() => availableRewardPointsForOrder > 0 && setDiscountSource(discountSource === 'wallet' ? 'discount' : 'wallet')}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${availableRewardPointsForOrder <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'wallet' ? 'bg-[#D9A3AA]/15' : 'bg-[#F8F5F2] hover:bg-[#D9A3AA]/10'}`}>
+                    className={`w-full flex items-center justify-between px-3 py-2 text-right transition-colors ${availableRewardPointsForOrder <= 0 ? 'cursor-not-allowed' : ''} ${discountSource === 'wallet' ? 'bg-[#E8B4BC]/15' : 'bg-[#FAF9F7] hover:bg-[#E8B4BC]/10'}`}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'wallet' ? 'bg-[#D9A3AA] border-[#D9A3AA]' : 'border-[#D9A3AA]/55'}`}>
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${discountSource === 'wallet' ? 'bg-[#E8B4BC] border-[#E8B4BC]' : 'border-[#E8B4BC]/55'}`}>
                         {discountSource === 'wallet' && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                       </div>
                       <div className="text-right">
                         <span className="text-[11px] font-bold text-[#B97882] flex items-center gap-1">
                           <Wallet size={10} /> رصيد النقاط
                         </span>
-                        <span className="text-[10px] text-[#4A4A4A]/55">
+                        <span className="text-[10px] text-[#171717]/55">
                           المتاح: {customerRewardPoints.toLocaleString()} نقطة = {customerPointsBalance.toFixed(2)} <RiyalSign />
                         </span>
                       </div>
                     </div>
                     {discountSource === 'wallet' && Number(pointsDiscountInput) > 0 && (
-                      <span className="text-[#B97882] font-black text-xs bg-[#D9A3AA]/15 px-1.5 py-0.5 rounded">
+                      <span className="text-[#B97882] font-black text-xs bg-[#E8B4BC]/15 px-1.5 py-0.5 rounded">
                         -{Number(pointsDiscountInput || 0).toLocaleString()} نقطة
                       </span>
                     )}
                   </button>
                   {discountSource === 'wallet' && (
-                    <div className="bg-[#D9A3AA]/8 border-t border-[#D9A3AA]/20 px-3 py-1.5 flex items-center gap-2">
+                    <div className="bg-[#E8B4BC]/8 border-t border-[#E8B4BC]/20 px-3 py-1.5 flex items-center gap-2">
                       <span className="text-[11px] text-[#B97882] shrink-0">النقاط:</span>
                       <input
                         type="number" min="0" max={rewardRedemptionLimit.maximumPoints} step="1"
                         value={pointsDiscountInput}
                         onChange={e => setPointsDiscountInput(e.target.value.replace(/\D/g, ''))}
-                        className="flex-1 text-center border border-[#D9A3AA]/40 rounded-lg px-2 py-1 text-xs font-bold text-[#393737] bg-white outline-none focus:ring-2 ring-[#D9A3AA]/20"
+                        className="flex-1 text-center border border-[#E8B4BC]/40 rounded-lg px-2 py-1 text-xs font-bold text-[#393737] bg-white outline-none focus:ring-2 ring-[#E8B4BC]/20"
                       />
                       <button type="button"
                         onClick={() => {
                           setPointsDiscountInput(String(rewardRedemptionLimit.maximumPoints));
                         }}
-                        className="text-[10px] text-[#B97882] bg-[#D9A3AA]/15 hover:bg-[#D9A3AA]/25 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
+                        className="text-[10px] text-[#B97882] bg-[#E8B4BC]/15 hover:bg-[#E8B4BC]/25 px-2 py-1 rounded-lg shrink-0 transition-colors">الكل</button>
                       <button onClick={handleSavePointsDiscount}
-                        className="text-[10px] text-white bg-[#D9A3AA] hover:bg-[#C48A92] px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
+                        className="text-[10px] text-white bg-[#E8B4BC] hover:bg-[#C48A92] px-2 py-1 rounded-lg shrink-0 transition-colors font-bold">حفظ</button>
                     </div>
                   )}
                   {discountSource === 'wallet' && (
-                    <div className="flex flex-wrap justify-between gap-1 border-t border-[#D9A3AA]/15 bg-white px-3 py-1.5 text-[9px] text-[#4A4A4A]/50">
+                    <div className="flex flex-wrap justify-between gap-1 border-t border-[#E8B4BC]/15 bg-white px-3 py-1.5 text-[9px] text-[#171717]/50">
                       <span>الحد الأدنى {rewardRules.minimumRedemptionPoints.toLocaleString()} نقطة</span>
                       <span>الحد الأعلى {rewardRedemptionLimit.maximumPoints.toLocaleString()} نقطة ({rewardRedemptionLimit.maximumValue.toFixed(2)} ريال)</span>
                     </div>
@@ -1863,7 +1863,7 @@ export default function OrderDetails() {
                   <select
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
-                    className="flex-1 bg-[#F8F5F2] border border-[#D9A3AA]/30 rounded-lg px-2 py-1.5 text-[#393737] text-xs outline-none appearance-none focus:border-[#C5A059]"
+                    className="flex-1 bg-[#FAF9F7] border border-[#E8B4BC]/30 rounded-lg px-2 py-1.5 text-[#393737] text-xs outline-none appearance-none focus:border-[#C6A56B]"
                   >
                     <option value="">كود خصم</option>
                     {activeCoupons.map((coupon) => (
@@ -1872,7 +1872,7 @@ export default function OrderDetails() {
                       </option>
                     ))}
                   </select>
-                  <button onClick={applyCoupon} className="bg-[#4A4A4A] hover:bg-[#393737] px-3 py-1.5 rounded-lg text-xs text-white">
+                  <button onClick={applyCoupon} className="bg-[#171717] hover:bg-[#393737] px-3 py-1.5 rounded-lg text-xs text-white">
                     تطبيق
                   </button>
                 </div>
@@ -1884,8 +1884,8 @@ export default function OrderDetails() {
                 <OrderFinancialBreakdown financials={financials} variant="light" />
 
                 {/* سجل المدفوعات */}
-                <div className="bg-[#F8F5F2] border border-[#D9A3AA]/15 rounded-xl p-3">
-                  <div className="flex justify-between items-center mb-2 border-b border-[#D9A3AA]/20 pb-2">
+                <div className="bg-[#FAF9F7] border border-[#E8B4BC]/15 rounded-xl p-3">
+                  <div className="flex justify-between items-center mb-2 border-b border-[#E8B4BC]/20 pb-2">
                     <span className="text-[#B97882] font-bold text-xs">سجل المدفوعات</span>
                     <button
                       onClick={() => {
@@ -1894,7 +1894,7 @@ export default function OrderDetails() {
                         }
                         setShowPaymentInput(!showPaymentInput);
                       }}
-                      className={`text-[10px] px-2 py-0.5 rounded flex items-center gap-1 transition-colors ${showPaymentInput ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-[#D9A3AA]/20 text-[#D9A3AA]/85 hover:bg-[#D9A3AA]/40'}`}
+                      className={`text-[10px] px-2 py-0.5 rounded flex items-center gap-1 transition-colors ${showPaymentInput ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-[#E8B4BC]/20 text-[#E8B4BC]/85 hover:bg-[#E8B4BC]/40'}`}
                     >
                       {showPaymentInput ? <X size={10} /> : <Plus size={10} />}
                       {showPaymentInput ? 'إلغاء' : 'إضافة'}
@@ -1907,7 +1907,7 @@ export default function OrderDetails() {
                         type="date"
                         value={newPayment.date}
                         onChange={e => setNewPayment({ ...newPayment, date: e.target.value })}
-                        className="w-28 bg-white border border-[#D9A3AA]/25 rounded-lg text-xs px-2 py-1 text-[#393737]"
+                        className="w-28 bg-white border border-[#E8B4BC]/25 rounded-lg text-xs px-2 py-1 text-[#393737]"
                       />
                       <input
                         type="number"
@@ -1917,9 +1917,9 @@ export default function OrderDetails() {
                         placeholder="المبلغ"
                         value={newPayment.amount}
                         onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
-                        className="flex-1 bg-white border border-[#D9A3AA]/25 rounded-lg text-xs px-2 py-1 text-[#393737]"
+                        className="flex-1 bg-white border border-[#E8B4BC]/25 rounded-lg text-xs px-2 py-1 text-[#393737]"
                       />
-                      <button onClick={handleAddPayment} className="bg-gradient-to-b from-[#D9A3AA] to-[#C5A059] text-white px-2 rounded text-xs">
+                      <button onClick={handleAddPayment} className="bg-gradient-to-b from-[#E8B4BC] to-[#C6A56B] text-white px-2 rounded text-xs">
                         حفظ
                       </button>
                     </div>
@@ -1927,11 +1927,11 @@ export default function OrderDetails() {
 
                   <div className="space-y-1 max-h-20 overflow-y-auto custom-scrollbar">
                     {payments.length === 0 ? (
-                      <p className="text-[10px] text-[#4A4A4A]/70 text-center py-1">لا توجد دفعات مسجلة</p>
+                      <p className="text-[10px] text-[#171717]/70 text-center py-1">لا توجد دفعات مسجلة</p>
                     ) : (
                       payments.map((p) => (
-                        <div key={p.id} className="flex justify-between items-center text-xs bg-white border border-[#D9A3AA]/10 px-2 py-1.5 rounded-lg group">
-                          <span className="font-mono text-[#4A4A4A]/55 text-[10px]">{new Date(p.payment_date).toLocaleDateString('en-GB')}</span>
+                        <div key={p.id} className="flex justify-between items-center text-xs bg-white border border-[#E8B4BC]/10 px-2 py-1.5 rounded-lg group">
+                          <span className="font-mono text-[#171717]/55 text-[10px]">{new Date(p.payment_date).toLocaleDateString('en-GB')}</span>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-[#393737]">{paymentAmountFormatter.format(Number(p.amount || 0))}</span>
                             <button
@@ -1948,47 +1948,47 @@ export default function OrderDetails() {
 
                   {financials.pointsUsed > 0.01 ? (
                     <>
-                      <div className="flex justify-between border-t border-[#D9A3AA]/15 pt-1.5 mt-1.5">
-                        <span className="text-[10px] text-[#4A4A4A]/55">مدفوع نقداً</span>
-                        <span className="font-bold text-[#D9A3AA] text-xs">{financials.cashPaid.toFixed(2)}</span>
+                      <div className="flex justify-between border-t border-[#E8B4BC]/15 pt-1.5 mt-1.5">
+                        <span className="text-[10px] text-[#171717]/55">مدفوع نقداً</span>
+                        <span className="font-bold text-[#E8B4BC] text-xs">{financials.cashPaid.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between mt-0.5">
                         <span className="text-[10px] text-[#B97882]">مدفوع من النقاط</span>
                         <span className="font-bold text-[#B97882] text-xs">{financials.pointsUsed.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between mt-0.5 border-t border-[#D9A3AA]/15 pt-1">
-                        <span className="text-[10px] text-[#4A4A4A]/70">إجمالي المدفوع</span>
+                      <div className="flex justify-between mt-0.5 border-t border-[#E8B4BC]/15 pt-1">
+                        <span className="text-[10px] text-[#171717]/70">إجمالي المدفوع</span>
                         <span className="font-bold text-[#393737] text-xs">{financials.paidAmount.toFixed(2)}</span>
                       </div>
                     </>
                   ) : (
-                    <div className="flex justify-between border-t border-[#D9A3AA]/15 pt-1.5 mt-1.5">
-                      <span className="text-[10px] text-[#4A4A4A]/55">إجمالي المدفوع</span>
-                      <span className="font-bold text-[#D9A3AA] text-xs">{financials.cashPaid.toFixed(2)}</span>
+                    <div className="flex justify-between border-t border-[#E8B4BC]/15 pt-1.5 mt-1.5">
+                      <span className="text-[10px] text-[#171717]/55">إجمالي المدفوع</span>
+                      <span className="font-bold text-[#E8B4BC] text-xs">{financials.cashPaid.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
 
                 {/* كاش باك */}
                 {rewardPreview.points > 0 && (
-                  <div className="p-2.5 bg-[#C5A059]/10 border border-[#C5A059]/30 rounded-xl">
+                  <div className="p-2.5 bg-[#C6A56B]/10 border border-[#C6A56B]/30 rounded-xl">
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-[#9E7D35] text-[11px] font-bold flex items-center gap-1"><Gift size={11} /> نقاط الطلب</span>
                       <span className="text-[#9E7D35] font-bold text-xs">{rewardPreview.points.toLocaleString()} نقطة</span>
                     </div>
-                    <div className="mb-1.5 flex justify-between text-[9px] text-[#4A4A4A]/55">
+                    <div className="mb-1.5 flex justify-between text-[9px] text-[#171717]/55">
                       <span>على مبلغ مؤهل {rewardPreview.eligibleAmount.toFixed(2)} ريال</span>
                       <span>القيمة {rewardPreview.value.toFixed(2)} ريال</span>
                     </div>
                     {isLoyaltyAdded ? (
-                      <div className="text-[10px] text-center bg-[#C5A059]/15 text-[#9E7D35] py-1 rounded flex items-center justify-center gap-1">
+                      <div className="text-[10px] text-center bg-[#C6A56B]/15 text-[#9E7D35] py-1 rounded flex items-center justify-center gap-1">
                         <CheckCircle size={9} /> أضيفت للنقاط{earnedRewardTransaction?.reward_expires_at ? ` حتى ${new Date(earnedRewardTransaction.reward_expires_at).toLocaleDateString('ar-SA')}` : ''}
                       </div>
                     ) : (
                       <button
                         onClick={handleAddLoyaltyPoints}
                         disabled={order.status !== 'delivered' || order.payment_status !== 'paid'}
-                        className="w-full bg-[#C5A059] hover:bg-[#A8893C] text-white text-[11px] py-1 rounded transition-colors"
+                        className="w-full bg-[#C6A56B] hover:bg-[#A8893C] text-white text-[11px] py-1 rounded transition-colors"
                       >
                         {order.status === 'delivered' && order.payment_status === 'paid'
                           ? 'احتساب نقاط الطلب'
@@ -2006,7 +2006,7 @@ export default function OrderDetails() {
                   </div>
 
                   {remaining > 0 && (
-                    <button onClick={markAsFullyPaid} className="flex-1 py-2 bg-[#4A4A4A] text-white rounded-xl font-bold text-xs hover:bg-[#393737] transition-colors">
+                    <button onClick={markAsFullyPaid} className="flex-1 py-2 bg-[#171717] text-white rounded-xl font-bold text-xs hover:bg-[#393737] transition-colors">
                       سداد كامل
                     </button>
                   )}
@@ -2031,41 +2031,41 @@ export default function OrderDetails() {
         {/* الفاتورة القابلة للطباعة */}
         <div id="printable-invoice" className="hidden print:block bg-white text-black print-no-extra-space">
           <div className="mx-auto">
-            <div className="no-break flex justify-between items-start border-b-2 border-[#4A4A4A]/35 pb-4 mb-4">
+            <div className="no-break flex justify-between items-start border-b-2 border-[#171717]/35 pb-4 mb-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <img src={logoPng} alt="Art Moment" className="h-12 w-auto object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                  <h1 className="text-2xl font-black text-[#4A4A4A]">Art Moment</h1>
+                  <h1 className="text-2xl font-black text-[#171717]">Art Moment</h1>
                 </div>
-                <p className="text-xs text-[#4A4A4A]/70">لحظة فن للطباعة</p>
+                <p className="text-xs text-[#171717]/70">لحظة فن للطباعة</p>
               </div>
               <div className="text-left">
-                <h2 className="text-base font-bold font-mono text-[#4A4A4A]">فاتورة #{order.id.slice(0, 8)}</h2>
-                <p className="text-xs text-[#4A4A4A]/70 mt-1">التاريخ: {new Date(order.created_at).toLocaleDateString('en-GB')}</p>
+                <h2 className="text-base font-bold font-mono text-[#171717]">فاتورة #{order.id.slice(0, 8)}</h2>
+                <p className="text-xs text-[#171717]/70 mt-1">التاريخ: {new Date(order.created_at).toLocaleDateString('en-GB')}</p>
               </div>
             </div>
 
             <div className="no-break mb-4">
-              <h3 className="font-bold text-[10px] text-[#4A4A4A]/55 mb-1">بيانات العميل</h3>
-              <p className="text-lg font-bold text-[#4A4A4A] leading-tight">{order.customer_name}</p>
-              <p className="text-xs text-[#4A4A4A] dir-ltr text-right font-mono">{order.phone}</p>
+              <h3 className="font-bold text-[10px] text-[#171717]/55 mb-1">بيانات العميل</h3>
+              <p className="text-lg font-bold text-[#171717] leading-tight">{order.customer_name}</p>
+              <p className="text-xs text-[#171717] dir-ltr text-right font-mono">{order.phone}</p>
             </div>
 
             <table className="w-full mb-4">
-              <thead className="bg-[#F8F5F2] border-y border-[#D9A3AA]/25">
+              <thead className="bg-[#FAF9F7] border-y border-[#E8B4BC]/25">
                 <tr>
-                  <th className="py-2 px-2 text-right text-xs font-bold text-[#4A4A4A]/75">الوصف</th>
-                  <th className="py-2 px-2 text-center text-xs font-bold text-[#4A4A4A]/75">الكمية</th>
-                  <th className="py-2 px-2 text-left text-xs font-bold text-[#4A4A4A]/75">السعر</th>
-                  <th className="py-2 px-2 text-left text-xs font-bold text-[#4A4A4A]/75">الإجمالي</th>
+                  <th className="py-2 px-2 text-right text-xs font-bold text-[#171717]/75">الوصف</th>
+                  <th className="py-2 px-2 text-center text-xs font-bold text-[#171717]/75">الكمية</th>
+                  <th className="py-2 px-2 text-left text-xs font-bold text-[#171717]/75">السعر</th>
+                  <th className="py-2 px-2 text-left text-xs font-bold text-[#171717]/75">الإجمالي</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D9A3AA]/15">
+              <tbody className="divide-y divide-[#E8B4BC]/15">
                 {financials.lineItems.map((item) => (
                   <tr key={item.key}>
                     <td className="py-2 px-2 text-xs font-medium">{item.label}</td>
                     <td className="py-2 px-2 text-center text-xs font-bold">{item.quantity}</td>
-                    <td className="py-2 px-2 text-left text-xs text-[#4A4A4A]/70">
+                    <td className="py-2 px-2 text-left text-xs text-[#171717]/70">
                       {item.unitPrice != null ? item.unitPrice.toFixed(2) : 'غير محفوظ'}
                     </td>
                     <td className="py-2 px-2 text-left text-xs font-bold">
@@ -2086,9 +2086,9 @@ export default function OrderDetails() {
               />
             </div>
 
-            <div className="no-break text-center border-t border-[#D9A3AA]/15 pt-4">
-              <p className="text-xs font-bold text-[#4A4A4A] mb-1">شكراً لاختياركم لحظة فن ✨</p>
-              <p className="text-[10px] text-[#4A4A4A]/55">نسعد بخدمتكم دائماً | تواصل معنا للاستفسار</p>
+            <div className="no-break text-center border-t border-[#E8B4BC]/15 pt-4">
+              <p className="text-xs font-bold text-[#171717] mb-1">شكراً لاختياركم لحظة فن ✨</p>
+              <p className="text-[10px] text-[#171717]/55">نسعد بخدمتكم دائماً | تواصل معنا للاستفسار</p>
             </div>
           </div>
         </div>

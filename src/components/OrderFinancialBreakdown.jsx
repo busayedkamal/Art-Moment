@@ -4,12 +4,12 @@ import RiyalSign from './RiyalSign';
 
 const THEMES = {
   light: {
-    root: 'text-[#4A4A4A]',
-    muted: 'text-[#4A4A4A]/60',
-    row: 'border-[#D9A3AA]/20',
-    discount: 'text-[#9E7D35] bg-[#C5A059]/10 border border-[#C5A059]/20',
-    payment: 'text-[#B97882] bg-[#D9A3AA]/12 border border-[#D9A3AA]/20',
-    final: 'border-[#D9A3AA]/30',
+    root: 'text-[#171717]',
+    muted: 'text-[#171717]/60',
+    row: 'border-[#E8B4BC]/20',
+    discount: 'text-[#9E7D35] bg-[#C6A56B]/10 border border-[#C6A56B]/20',
+    payment: 'text-[#B97882] bg-[#E8B4BC]/12 border border-[#E8B4BC]/20',
+    final: 'border-[#E8B4BC]/30',
   },
   dark: {
     root: 'text-white',
@@ -20,12 +20,12 @@ const THEMES = {
     final: 'border-white/15',
   },
   print: {
-    root: 'text-[#4A4A4A]',
-    muted: 'text-[#4A4A4A]/60',
-    row: 'border-[#D9A3AA]/15',
+    root: 'text-[#171717]',
+    muted: 'text-[#171717]/60',
+    row: 'border-[#E8B4BC]/15',
     discount: 'text-emerald-700',
     payment: 'text-violet-700',
-    final: 'border-[#4A4A4A]/30',
+    final: 'border-[#171717]/30',
   },
 };
 
