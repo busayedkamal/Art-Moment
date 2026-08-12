@@ -471,16 +471,17 @@ export default function TrackOrderPage() {
                         <div className="space-y-3">
                           {order.store_order_items.map((item, idx) => {
                             const productInfo = Array.isArray(item.products) ? item.products[0] : item.products;
+                            const itemName = item.item_name || productInfo?.name || 'منتج محذوف';
                             return (
                               <div key={idx} className="flex items-center gap-3 bg-[#FAF9F7] p-2.5 rounded-xl border border-[#E8B4BC]/10 hover:border-[#C6A56B]/30 transition-colors">
                                 <div className="w-14 h-14 rounded-lg bg-white overflow-hidden shrink-0 border border-[#E8B4BC]/20 flex items-center justify-center p-1">
                                   {productInfo?.image
-                                    ? <img src={productInfo.image} alt={productInfo?.name} className="w-full h-full object-cover rounded-md" />
+                                    ? <img src={productInfo.image} alt={itemName} className="w-full h-full object-cover rounded-md" />
                                     : <Package size={24} className="text-[#E8B4BC]/30" />
                                   }
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-sm font-bold text-[#171717] leading-tight">{productInfo?.name || 'منتج محذوف'}</p>
+                                  <p className="text-sm font-bold text-[#171717] leading-tight">{itemName}</p>
                                   <div className="flex justify-between items-center mt-2">
                                     <span className="text-xs text-[#171717]/60 bg-white px-2 py-0.5 rounded-md border border-[#E8B4BC]/10">الكمية: <span className="font-bold text-[#E8B4BC]">{item.quantity}</span></span>
                                     <span className="text-xs font-black text-[#171717]">{Number(item.price_at_time || 0).toFixed(2)} ر.س</span>

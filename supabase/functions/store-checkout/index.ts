@@ -3,6 +3,7 @@ import { verifyCustomerSessionToken } from '../_shared/customerToken.ts';
 import { sendEmail } from '../_shared/email.ts';
 import { isValidSaudiMobile, normalizeSaudiPhone, phoneVariants } from '../_shared/phone.ts';
 import { calculateStoreCouponDiscount } from '../_shared/storeCoupons.ts';
+import { recalculatePrintDraft, verifyPrintDraftAccess } from '../_shared/printDrafts.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 
 function generatePin() {
@@ -163,6 +164,7 @@ Deno.serve(async (req) => {
   let redeemedRewardPoints = false;
   let rewardWalletId: number | null = null;
   let rewardOrderValue = 0;
+  let orderedPrintDraftIds: string[] = [];
 
   try {
     const body = await req.json();
@@ -178,6 +180,7 @@ Deno.serve(async (req) => {
       : 'bank_transfer';
 
     const normalizedItems = items
+      .filter((item: Record<string, unknown>) => item.itemType !== 'print')
       .map((item: Record<string, unknown>) => ({
         product_id: Number(item.id),
         quantity: Math.max(1, Number(item.qty || item.quantity || 1)),
@@ -187,7 +190,15 @@ Deno.serve(async (req) => {
       }))
       .filter((item: { product_id: number; quantity: number }) => Number.isFinite(item.product_id) && item.quantity > 0);
 
-    if (normalizedItems.length === 0) {
+    const printItems = items
+      .filter((item: Record<string, unknown>) => item.itemType === 'print')
+      .map((item: Record<string, unknown>) => ({
+        draft_id: String(item.printDraftId || ''),
+        access_token: String(item.printDraftToken || ''),
+      }))
+      .filter((item: { draft_id: string; access_token: string }) => item.draft_id && item.access_token);
+
+    if (normalizedItems.length === 0 && printItems.length === 0) {
       return jsonResponse({ error: 'empty_cart' }, 400);
     }
 
@@ -218,17 +229,20 @@ Deno.serve(async (req) => {
     }
 
     const productIds = normalizedItems.map((item: { product_id: number }) => item.product_id);
-    const { data: products, error: productsError } = await supabase
-      .from('products')
-      .select('id, name, price, in_stock, stock_quantity, product_options')
-      .in('id', productIds);
-
-    if (productsError) throw productsError;
+    let products: Array<Record<string, unknown>> = [];
+    if (productIds.length > 0) {
+      const productResult = await supabase
+        .from('products')
+        .select('id, name, price, in_stock, stock_quantity, product_options')
+        .in('id', productIds);
+      if (productResult.error) throw productResult.error;
+      products = productResult.data || [];
+    }
 
     const productById = new Map((products || []).map((product: Record<string, unknown>) => [String(product.id), product]));
     let subtotal = 0;
 
-    const orderItems = normalizedItems.map((item: {
+    const orderItems: Array<Record<string, unknown>> = normalizedItems.map((item: {
       product_id: number;
       quantity: number;
       selected_options: Record<string, unknown>;
@@ -251,6 +265,32 @@ Deno.serve(async (req) => {
         selected_options: resolvedOptions.selections,
       };
     });
+
+    const printDraftsForOrder: Array<Record<string, unknown>> = [];
+    for (const printItem of printItems) {
+      const accessedDraft = await verifyPrintDraftAccess(supabase, printItem.draft_id, printItem.access_token);
+      const recalculated = await recalculatePrintDraft(supabase, accessedDraft.id);
+      const readyDraft = recalculated.draft;
+      if (readyDraft.status !== 'ready' || Number(readyDraft.file_count || 0) < 1) {
+        throw new Error('print_draft_not_ready');
+      }
+      subtotal += Number(readyDraft.subtotal || 0);
+      printDraftsForOrder.push(readyDraft);
+      orderItems.push({
+        product_id: null,
+        item_type: 'print',
+        item_name: `طباعة صور ${readyDraft.print_size}`,
+        print_draft_id: readyDraft.id,
+        quantity: Number(readyDraft.total_copies || 0),
+        price_at_time: Number(readyDraft.unit_price || 0),
+        selected_options: { print_size: readyDraft.print_size, finish: readyDraft.finish },
+        metadata: {
+          file_count: Number(readyDraft.file_count || 0),
+          total_copies: Number(readyDraft.total_copies || 0),
+          low_resolution_count: Number(recalculated.lowResolutionCount || 0),
+        },
+      });
+    }
 
     const coupon = await calculateStoreCouponDiscount(supabase, couponCode, subtotal);
     const discountAmount = Number(coupon?.discountValue || 0);
@@ -350,20 +390,18 @@ Deno.serve(async (req) => {
     };
     if (verifiedCustomerId) orderPayload.customer_id = verifiedCustomerId;
 
-    reservedStockItems = orderItems.map((item: { product_id: number; quantity: number }) => ({
+    reservedStockItems = normalizedItems.map((item: { product_id: number; quantity: number }) => ({
       product_id: item.product_id,
       quantity: item.quantity,
     }));
 
-    const { error: reserveStockError } = await supabase.rpc('reserve_store_stock', {
-      items: reservedStockItems,
-    });
-
-    if (reserveStockError) {
-      throw new Error(getStockRpcErrorMessage(reserveStockError));
+    if (reservedStockItems.length > 0) {
+      const { error: reserveStockError } = await supabase.rpc('reserve_store_stock', {
+        items: reservedStockItems,
+      });
+      if (reserveStockError) throw new Error(getStockRpcErrorMessage(reserveStockError));
+      stockReserved = true;
     }
-
-    stockReserved = true;
 
     let orderInsert = await supabase
       .from('store_orders')
@@ -409,6 +447,20 @@ Deno.serve(async (req) => {
       })));
 
     if (itemsError) throw itemsError;
+
+    if (printDraftsForOrder.length > 0) {
+      orderedPrintDraftIds = printDraftsForOrder.map((item) => String(item.id));
+      const { error: printDraftError } = await supabase
+        .from('print_drafts')
+        .update({
+          status: 'ordered',
+          store_order_id: order.id,
+          customer_id: verifiedCustomerId,
+          updated_at: new Date().toISOString(),
+        })
+        .in('id', orderedPrintDraftIds);
+      if (printDraftError) throw printDraftError;
+    }
 
     if (requestedRewardPoints > 0 && rewardWalletId) {
       const { error: rewardError } = await supabase.rpc('set_reward_points_redemption', {
@@ -503,9 +555,15 @@ Deno.serve(async (req) => {
         .eq('id', createdOrderId);
       if (cleanupError) console.error('store-checkout cleanup error:', cleanupError);
     }
+    if (orderedPrintDraftIds.length > 0) {
+      const { error: restoreDraftError } = await supabase.from('print_drafts').update({
+        status: 'ready', store_order_id: null, customer_id: null, updated_at: new Date().toISOString(),
+      }).in('id', orderedPrintDraftIds);
+      if (restoreDraftError) console.error('store-checkout print draft restore error:', restoreDraftError);
+    }
 
     const message = error instanceof Error ? error.message : 'checkout_failed';
-    const status = ['product_unavailable', 'product_out_of_stock', 'reward_points_balance_insufficient', 'reward_redemption_limit_exceeded', 'reward_minimum_redemption_not_met'].includes(message)
+    const status = ['product_unavailable', 'product_out_of_stock', 'print_draft_not_ready', 'print_draft_locked', 'reward_points_balance_insufficient', 'reward_redemption_limit_exceeded', 'reward_minimum_redemption_not_met'].includes(message)
       ? 409
       : message === 'reward_points_migration_required'
         ? 503

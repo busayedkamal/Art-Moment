@@ -394,7 +394,7 @@ export default function LandingPage() {
 
           {/* Center: Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#171717]/80">
-            <a href="#print-process" className="hover:text-[#E8B4BC] transition-colors">{copy.navPrint}</a>
+            <Link to="/print" className="hover:text-[#E8B4BC] transition-colors">{copy.navPrint}</Link>
             <Link to="/store" className="hover:text-[#E8B4BC] transition-colors">{copy.navStore}</Link>
             <Link to="/track" className="hover:text-[#E8B4BC] transition-colors">{copy.navTrack}</Link>
             <a href="#why" className="hover:text-[#E8B4BC] transition-colors">{copy.navAbout}</a>
@@ -442,7 +442,7 @@ export default function LandingPage() {
         {/* Mobile menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#FAF9F7] border-t border-[#E8B4BC]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
-            <a href="#print-process" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navPrint}</a>
+            <Link to="/print" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navPrint}</Link>
             <Link to="/store" className="flex items-center gap-2 py-2 text-[#E8B4BC] font-bold" onClick={() => setIsMobileMenuOpen(false)}><ShoppingBag size={16} /> {copy.navStore}</Link>
             <Link to="/track" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navTrack}</Link>
             <a href="#why" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navAbout}</a>
@@ -485,7 +485,7 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 justify-center pt-2">
-              <Link to="/store?category=printing" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#171717] border border-white font-black hover:bg-[#FAF9F7] flex items-center justify-center gap-2 transition-colors shadow-lg">
+              <Link to="/print" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#171717] border border-white font-black hover:bg-[#FAF9F7] flex items-center justify-center gap-2 transition-colors shadow-lg">
                 <Printer size={20} className="text-[#E8B4BC]" /> {copy.printCta}
               </Link>
               <Link to="/store" className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#171717]/75 border border-white/60 text-white font-bold hover:bg-[#171717] flex items-center justify-center gap-2 transition-colors">
@@ -526,7 +526,7 @@ export default function LandingPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {[
-            { icon: Printer, ar: 'مقاسات الطباعة', en: 'Print Sizes', to: '/store?category=printing' },
+            { icon: Printer, ar: 'مقاسات الطباعة', en: 'Print Sizes', to: '/print' },
             { icon: BookOpen, ar: 'الألبومات', en: 'Albums', to: '/store?category=albums' },
             { icon: LayoutDashboard, ar: 'الإطارات', en: 'Frames', to: '/store?category=frames' },
             { icon: Gift, ar: 'المستلزمات', en: 'Supplies', to: '/store' },

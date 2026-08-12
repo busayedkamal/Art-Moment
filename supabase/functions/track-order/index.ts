@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
         supabase.from('orders').select('*').eq('short_id', shortId).maybeSingle(),
         supabase
           .from('store_orders')
-          .select('*, store_order_items(quantity, price_at_time, products(name, image))')
+          .select('*, store_order_items(item_type, item_name, metadata, quantity, price_at_time, selected_options, products(name, image))')
           .eq('short_id', shortId)
           .maybeSingle(),
       ]);
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
       supabase.from('orders').select('*').in('phone', variants),
       supabase
         .from('store_orders')
-        .select('*, store_order_items(quantity, price_at_time, products(name, image))')
+        .select('*, store_order_items(item_type, item_name, metadata, quantity, price_at_time, selected_options, products(name, image))')
         .in('phone', variants),
     ]);
 

@@ -11,6 +11,7 @@ const LandingPage = lazy(() => import('./LandingPage.jsx'))
 
 // الصفحات العامة
 const StoreIndex = lazy(() => import('./pages/StoreIndex.jsx'))
+const PrintBuilder = lazy(() => import('./pages/PrintBuilder.jsx'))
 const SocialLinksPage = lazy(() => import('./pages/SocialLinksPage.jsx'))
 const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage.jsx'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage.jsx'))
@@ -69,6 +70,7 @@ function AppRoutes() {
       {/* 1. المسارات العامة */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/store" element={<StoreIndex />} />
+      <Route path="/print" element={<PrintBuilder />} />
       <Route path="/links" element={<SocialLinksPage />} />
       <Route path="/track" element={<TrackOrderPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />

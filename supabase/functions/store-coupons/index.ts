@@ -1,6 +1,7 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { calculateStoreCouponDiscount } from '../_shared/storeCoupons.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
+import { recalculatePrintDraft, verifyPrintDraftAccess } from '../_shared/printDrafts.ts';
 
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);
@@ -14,24 +15,36 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const items = Array.isArray(body?.items) ? body.items : [];
     const normalizedItems = items
+      .filter((item: Record<string, unknown>) => item.itemType !== 'print')
       .map((item: Record<string, unknown>) => ({
         product_id: Number(item.id || item.product_id),
         quantity: Math.max(1, Number(item.qty || item.quantity || 1)),
       }))
       .filter((item: { product_id: number; quantity: number }) => Number.isFinite(item.product_id) && item.quantity > 0);
 
-    if (normalizedItems.length === 0) {
+    const printItems = items
+      .filter((item: Record<string, unknown>) => item.itemType === 'print')
+      .map((item: Record<string, unknown>) => ({
+        draftId: String(item.printDraftId || ''),
+        accessToken: String(item.printDraftToken || ''),
+      }))
+      .filter((item: { draftId: string; accessToken: string }) => item.draftId && item.accessToken);
+
+    if (normalizedItems.length === 0 && printItems.length === 0) {
       return jsonResponse({ error: 'empty_cart' }, 400);
     }
 
     const supabase = getServiceClient();
     const productIds = normalizedItems.map((item: { product_id: number }) => item.product_id);
-    const { data: products, error: productsError } = await supabase
-      .from('products')
-      .select('id, price, in_stock, stock_quantity')
-      .in('id', productIds);
-
-    if (productsError) throw productsError;
+    let products: Array<Record<string, unknown>> = [];
+    if (productIds.length > 0) {
+      const productResult = await supabase
+        .from('products')
+        .select('id, price, in_stock, stock_quantity')
+        .in('id', productIds);
+      if (productResult.error) throw productResult.error;
+      products = productResult.data || [];
+    }
 
     const productById = new Map((products || []).map((product: Record<string, unknown>) => [String(product.id), product]));
     let subtotal = 0;
@@ -47,6 +60,13 @@ Deno.serve(async (req) => {
 
       subtotal += Number(product.price || 0) * item.quantity;
     });
+
+    for (const printItem of printItems) {
+      const draft = await verifyPrintDraftAccess(supabase, printItem.draftId, printItem.accessToken);
+      const summary = await recalculatePrintDraft(supabase, draft.id);
+      if (summary.draft.status !== 'ready') throw new Error('print_draft_not_ready');
+      subtotal += Number(summary.draft.subtotal || 0);
+    }
 
     const coupon = await calculateStoreCouponDiscount(supabase, body?.code, subtotal);
     if (!coupon) return jsonResponse({ error: 'missing_coupon' }, 400);

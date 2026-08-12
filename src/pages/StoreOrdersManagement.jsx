@@ -6,7 +6,7 @@ import {
   ArrowLeft, RotateCcw, Printer, AlertCircle,
   ShoppingBag, Phone, User, StickyNote, Image as ImageIcon,
   RefreshCw, Trash2, Edit3, Save, XCircle, Banknote, Wallet,
-  Mail, Send, History, Plus
+  Mail, Send, History, Plus, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -380,7 +380,50 @@ export default function StoreOrdersManagement() {
         .select('*, product:products(name, image, product_options)')
         .eq('store_order_id', order.id);
       if (error) throw error;
-      setOrderItems(data || []);
+
+      const items = data || [];
+      const printDraftIds = [...new Set(
+        items
+          .filter((item) => item.item_type === 'print' && item.print_draft_id)
+          .map((item) => item.print_draft_id),
+      )];
+
+      if (printDraftIds.length > 0) {
+        const { data: files, error: filesError } = await supabase
+          .from('print_draft_files')
+          .select('id, draft_id, original_name, storage_path, preview_storage_path, copies, rotation, crop, resolution_status, width, height')
+          .in('draft_id', printDraftIds)
+          .eq('upload_status', 'uploaded')
+          .order('created_at', { ascending: true });
+
+        if (filesError) throw filesError;
+
+        const originalPaths = (files || []).map((file) => file.storage_path).filter(Boolean);
+        const previewPaths = (files || []).map((file) => file.preview_storage_path).filter(Boolean);
+        const [{ data: originalLinks }, { data: previewLinks }] = await Promise.all([
+          originalPaths.length
+            ? supabase.storage.from('print-originals').createSignedUrls(originalPaths, 60 * 60)
+            : Promise.resolve({ data: [] }),
+          previewPaths.length
+            ? supabase.storage.from('print-previews').createSignedUrls(previewPaths, 60 * 60)
+            : Promise.resolve({ data: [] }),
+        ]);
+        const originalUrlByPath = new Map((originalLinks || []).map((link) => [link.path, link.signedUrl]));
+        const previewUrlByPath = new Map((previewLinks || []).map((link) => [link.path, link.signedUrl]));
+
+        items.forEach((item) => {
+          if (item.item_type !== 'print') return;
+          item.print_files = (files || [])
+            .filter((file) => file.draft_id === item.print_draft_id)
+            .map((file) => ({
+              ...file,
+              original_url: originalUrlByPath.get(file.storage_path) || '',
+              preview_url: previewUrlByPath.get(file.preview_storage_path) || '',
+            }));
+        });
+      }
+
+      setOrderItems(items);
     } catch (err) {
       console.error(err);
       toast.error('فشل تحميل منتجات الطلب');
@@ -1503,32 +1546,79 @@ export default function StoreOrdersManagement() {
                   ) : (
                     <div className="space-y-3">
                       {orderItems.map((item, idx) => {
+                        const itemName = item.item_name || item.product?.name || 'منتج محذوف';
                         const optionLabels = getSelectedOptionLabels(
                           item.product?.product_options,
                           item.selected_options,
                         );
                         return (
-                        <div key={item.id || idx} className="flex items-center gap-3 bg-[#FAF9F7] rounded-2xl p-3">
-                          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-[#E8B4BC]/15">
-                            {item.product?.image
-                              ? <img src={item.product.image} alt={item.product?.name} className="w-full h-full object-cover" />
-                              : <ImageIcon size={18} className="text-[#E8B4BC]/30" />
-                            }
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-sm truncate">{item.product?.name || 'منتج محذوف'}</p>
-                            <p className="text-xs text-[#171717]/50 mt-0.5">
-                              {item.price_at_time} ر.س × {item.quantity}
-                            </p>
-                            {optionLabels.length > 0 && (
-                              <p className="mt-1 text-[10px] font-bold text-[#B97882]">
-                                {optionLabels.map((option) => `${option.name}: ${option.label}`).join(' • ')}
+                        <div key={item.id || idx} className="bg-[#FAF9F7] rounded-2xl p-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-[#E8B4BC]/15">
+                              {item.product?.image
+                                ? <img src={item.product.image} alt={itemName} className="w-full h-full object-cover" />
+                                : <ImageIcon size={18} className="text-[#E8B4BC]/30" />
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm truncate">{itemName}</p>
+                              <p className="text-xs text-[#171717]/50 mt-0.5">
+                                {item.price_at_time} ر.س × {item.quantity}
                               </p>
-                            )}
+                              {optionLabels.length > 0 && (
+                                <p className="mt-1 text-[10px] font-bold text-[#B97882]">
+                                  {optionLabels.map((option) => `${option.name}: ${option.label}`).join(' • ')}
+                                </p>
+                              )}
+                              {item.item_type === 'print' && (
+                                <p className="mt-1 text-[10px] font-bold text-[#B97882]">
+                                  {Number(item.metadata?.file_count || 0)} ملفات · {Number(item.metadata?.total_copies || item.quantity || 0)} نسخة
+                                </p>
+                              )}
+                            </div>
+                            <span className="font-black text-[#C6A56B] text-sm shrink-0">
+                              {(item.price_at_time * item.quantity).toFixed(2)} ر.س
+                            </span>
                           </div>
-                          <span className="font-black text-[#C6A56B] text-sm shrink-0">
-                            {(item.price_at_time * item.quantity).toFixed(2)} ر.س
-                          </span>
+
+                          {item.item_type === 'print' && item.print_files?.length > 0 && (
+                            <details className="mt-3 border-t border-[#E8B4BC]/15 pt-3">
+                              <summary className="cursor-pointer text-xs font-black text-[#171717]/70">
+                                معاينة وتنزيل صور الطباعة ({item.print_files.length})
+                              </summary>
+                              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {item.print_files.map((file) => (
+                                  <div key={file.id} className="rounded-xl border border-[#E8B4BC]/15 bg-white p-2">
+                                    <div className="aspect-square rounded-lg overflow-hidden bg-[#FAF9F7] flex items-center justify-center">
+                                      {file.preview_url
+                                        ? <img src={file.preview_url} alt={file.original_name} className="w-full h-full object-cover" />
+                                        : <ImageIcon size={20} className="text-[#E8B4BC]/40" />}
+                                    </div>
+                                    <p className="mt-2 truncate text-[10px] font-bold" title={file.original_name}>
+                                      {file.original_name}
+                                    </p>
+                                    <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-[#171717]/55">
+                                      <span>{file.copies} نسخة</span>
+                                      {file.resolution_status === 'low' && (
+                                        <span className="font-bold text-red-600">دقة منخفضة</span>
+                                      )}
+                                    </div>
+                                    {file.original_url && (
+                                      <a
+                                        href={file.original_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        download={file.original_name}
+                                        className="mt-2 flex h-8 items-center justify-center gap-1 rounded-lg bg-[#171717] text-[10px] font-black text-white hover:bg-[#C6A56B]"
+                                      >
+                                        <Download size={12} /> تنزيل الأصل
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          )}
                         </div>
                         );
                       })}

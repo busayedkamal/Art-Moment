@@ -66,7 +66,7 @@ export default function StoreCart() {
         cartKey: item.cartKey || getCartLineKey(item.id, item.selectedOptions),
       }));
 
-      const productIds = [...new Set(savedCart.map(item => item.id).filter(Boolean))];
+      const productIds = [...new Set(savedCart.filter(item => item.itemType !== 'print').map(item => item.id).filter(Boolean))];
       if (productIds.length > 0) {
         try {
           const { data, error } = await supabase
@@ -191,7 +191,7 @@ export default function StoreCart() {
           action: 'sync',
           sessionToken: customerSession.sessionToken,
           anonymousId: getStoreAnonymousId(),
-          items: cart.map((item) => ({
+          items: cart.filter((item) => item.itemType !== 'print').map((item) => ({
             id: item.id,
             qty: Number(item.qty || 0),
             selectedOptions: item.selectedOptions || {},
@@ -215,6 +215,7 @@ export default function StoreCart() {
     let reachedLimit = false;
     const updated = cart.map(item => {
       if (getItemKey(item) === String(itemKey)) {
+        if (item.fixedQuantity) return item;
         const currentQty = Number(item.qty) || 1;
         const availableStock = getAvailableStock(item);
         const otherQuantity = cart
@@ -239,6 +240,7 @@ export default function StoreCart() {
     let reachedLimit = false;
     const updated = cart.map(item => {
       if (getItemKey(item) !== String(itemKey)) return item;
+      if (item.fixedQuantity) return item;
       if (val === '') return { ...item, qty: '' };
       const num = parseInt(val, 10);
       const availableStock = getAvailableStock(item);
@@ -313,6 +315,9 @@ export default function StoreCart() {
           items: cart.map(item => ({
             id: item.id,
             qty: Number(item.qty) || 1,
+            itemType: item.itemType,
+            printDraftId: item.printDraftId,
+            printDraftToken: item.printDraftToken,
           })),
         },
       });
@@ -396,6 +401,9 @@ export default function StoreCart() {
           items: cart.map(item => ({
             id: item.id,
             qty: Number(item.qty) || 1,
+            itemType: item.itemType,
+            printDraftId: item.printDraftId,
+            printDraftToken: item.printDraftToken,
             selectedOptions: item.selectedOptions || {},
           })),
           payment: {
@@ -538,6 +546,11 @@ export default function StoreCart() {
                   </div>
                 )}
                 <p className="text-[10px] text-[#171717]/50 mt-1">{item.price} ر.س × {item.qty}</p>
+                {item.itemType === 'print' && item.printDetails && (
+                  <p className="mt-1 text-[10px] font-bold text-[#B97882]">
+                    {item.printDetails.fileCount} ملفات · {item.printDetails.totalCopies} نسخة · {item.printDetails.printSize}
+                  </p>
+                )}
                 <p className={`text-[10px] font-bold mt-1 ${reachedMax ? 'text-amber-600' : 'text-[#171717]/45'}`}>
                   {availableStock === null ? 'الكمية متاحة' : `المتوفر: ${availableStock}`}
                 </p>
@@ -551,7 +564,7 @@ export default function StoreCart() {
                 >
                   <Trash2 size={14} />
                 </button>
-                <div className="flex items-center gap-2 bg-[#FAF9F7] rounded-xl border border-[#E8B4BC]/20 p-1">
+                {!item.fixedQuantity && <div className="flex items-center gap-2 bg-[#FAF9F7] rounded-xl border border-[#E8B4BC]/20 p-1">
                   <button
                     onClick={() => updateQty(itemKey, 1)}
                     disabled={reachedMax}
@@ -574,7 +587,8 @@ export default function StoreCart() {
                   <button onClick={() => updateQty(itemKey, -1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#171717]">
                     <Minus size={12} />
                   </button>
-                </div>
+                </div>}
+                {item.itemType === 'print' && <Link to="/print" className="text-[10px] font-black text-[#B97882]">تعديل الصور</Link>}
               </div>
             </div>
             );
