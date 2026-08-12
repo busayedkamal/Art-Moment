@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, Check, ChevronDown, Clock3, Image as ImageIcon,
+  Check, ChevronDown, Clock3, Image as ImageIcon,
   Minus, PackageCheck, Plus, RotateCcw, ShieldCheck, ShoppingCart,
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
-import logo from '../assets/logo-art-moment.svg';
+import PublicHeader from '../components/PublicHeader';
+import SeoHead from '../components/SeoHead';
 import {
   getCartLineKey,
   getMissingRequiredOptions,
@@ -150,10 +151,9 @@ export default function ProductDetailsPage() {
     [normalizedSelections, product?.price, product?.productOptions],
   );
 
-  useEffect(() => {
-    if (!product) return undefined;
-    document.title = `${product.name} | Art Moment`;
-    const pageUrl = window.location.href;
+  const structuredData = useMemo(() => {
+    if (!product) return [];
+    const pageUrl = `https://art-moment.com/store/products/${product.id}`;
     const productNode = {
       '@type': 'Product',
       '@id': `${pageUrl}#product`,
@@ -181,7 +181,17 @@ export default function ProductDetailsPage() {
         itemCondition: 'https://schema.org/NewCondition',
       },
     };
-    const graph = [productNode];
+    const graph = [
+      productNode,
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: language === 'en' ? 'Home' : 'الرئيسية', item: 'https://art-moment.com/' },
+          { '@type': 'ListItem', position: 2, name: language === 'en' ? 'Store' : 'المتجر', item: 'https://art-moment.com/store' },
+          { '@type': 'ListItem', position: 3, name: product.name, item: pageUrl },
+        ],
+      },
+    ];
     if (product.productFaqs.length > 0) {
       graph.push({
         '@type': 'FAQPage',
@@ -192,13 +202,7 @@ export default function ProductDetailsPage() {
         })),
       });
     }
-    const script = document.createElement('script');
-    script.id = 'art-moment-product-jsonld';
-    script.type = 'application/ld+json';
-    script.text = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
-    document.getElementById(script.id)?.remove();
-    document.head.appendChild(script);
-    return () => script.remove();
+    return graph;
   }, [images, language, product, text.fallback, unitPrice]);
 
   const addToCart = () => {
@@ -276,29 +280,22 @@ export default function ProductDetailsPage() {
 
   return (
     <div className="art-page min-h-screen pb-32 font-[Tajawal] text-[#171717] lg:pb-24" dir={direction}>
-      <header className="sticky top-0 z-40 border-b border-[#E8B4BC]/10 bg-white/90 backdrop-blur-xl">
-        <div className="art-shell flex h-20 items-center justify-between gap-3">
-          <Link to="/store" className="flex items-center gap-2 text-sm font-black text-[#171717]/65 hover:text-[#E8B4BC]">
-            {direction === 'rtl' ? <ArrowRight size={18} /> : <ArrowLeft size={18} />} {text.back}
-          </Link>
-          <img src={logo} alt="لحظة فن" className="h-10 w-auto" />
-          <Link to="/store/cart" className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#E8B4BC]/20 bg-white">
-            <ShoppingCart size={19} />
-            {cartCount > 0 && (
-              <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E8B4BC] px-1 text-[9px] font-black text-white">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-        </div>
-      </header>
+      <SeoHead
+        title={`${product.name} | ${language === 'en' ? 'Art Moment Store' : 'متجر لحظة فن'}`}
+        description={(product.description || text.fallback).slice(0, 160)}
+        path={`/store/products/${product.id}`}
+        image={images[0]}
+        type="product"
+        structuredData={structuredData}
+      />
+      <PublicHeader cartCount={cartCount} />
 
       <main className="art-shell py-6 sm:py-10">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] lg:items-start">
           <section className="min-w-0">
             <div className="aspect-square overflow-hidden rounded-2xl border border-[#E8B4BC]/12 bg-white">
               {selectedImage ? (
-                <img src={selectedImage} alt={product.name} className="h-full w-full object-contain p-3 sm:p-7" />
+                <img src={selectedImage} alt={product.name} width="900" height="900" loading="eager" decoding="async" fetchPriority="high" className="h-full w-full object-contain p-3 sm:p-7" />
               ) : (
                 <ImageIcon className="h-full w-full p-24 text-[#E8B4BC]/15" />
               )}
@@ -314,7 +311,7 @@ export default function ProductDetailsPage() {
                       selectedImage === image ? 'border-[#C6A56B] ring-2 ring-[#C6A56B]/15' : 'border-[#E8B4BC]/15'
                     }`}
                   >
-                    <img src={image} alt="" className="h-full w-full object-cover" />
+                    <img src={image} alt={`${product.name} - صورة إضافية`} width="180" height="180" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>

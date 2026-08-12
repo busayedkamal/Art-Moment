@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import RiyalSign from './components/RiyalSign';
 import { clearCustomerSession, getCustomerSession } from './utils/customerSession';
@@ -13,22 +12,23 @@ import {
 } from './utils/productStock';
 
 import {
-  Search, MessageCircle, Image as ImageIcon, CheckCircle, Truck,
-  Printer, Menu, X, ChevronDown, Lock, Star, Quote, BookOpen,
-  Download, Share, PlusSquare, Sparkles, FileText,
+  MessageCircle, Image as ImageIcon, CheckCircle, Truck,
+  Printer, X, ChevronDown, Star, Quote, BookOpen,
+  Share, PlusSquare, Sparkles, FileText,
   Plane, Gift, Smartphone, LayoutDashboard,
   MessageSquarePlus, Send, CreditCard, Award, Gem, Wallet,
   ShoppingBag, ArrowLeft, ShoppingCart, Plus, ShieldCheck, Scale, AlertCircle, ChevronLeft,
-  User, LogOut, Share2
+  User, LogOut
 } from 'lucide-react';
 import CustomerAuthModal from './components/CustomerAuthModal';
-import LanguageToggle from './components/LanguageToggle';
+import PublicHeader from './components/PublicHeader';
+import SeoHead from './components/SeoHead';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from './utils/customerAuthPrompt';
 import { localizeProductOptions } from './utils/productOptions';
 import { useLanguage } from './contexts/LanguageContext';
 
 import promoVideo from './assets/printing-quality.mp4';
-import printedPhotos from './assets/printed-photos.png';
+import printedPhotos from './assets/printed-photos-optimized.jpg';
 import logo from './assets/logo-art-moment.svg';
 import fallbackLogo from './assets/logo.png';
 import instagramIcon from './assets/instagram icon.svg';
@@ -38,6 +38,32 @@ import whatsappIcon from './assets/whatsapp icon.svg';
 import telegramIcon from './assets/telegram icon.svg';
 import gmailIcon from './assets/gmail icon.svg';
 import waseetShopLogo from './assets/waseetshop logo.svg';
+
+const LANDING_STRUCTURED_DATA = [
+  {
+    '@type': 'Organization',
+    '@id': 'https://art-moment.com/#organization',
+    name: 'لحظة فن Art Moment',
+    url: 'https://art-moment.com/',
+    logo: 'https://art-moment.com/pwa-512x512.png',
+    email: 'art.moment26@gmail.com',
+    telephone: '+966560301744',
+    sameAs: [
+      'https://www.instagram.com/art.moment26/',
+      'https://www.snapchat.com/add/omsayedkamal',
+      'https://www.tiktok.com/@art.moment26',
+      'https://t.me/artmoment26',
+    ],
+  },
+  {
+    '@type': 'WebSite',
+    '@id': 'https://art-moment.com/#website',
+    url: 'https://art-moment.com/',
+    name: 'لحظة فن Art Moment',
+    publisher: { '@id': 'https://art-moment.com/#organization' },
+    inLanguage: ['ar', 'en'],
+  },
+];
 
 const fromDb = (p, language) => {
   const stockQuantity = normalizeStockQuantity(p.stock_quantity);
@@ -147,14 +173,8 @@ const LANDING_COPY = {
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { session } = useAuth();
   const { language, direction } = useLanguage();
   const copy = LANDING_COPY[language] || LANDING_COPY.ar;
-
-  const handleAdminClick = (e) => {
-    e.preventDefault();
-    navigate(session ? '/app/dashboard' : '/admin/login');
-  };
 
   // --- Store states ---
   const [products, setProducts]               = useState([]);
@@ -164,7 +184,6 @@ export default function LandingPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   // --- UI states ---
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq]                   = useState(null);
   const [scrolled, setScrolled]                 = useState(false);
 
@@ -365,104 +384,23 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ══════════════════════════════════ NAVBAR ══════════════════════════════════ */}
-      <header className={`sticky top-0 z-50 art-nav transition-all duration-300 ${scrolled ? 'art-nav-scrolled' : ''}`}>
-        <div className="art-shell h-20 flex items-center justify-between">
-
-          {/* Right Side: Mobile Menu + Logo */}
-          <div className="flex items-center gap-1 sm:gap-3">
-            <button
-              className="md:hidden p-1 -mr-2 text-[#171717]"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-              title={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <img src={logo} alt="Art Moment Logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
-              <div className="flex flex-col">
-                <h1 className="text-lg sm:text-xl font-black text-[#171717] leading-none">
-                  {language === 'en' ? 'Art Moment' : 'لحظة فن'}
-                </h1>
-                <span className="text-[9px] sm:text-[10px] text-[#C6A56B] font-bold tracking-widest uppercase">
-                  {language === 'en' ? 'Photo Printing & Gifts' : 'Art Moment'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Center: Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#171717]/80">
-            <Link to="/print" className="hover:text-[#E8B4BC] transition-colors">{copy.navPrint}</Link>
-            <Link to="/store" className="hover:text-[#E8B4BC] transition-colors">{copy.navStore}</Link>
-            <Link to="/track" className="hover:text-[#E8B4BC] transition-colors">{copy.navTrack}</Link>
-            <a href="#why" className="hover:text-[#E8B4BC] transition-colors">{copy.navAbout}</a>
-            <Link to="/store/cart" className="hover:text-[#E8B4BC] transition-colors flex items-center gap-1.5">
-              <ShoppingCart size={16} className="text-[#E8B4BC]" /> {copy.navCart}
-              {cartCount > 0 && <span className="min-w-5 h-5 px-1 rounded-full bg-[#171717] text-white text-[10px] grid place-items-center">{cartCount}</span>}
-            </Link>
-          </nav>
-
-          {/* Left Side: Icons */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {(isInstallable || isIOS) && (
-              <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#E8B4BC] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C6A56B] transition-all">
-                <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
-              </button>
-            )}
-
-
-            <button onClick={handleAdminClick} className="hidden sm:inline-flex bg-white text-[#171717] border border-[#E8B4BC]/20 px-3 py-2 rounded-full hover:text-[#E8B4BC] transition-all shadow-sm">
-              <Lock size={16} />
-            </button>
-
-            <LanguageToggle />
-
-            {customer ? (
-              <div className="flex items-center gap-1 sm:gap-2">
-                <button onClick={() => setIsAccountSidebarOpen(true)} className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#171717] bg-white px-3 py-2 rounded-full border border-[#E8B4BC]/20 hover:bg-[#E8B4BC]/10 transition-colors shadow-sm">
-                  <User size={16} className="text-[#C6A56B]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
-                </button>
-                <button onClick={() => setIsAccountSidebarOpen(true)} className="sm:hidden p-2 text-[#171717] bg-white rounded-full border border-[#E8B4BC]/20 transition-colors" title="حسابي">
-                  <User size={16} />
-                </button>
-                <button onClick={handleLogout} className="hidden sm:flex p-2 text-red-400 hover:text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors" title="تسجيل الخروج">
-                  <LogOut size={16} />
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => setIsAuthModalOpen(true)} className="flex items-center gap-1.5 bg-white text-[#171717] border border-[#E8B4BC]/20 px-3 py-2 rounded-full hover:text-[#E8B4BC] transition-all shadow-sm text-xs font-bold">
-                <User size={16} /> <span className="hidden sm:inline">دخول</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden bg-[#FAF9F7] border-t border-[#E8B4BC]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
-            <Link to="/print" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navPrint}</Link>
-            <Link to="/store" className="flex items-center gap-2 py-2 text-[#E8B4BC] font-bold" onClick={() => setIsMobileMenuOpen(false)}><ShoppingBag size={16} /> {copy.navStore}</Link>
-            <Link to="/track" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navTrack}</Link>
-            <a href="#why" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>{copy.navAbout}</a>
-            <Link to="/store/cart" className="flex w-full items-center justify-center gap-2 py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}><ShoppingCart size={16} /> {copy.navCart} ({cartCount})</Link>
-            <Link to="/links" className="flex w-full items-center justify-center gap-2 py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}><Share2 size={16} className="text-[#C6A56B]" /> {language === 'en' ? 'Our Accounts' : 'حساباتنا'}</Link>
-            {customer && (
-              <button
-                onClick={() => { setIsMobileMenuOpen(false); setIsAccountSidebarOpen(true); }}
-                className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#C6A56B]/20 shadow-sm"
-              >
-                حسابي
-              </button>
-            )}
-            <button onClick={(e) => { setIsMobileMenuOpen(false); handleAdminClick(e); }}
-              className="w-full text-center py-3 rounded-xl font-bold text-[#171717]/60 hover:bg-white hover:text-[#E8B4BC] transition-all flex items-center justify-center gap-2">
-              <Lock size={16} /> دخول المسؤول
-            </button>
-          </div>
-        )}
-      </header>
+      <SeoHead
+        title={language === 'en' ? 'Art Moment | Photo Printing and Keepsakes' : 'لحظة فن | طباعة الصور وحفظ الذكريات'}
+        description={language === 'en'
+          ? 'Print your photos online and shop albums, frames, and photo keepsakes from Art Moment.'
+          : 'اطبع صورك أونلاين وتسوق الألبومات والإطارات ومستلزمات حفظ الصور من لحظة فن.'}
+        path="/"
+        structuredData={LANDING_STRUCTURED_DATA}
+      />
+      <PublicHeader
+        cartCount={cartCount}
+        customer={customer}
+        onAccountClick={() => setIsAccountSidebarOpen(true)}
+        onLoginClick={() => setIsAuthModalOpen(true)}
+        showLanguage
+        installAvailable={isInstallable || isIOS}
+        onInstall={handleInstallClick}
+      />
 
       {/* ══════════════════════════════════ HERO ══════════════════════════════════ */}
       <section className="pt-6 pb-8 art-shell">
@@ -470,6 +408,11 @@ export default function LandingPage() {
           <img
             src={printedPhotos}
             alt={language === 'en' ? 'A collection of printed photos by Art Moment' : 'مجموعة صور مطبوعة من لحظة فن'}
+            width="1536"
+            height="1024"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             className="absolute inset-0 h-full w-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-[#171717]/60" />
@@ -497,7 +440,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════ PRINT PROCESS ══════════════════════════════════ */}
-      <section id="print-process" className="art-shell py-12 sm:py-16 scroll-mt-28">
+      <section id="print-process" className="art-shell content-auto py-12 sm:py-16 scroll-mt-28">
         <div className="max-w-2xl mb-9 sm:mb-12">
           <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.processEyebrow}</p>
           <h2 className="text-2xl sm:text-4xl font-black text-[#171717] mb-3">{copy.processTitle}</h2>
@@ -519,17 +462,17 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════ CATEGORIES ══════════════════════════════════ */}
-      <section id="categories" className="art-shell py-12 sm:py-16">
+      <section id="categories" className="art-shell content-auto py-12 sm:py-16">
         <div className="text-center max-w-2xl mx-auto mb-9 sm:mb-12">
           <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.categoriesEyebrow}</p>
           <h2 className="text-2xl sm:text-4xl font-black text-[#171717]">{copy.categoriesTitle}</h2>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {[
-            { icon: Printer, ar: 'مقاسات الطباعة', en: 'Print Sizes', to: '/print' },
-            { icon: BookOpen, ar: 'الألبومات', en: 'Albums', to: '/store?category=albums' },
-            { icon: LayoutDashboard, ar: 'الإطارات', en: 'Frames', to: '/store?category=frames' },
-            { icon: Gift, ar: 'المستلزمات', en: 'Supplies', to: '/store' },
+            { icon: Printer, ar: 'مقاسات الطباعة', en: 'Print Sizes', to: '/photo-print-sizes' },
+            { icon: BookOpen, ar: 'الألبومات', en: 'Albums', to: '/store/albums' },
+            { icon: LayoutDashboard, ar: 'الإطارات', en: 'Frames', to: '/store/frames' },
+            { icon: Gift, ar: 'المستلزمات', en: 'Supplies', to: '/store/photo-supplies' },
           ].map((category, index) => (
             <Link key={category.ar} to={category.to} className="group min-h-40 sm:min-h-48 bg-white border border-[#171717]/10 rounded-lg p-5 sm:p-7 flex flex-col justify-between hover:border-[#E8B4BC] hover:-translate-y-1 hover:shadow-lg transition-all">
               <category.icon size={30} strokeWidth={1.5} className={index % 2 === 0 ? 'text-[#E8B4BC]' : 'text-[#C6A56B]'} />
@@ -545,7 +488,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════
           2. STORE PRODUCTS GRID
       ══════════════════════════════════ */}
-      <main id="products" className="art-shell py-12 sm:py-14">
+      <main id="products" className="art-shell content-auto py-12 sm:py-14">
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16">
           <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.featuredEyebrow}</p>
           <h2 className="text-3xl sm:text-4xl font-black text-[#171717] mb-4">
@@ -574,15 +517,15 @@ export default function LandingPage() {
                 >
                   {product.image ? (
                     <>
-                      <img src={product.image} alt={product.name}
+                      <img src={product.image} alt={product.name} width="640" height="640" loading="lazy" decoding="async"
                         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${product.hoverImage ? 'group-hover:opacity-0' : ''}`} />
                       {product.hoverImage && (
-                        <img src={product.hoverImage} alt={`${product.name} hover`}
+                        <img src={product.hoverImage} alt={`${product.name} - صورة إضافية`} width="640" height="640" loading="lazy" decoding="async"
                           className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       )}
                     </>
                   ) : (
-                    <img src={fallbackLogo} alt={product.name} className="absolute inset-0 w-full h-full object-contain p-8 opacity-20 grayscale mix-blend-multiply" />
+                    <img src={fallbackLogo} alt={product.name} width="1024" height="768" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-contain p-8 opacity-20 grayscale mix-blend-multiply" />
                   )}
                   {!productAvailable && (
                     <div className="absolute top-3 left-3 z-20 bg-red-500/90 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1.5">
@@ -645,7 +588,7 @@ export default function LandingPage() {
       </main>
 
       {/* ══════════════════════════════════ WHY ART MOMENT ══════════════════════════════════ */}
-      <section id="why" className="art-shell py-14 sm:py-20 scroll-mt-28">
+      <section id="why" className="art-shell content-auto py-14 sm:py-20 scroll-mt-28">
         <div className="max-w-2xl mb-10 sm:mb-14">
           <p className="text-xs font-black text-[#C6A56B] mb-2">{copy.whyEyebrow}</p>
           <h2 className="text-2xl sm:text-4xl font-black text-[#171717]">{copy.whyTitle}</h2>
@@ -667,13 +610,15 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════ SHOWCASE ══════════════════════════════════ */}
-      <section className="art-shell py-10 sm:py-16">
+      <section className="art-shell content-auto py-10 sm:py-16">
         <div className="art-crop-marks relative rounded-lg overflow-hidden shadow-xl border-[8px] border-white h-[390px] md:h-[520px] flex items-center justify-center group bg-[#171717]">
           <video
             autoPlay
             loop
             muted
             playsInline
+            preload="none"
+            poster={printedPhotos}
             className="absolute inset-0 w-full h-full object-cover opacity-85 transition-transform duration-1000 group-hover:scale-[1.02]"
           >
             <source src={promoVideo} type="video/mp4" />

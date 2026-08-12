@@ -1,10 +1,11 @@
 // src/App.jsx
 import React, { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import AuthProvider, { useAuth } from './contexts/AuthContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import DomTranslator from './components/DomTranslator'
+import SeoHead from './components/SeoHead'
 
 // الصفحة الرئيسية
 const LandingPage = lazy(() => import('./LandingPage.jsx'))
@@ -17,6 +18,7 @@ const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage.jsx'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage.jsx'))
 const StoreCart = lazy(() => import('./pages/StoreCart.jsx'))
 const ProductDetailsPage = lazy(() => import('./pages/ProductDetailsPage.jsx'))
+const SeoCategoryPage = lazy(() => import('./pages/SeoCategoryPage.jsx'))
 const CustomerOrdersPage = lazy(() => import('./pages/CustomerOrdersPage.jsx'))
 const CustomerAccountPage = lazy(() => import('./pages/CustomerAccountPage.jsx'))
 const StorePaymentResult = lazy(() => import('./pages/StorePaymentResult.jsx'))
@@ -76,6 +78,12 @@ function AppRoutes() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/store/cart" element={<StoreCart />} />
       <Route path="/store/products/:productId" element={<ProductDetailsPage />} />
+      <Route path="/photo-printing" element={<SeoCategoryPage pageKey="photoPrinting" />} />
+      <Route path="/photographic-printing" element={<SeoCategoryPage pageKey="photographicPrinting" />} />
+      <Route path="/photo-print-sizes" element={<SeoCategoryPage pageKey="printSizes" />} />
+      <Route path="/store/albums" element={<SeoCategoryPage pageKey="albums" />} />
+      <Route path="/store/frames" element={<SeoCategoryPage pageKey="frames" />} />
+      <Route path="/store/photo-supplies" element={<SeoCategoryPage pageKey="supplies" />} />
       <Route path="/store/payment/success" element={<StorePaymentResult />} />
       <Route path="/store/payment/failed" element={<StorePaymentResult />} />
       <Route path="/store/account" element={<CustomerAccountPage />} />
@@ -119,6 +127,49 @@ function AppRoutes() {
   )
 }
 
+const PRIVATE_ROUTE_PREFIXES = [
+  '/app',
+  '/admin',
+  '/store/cart',
+  '/store/account',
+  '/store/orders',
+  '/store/payment',
+  '/track',
+  '/marketing/unsubscribe',
+]
+
+const PUBLIC_ROUTE_META = {
+  '/print': {
+    title: 'اطبع صورك أونلاين | لحظة فن',
+    description: 'ارفع صورك من الجوال، اختر مقاس الطباعة، راجع الجودة والسعر، ثم أتم طلبك بسهولة وخصوصية.',
+  },
+  '/links': {
+    title: 'حسابات لحظة فن الرسمية | تواصل معنا',
+    description: 'روابط التواصل والحسابات الرسمية لمتجر ومنصة لحظة فن.',
+  },
+  '/privacy': {
+    title: 'سياسة الخصوصية | لحظة فن',
+    description: 'تعرف على طريقة تعامل لحظة فن مع بيانات العملاء والصور المرفوعة ومدة الاحتفاظ بها وحمايتها.',
+  },
+}
+
+function SeoRoutePolicy() {
+  const { pathname } = useLocation()
+  const isPrivateRoute = PRIVATE_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  const publicMeta = PUBLIC_ROUTE_META[pathname]
+
+  if (!isPrivateRoute && !publicMeta) return null
+
+  return (
+    <SeoHead
+      title={isPrivateRoute ? 'لحظة فن | صفحة خاصة' : publicMeta.title}
+      description={isPrivateRoute ? 'صفحة خاصة بخدمات وحسابات عملاء لحظة فن.' : publicMeta.description}
+      path={pathname}
+      noindex={isPrivateRoute}
+    />
+  )
+}
+
 export default function App() {
   return (
     <LanguageProvider>
@@ -134,6 +185,7 @@ function LocalizedApp() {
     <BrowserRouter>
       <AuthProvider>
         <DomTranslator />
+        <SeoRoutePolicy />
         <div id="app-language-scope" key={language}>
           <Suspense fallback={<PageLoader />}>
             <AppRoutes />

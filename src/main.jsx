@@ -8,6 +8,8 @@ import { installGlobalErrorMonitoring } from './utils/errorMonitoring'
 
 installGlobalErrorMonitoring()
 
+document.getElementById('seo-static-content')?.remove()
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />

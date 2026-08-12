@@ -1,5 +1,13 @@
 {
   "rewrites": [
+    { "source": "/photo-printing", "destination": "/photo-printing/index.html" },
+    { "source": "/photographic-printing", "destination": "/photographic-printing/index.html" },
+    { "source": "/photo-print-sizes", "destination": "/photo-print-sizes/index.html" },
+    { "source": "/store/albums", "destination": "/store/albums/index.html" },
+    { "source": "/store/frames", "destination": "/store/frames/index.html" },
+    { "source": "/store/photo-supplies", "destination": "/store/photo-supplies/index.html" },
+    { "source": "/store", "destination": "/store/index.html" },
+    { "source": "/print", "destination": "/print/index.html" },
     {
       "source": "/(.*)",
       "destination": "/index.html"

@@ -11,7 +11,7 @@ import {
 } from '../utils/productStock';
 import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
-  Menu, X, Download, AlertCircle, ShoppingBag, Plus,
+  X, AlertCircle, ShoppingBag, Plus,
   ArrowLeft, Sparkles, User, LogOut, Package, Wallet,
   ArrowUpDown, ChevronDown, Printer
 } from 'lucide-react';
@@ -20,9 +20,28 @@ import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from '../util
 import { getCartLineKey, localizeProductOptions } from '../utils/productOptions';
 import { trackStoreEvent } from '../utils/storeAnalytics';
 import { useLanguage } from '../contexts/LanguageContext';
+import PublicHeader from '../components/PublicHeader';
+import SeoHead from '../components/SeoHead';
 
-import logo from '../assets/logo-art-moment.svg';
 import fallbackLogo from '../assets/logo.png';
+
+const STORE_STRUCTURED_DATA = [
+  {
+    '@type': 'CollectionPage',
+    '@id': 'https://art-moment.com/store#collection',
+    url: 'https://art-moment.com/store',
+    name: 'متجر لحظة فن',
+    description: 'ألبومات وإطارات ومطبوعات ومستلزمات مختارة لحفظ الصور والذكريات.',
+    isPartOf: { '@id': 'https://art-moment.com/#website' },
+  },
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'الرئيسية', item: 'https://art-moment.com/' },
+      { '@type': 'ListItem', position: 2, name: 'المتجر', item: 'https://art-moment.com/store' },
+    ],
+  },
+];
 
 const fromDb = (p, language) => {
   const stockQuantity = normalizeStockQuantity(p.stock_quantity);
@@ -75,8 +94,6 @@ export default function StoreIndex() {
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [productsError, setProductsError]   = useState('');
   const [cart, setCart]                     = useState([]);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled]             = useState(false);
   const [columnCount, setColumnCount]       = useState(() => {
     if (typeof window === 'undefined') return 4;
     if (window.innerWidth >= 1280) return 4;
@@ -85,6 +102,7 @@ export default function StoreIndex() {
   });
   const [visibleCount, setVisibleCount]     = useState(columnCount);
   const loadMoreRef = useRef(null);
+  const searchInputRef = useRef(null);
   const lastRevealAtRef = useRef(0);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen]         = useState(false);
@@ -159,10 +177,13 @@ export default function StoreIndex() {
   }, [cart]);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    if (searchParams.get('focus') !== 'search') return;
+    const timeoutId = window.setTimeout(() => {
+      searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      searchInputRef.current?.focus({ preventScroll: true });
+    }, 250);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchParams]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -331,77 +352,22 @@ export default function StoreIndex() {
   return (
     <div className="art-page min-h-screen pb-20 font-[Tajawal] relative overflow-x-hidden sm:pb-0" dir={direction}>
 
-      {/* Navbar */}
-      <header className={`sticky top-0 z-50 art-nav transition-all duration-300 ${scrolled ? 'art-nav-scrolled' : ''}`}>
-        <div className="art-shell h-20 flex items-center justify-between">
-
-          <div className="flex items-center gap-1 sm:gap-3">
-            <button
-              className="md:hidden p-1 -mr-2 text-[#171717]"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-              title={isMobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-            <Link to="/" className="flex items-center gap-2 sm:gap-3">
-              <img src={logo} alt="Art Moment Logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
-              <div className="flex flex-col">
-                <span className="text-lg sm:text-xl font-black text-[#171717] leading-none">
-                  {language === 'en' ? 'Art Moment' : 'لحظة فن'}
-                </span>
-                <span className="text-[9px] sm:text-[10px] text-[#C6A56B] font-bold tracking-widest uppercase">
-                  {language === 'en' ? 'Photo Printing & Gifts' : 'Art Moment'}
-                </span>
-              </div>
-            </Link>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#171717]/80">
-            <Link to="/" className="hover:text-[#E8B4BC] transition-colors">الرئيسية</Link>
-            <span className="text-[#E8B4BC] flex items-center gap-1.5"><ShoppingBag size={15} /> المتجر</span>
-            <Link to="/store/orders" className="hover:text-[#E8B4BC] transition-colors">طلباتي</Link>
-            <Link to="/track" className="hover:text-[#E8B4BC] transition-colors">تتبع الطلب</Link>
-          </nav>
-
-          <div className={`flex items-center gap-3 sm:gap-4 ${language === 'en' ? 'pr-20' : 'pl-20'}`}>
-            {(isInstallable || isIOS) && (
-              <button onClick={handleInstallClick} className="flex items-center gap-2 px-4 py-2 bg-[#E8B4BC] text-white rounded-full text-xs font-bold shadow-md hover:bg-[#C6A56B] transition-all">
-                <Download size={16} /> <span className="hidden sm:inline">تحميل التطبيق</span>
-              </button>
-            )}
-            <Link to="/store/cart" className="relative p-2 bg-white/70 rounded-full hover:bg-[#E8B4BC]/10 transition-colors border border-[#E8B4BC]/20">
-              <ShoppingCart size={20} className="text-[#171717]" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#E8B4BC] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-
-            {customer ? (
-              <div className="flex items-center gap-1 sm:gap-2">
-                <button onClick={() => setIsAccountSidebarOpen(true)} className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#171717] bg-white px-3 py-2 rounded-full border border-[#E8B4BC]/20 hover:bg-[#E8B4BC]/10 transition-colors shadow-sm">
-                  <User size={16} className="text-[#C6A56B]" /> {customer.name ? customer.name.split(' ')[0] : 'حسابي'}
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => setIsAuthModalOpen(true)} className="flex items-center gap-1.5 bg-white text-[#171717] border border-[#E8B4BC]/20 px-3 py-2 rounded-full hover:text-[#E8B4BC] transition-all shadow-sm text-xs font-bold">
-                <User size={16} /> <span className="hidden sm:inline">دخول</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {isMobileMenuOpen && (
-          <div className="md:hidden bg-[#FAF9F7] border-t border-[#E8B4BC]/10 p-4 space-y-3 shadow-xl absolute w-full z-50">
-            <Link to="/" className="block py-2 text-[#171717] font-bold" onClick={() => setIsMobileMenuOpen(false)}>الرئيسية</Link>
-            <span className="flex items-center gap-2 py-2 text-[#E8B4BC] font-bold"><ShoppingBag size={16} /> المتجر</span>
-            <Link to="/store/orders" className="block w-full text-center py-3 mt-2 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>طلباتي</Link>
-            <Link to="/track" className="block w-full text-center py-3 bg-white rounded-xl font-bold text-[#171717] border border-[#E8B4BC]/20 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>تتبع طلبك</Link>
-          </div>
-        )}
-      </header>
+      <SeoHead
+        title={language === 'en' ? 'Art Moment Store | Albums, Frames and Prints' : 'متجر لحظة فن | ألبومات وإطارات ومطبوعات'}
+        description={language === 'en'
+          ? 'Shop photo albums, frames, prints, and selected photo preservation supplies from Art Moment.'
+          : 'تسوق ألبومات الصور والإطارات والمطبوعات ومستلزمات حفظ الصور المختارة من لحظة فن.'}
+        path="/store"
+        structuredData={STORE_STRUCTURED_DATA}
+      />
+      <PublicHeader
+        cartCount={cartCount}
+        customer={customer}
+        onAccountClick={() => setIsAccountSidebarOpen(true)}
+        onLoginClick={() => setIsAuthModalOpen(true)}
+        installAvailable={isInstallable || isIOS}
+        onInstall={handleInstallClick}
+      />
 
       {/* Main Store Content */}
       <main className="art-shell py-8 sm:py-10 lg:py-12">
@@ -443,6 +409,7 @@ export default function StoreIndex() {
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_12rem] gap-3 w-full lg:w-[34rem]">
               <div className="relative">
                 <input
+                  ref={searchInputRef}
                   value={searchQ} onChange={e => setSearchQ(e.target.value)}
                   placeholder={language === 'en' ? 'Search by product name or description...' : 'ابحث باسم المنتج أو الوصف...'}
                   className="art-input w-full rounded-full px-4 py-2.5 pr-10 outline-none text-sm"
@@ -552,15 +519,15 @@ export default function StoreIndex() {
                 <div className={`art-product-media aspect-square rounded-2xl mb-4 relative overflow-hidden flex items-center justify-center transition-transform duration-500 ${productAvailable ? 'group-hover:scale-105' : 'grayscale'}`}>
                   {product.image ? (
                     <>
-                      <img src={product.image} alt={product.name}
+                      <img src={product.image} alt={product.name} width="640" height="640" loading="lazy" decoding="async"
                         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${product.hoverImage ? 'group-hover:opacity-0' : ''}`} />
                       {product.hoverImage && (
-                        <img src={product.hoverImage} alt={`${product.name} hover`}
+                        <img src={product.hoverImage} alt={`${product.name} - صورة إضافية`} width="640" height="640" loading="lazy" decoding="async"
                           className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       )}
                     </>
                   ) : (
-                    <img src={fallbackLogo} alt={product.name} className="absolute inset-0 w-full h-full object-contain p-8 opacity-20 grayscale mix-blend-multiply" />
+                    <img src={fallbackLogo} alt={product.name} width="1024" height="768" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-contain p-8 opacity-20 grayscale mix-blend-multiply" />
                   )}
 
                   {!productAvailable && (
