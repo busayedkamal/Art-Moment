@@ -805,7 +805,7 @@ export default function LandingPage() {
         <div className="art-shell flex flex-col items-center gap-4 border-t border-[#FAF9F7] pt-8 text-center">
           <p className="text-xs font-bold text-[#171717]/50">{copy.rights} © {new Date().getFullYear()}</p>
           <a
-            href="https://waseet-shop.com/"
+            href="https://www.waseet-shop.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-xs font-bold text-[#171717]/60 transition-colors hover:text-[#056ab3]"

@@ -84,10 +84,24 @@ function safeDownloadName(name, index) {
   return `${String(index + 1).padStart(3, '0')}_${cleaned || `photo-${index + 1}.jpg`}`;
 }
 
-async function downloadUrlAsFile(url, filename) {
+function safeFolderName(name) {
+  return String(name || 'طلب_طباعة')
+    .split('')
+    .filter((character) => character.charCodeAt(0) >= 32)
+    .join('')
+    .replace(/[<>:"/\\|?*]/g, '_')
+    .trim()
+    .slice(0, 120) || 'طلب_طباعة';
+}
+
+async function fetchDownloadBlob(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`download_failed_${response.status}`);
-  const blob = await response.blob();
+  return response.blob();
+}
+
+async function downloadUrlAsFile(url, filename) {
+  const blob = await fetchDownloadBlob(url);
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = objectUrl;
@@ -97,6 +111,14 @@ async function downloadUrlAsFile(url, filename) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+}
+
+async function saveUrlToDirectory(directoryHandle, url, filename) {
+  const blob = await fetchDownloadBlob(url);
+  const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(blob);
+  await writable.close();
 }
 
 const VALID_TRANSITIONS = {
@@ -458,7 +480,7 @@ export default function StoreOrdersManagement() {
     }
   };
 
-  const downloadPrintFiles = async (files) => {
+  const downloadPrintFiles = async (files, { chooseDirectory = false } = {}) => {
     if (downloadProgress.active) return;
     const downloadable = (files || []).filter((file) => file.original_url);
     if (downloadable.length === 0) {
@@ -466,12 +488,32 @@ export default function StoreOrdersManagement() {
       return;
     }
 
+    let targetDirectory = null;
+    let orderFolderName = '';
+    if (chooseDirectory && typeof window.showDirectoryPicker === 'function') {
+      try {
+        const parentDirectory = await window.showDirectoryPicker({ mode: 'readwrite' });
+        const orderNumber = String(selectedOrder?.short_id || selectedOrder?.id || '').slice(0, 6);
+        orderFolderName = safeFolderName(`${selectedOrder?.customer_name || 'عميل'}_طلب_${orderNumber}`);
+        targetDirectory = await parentDirectory.getDirectoryHandle(orderFolderName, { create: true });
+      } catch (error) {
+        if (error?.name === 'AbortError') return;
+        console.error('Directory selection failed:', error);
+        toast.error('تعذر فتح المجلد المحدد');
+        return;
+      }
+    } else if (chooseDirectory) {
+      toast('هذا المتصفح لا يدعم اختيار المجلد؛ سيتم استخدام مجلد التنزيلات المعتاد.');
+    }
+
     setDownloadProgress({ active: true, current: 0, total: downloadable.length });
     let failed = 0;
     for (let index = 0; index < downloadable.length; index += 1) {
       const file = downloadable[index];
       try {
-        await downloadUrlAsFile(file.original_url, safeDownloadName(file.original_name, index));
+        const filename = safeDownloadName(file.original_name, index);
+        if (targetDirectory) await saveUrlToDirectory(targetDirectory, file.original_url, filename);
+        else await downloadUrlAsFile(file.original_url, filename);
       } catch (error) {
         failed += 1;
         console.error('Print file download failed:', file.original_name, error);
@@ -482,6 +524,7 @@ export default function StoreOrdersManagement() {
 
     setDownloadProgress({ active: false, current: 0, total: 0 });
     if (failed > 0) toast.error(`تعذر تنزيل ${failed} من أصل ${downloadable.length} ملفات`);
+    else if (targetDirectory) toast.success(`تم حفظ ${downloadable.length} ملفات داخل مجلد ${orderFolderName}`);
     else toast.success(`تم تنزيل ${downloadable.length} ملفات أصلية`);
   };
 
@@ -1641,14 +1684,14 @@ export default function StoreOrdersManagement() {
                               </summary>
                               <button
                                 type="button"
-                                onClick={() => downloadPrintFiles(item.print_files)}
+                                onClick={() => downloadPrintFiles(item.print_files, { chooseDirectory: true })}
                                 disabled={downloadProgress.active}
                                 className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#171717] px-4 text-xs font-black text-white transition-colors hover:bg-[#C6A56B] disabled:cursor-wait disabled:opacity-60"
                               >
                                 <Download size={15} />
                                 {downloadProgress.active
                                   ? `جارٍ تنزيل ${downloadProgress.current} من ${downloadProgress.total}`
-                                  : `تنزيل جميع الصور الأصلية (${item.print_files.length})`}
+                                  : `اختيار مجلد وتنزيل جميع الصور (${item.print_files.length})`}
                               </button>
                               <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {item.print_files.map((file) => (
