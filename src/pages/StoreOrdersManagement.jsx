@@ -74,6 +74,31 @@ const STATUS_CONFIG = {
   },
 };
 
+function safeDownloadName(name, index) {
+  const cleaned = String(name || `photo-${index + 1}.jpg`)
+    .split('')
+    .filter((character) => character.charCodeAt(0) >= 32)
+    .join('')
+    .replace(/[<>:"/\\|?*]/g, '_')
+    .trim();
+  return `${String(index + 1).padStart(3, '0')}_${cleaned || `photo-${index + 1}.jpg`}`;
+}
+
+async function downloadUrlAsFile(url, filename) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`download_failed_${response.status}`);
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+}
+
 const VALID_TRANSITIONS = {
   pending_verification: ['confirmed', 'cancelled'],
   confirmed:            ['processing', 'cancelled'],
@@ -231,6 +256,7 @@ export default function StoreOrdersManagement() {
   const [messageLogsLoading, setMessageLogsLoading] = useState(false);
   const [orderActivityLogs, setOrderActivityLogs] = useState([]);
   const [activityLogsLoading, setActivityLogsLoading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState({ active: false, current: 0, total: 0 });
   const openedOrderParamRef = useRef('');
   const openModalRef = useRef(null);
   const focusedOrderId = searchParams.get('order') || '';
@@ -430,6 +456,33 @@ export default function StoreOrdersManagement() {
     } finally {
       setItemsLoading(false);
     }
+  };
+
+  const downloadPrintFiles = async (files) => {
+    if (downloadProgress.active) return;
+    const downloadable = (files || []).filter((file) => file.original_url);
+    if (downloadable.length === 0) {
+      toast.error('لا توجد ملفات أصلية متاحة للتنزيل');
+      return;
+    }
+
+    setDownloadProgress({ active: true, current: 0, total: downloadable.length });
+    let failed = 0;
+    for (let index = 0; index < downloadable.length; index += 1) {
+      const file = downloadable[index];
+      try {
+        await downloadUrlAsFile(file.original_url, safeDownloadName(file.original_name, index));
+      } catch (error) {
+        failed += 1;
+        console.error('Print file download failed:', file.original_name, error);
+      }
+      setDownloadProgress({ active: true, current: index + 1, total: downloadable.length });
+      if (index < downloadable.length - 1) await new Promise((resolve) => window.setTimeout(resolve, 180));
+    }
+
+    setDownloadProgress({ active: false, current: 0, total: 0 });
+    if (failed > 0) toast.error(`تعذر تنزيل ${failed} من أصل ${downloadable.length} ملفات`);
+    else toast.success(`تم تنزيل ${downloadable.length} ملفات أصلية`);
   };
 
   openModalRef.current = openModal;
@@ -1586,6 +1639,17 @@ export default function StoreOrdersManagement() {
                               <summary className="cursor-pointer text-xs font-black text-[#171717]/70">
                                 معاينة وتنزيل صور الطباعة ({item.print_files.length})
                               </summary>
+                              <button
+                                type="button"
+                                onClick={() => downloadPrintFiles(item.print_files)}
+                                disabled={downloadProgress.active}
+                                className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#171717] px-4 text-xs font-black text-white transition-colors hover:bg-[#C6A56B] disabled:cursor-wait disabled:opacity-60"
+                              >
+                                <Download size={15} />
+                                {downloadProgress.active
+                                  ? `جارٍ تنزيل ${downloadProgress.current} من ${downloadProgress.total}`
+                                  : `تنزيل جميع الصور الأصلية (${item.print_files.length})`}
+                              </button>
                               <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {item.print_files.map((file) => (
                                   <div key={file.id} className="rounded-xl border border-[#E8B4BC]/15 bg-white p-2">
@@ -1604,15 +1668,14 @@ export default function StoreOrdersManagement() {
                                       )}
                                     </div>
                                     {file.original_url && (
-                                      <a
-                                        href={file.original_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        download={file.original_name}
-                                        className="mt-2 flex h-8 items-center justify-center gap-1 rounded-lg bg-[#171717] text-[10px] font-black text-white hover:bg-[#C6A56B]"
+                                      <button
+                                        type="button"
+                                        onClick={() => downloadPrintFiles([file])}
+                                        disabled={downloadProgress.active}
+                                        className="mt-2 flex h-8 w-full items-center justify-center gap-1 rounded-lg bg-[#171717] text-[10px] font-black text-white hover:bg-[#C6A56B] disabled:cursor-wait disabled:opacity-60"
                                       >
                                         <Download size={12} /> تنزيل الأصل
-                                      </a>
+                                      </button>
                                     )}
                                   </div>
                                 ))}

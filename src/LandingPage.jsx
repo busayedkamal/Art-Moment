@@ -101,7 +101,7 @@ const LANDING_COPY = {
     strip: ['توصيل موثوق', 'جودة طباعة', 'خدمة العملاء'],
     navPrint: 'اطبع صورك', navStore: 'المتجر', navTrack: 'تتبع الطلب', navAbout: 'من نحن', navCart: 'السلة',
     heroEyebrow: 'طباعة صور فوتوغرافية في الأحساء',
-    heroTitle: 'صورك تستحق أن تُمسك باليد',
+    heroTitle: 'أجمل لحظاتك تستحق التوثيق',
     heroText: 'نحوّل لحظاتك الرقمية إلى صور مطبوعة ومنتجات تحفظها لسنوات.',
     printCta: 'اطبع صورك الآن', shopCta: 'تسوّق المستلزمات',
     processEyebrow: 'من الجوال إلى يدك', processTitle: 'طباعة الصور في 3 خطوات',
@@ -110,7 +110,7 @@ const LANDING_COPY = {
     featuredEyebrow: 'مختارات لحظة فن', featuredTitle: 'الأكثر طلباً',
     featuredText: 'منتجات أحبها عملاؤنا وتعودوا على اختيارها لحفظ أجمل اللحظات.',
     whyEyebrow: 'لماذا لحظة فن؟', whyTitle: 'نهتم بالصورة قبل كل شيء',
-    showcaseEyebrow: 'من داخل التجربة', showcaseTitle: 'تفاصيل تُرى وتُحس',
+    showcaseEyebrow: 'من داخل التجربة', showcaseTitle: 'روعة الألوان.. وفخامة الملمس',
     showcaseText: 'ألوان واضحة، ورق مختار بعناية، وتغليف يحافظ على كل صورة حتى تصل إليك.',
     reviewsEyebrow: 'آراء حقيقية', reviewsTitle: 'قالوا عن لحظة فن', verifiedReview: 'عميلة موثوقة',
     faqEyebrow: 'قبل أن تطبع', faqTitle: 'أسئلة تتكرر كثيراً',
@@ -805,7 +805,7 @@ export default function LandingPage() {
         <div className="art-shell flex flex-col items-center gap-4 border-t border-[#FAF9F7] pt-8 text-center">
           <p className="text-xs font-bold text-[#171717]/50">{copy.rights} © {new Date().getFullYear()}</p>
           <a
-            href="https://waseet-shop.vercel.app/"
+            href="https://waseet-shop.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-xs font-bold text-[#171717]/60 transition-colors hover:text-[#056ab3]"
