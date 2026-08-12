@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import LanguageToggle from './LanguageToggle';
+import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import logo from '../assets/logo-art-moment.svg';
 
@@ -57,6 +58,7 @@ export default function PublicHeader({
   showLanguage = false,
 }) {
   const { language, direction } = useLanguage();
+  const { session: adminSession } = useAuth();
   const location = useLocation();
   const text = copy[language] || copy.ar;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -66,6 +68,7 @@ export default function PublicHeader({
 
   const accountAction = customer ? onAccountClick : onLoginClick;
   const accountLabel = customer ? text.account : text.login;
+  const adminPath = adminSession ? '/app/dashboard' : '/admin/login';
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-[#FAF9F7]/95 backdrop-blur-xl" dir={direction}>
@@ -128,7 +131,7 @@ export default function PublicHeader({
             )}
           </Link>
           <Link
-            to="/admin/login"
+            to={adminPath}
             className="hidden h-11 w-11 items-center justify-center border border-black/10 bg-white text-[#171717] transition-colors hover:border-[#C6A56B] hover:text-[#9B773D] lg:flex"
             aria-label={text.admin}
             title={text.admin}
@@ -161,7 +164,7 @@ export default function PublicHeader({
             <Link to="/track" className="flex min-h-11 items-center border-b border-black/10 px-2 text-sm font-bold">{text.track}</Link>
             <Link to="/#why" className="flex min-h-11 items-center border-b border-black/10 px-2 text-sm font-bold">{text.about}</Link>
             {customer && <Link to="/store/orders" className="flex min-h-11 items-center border-b border-black/10 px-2 text-sm font-bold">{text.orders}</Link>}
-            <Link to="/admin/login" className="flex min-h-11 items-center gap-2 border-b border-black/10 px-2 text-sm font-bold text-[#171717]/72">
+            <Link to={adminPath} className="flex min-h-11 items-center gap-2 border-b border-black/10 px-2 text-sm font-bold text-[#171717]/72">
               <ShieldCheck size={18} className="text-[#9B773D]" /> {text.admin}
             </Link>
             <div className="mt-3 flex items-center gap-2">

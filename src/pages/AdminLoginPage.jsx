@@ -1,15 +1,21 @@
 // src/pages/AdminLoginPage.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import logoImg from '../assets/logo-art-moment.svg';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (session) navigate('/app/dashboard', { replace: true });
+  }, [navigate, session]);
 
     const handleLogin = async (e) => {
     e.preventDefault();
