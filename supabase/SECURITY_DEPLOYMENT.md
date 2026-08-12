@@ -214,6 +214,41 @@ The daily schedule runs at 07:00 Asia/Riyadh and sends idempotent reminders at
 30 and 7 days. Manual reminders remain available from the Customers page and are
 recorded in both the customer message log and the administration activity log.
 
+## Private print-file cleanup
+
+Run the privacy lifecycle and product-details migrations in the SQL Editor:
+
+```text
+supabase/migrations/202608120001_print_privacy_retention.sql
+supabase/migrations/202608120002_product_decision_details.sql
+```
+
+Deploy the cleanup endpoint and store a long random secret. The same value is
+used by the scheduled request and must never be committed:
+
+```powershell
+$ProjectRef = "dftmbamuyupgzpqfoixl"
+$PrintCleanupSecret = [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")
+npx supabase secrets set "PRINT_FILE_CLEANUP_SECRET=$PrintCleanupSecret" --project-ref $ProjectRef
+npx supabase functions deploy print-file-cleanup --no-verify-jwt --project-ref $ProjectRef
+```
+
+Then add the function URL and the same secret to Vault in the SQL Editor. Replace
+the placeholder with the value generated above:
+
+```sql
+select vault.create_secret(
+  'https://dftmbamuyupgzpqfoixl.supabase.co/functions/v1/print-file-cleanup',
+  'print_cleanup_function_url'
+);
+select vault.create_secret('REPLACE_WITH_THE_SAME_SECRET', 'print_cleanup_cron_secret');
+select public.schedule_print_file_cleanup();
+```
+
+The job runs daily at 04:30 Asia/Riyadh. It permanently removes originals and
+previews for unfinished drafts after the configured draft period, and for terminal
+orders after the configured post-order period. Only deletion metadata is retained.
+
 ## Telegram bot setup
 
 The bot token must never be committed or placed in a Vite environment variable. Store it only in Supabase Secrets. The webhook secret may contain letters, numbers, `_`, and `-`.

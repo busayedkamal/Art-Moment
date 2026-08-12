@@ -46,6 +46,10 @@ const copy = {
     configuring: 'جاري تجهيز مساحة الرفع الآمنة...', invalidType: 'هذا النوع من الملفات غير مدعوم.', tooLarge: 'حجم الصورة أكبر من 35MB.',
     uploadProblem: 'تعذر رفع بعض الصور. أعيدي المحاولة قبل المتابعة.', saved: 'تمت إضافة طلب الطباعة إلى السلة.',
     step: 'الخطوة', of: 'من', cropTitle: 'ضبط إطار الطباعة', noAccount: 'لا تحتاجين إلى حساب الآن. تسجيل الدخول سيكون عند إتمام الطلب فقط.',
+    privacyTitle: 'صورك خاصة بك',
+    privacyDetails: 'تُحفظ الصور في مساحة خاصة وتُستخدم فقط لتنفيذ طلب الطباعة. روابط الوصول مؤقتة ومحدودة الصلاحية.',
+    privacyRetention: 'تُحذف المسودة غير المكتملة بعد 7 أيام، وتُحذف ملفات الطلب بعد 30 يوماً من التسليم أو الإلغاء.',
+    privacyLink: 'تفاصيل سياسة الصور والخصوصية',
   },
   en: {
     back: 'Back home', title: 'Print your photos', lead: 'Turn your photos into beautiful prints through a clear, simple flow.',
@@ -63,6 +67,10 @@ const copy = {
     tooLarge: 'This image is larger than 35MB.', uploadProblem: 'Some photos could not be uploaded. Retry before continuing.',
     saved: 'Print order added to your cart.', step: 'Step', of: 'of', cropTitle: 'Adjust print frame',
     noAccount: 'No account is needed yet. Sign in only when you complete checkout.',
+    privacyTitle: 'Your photos stay yours',
+    privacyDetails: 'Photos are kept in private storage and used only to fulfil your print order. Access links are temporary and time-limited.',
+    privacyRetention: 'Unfinished drafts are deleted after 7 days. Order files are deleted 30 days after delivery or cancellation.',
+    privacyLink: 'Photo and privacy policy details',
   },
 };
 
@@ -412,6 +420,20 @@ export default function PrintBuilder() {
           <p className="max-w-md border-s-2 border-[#E8B4BC] ps-4 text-sm leading-7 text-black/55">{text.noAccount}</p>
         </section>
 
+        <section className="mb-8 grid gap-4 border-s-4 border-emerald-500 bg-emerald-50/70 p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:p-5" aria-labelledby="print-privacy-title">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-emerald-700 shadow-sm">
+            <ShieldCheck size={22} />
+          </span>
+          <div>
+            <h2 id="print-privacy-title" className="text-sm font-black text-emerald-950">{text.privacyTitle}</h2>
+            <p className="mt-1 text-xs font-bold leading-6 text-emerald-950/65">{text.privacyDetails}</p>
+            <p className="mt-1 text-[11px] font-bold leading-5 text-emerald-800">{text.privacyRetention}</p>
+          </div>
+          <Link to="/privacy#photo-files" className="inline-flex min-h-11 items-center justify-center border border-emerald-700/20 bg-white px-4 text-xs font-black text-emerald-800 transition-colors hover:bg-emerald-100">
+            {text.privacyLink}
+          </Link>
+        </section>
+
         <div className="mb-8 grid grid-cols-4 gap-2" aria-label={`${text.step} ${step} ${text.of} 4`}>
           {steps.map((label, index) => {
             const number = index + 1;
@@ -473,7 +495,7 @@ export default function PrintBuilder() {
               <UploadCloud size={42} className="mx-auto mb-4 text-[#C6A56B]" />
               <h2 className="text-xl font-black">{isPreparing ? text.configuring : text.dropTitle}</h2>
               <p className="mt-2 text-sm text-black/45">{text.dropHint}</p>
-              <button type="button" disabled={isPreparing} onClick={() => fileInputRef.current?.click()} className="mt-5 bg-[#171717] px-7 py-3 text-sm font-black text-white disabled:opacity-50">{text.browse}</button>
+              <button type="button" disabled={isPreparing} onClick={() => fileInputRef.current?.click()} className="mt-5 min-h-12 bg-[#171717] px-7 py-3 text-sm font-black text-white disabled:opacity-50">{text.browse}</button>
             </div>
 
             {photos.length > 0 && (
@@ -483,7 +505,7 @@ export default function PrintBuilder() {
                     <span className="bg-white px-3 py-2">{uploadedPhotos.length} {text.files}</span>
                     <span className="bg-white px-3 py-2">{totalCopies} {text.copies}</span>
                   </div>
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 border border-black/10 bg-white px-4 py-2 text-xs font-black"><Plus size={15} /> {text.addMore}</button>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-11 items-center gap-2 border border-black/10 bg-white px-4 py-2 text-xs font-black"><Plus size={15} /> {text.addMore}</button>
                 </div>
                 <div className="space-y-2">
                   {photos.map((photo) => (
@@ -499,7 +521,7 @@ export default function PrintBuilder() {
                         {['queued', 'preparing', 'uploading'].includes(photo.status) && <span className="flex items-center gap-1 text-[#C6A56B]"><Loader2 size={14} className="animate-spin" /> {text.uploading}</span>}
                         {photo.status === 'failed' && <button onClick={() => retryPhoto(photo)} className="flex items-center gap-1 text-red-600">{text.retry}</button>}
                       </div>
-                      <button type="button" onClick={() => removePhoto(photo)} className="flex h-9 w-9 items-center justify-center text-red-400 hover:bg-red-50" title={text.remove}><Trash2 size={16} /></button>
+                      <button type="button" onClick={() => removePhoto(photo)} className="flex h-11 w-11 items-center justify-center text-red-500 hover:bg-red-50" title={text.remove} aria-label={text.remove}><Trash2 size={17} /></button>
                     </div>
                   ))}
                 </div>
@@ -516,9 +538,9 @@ export default function PrintBuilder() {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-y border-black/[0.07] py-4">
               <div><h2 className="text-xl font-black">{text.review}</h2><p className="mt-1 text-xs text-black/45">{text.originals}</p></div>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => applyCopiesToAll(defaultCopies - 1)} className="h-10 w-10 border border-black/10 bg-white"><Minus size={15} className="mx-auto" /></button>
+                <button type="button" onClick={() => applyCopiesToAll(defaultCopies - 1)} className="h-11 w-11 border border-black/10 bg-white"><Minus size={15} className="mx-auto" /></button>
                 <span className="min-w-12 text-center font-black">{defaultCopies}</span>
-                <button type="button" onClick={() => applyCopiesToAll(defaultCopies + 1)} className="h-10 w-10 border border-black/10 bg-white"><Plus size={15} className="mx-auto" /></button>
+                <button type="button" onClick={() => applyCopiesToAll(defaultCopies + 1)} className="h-11 w-11 border border-black/10 bg-white"><Plus size={15} className="mx-auto" /></button>
                 <span className="ms-2 text-xs font-black">{text.applyAll}</span>
               </div>
             </div>

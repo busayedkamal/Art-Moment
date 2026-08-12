@@ -325,7 +325,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="art-page min-h-screen font-[Tajawal] relative overflow-x-hidden selection:bg-[#E8B4BC] selection:text-white" dir={direction}>
+    <div className="art-page min-h-screen pb-20 font-[Tajawal] relative overflow-x-hidden selection:bg-[#E8B4BC] selection:text-white sm:pb-0" dir={direction}>
 
       {/* Toast notification */}
       {toastMsg && (
@@ -613,7 +613,7 @@ export default function LandingPage() {
                     <button
                       onClick={() => addToCart(product)}
                       disabled={!canAddProduct}
-                      className={`w-full py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-black ${
+                      className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-xs font-black transition-all sm:text-sm ${
                         canAddProduct
                           ? 'bg-[#171717] text-white hover:bg-[#E8B4BC] shadow-md'
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -916,7 +916,7 @@ export default function LandingPage() {
 
       {/* Floating Cart Button — redirects to full store for cross-selling */}
       {cartCount > 0 && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-10">
+        <div className="fixed bottom-24 left-1/2 z-40 hidden -translate-x-1/2 animate-in slide-in-from-bottom-10 sm:block">
         <Link to="/store" className="flex items-center gap-3 bg-[#171717] text-white px-6 py-3.5 rounded-full font-black hover:shadow-2xl hover:scale-105 transition-all shadow-lg border-2 border-white group">
             <ShoppingBag size={20} className="group-hover:-translate-y-1 transition-transform" />
             أكمل طلبك من المتجر ({cartCount})
@@ -1008,10 +1008,20 @@ export default function LandingPage() {
         }}
       />
 
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-[minmax(0,1fr)_auto] gap-2 border-t border-black/10 bg-white/95 p-3 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:hidden" aria-label={language === 'en' ? 'Quick shopping actions' : 'إجراءات التسوق السريعة'}>
+        <Link to="/print" className="flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-5 text-sm font-black text-white">
+          <Printer size={19} /> {copy.printCta}
+        </Link>
+        <Link to="/store/cart" className="relative flex h-12 w-12 items-center justify-center border border-black/10 bg-[#FAF9F7] text-[#171717]" aria-label={copy.navCart}>
+          <ShoppingCart size={20} />
+          {cartCount > 0 && <span className="absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E8B4BC] px-1 text-[9px] font-black text-white">{cartCount}</span>}
+        </Link>
+      </nav>
+
       {/* Floating WhatsApp button */}
       {scrolled && (
         <a href="https://wa.me/966560301744" target="_blank" rel="noreferrer"
-          className="fixed bottom-3 left-3 sm:bottom-6 sm:left-6 z-40 bg-[#25D366] hover:bg-[#128C7E] text-white p-3 sm:p-4 rounded-full shadow-2xl hover:scale-105 transition-transform flex items-center gap-2 group border-2 sm:border-4 border-white animate-in fade-in zoom-in-90">
+          className="fixed bottom-20 left-3 sm:bottom-6 sm:left-6 z-40 bg-[#25D366] hover:bg-[#128C7E] text-white p-3 sm:p-4 rounded-full shadow-2xl hover:scale-105 transition-transform flex items-center gap-2 group border-2 sm:border-4 border-white animate-in fade-in zoom-in-90">
           <MessageCircle size={22} className="sm:w-7 sm:h-7" />
           <span className="hidden sm:block max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap font-bold">{language === 'en' ? 'Contact us' : 'تواصل معنا'}</span>
         </a>

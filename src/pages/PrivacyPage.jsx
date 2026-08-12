@@ -37,7 +37,7 @@ function Section({ id, icon: Icon, title, number, accent = 'pink', children }) {
 
           {/* أيقونة القسم — وسط */}
           <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border ${accentBg}`}>
-            <Icon size={16} style={{ color: accentColor }} />
+            {React.createElement(Icon, { size: 16, style: { color: accentColor } })}
           </div>
 
           {/* مؤشر الفتح/الإغلاق — يسار */}
@@ -88,7 +88,7 @@ function ListItem({ children, accent = 'pink' }) {
 function AlertCard({ icon: Icon = AlertCircle, color = '#E8B4BC', bg = 'bg-[#E8B4BC]/8 border-[#E8B4BC]/20', children }) {
   return (
     <div className={`mt-4 flex items-start gap-3 p-4 rounded-2xl border ${bg}`}>
-      <Icon size={18} style={{ color }} className="shrink-0 mt-0.5" />
+      {React.createElement(Icon, { size: 18, style: { color }, className: 'shrink-0 mt-0.5' })}
       <p className="text-sm leading-relaxed text-[#171717]/80">{children}</p>
     </div>
   );
@@ -103,6 +103,19 @@ export default function PrivacyPage() {
     const handleScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const scrollToHash = () => {
+      const targetId = decodeURIComponent(window.location.hash.replace(/^#/, ''));
+      if (targetId) document.getElementById(targetId)?.scrollIntoView({ block: 'start' });
+    };
+    const frame = window.requestAnimationFrame(scrollToHash);
+    window.addEventListener('hashchange', scrollToHash);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('hashchange', scrollToHash);
+    };
   }, []);
 
   const sections = [
@@ -120,7 +133,7 @@ export default function PrivacyPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF9F7] text-[#171717] font-sans" dir="rtl">
+    <div className="min-h-screen bg-[#FAF9F7] text-[#171717] font-[Tajawal]" dir="rtl">
 
       {/* ═══ شريط التنقل ═══════════════════════════════════════════════════════ */}
       <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#FAF9F7]/95 backdrop-blur-md shadow-sm border-b border-[#E8B4BC]/15' : 'bg-[#FAF9F7]'}`}>
@@ -229,15 +242,24 @@ export default function PrivacyPage() {
         </Section>
 
         {/* 3. أمن البيانات وتخزينها */}
-        <Section id="data-security" icon={Lock} title="أمن البيانات وتخزينها)" number="3" accent="pink">
+        <Section id="data-security" icon={Lock} title="أمن البيانات وتخزينها" number="3" accent="pink">
 
           <AlertCard color="#E8B4BC" bg="bg-[#E8B4BC]/8 border-[#E8B4BC]/25" icon={Shield}>
             <strong>سرية الصور — كادر نسائي 100%:</strong> لزيادة مستوى الطمأنينة والراحة التامة لعملائنا، نؤكد أن استقبال، ومعالجة، وطباعة، وتغليف كافة الصور والمواد البصرية يتم حصرياً بأيدي <strong>كادر نسائي كامل 100%</strong>. تُعامل جميع الصور المرفوعة بسرية مطلقة، ولا يُسمح بالاطلاع عليها أو التعامل معها إلا من قِبل الموظفات المختصات بتنفيذ الطباعة فقط.
           </AlertCard>
 
-          <SubSection icon={Trash2} title="إتلاف البيانات (الصور)" accent="pink">
-            <p>التزاماً بمبدأ الحد الأدنى للاحتفاظ بالبيانات، يتم <strong>إتلاف/حذف الصور الفوتوغرافية</strong> من خوادم وأجهزة "لحظة فن" بشكل نهائي ومحكم بعد تسليم الطلب للعميل والتأكد من عدم وجود أي ملاحظات عليه، ما لم يطلب العميل صراحةً الاحتفاظ بها لغرض الطباعة المتكررة مستقبلاً.</p>
-          </SubSection>
+          <div id="photo-files" className="scroll-mt-32">
+            <SubSection icon={Lock} title="مكان التخزين والوصول إلى الصور" accent="pink">
+              <p>تُرفع الصور الأصلية والمعاينات إلى مساحات تخزين خاصة غير متاحة للعامة. لا يُستخدم رابط عام دائم للملفات، وتُنشأ روابط وصول مؤقتة ومحدودة الصلاحية عند حاجة العميل إلى المعاينة أو حاجة الإدارة إلى تجهيز الطلب.</p>
+              <p>يقتصر الوصول التشغيلي على العميل صاحب مسودة الطباعة، وعلى إدارة "لحظة فن" عند تنفيذ الطلب. لا تُستخدم الصور في التسويق أو التدريب أو أي غرض آخر دون موافقة صريحة ومستقلة.</p>
+            </SubSection>
+
+            <SubSection icon={Trash2} title="مدة الاحتفاظ والحذف النهائي" accent="pink">
+              <p><strong>المسودة غير المكتملة:</strong> تُحذف صورها تلقائياً بعد 7 أيام من إنشائها إذا لم تتحول إلى طلب.</p>
+              <p><strong>الطلب المكتمل:</strong> تُحذف الصور الأصلية والمعاينات بعد 30 يوماً من تسليم الطلب أو إلغائه أو إرجاعه، لإتاحة معالجة أي ملاحظة مرتبطة بجودة الطباعة خلال هذه المدة.</p>
+              <p>يشمل الحذف الملفات الأصلية والمعاينات، مع الاحتفاظ بسجل تقني مختصر لعملية الحذف لا يحتوي على الصور نفسها. ويمكن للعميل طلب حذف مبكر بعد انتهاء تنفيذ الطلب ما لم يوجد التزام نظامي يستلزم الاحتفاظ المؤقت.</p>
+            </SubSection>
+          </div>
 
           <SubSection icon={Lock} title="حفظ البيانات الأساسية" accent="pink">
             <p>تُحفظ البيانات الأساسية (الاسم، الجوال، سجل الطلبات والمحفظة) في خوادم آمنة لتسهيل تقديم الخدمة مستقبلاً، مع تطبيق أعلى معايير التشفير التقنية لمنع الوصول غير المصرح به أو التسريب.</p>

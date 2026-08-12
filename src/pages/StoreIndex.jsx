@@ -13,7 +13,7 @@ import {
   Search, MessageCircle, Image as ImageIcon, ShoppingCart,
   Menu, X, Download, AlertCircle, ShoppingBag, Plus,
   ArrowLeft, Sparkles, User, LogOut, Package, Wallet,
-  ArrowUpDown, ChevronDown
+  ArrowUpDown, ChevronDown, Printer
 } from 'lucide-react';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from '../utils/customerAuthPrompt';
@@ -67,7 +67,7 @@ export default function StoreIndex() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedCategory = searchParams.get('category');
-  const { language, t } = useLanguage();
+  const { language, direction, t } = useLanguage();
   const [products, setProducts]             = useState([]);
   const [searchQ, setSearchQ]               = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -329,7 +329,7 @@ export default function StoreIndex() {
   };
 
   return (
-    <div className="art-page min-h-screen font-[Tajawal] relative overflow-x-hidden" dir="rtl">
+    <div className="art-page min-h-screen pb-20 font-[Tajawal] relative overflow-x-hidden sm:pb-0" dir={direction}>
 
       {/* Navbar */}
       <header className={`sticky top-0 z-50 art-nav transition-all duration-300 ${scrolled ? 'art-nav-scrolled' : ''}`}>
@@ -592,7 +592,7 @@ export default function StoreIndex() {
                     <button
                       onClick={(e) => { e.stopPropagation(); addToCart(product); }}
                       disabled={!canAddProduct}
-                      className={`w-full py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-black ${
+                      className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-xs font-black transition-all sm:text-sm ${
                         canAddProduct
                           ? 'bg-[#171717] text-white hover:bg-[#C6A56B] shadow-md'
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -630,7 +630,7 @@ export default function StoreIndex() {
 
       {/* Floating Cart Button */}
       {cartCount > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-10">
+        <div className="fixed bottom-6 left-1/2 z-40 hidden -translate-x-1/2 animate-in slide-in-from-bottom-10 sm:block">
           <Link to="/store/cart" className="flex items-center gap-3 bg-[#C6A56B] text-white px-6 py-3.5 rounded-full font-black hover:bg-[#171717] transition-all shadow-xl hover:scale-105 border-2 border-white">
             <ShoppingCart size={20} /> عرض السلة ({cartCount}) <ArrowLeft size={18} />
           </Link>
@@ -645,6 +645,16 @@ export default function StoreIndex() {
           setCustomer(getCustomerSession());
         }}
       />
+
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-[minmax(0,1fr)_auto] gap-2 border-t border-black/10 bg-white/95 p-3 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:hidden" aria-label={language === 'en' ? 'Quick shopping actions' : 'إجراءات التسوق السريعة'}>
+        <Link to="/print" className="flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-5 text-sm font-black text-white">
+          <Printer size={19} /> {language === 'en' ? 'Print your photos' : 'اطبع صورك الآن'}
+        </Link>
+        <Link to="/store/cart" className="relative flex h-12 w-12 items-center justify-center border border-black/10 bg-[#FAF9F7] text-[#171717]" aria-label={language === 'en' ? 'Cart' : 'السلة'}>
+          <ShoppingCart size={20} />
+          {cartCount > 0 && <span className="absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E8B4BC] px-1 text-[9px] font-black text-white">{cartCount}</span>}
+        </Link>
+      </nav>
 
       {/* Customer Account Sidebar */}
       {isAccountSidebarOpen && customer && (

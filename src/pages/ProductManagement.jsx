@@ -20,6 +20,27 @@ const CAT_CONFIG = {
 const getCatStyle = (cat) =>
   CAT_CONFIG[cat] || { label: cat, bg: 'bg-[#FAF9F7]', text: 'text-[#171717]', icon: Package };
 
+const normalizeFaqs = (value) => (Array.isArray(value) ? value : [])
+  .map((item) => ({
+    question: String(item?.question || '').trim(),
+    answer: String(item?.answer || '').trim(),
+  }))
+  .filter((item) => item.question && item.answer);
+
+const faqsToText = (value) => normalizeFaqs(value)
+  .map((item) => `${item.question} | ${item.answer}`)
+  .join('\n');
+
+const textToFaqs = (value) => String(value || '')
+  .split(/\r?\n/)
+  .map((line) => {
+    const separator = line.indexOf('|');
+    return separator > 0
+      ? { question: line.slice(0, separator).trim(), answer: line.slice(separator + 1).trim() }
+      : null;
+  })
+  .filter((item) => item?.question && item?.answer);
+
 // تحويل صف قاعدة البيانات (snake_case) → حالة React (camelCase)
 const fromDb = (p) => ({
   id:            p.id,
@@ -36,8 +57,18 @@ const fromDb = (p) => ({
   stockQuantity: p.stock_quantity ?? 0,
   isBestSeller:  p.is_best_seller ?? false,
   productOptions: normalizeProductOptions(p.product_options),
+  galleryImages: Array.isArray(p.gallery_images) ? p.gallery_images.filter(Boolean) : [],
   specifications: p.specifications && typeof p.specifications === 'object' ? p.specifications : {},
   specificationsEn: p.specifications_en && typeof p.specifications_en === 'object' ? p.specifications_en : {},
+  packageContents: p.package_contents || '',
+  packageContentsEn: p.package_contents_en || '',
+  preparationTime: p.preparation_time || '',
+  preparationTimeEn: p.preparation_time_en || '',
+  returnPolicy: p.return_policy || '',
+  returnPolicyEn: p.return_policy_en || '',
+  productFaqs: normalizeFaqs(p.product_faqs),
+  productFaqsEn: normalizeFaqs(p.product_faqs_en),
+  productGroupCode: p.product_group_code || '',
 });
 
 // تحويل حالة React (camelCase) → صف قاعدة البيانات (snake_case)
@@ -55,14 +86,26 @@ const toDb = (f) => ({
   stock_quantity: Number(f.stockQuantity) || 0,
   is_best_seller: f.isBestSeller,
   product_options: normalizeProductOptions(f.productOptions),
+  gallery_images: Array.isArray(f.galleryImages) ? f.galleryImages.filter(Boolean) : [],
   specifications: f.specifications && typeof f.specifications === 'object' ? f.specifications : {},
   specifications_en: f.specificationsEn && typeof f.specificationsEn === 'object' ? f.specificationsEn : {},
+  package_contents: f.packageContents?.trim() || null,
+  package_contents_en: f.packageContentsEn?.trim() || null,
+  preparation_time: f.preparationTime?.trim() || null,
+  preparation_time_en: f.preparationTimeEn?.trim() || null,
+  return_policy: f.returnPolicy?.trim() || null,
+  return_policy_en: f.returnPolicyEn?.trim() || null,
+  product_faqs: normalizeFaqs(f.productFaqs),
+  product_faqs_en: normalizeFaqs(f.productFaqsEn),
+  product_group_code: f.productGroupCode?.trim() || null,
 });
 
 const initialForm = {
   name: '', nameEn: '', description: '', descriptionEn: '', price: '', category: 'albums',
   image: null, hoverImage: null, sortOrder: 0, inStock: true, stockQuantity: 0, isBestSeller: false,
-  productOptions: [], specifications: {}, specificationsEn: {},
+  productOptions: [], galleryImages: [], specifications: {}, specificationsEn: {},
+  packageContents: '', packageContentsEn: '', preparationTime: '', preparationTimeEn: '',
+  returnPolicy: '', returnPolicyEn: '', productFaqs: [], productFaqsEn: [], productGroupCode: '',
 };
 
 const auditProduct = (product = {}) => ({
@@ -77,6 +120,8 @@ const auditProduct = (product = {}) => ({
   stock_quantity: Number(product.stockQuantity ?? product.stock_quantity ?? 0),
   is_best_seller: product.isBestSeller ?? product.is_best_seller ?? false,
   product_options: normalizeProductOptions(product.productOptions ?? product.product_options),
+  gallery_images_count: (product.galleryImages ?? product.gallery_images ?? []).length,
+  product_group_code: product.productGroupCode ?? product.product_group_code ?? null,
   has_image: Boolean(product.image),
   has_hover_image: Boolean(product.hoverImage ?? product.hover_image),
 });
@@ -697,6 +742,63 @@ export default function ProductManagement() {
                   placeholder={'الخامة: جلد\nالمقاس: 20 × 20 سم\nعدد الصفحات: 40 صفحة'}
                   className="w-full resize-y rounded-xl border border-[#E8B4BC]/20 bg-white px-4 py-3 text-sm font-bold leading-7 outline-none focus:border-[#E8B4BC]"
                 />
+              </div>
+
+              <div className="rounded-2xl border border-[#171717]/10 bg-[#FAF9F7] p-4">
+                <h3 className="text-sm font-black text-[#171717]">معلومات تساعد العميل على اتخاذ القرار</h3>
+                <p className="mb-4 mt-1 text-[10px] font-bold text-[#171717]/50">
+                  تظهر في صفحة المنتج، واترك أي حقل فارغاً إذا لم يكن مناسباً لهذا المنتج.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs font-black text-[#171717]/65">
+                    محتويات العبوة
+                    <textarea rows="3" value={form.packageContents} onChange={(event) => setForm((current) => ({ ...current, packageContents: event.target.value }))} placeholder="ألبوم واحد، غلاف حماية..." className="mt-1 w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold leading-6 outline-none focus:border-[#C6A56B]" />
+                  </label>
+                  <label className="text-xs font-black text-[#171717]/65" dir="ltr">
+                    Package contents
+                    <textarea rows="3" value={form.packageContentsEn} onChange={(event) => setForm((current) => ({ ...current, packageContentsEn: event.target.value }))} placeholder="One album, protective cover..." className="mt-1 w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold leading-6 outline-none focus:border-[#C6A56B]" />
+                  </label>
+                  <label className="text-xs font-black text-[#171717]/65">
+                    وقت التجهيز أو الشحن
+                    <input value={form.preparationTime} onChange={(event) => setForm((current) => ({ ...current, preparationTime: event.target.value }))} placeholder="يجهز خلال 2-3 أيام عمل" className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-[#C6A56B]" />
+                  </label>
+                  <label className="text-xs font-black text-[#171717]/65" dir="ltr">
+                    Preparation or dispatch time
+                    <input value={form.preparationTimeEn} onChange={(event) => setForm((current) => ({ ...current, preparationTimeEn: event.target.value }))} placeholder="Ready in 2-3 business days" className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-[#C6A56B]" />
+                  </label>
+                  <label className="text-xs font-black text-[#171717]/65">
+                    سياسة الاسترجاع الخاصة بالمنتج
+                    <textarea rows="3" value={form.returnPolicy} onChange={(event) => setForm((current) => ({ ...current, returnPolicy: event.target.value }))} placeholder="يقبل الاسترجاع خلال 7 أيام إذا كان غير مستخدم..." className="mt-1 w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold leading-6 outline-none focus:border-[#C6A56B]" />
+                  </label>
+                  <label className="text-xs font-black text-[#171717]/65" dir="ltr">
+                    Product return policy
+                    <textarea rows="3" value={form.returnPolicyEn} onChange={(event) => setForm((current) => ({ ...current, returnPolicyEn: event.target.value }))} placeholder="Returnable within 7 days if unused..." className="mt-1 w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold leading-6 outline-none focus:border-[#C6A56B]" />
+                  </label>
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs font-black text-[#171717]/65">
+                    الأسئلة المتكررة
+                    <span className="mt-1 block text-[9px] font-bold text-[#171717]/40">سؤال | إجابة، سؤال واحد في كل سطر</span>
+                    <textarea key={`faqs-${form.id || 'new'}`} rows="4" defaultValue={faqsToText(form.productFaqs)} onBlur={(event) => setForm((current) => ({ ...current, productFaqs: textToFaqs(event.target.value) }))} placeholder={'هل يشمل التغليف؟ | نعم، يشمل تغليف الحماية.'} className="mt-1 w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold leading-6 outline-none focus:border-[#C6A56B]" />
+                  </label>
+                  <label className="text-xs font-black text-[#171717]/65" dir="ltr">
+                    FAQs in English
+                    <span className="mt-1 block text-[9px] font-bold text-[#171717]/40">Question | Answer, one per line</span>
+                    <textarea key={`faqs-en-${form.id || 'new'}`} rows="4" defaultValue={faqsToText(form.productFaqsEn)} onBlur={(event) => setForm((current) => ({ ...current, productFaqsEn: textToFaqs(event.target.value) }))} placeholder={'Is packaging included? | Yes, protective packaging is included.'} className="mt-1 w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-bold leading-6 outline-none focus:border-[#C6A56B]" />
+                  </label>
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs font-black text-[#171717]/65">
+                    صور إضافية للمعرض
+                    <span className="mt-1 block text-[9px] font-bold text-[#171717]/40">رابط صورة واحد في كل سطر</span>
+                    <textarea key={`gallery-${form.id || 'new'}`} rows="4" defaultValue={(form.galleryImages || []).join('\n')} onBlur={(event) => setForm((current) => ({ ...current, galleryImages: event.target.value.split(/\r?\n/).map((value) => value.trim()).filter(Boolean) }))} placeholder="https://..." dir="ltr" className="mt-1 w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2 text-left text-xs font-bold leading-6 outline-none focus:border-[#C6A56B]" />
+                  </label>
+                  <label className="text-xs font-black text-[#171717]/65">
+                    رمز عائلة المنتج
+                    <span className="mt-1 block text-[9px] font-bold text-[#171717]/40">يجمع المتغيرات المرتبطة في بيانات Google</span>
+                    <input value={form.productGroupCode} onChange={(event) => setForm((current) => ({ ...current, productGroupCode: event.target.value }))} placeholder="ALBUM-GREEN-200" dir="ltr" className="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-3 text-left text-sm font-bold outline-none focus:border-[#C6A56B]" />
+                  </label>
+                </div>
               </div>
 
               {/* السعر + الفئة */}

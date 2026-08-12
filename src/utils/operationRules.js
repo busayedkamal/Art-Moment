@@ -5,6 +5,8 @@ export const DEFAULT_OPERATION_RULES = Object.freeze({
   returnReviewDueHours: 48,
   returnWindowDays: 7,
   notificationRetryLimit: 3,
+  printDraftRetentionDays: 7,
+  printOrderRetentionDays: 30,
   overdueTasksUrgent: true,
 });
 
@@ -15,6 +17,8 @@ const RULE_LIMITS = {
   returnReviewDueHours: [1, 720],
   returnWindowDays: [1, 365],
   notificationRetryLimit: [0, 10],
+  printDraftRetentionDays: [1, 30],
+  printOrderRetentionDays: [1, 180],
 };
 
 function clampInteger(value, fallback, [min, max]) {
@@ -55,6 +59,16 @@ export function normalizeOperationRules(row = {}) {
       DEFAULT_OPERATION_RULES.notificationRetryLimit,
       RULE_LIMITS.notificationRetryLimit,
     ),
+    printDraftRetentionDays: clampInteger(
+      row.printDraftRetentionDays ?? row.print_draft_retention_days,
+      DEFAULT_OPERATION_RULES.printDraftRetentionDays,
+      RULE_LIMITS.printDraftRetentionDays,
+    ),
+    printOrderRetentionDays: clampInteger(
+      row.printOrderRetentionDays ?? row.print_order_retention_days,
+      DEFAULT_OPERATION_RULES.printOrderRetentionDays,
+      RULE_LIMITS.printOrderRetentionDays,
+    ),
     overdueTasksUrgent: (row.overdueTasksUrgent ?? row.overdue_tasks_urgent)
       ?? DEFAULT_OPERATION_RULES.overdueTasksUrgent,
   };
@@ -69,6 +83,8 @@ export function getOperationRulesPayload(rules) {
     return_review_due_hours: normalized.returnReviewDueHours,
     return_window_days: normalized.returnWindowDays,
     notification_retry_limit: normalized.notificationRetryLimit,
+    print_draft_retention_days: normalized.printDraftRetentionDays,
+    print_order_retention_days: normalized.printOrderRetentionDays,
     overdue_tasks_urgent: Boolean(normalized.overdueTasksUrgent),
   };
 }

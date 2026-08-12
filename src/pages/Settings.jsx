@@ -6,7 +6,7 @@ import {
   Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle,
   Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle,
   FileText, Edit3, XCircle, Mail, BellRing, Clock3, CreditCard, RotateCcw, Truck,
-  Award, Coins
+  Award, Coins, ShieldCheck
 } from 'lucide-react';
 import RiyalSign from '../components/RiyalSign';
 import {
@@ -637,6 +637,26 @@ export default function Settings() {
               max={10}
               value={operationRules.notificationRetryLimit}
               onChange={(value) => updateOperationRule('notificationRetryLimit', value)}
+            />
+            <OperationRuleField
+              icon={Trash2}
+              label="حذف مسودات الصور غير المكتملة"
+              description="تُحذف الصور التي رُفعت ولم تتحول إلى طلب بعد هذه المدة."
+              unit="يوم"
+              min={1}
+              max={30}
+              value={operationRules.printDraftRetentionDays}
+              onChange={(value) => updateOperationRule('printDraftRetentionDays', value)}
+            />
+            <OperationRuleField
+              icon={ShieldCheck}
+              label="الاحتفاظ بصور الطلب المكتمل"
+              description="مدة معالجة ملاحظات الطباعة قبل حذف الأصل والمعاينة نهائياً."
+              unit="يوم"
+              min={1}
+              max={180}
+              value={operationRules.printOrderRetentionDays}
+              onChange={(value) => updateOperationRule('printOrderRetentionDays', value)}
             />
           </div>
 
