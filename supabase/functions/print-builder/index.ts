@@ -111,6 +111,19 @@ Deno.serve(async (req) => {
       return jsonResponse({ file, upload: signedUpload, previewUpload: signedPreviewUpload });
     }
 
+    // Sealing applies to the complete draft, so it must not require a fileId.
+    if (action === 'seal_draft') {
+      const summary = await recalculatePrintDraft(supabase, draft.id);
+      if (summary.draft.file_count < 1 || summary.draft.total_copies < 1) {
+        return jsonResponse({ error: 'print_draft_empty' }, 400);
+      }
+      const { data: readyDraft, error } = await supabase.from('print_drafts').update({
+        status: 'ready', updated_at: new Date().toISOString(),
+      }).eq('id', draft.id).select('*').single();
+      if (error) throw error;
+      return jsonResponse({ draft: readyDraft, lowResolutionCount: summary.lowResolutionCount });
+    }
+
     const fileId = String(body?.fileId || '');
     const { data: file, error: fileError } = await supabase
       .from('print_draft_files').select('*').eq('id', fileId).eq('draft_id', draft.id).maybeSingle();
@@ -152,16 +165,6 @@ Deno.serve(async (req) => {
       const { error } = await supabase.from('print_draft_files').delete().eq('id', file.id);
       if (error) throw error;
       return jsonResponse(await recalculatePrintDraft(supabase, draft.id));
-    }
-
-    if (action === 'seal_draft') {
-      const summary = await recalculatePrintDraft(supabase, draft.id);
-      if (summary.draft.file_count < 1 || summary.draft.total_copies < 1) return jsonResponse({ error: 'print_draft_empty' }, 400);
-      const { data: readyDraft, error } = await supabase.from('print_drafts').update({
-        status: 'ready', updated_at: new Date().toISOString(),
-      }).eq('id', draft.id).select('*').single();
-      if (error) throw error;
-      return jsonResponse({ draft: readyDraft, lowResolutionCount: summary.lowResolutionCount });
     }
 
     return jsonResponse({ error: 'unsupported_action' }, 400);

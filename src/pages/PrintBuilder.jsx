@@ -376,7 +376,13 @@ export default function PrintBuilder() {
       navigate('/store/cart');
     } catch (error) {
       console.error('Seal print draft error:', error);
-      toast.error(language === 'ar' ? 'تعذر تجهيز طلب الطباعة للسلة.' : 'Could not prepare the print order.');
+      const reason = await functionError(error);
+      const messageByReason = {
+        print_draft_empty: language === 'ar' ? 'أضيفي صورة واحدة على الأقل قبل المتابعة.' : 'Add at least one photo before continuing.',
+        print_draft_expired: language === 'ar' ? 'انتهت صلاحية مسودة الصور. ابدئي طلب طباعة جديدًا.' : 'This photo draft has expired. Start a new print order.',
+        print_draft_locked: language === 'ar' ? 'تمت إضافة هذا الطلب للسلة مسبقًا.' : 'This print order has already been added to the cart.',
+      };
+      toast.error(messageByReason[reason] || (language === 'ar' ? 'تعذر تجهيز طلب الطباعة للسلة.' : 'Could not prepare the print order.'));
     } finally {
       setIsSealing(false);
     }
