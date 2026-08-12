@@ -162,7 +162,7 @@ function SeoRoutePolicy() {
 
   return (
     <SeoHead
-      title={isPrivateRoute ? 'لحظة فن | صفحة خاصة' : publicMeta.title}
+      title={isPrivateRoute ? 'لحظة فن | Art Moment' : publicMeta.title}
       description={isPrivateRoute ? 'صفحة خاصة بخدمات وحسابات عملاء لحظة فن.' : publicMeta.description}
       path={pathname}
       noindex={isPrivateRoute}
