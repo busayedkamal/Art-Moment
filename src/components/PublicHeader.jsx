@@ -5,6 +5,7 @@ import {
   Download,
   Menu,
   Search,
+  ShieldCheck,
   ShoppingCart,
   User,
   X,
@@ -25,6 +26,7 @@ const copy = {
     account: 'حسابي',
     orders: 'طلباتي',
     install: 'تحميل التطبيق',
+    admin: 'دخول الإدارة',
     menu: 'فتح القائمة',
     close: 'إغلاق القائمة',
   },
@@ -39,6 +41,7 @@ const copy = {
     account: 'My Account',
     orders: 'My Orders',
     install: 'Install App',
+    admin: 'Admin Login',
     menu: 'Open menu',
     close: 'Close menu',
   },
@@ -124,6 +127,14 @@ export default function PublicHeader({
               </span>
             )}
           </Link>
+          <Link
+            to="/admin/login"
+            className="hidden h-11 w-11 items-center justify-center border border-black/10 bg-white text-[#171717] transition-colors hover:border-[#C6A56B] hover:text-[#9B773D] lg:flex"
+            aria-label={text.admin}
+            title={text.admin}
+          >
+            <ShieldCheck size={19} />
+          </Link>
           <div className="hidden items-center gap-2 md:flex">
             {showLanguage && <LanguageToggle />}
             {accountAction ? (
@@ -150,6 +161,9 @@ export default function PublicHeader({
             <Link to="/track" className="flex min-h-11 items-center border-b border-black/10 px-2 text-sm font-bold">{text.track}</Link>
             <Link to="/#why" className="flex min-h-11 items-center border-b border-black/10 px-2 text-sm font-bold">{text.about}</Link>
             {customer && <Link to="/store/orders" className="flex min-h-11 items-center border-b border-black/10 px-2 text-sm font-bold">{text.orders}</Link>}
+            <Link to="/admin/login" className="flex min-h-11 items-center gap-2 border-b border-black/10 px-2 text-sm font-bold text-[#171717]/72">
+              <ShieldCheck size={18} className="text-[#9B773D]" /> {text.admin}
+            </Link>
             <div className="mt-3 flex items-center gap-2">
               {showLanguage && <LanguageToggle />}
               {accountAction && (
