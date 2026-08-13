@@ -291,6 +291,13 @@ export default function ProductDetailsPage() {
       <PublicHeader cartCount={cartCount} />
 
       <main className="art-shell py-6 sm:py-10">
+        <nav className="mb-6 flex items-center gap-2 text-xs font-bold text-[#171717]/50" aria-label={language === 'en' ? 'Breadcrumb' : 'مسار التنقل'}>
+          <Link to="/" className="hover:text-[#B96F7D]">{language === 'en' ? 'Home' : 'الرئيسية'}</Link>
+          <span>/</span>
+          <Link to="/store" className="hover:text-[#B96F7D]">{language === 'en' ? 'Store' : 'المتجر'}</Link>
+          <span>/</span>
+          <span className="truncate text-[#171717]" aria-current="page">{product.name}</span>
+        </nav>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] lg:items-start">
           <section className="min-w-0">
             <div className="aspect-square overflow-hidden rounded-2xl border border-[#E8B4BC]/12 bg-white">
@@ -322,8 +329,8 @@ export default function ProductDetailsPage() {
             <span className="inline-flex rounded-full bg-[#E8B4BC]/10 px-3 py-1 text-[11px] font-black text-[#B97882]">
               {getCategoryLabel(product.category, language)}
             </span>
-            <h1 className="mt-4 text-3xl font-black leading-tight sm:text-4xl">{product.name}</h1>
-            <p className="mt-4 text-sm font-medium leading-8 text-[#171717]/65">
+            <h1 className="art-page-title mt-4">{product.name}</h1>
+            <p className="art-body mt-4 font-medium">
               {product.description || text.fallback}
             </p>
 

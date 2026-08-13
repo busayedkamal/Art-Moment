@@ -130,7 +130,6 @@ function AppRoutes() {
 const PRIVATE_ROUTE_PREFIXES = [
   '/app',
   '/admin',
-  '/store/cart',
   '/store/account',
   '/store/orders',
   '/store/payment',
@@ -141,7 +140,7 @@ const PRIVATE_ROUTE_PREFIXES = [
 const PUBLIC_ROUTE_META = {
   '/print': {
     title: 'اطبع صورك أونلاين | لحظة فن',
-    description: 'ارفع صورك من الجوال، اختر مقاس الطباعة، راجع الجودة والسعر، ثم أتم طلبك بسهولة وخصوصية.',
+    description: 'ارفع صورك من الجوال، اختر مقاس الطباعة والكمية، ثم راجع طلبك وسعره قبل إضافته إلى السلة.',
   },
   '/links': {
     title: 'حسابات لحظة فن الرسمية | تواصل معنا',
@@ -155,10 +154,22 @@ const PUBLIC_ROUTE_META = {
 
 function SeoRoutePolicy() {
   const { pathname } = useLocation()
+  const isCartRoute = pathname === '/store/cart'
   const isPrivateRoute = PRIVATE_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
   const publicMeta = PUBLIC_ROUTE_META[pathname]
 
-  if (!isPrivateRoute && !publicMeta) return null
+  if (!isPrivateRoute && !isCartRoute && !publicMeta) return null
+
+  if (isCartRoute) {
+    return (
+      <SeoHead
+        title="سلة التسوق | لحظة فن"
+        description="راجع منتجات سلة لحظة فن والكميات قبل تسجيل الدخول وإتمام الطلب."
+        path={pathname}
+        noindex
+      />
+    )
+  }
 
   return (
     <SeoHead
@@ -166,6 +177,7 @@ function SeoRoutePolicy() {
       description={isPrivateRoute ? 'صفحة خاصة بخدمات وحسابات عملاء لحظة فن.' : publicMeta.description}
       path={pathname}
       noindex={isPrivateRoute}
+      nofollow={isPrivateRoute}
     />
   )
 }

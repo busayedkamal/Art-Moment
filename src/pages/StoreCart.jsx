@@ -486,8 +486,8 @@ export default function StoreCart() {
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-[#E8B4BC]/30">
           <ShoppingBag size={40} />
         </div>
-        <h2 className="text-2xl font-black mb-2">سلة المشتريات فارغة</h2>
-        <p className="text-[#171717]/50 text-sm mb-8">لم تقم بإضافة أي منتجات للسلة بعد.</p>
+        <h1 className="art-page-title mb-2">سلة التسوق</h1>
+        <p className="text-[#171717]/50 text-sm mb-8">سلة المشتريات فارغة. لم تقم بإضافة أي منتجات بعد.</p>
         <Link to="/store" className="bg-[#171717] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#E8B4BC] transition-colors">
           تصفح المتجر
         </Link>
@@ -502,7 +502,7 @@ export default function StoreCart() {
         <Link to="/store" className="flex items-center gap-2 text-[#171717]/60 hover:text-[#E8B4BC] text-sm font-bold transition-colors">
           <ArrowRight size={18} /> متابعة التسوق
         </Link>
-        <h1 className="text-lg font-black">سلة المشتريات</h1>
+        <h1 className="text-lg font-black">سلة التسوق</h1>
         <span className="bg-[#E8B4BC] text-white text-xs font-bold px-2 py-0.5 rounded-full">{cart.length}</span>
       </header>
 

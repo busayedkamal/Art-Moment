@@ -550,7 +550,15 @@ export default function StoreIndex() {
                 </div>
 
                 <div className="flex-1 flex flex-col px-1">
-                  <h3 className="font-black text-[#171717] text-sm md:text-base line-clamp-2 leading-snug mb-1">{product.name}</h3>
+                  <h3 className="art-product-title mb-1 line-clamp-2">
+                    <Link
+                      to={`/store/products/${product.id}`}
+                      onClick={(event) => event.stopPropagation()}
+                      className="text-[#171717] hover:text-[#B96F7D]"
+                    >
+                      {product.name}
+                    </Link>
+                  </h3>
                   <p className="text-[#171717]/50 text-xs line-clamp-2 mb-4 flex-1">{product.description}</p>
                   <div className="mt-auto pt-3 border-t border-[#FAF9F7] space-y-3">
                     <div className="flex items-center justify-between">

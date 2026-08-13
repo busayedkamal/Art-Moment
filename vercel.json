@@ -6,6 +6,7 @@
     { "source": "/store/albums", "destination": "/store/albums/index.html" },
     { "source": "/store/frames", "destination": "/store/frames/index.html" },
     { "source": "/store/photo-supplies", "destination": "/store/photo-supplies/index.html" },
+    { "source": "/store/cart", "destination": "/store/cart/index.html" },
     { "source": "/store", "destination": "/store/index.html" },
     { "source": "/print", "destination": "/print/index.html" },
     {

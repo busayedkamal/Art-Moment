@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Image as ImageIcon, Printer, ShoppingBag } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Image as ImageIcon, Printer, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
 import SeoHead from '../components/SeoHead';
@@ -16,13 +16,13 @@ const SEO_CATEGORY_PAGES = {
     ar: {
       eyebrow: 'خدمة طباعة الصور',
       title: 'طباعة الصور بجودة تحفظ لحظاتك',
-      description: 'اطبع صور الجوال والكاميرا بمقاسات عملية وجودة ألوان واضحة، مع مراجعة الملفات قبل تجهيز الطلب.',
+      description: 'اطبع صور الجوال والكاميرا بمقاسات عملية وأسعار واضحة قبل تجهيز الطلب.',
       intro: 'ابدأ باختيار المقاس، ارفع صورك، ثم راجع العدد والسعر قبل إضافة طلب الطباعة إلى السلة.',
     },
     en: {
       eyebrow: 'Photo printing service',
       title: 'Photo printing made for lasting memories',
-      description: 'Print phone and camera photos in practical sizes with clear color and a file review before production.',
+      description: 'Print phone and camera photos in practical sizes with clear pricing before checkout.',
       intro: 'Choose a size, upload your photos, then review quantity and price before adding the print order to your cart.',
     },
   },
@@ -32,14 +32,14 @@ const SEO_CATEGORY_PAGES = {
     ar: {
       eyebrow: 'ورق صور مختار بعناية',
       title: 'طباعة الصور الفوتوغرافية',
-      description: 'طباعة فوتوغرافية للألبومات والإطارات والذكريات اليومية، مع تنبيه للدقة المنخفضة قبل تنفيذ الطلب.',
-      intro: 'نراجع ملاءمة الدقة للمقاس المختار ونحافظ على الملف الأصلي في مساحة تخزين خاصة ومحدودة الوصول.',
+      description: 'طباعة فوتوغرافية للألبومات والإطارات والذكريات اليومية، بمقاسات وأسعار واضحة قبل إتمام الطلب.',
+      intro: 'اختر المقاس وارفع صورك وحدد الكمية، ثم راجع طلبك قبل إضافته إلى السلة. تحفظ الملفات الأصلية في مساحة تخزين خاصة ومحدودة الوصول.',
     },
     en: {
       eyebrow: 'Carefully selected photo paper',
       title: 'Photographic photo printing',
-      description: 'Photographic prints for albums, frames, and everyday memories, including low-resolution warnings before production.',
-      intro: 'We review image resolution for the selected size and keep originals in private, access-controlled storage.',
+      description: 'Photographic prints for albums, frames, and everyday memories, with sizes and prices shown before checkout.',
+      intro: 'Choose a size, upload your photos, set the quantity, and review the order before adding it to your cart. Originals stay in private, access-controlled storage.',
     },
   },
   printSizes: {
@@ -118,6 +118,7 @@ export default function SeoCategoryPage({ pageKey }) {
   const text = config[language] || config.ar;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
@@ -133,11 +134,13 @@ export default function SeoCategoryPage({ pageKey }) {
     let active = true;
     const loadProducts = async () => {
       setLoading(true);
+      setLoadError('');
       const { data, error } = await supabase.from('products').select('*').order('sort_order', { ascending: true });
       if (!active) return;
       if (error) {
         console.error('Unable to load category products:', error);
         setProducts([]);
+        setLoadError(language === 'en' ? 'Products could not be loaded right now.' : 'تعذر تحميل منتجات هذا القسم حالياً.');
       } else {
         setProducts((data || []).filter((product) => matchesCategory(product, config.category)));
       }
@@ -145,7 +148,7 @@ export default function SeoCategoryPage({ pageKey }) {
     };
     loadProducts();
     return () => { active = false; };
-  }, [config.category]);
+  }, [config.category, language]);
 
   const structuredData = useMemo(() => {
     const pageUrl = `${SITE_URL}${config.path}`;
@@ -191,9 +194,9 @@ export default function SeoCategoryPage({ pageKey }) {
           <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="max-w-3xl">
               <p className="mb-3 text-xs font-black text-[#C6A56B]">{text.eyebrow}</p>
-              <h1 className="text-3xl font-black leading-tight text-[#171717] sm:text-5xl">{text.title}</h1>
-              <p className="mt-5 max-w-2xl text-sm font-medium leading-8 text-[#171717]/65 sm:text-base">{text.description}</p>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-[#171717]/55">{text.intro}</p>
+              <h1 className="art-page-title">{text.title}</h1>
+              <p className="art-body mt-5 max-w-2xl font-medium">{text.description}</p>
+              <p className="art-body mt-3 max-w-2xl text-[#171717]/55">{text.intro}</p>
             </div>
             <Link to="/print" className="inline-flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-6 text-sm font-black text-white">
               <Printer size={19} /> {language === 'en' ? 'Print your photos now' : 'اطبع صورك الآن'}
@@ -205,7 +208,7 @@ export default function SeoCategoryPage({ pageKey }) {
           <div className="mb-7 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-black text-[#C6A56B]">{language === 'en' ? 'Available now' : 'المتوفر الآن'}</p>
-              <h2 className="mt-2 text-2xl font-black">{language === 'en' ? 'Choose your product' : 'اختر منتجك'}</h2>
+              <h2 className="art-section-title mt-2">{language === 'en' ? 'Choose your product' : 'اختر منتجك'}</h2>
             </div>
             <Link to="/store" className="flex items-center gap-2 text-sm font-black text-[#171717]/65 hover:text-[#B96F7D]">
               {language === 'en' ? 'Full store' : 'كل المتجر'} <Arrow size={17} />
@@ -215,6 +218,14 @@ export default function SeoCategoryPage({ pageKey }) {
           {loading ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
               {[0, 1, 2, 3].map((item) => <div key={item} className="aspect-[4/5] animate-pulse bg-black/5" />)}
+            </div>
+          ) : loadError ? (
+            <div className="border-y border-red-100 bg-red-50/40 py-14 text-center">
+              <AlertCircle className="mx-auto text-red-400" size={32} />
+              <p className="mt-4 text-sm font-bold text-[#171717]/65">{loadError}</p>
+              <button type="button" onClick={() => window.location.reload()} className="mt-5 inline-flex min-h-11 items-center gap-2 bg-[#171717] px-5 text-sm font-black text-white">
+                <RefreshCw size={16} /> {language === 'en' ? 'Try again' : 'إعادة المحاولة'}
+              </button>
             </div>
           ) : products.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
@@ -244,7 +255,9 @@ export default function SeoCategoryPage({ pageKey }) {
                       </span>
                     </Link>
                     <div className="flex flex-1 flex-col pt-4">
-                      <h3 className="text-sm font-black leading-6 sm:text-base">{productName}</h3>
+                      <h3 className="art-product-title">
+                        <Link to={`/store/products/${product.id}`} className="hover:text-[#B96F7D]">{productName}</Link>
+                      </h3>
                       <p className="mt-2 line-clamp-2 text-xs leading-6 text-[#171717]/50">{description}</p>
                       <div className="mt-auto flex items-end justify-between gap-2 border-t border-black/10 pt-4">
                         <strong className="text-lg font-black text-[#B96F7D]">{Number(product.price || 0).toFixed(2)} <small>{language === 'en' ? 'SAR' : 'ر.س'}</small></strong>

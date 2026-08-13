@@ -33,6 +33,7 @@ export default function SeoHead({
   image = DEFAULT_IMAGE,
   type = 'website',
   noindex = false,
+  nofollow = false,
   structuredData = [],
 }) {
   useEffect(() => {
@@ -41,7 +42,10 @@ export default function SeoHead({
     document.title = title;
 
     upsertMeta('meta[name="description"]', { name: 'description', content: description });
-    upsertMeta('meta[name="robots"]', { name: 'robots', content: noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large' });
+    const robots = noindex
+      ? `noindex,${nofollow ? 'nofollow' : 'follow'}`
+      : 'index,follow,max-image-preview:large';
+    upsertMeta('meta[name="robots"]', { name: 'robots', content: robots });
     upsertMeta('meta[property="og:title"]', { property: 'og:title', content: title });
     upsertMeta('meta[property="og:description"]', { property: 'og:description', content: description });
     upsertMeta('meta[property="og:type"]', { property: 'og:type', content: type });
@@ -68,7 +72,7 @@ export default function SeoHead({
     }
 
     return () => document.getElementById(scriptId)?.remove();
-  }, [description, image, noindex, path, structuredData, title, type]);
+  }, [description, image, nofollow, noindex, path, structuredData, title, type]);
 
   return null;
 }
