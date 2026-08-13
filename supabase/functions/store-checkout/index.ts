@@ -283,11 +283,18 @@ Deno.serve(async (req) => {
         print_draft_id: readyDraft.id,
         quantity: Number(readyDraft.total_copies || 0),
         price_at_time: Number(readyDraft.unit_price || 0),
-        selected_options: { print_size: readyDraft.print_size, finish: readyDraft.finish },
+        selected_options: {
+          print_size: readyDraft.print_size,
+          material: readyDraft.material,
+          surface: readyDraft.surface,
+          border_style: readyDraft.border_style,
+          fit_mode: readyDraft.fit_mode,
+        },
         metadata: {
           file_count: Number(readyDraft.file_count || 0),
           total_copies: Number(readyDraft.total_copies || 0),
-          low_resolution_count: Number(recalculated.lowResolutionCount || 0),
+          variant_id: readyDraft.variant_id,
+          original_files_private: true,
         },
       });
     }

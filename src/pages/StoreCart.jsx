@@ -14,6 +14,7 @@ import {
   normalizeStockQuantity,
 } from '../utils/productStock';
 import { getCartLineKey, getSelectedOptionLabels } from '../utils/productOptions';
+import { formatPrintOptionSummary } from '../utils/printOptions';
 import { getStoreAnonymousId, trackStoreEvent } from '../utils/storeAnalytics';
 
 async function getFunctionError(error) {
@@ -547,9 +548,10 @@ export default function StoreCart() {
                 )}
                 <p className="text-[10px] text-[#171717]/50 mt-1">{item.price} ر.س × {item.qty}</p>
                 {item.itemType === 'print' && item.printDetails && (
-                  <p className="mt-1 text-[10px] font-bold text-[#B97882]">
-                    {item.printDetails.fileCount} ملفات · {item.printDetails.totalCopies} نسخة · {item.printDetails.printSize}
-                  </p>
+                  <div className="mt-1 text-[10px] font-bold leading-5 text-[#B97882]">
+                    <p>{item.printDetails.fileCount} ملفات · {item.printDetails.totalCopies} نسخة · {item.printDetails.printSize}</p>
+                    <p>{formatPrintOptionSummary({ material: item.printDetails.material, surface: item.printDetails.surface, border_style: item.printDetails.borderStyle, fit_mode: item.printDetails.fitMode })}</p>
+                  </div>
                 )}
                 <p className={`text-[10px] font-bold mt-1 ${reachedMax ? 'text-amber-600' : 'text-[#171717]/45'}`}>
                   {availableStock === null ? 'الكمية متاحة' : `المتوفر: ${availableStock}`}
@@ -593,6 +595,16 @@ export default function StoreCart() {
             </div>
             );
           })}
+          {cart.some((item) => item.itemType === 'print') && (
+            <div className="border-s-4 border-[#C6A56B] bg-white p-5 shadow-sm">
+              <h3 className="font-black text-[#171717]">أكملي مجموعة ذكرياتك</h3>
+              <p className="mt-1 text-xs leading-6 text-[#171717]/55">اختاري ألبومًا أو إطارًا مناسبًا لمقاس الصور الموجودة في السلة.</p>
+              <div className="mt-3 flex gap-2">
+                <Link to="/store/albums" className="min-h-11 flex-1 border border-[#E8B4BC]/25 bg-[#FAF9F7] px-4 py-3 text-center text-xs font-black">عرض الألبومات</Link>
+                <Link to="/store/frames" className="min-h-11 flex-1 border border-[#E8B4BC]/25 bg-[#FAF9F7] px-4 py-3 text-center text-xs font-black">عرض الإطارات</Link>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ملخص الطلب وبيانات العميل */}

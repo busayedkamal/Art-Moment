@@ -39,15 +39,39 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const action = String(body?.action || '');
 
+    if (action === 'list_variants') {
+      const { data: variants, error } = await supabase
+        .from('print_variants')
+        .select('id, print_size, material, surface, border_style, pricing_mode, unit_price, sort_order')
+        .eq('is_active', true)
+        .order('sort_order')
+        .order('print_size');
+      if (error) throw error;
+      return jsonResponse({ variants: variants || [] });
+    }
+
     if (action === 'create_draft') {
-      const printSize = body?.printSize === 'A4' ? 'A4' : '4x6';
-      const finish = body?.finish === 'matte' ? 'matte' : 'glossy';
+      const variantId = String(body?.variantId || '');
+      const { data: variant, error: variantError } = await supabase
+        .from('print_variants')
+        .select('*')
+        .eq('id', variantId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (variantError) throw variantError;
+      if (!variant) return jsonResponse({ error: 'print_variant_unavailable' }, 400);
+      const fitMode = body?.fitMode === 'fit' ? 'fit' : 'fill';
       const defaultCopies = Math.min(999, Math.max(1, Math.floor(Number(body?.defaultCopies || 1))));
       const accessToken = createAccessToken();
       const { data: draft, error } = await supabase.from('print_drafts').insert({
         access_token_hash: await hashPrintDraftToken(accessToken),
-        print_size: printSize,
-        finish,
+        variant_id: variant.id,
+        print_size: variant.print_size,
+        finish: variant.surface === 'matte' ? 'matte' : 'glossy',
+        material: variant.material,
+        surface: variant.surface,
+        border_style: variant.border_style,
+        fit_mode: fitMode,
         default_copies: defaultCopies,
       }).select('*').single();
       if (error) throw error;
@@ -77,6 +101,42 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === 'update_draft') {
+      if (draft.status === 'ready') return jsonResponse({ error: 'print_draft_locked' }, 409);
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (body?.variantId !== undefined) {
+        const { data: variant, error: variantError } = await supabase
+          .from('print_variants').select('*').eq('id', String(body.variantId)).eq('is_active', true).maybeSingle();
+        if (variantError) throw variantError;
+        if (!variant) return jsonResponse({ error: 'print_variant_unavailable' }, 400);
+        updates.variant_id = variant.id;
+        updates.print_size = variant.print_size;
+        updates.material = variant.material;
+        updates.surface = variant.surface;
+        updates.finish = variant.surface === 'matte' ? 'matte' : 'glossy';
+        updates.border_style = variant.border_style;
+      }
+      if (body?.fitMode !== undefined) updates.fit_mode = body.fitMode === 'fit' ? 'fit' : 'fill';
+      if (body?.defaultCopies !== undefined) {
+        updates.default_copies = Math.min(999, Math.max(1, Math.floor(Number(body.defaultCopies || 1))));
+      }
+      const { data: updatedDraft, error } = await supabase
+        .from('print_drafts').update(updates).eq('id', draft.id).select('*').single();
+      if (error) throw error;
+      if (body?.fitMode !== undefined) {
+        const { data: files, error: filesError } = await supabase
+          .from('print_draft_files').select('id, crop').eq('draft_id', draft.id);
+        if (filesError) throw filesError;
+        for (const file of files || []) {
+          const crop = cleanCrop({ ...(file.crop || {}), mode: updatedDraft.fit_mode });
+          const { error: cropError } = await supabase
+            .from('print_draft_files').update({ crop, updated_at: new Date().toISOString() }).eq('id', file.id);
+          if (cropError) throw cropError;
+        }
+      }
+      return jsonResponse(await recalculatePrintDraft(supabase, draft.id));
+    }
+
     if (action === 'request_upload') {
       const originalName = String(body?.file?.name || '').slice(0, 240);
       const mimeType = String(body?.file?.type || '').toLowerCase();
@@ -91,10 +151,12 @@ Deno.serve(async (req) => {
         draft_id: draft.id,
         original_name: originalName,
         storage_path: storagePath,
+        original_storage_path: storagePath,
         preview_storage_path: previewStoragePath,
         size_bytes: sizeBytes,
         mime_type: mimeType,
         copies: draft.default_copies,
+        crop: { mode: draft.fit_mode === 'fit' ? 'fit' : 'fill', zoom: 1, x: 50, y: 50 },
         sort_order: Math.max(0, Math.floor(Number(body?.sortOrder || 0))),
       }).select('*').single();
       if (insertError) throw insertError;
@@ -113,15 +175,22 @@ Deno.serve(async (req) => {
 
     // Sealing applies to the complete draft, so it must not require a fileId.
     if (action === 'seal_draft') {
+      if (body?.reviewConfirmed !== true) return jsonResponse({ error: 'print_review_confirmation_required' }, 400);
+      const { data: uploadRows, error: uploadRowsError } = await supabase
+        .from('print_draft_files').select('upload_status').eq('draft_id', draft.id);
+      if (uploadRowsError) throw uploadRowsError;
+      if ((uploadRows || []).some((file: { upload_status: string }) => file.upload_status !== 'uploaded')) {
+        return jsonResponse({ error: 'print_uploads_incomplete' }, 409);
+      }
       const summary = await recalculatePrintDraft(supabase, draft.id);
       if (summary.draft.file_count < 1 || summary.draft.total_copies < 1) {
         return jsonResponse({ error: 'print_draft_empty' }, 400);
       }
       const { data: readyDraft, error } = await supabase.from('print_drafts').update({
-        status: 'ready', updated_at: new Date().toISOString(),
+        status: 'ready', review_confirmed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       }).eq('id', draft.id).select('*').single();
       if (error) throw error;
-      return jsonResponse({ draft: readyDraft, lowResolutionCount: summary.lowResolutionCount });
+      return jsonResponse({ draft: readyDraft });
     }
 
     const fileId = String(body?.fileId || '');
@@ -129,10 +198,11 @@ Deno.serve(async (req) => {
       .from('print_draft_files').select('*').eq('id', fileId).eq('draft_id', draft.id).maybeSingle();
     if (fileError) throw fileError;
     if (!file) return jsonResponse({ error: 'print_file_not_found' }, 404);
+    const originalStoragePath = file.original_storage_path || file.storage_path;
 
     if (action === 'confirm_upload') {
-      const parent = file.storage_path.split('/').slice(0, -1).join('/');
-      const filename = file.storage_path.split('/').pop();
+      const parent = originalStoragePath.split('/').slice(0, -1).join('/');
+      const filename = originalStoragePath.split('/').pop();
       const { data: objects, error: storageError } = await supabase.storage.from(BUCKET).list(parent, { search: filename, limit: 10 });
       if (storageError) throw storageError;
       if (!(objects || []).some((object: { name: string }) => object.name === filename)) {
@@ -141,7 +211,7 @@ Deno.serve(async (req) => {
       const { error: updateError } = await supabase.from('print_draft_files').update({
         width: Math.max(1, Math.floor(Number(body?.width || 1))),
         height: Math.max(1, Math.floor(Number(body?.height || 1))),
-        resolution_status: body?.resolutionStatus === 'low' ? 'low' : 'good',
+        resolution_status: 'unknown',
         upload_status: 'uploaded',
         updated_at: new Date().toISOString(),
       }).eq('id', file.id);
@@ -160,7 +230,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'remove_file') {
-      await supabase.storage.from(BUCKET).remove([file.storage_path]);
+      await supabase.storage.from(BUCKET).remove([originalStoragePath]);
       if (file.preview_storage_path) await supabase.storage.from(PREVIEW_BUCKET).remove([file.preview_storage_path]);
       const { error } = await supabase.from('print_draft_files').delete().eq('id', file.id);
       if (error) throw error;

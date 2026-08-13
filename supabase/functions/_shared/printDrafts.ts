@@ -29,7 +29,12 @@ export async function verifyPrintDraftAccess(
   return draft;
 }
 
-export async function getPrintUnitPrice(supabase: any, printSize: string, totalCopies: number) {
+export async function getPrintUnitPrice(
+  supabase: any,
+  printSize: string,
+  totalCopies: number,
+  variantId?: string | null,
+) {
   const { data: settings, error } = await supabase
     .from('settings')
     .select('a4_price, photo_4x6_price, is_dynamic_pricing_enabled, tier_1_limit, tier_1_price, tier_2_limit, tier_2_price, tier_3_price')
@@ -37,7 +42,19 @@ export async function getPrintUnitPrice(supabase: any, printSize: string, totalC
     .maybeSingle();
   if (error) throw error;
 
-  if (printSize === 'A4') return Number(Number(settings?.a4_price || 0).toFixed(2));
+  if (variantId) {
+    const { data: variant, error: variantError } = await supabase
+      .from('print_variants')
+      .select('pricing_mode, unit_price, is_active')
+      .eq('id', variantId)
+      .maybeSingle();
+    if (variantError) throw variantError;
+    if (!variant || !variant.is_active) throw new Error('print_variant_unavailable');
+    if (variant.pricing_mode === 'fixed') return Number(Number(variant.unit_price || 0).toFixed(2));
+    if (variant.pricing_mode === 'existing_a4') return Number(Number(settings?.a4_price || 0).toFixed(2));
+  } else if (printSize === 'A4') {
+    return Number(Number(settings?.a4_price || 0).toFixed(2));
+  }
   let price = Number(settings?.photo_4x6_price || 0);
   if (settings?.is_dynamic_pricing_enabled) {
     if (totalCopies <= Number(settings?.tier_1_limit || 0)) price = Number(settings?.tier_1_price || price);
@@ -50,21 +67,21 @@ export async function getPrintUnitPrice(supabase: any, printSize: string, totalC
 export async function recalculatePrintDraft(supabase: any, draftId: string) {
   const { data: draft, error: draftError } = await supabase
     .from('print_drafts')
-    .select('id, print_size, status')
+    .select('id, print_size, variant_id, status')
     .eq('id', draftId)
     .single();
   if (draftError) throw draftError;
 
   const { data: files, error: filesError } = await supabase
     .from('print_draft_files')
-    .select('copies, resolution_status')
+    .select('copies')
     .eq('draft_id', draftId)
     .eq('upload_status', 'uploaded');
   if (filesError) throw filesError;
 
   const fileCount = files?.length || 0;
   const totalCopies = (files || []).reduce((sum: number, file: any) => sum + Number(file.copies || 0), 0);
-  const unitPrice = await getPrintUnitPrice(supabase, draft.print_size, totalCopies);
+  const unitPrice = await getPrintUnitPrice(supabase, draft.print_size, totalCopies, draft.variant_id);
   const subtotal = Number((unitPrice * totalCopies).toFixed(2));
   const nextStatus = draft.status === 'ready' && fileCount > 0 ? 'ready' : fileCount > 0 ? 'uploading' : 'draft';
   const { data: updated, error: updateError } = await supabase
@@ -81,5 +98,5 @@ export async function recalculatePrintDraft(supabase: any, draftId: string) {
     .select('*')
     .single();
   if (updateError) throw updateError;
-  return { draft: updated, lowResolutionCount: (files || []).filter((file: any) => file.resolution_status === 'low').length };
+  return { draft: updated };
 }

@@ -14,6 +14,7 @@ import { getCustomerSession } from '../utils/customerSession';
 import OrderFinancialBreakdown from '../components/OrderFinancialBreakdown';
 import { RewardPointsSummary, RewardRedemptionForm } from '../components/RewardPointsSummary';
 import { getPrintOrderFinancials } from '../utils/orderFinancials';
+import { formatPrintOptionSummary } from '../utils/printOptions';
 import {
   getPaymentState,
   getStoreOrderStatus,
@@ -482,6 +483,7 @@ export default function TrackOrderPage() {
                                 </div>
                                 <div className="flex-1">
                                   <p className="text-sm font-bold text-[#171717] leading-tight">{itemName}</p>
+                                  {item.item_type === 'print' && <p className="mt-1 text-[10px] font-bold leading-5 text-[#B97882]">{formatPrintOptionSummary(item.selected_options)}</p>}
                                   <div className="flex justify-between items-center mt-2">
                                     <span className="text-xs text-[#171717]/60 bg-white px-2 py-0.5 rounded-md border border-[#E8B4BC]/10">الكمية: <span className="font-bold text-[#E8B4BC]">{item.quantity}</span></span>
                                     <span className="text-xs font-black text-[#171717]">{Number(item.price_at_time || 0).toFixed(2)} ر.س</span>

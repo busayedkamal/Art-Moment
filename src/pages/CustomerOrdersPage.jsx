@@ -33,6 +33,7 @@ import { supabase } from '../lib/supabase';
 import { getCustomerSession } from '../utils/customerSession';
 import { clampCartQuantity, normalizeStockQuantity } from '../utils/productStock';
 import { getCartLineKey, getSelectedOptionLabels } from '../utils/productOptions';
+import { formatPrintOptionSummary } from '../utils/printOptions';
 import {
   getPaymentState,
   getStorePaymentMethod,
@@ -82,9 +83,11 @@ function buildReceiptHtml(order) {
   const discount = Number(order.discountAmount || 0);
   const subtotal = Number(order.subtotalAmount ?? order.totalAmount ?? 0);
   const itemsRows = (order.items || []).map(item => {
-    const optionsText = getSelectedOptionLabels(item.productOptions, item.selectedOptions)
-      .map((option) => `${option.name}: ${option.label}`)
-      .join(' • ');
+    const optionsText = item.itemType === 'print'
+      ? formatPrintOptionSummary(item.selectedOptions)
+      : getSelectedOptionLabels(item.productOptions, item.selectedOptions)
+        .map((option) => `${option.name}: ${option.label}`)
+        .join(' • ');
     return `
     <tr>
       <td>${escapeHtml(item.name)}${optionsText ? `<div class="muted">${escapeHtml(optionsText)}</div>` : ''}</td>
@@ -704,6 +707,7 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
                         .join(' • ')}
                     </p>
                   )}
+                  {item.itemType === 'print' && <p className="mt-1 text-[10px] font-bold text-[#B97882]">{formatPrintOptionSummary(item.selectedOptions)}</p>}
                   <p className="text-xs text-[#171717]/50 mt-1">الكمية: {item.quantity}</p>
                 </div>
                 <div className="text-left shrink-0">

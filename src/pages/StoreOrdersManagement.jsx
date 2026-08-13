@@ -20,6 +20,7 @@ import {
 import { logAdminActivity } from '../utils/adminActivity';
 import { getEmailErrorMessage } from '../utils/emailErrors';
 import { getSelectedOptionLabels } from '../utils/productOptions';
+import { formatPrintOptionSummary } from '../utils/printOptions';
 
 // ─── FSM Configuration ────────────────────────────────────────────────────────
 
@@ -439,14 +440,14 @@ export default function StoreOrdersManagement() {
       if (printDraftIds.length > 0) {
         const { data: files, error: filesError } = await supabase
           .from('print_draft_files')
-          .select('id, draft_id, original_name, storage_path, preview_storage_path, copies, rotation, crop, resolution_status, width, height')
+          .select('id, draft_id, original_name, storage_path, original_storage_path, preview_storage_path, copies, rotation, crop, width, height')
           .in('draft_id', printDraftIds)
           .eq('upload_status', 'uploaded')
           .order('created_at', { ascending: true });
 
         if (filesError) throw filesError;
 
-        const originalPaths = (files || []).map((file) => file.storage_path).filter(Boolean);
+        const originalPaths = (files || []).map((file) => file.original_storage_path || file.storage_path).filter(Boolean);
         const previewPaths = (files || []).map((file) => file.preview_storage_path).filter(Boolean);
         const [{ data: originalLinks }, { data: previewLinks }] = await Promise.all([
           originalPaths.length
@@ -465,7 +466,7 @@ export default function StoreOrdersManagement() {
             .filter((file) => file.draft_id === item.print_draft_id)
             .map((file) => ({
               ...file,
-              original_url: originalUrlByPath.get(file.storage_path) || '',
+              original_url: originalUrlByPath.get(file.original_storage_path || file.storage_path) || '',
               preview_url: previewUrlByPath.get(file.preview_storage_path) || '',
             }));
         });
@@ -1667,9 +1668,7 @@ export default function StoreOrdersManagement() {
                                 </p>
                               )}
                               {item.item_type === 'print' && (
-                                <p className="mt-1 text-[10px] font-bold text-[#B97882]">
-                                  {Number(item.metadata?.file_count || 0)} ملفات · {Number(item.metadata?.total_copies || item.quantity || 0)} نسخة
-                                </p>
+                                <div className="mt-1 text-[10px] font-bold leading-5 text-[#B97882]"><p>{Number(item.metadata?.file_count || 0)} ملفات · {Number(item.metadata?.total_copies || item.quantity || 0)} نسخة</p><p>{formatPrintOptionSummary(item.selected_options)}</p></div>
                               )}
                             </div>
                             <span className="font-black text-[#C6A56B] text-sm shrink-0">
@@ -1706,9 +1705,6 @@ export default function StoreOrdersManagement() {
                                     </p>
                                     <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-[#171717]/55">
                                       <span>{file.copies} نسخة</span>
-                                      {file.resolution_status === 'low' && (
-                                        <span className="font-bold text-red-600">دقة منخفضة</span>
-                                      )}
                                     </div>
                                     {file.original_url && (
                                       <button
