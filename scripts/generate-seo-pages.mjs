@@ -121,7 +121,7 @@ function replaceMeta(html, page) {
     [/<meta property="og:url" content=".*?"\s*\/>/s, `<meta property="og:url" content="${canonical}" />`],
     [/<meta name="twitter:title" content=".*?"\s*\/>/s, `<meta name="twitter:title" content="${escapeHtml(page.title)}" />`],
     [/<meta name="twitter:description" content=".*?"\s*\/>/s, `<meta name="twitter:description" content="${escapeHtml(page.description)}" />`],
-    [/<meta name="robots" content=".*?"\s*\/>/s, `<meta name="robots" content="${page.noindex ? 'noindex,follow' : 'index,follow,max-image-preview:large'}" />`],
+    [/<meta name="robots" content=".*?"\s*\/>/s, `<meta name="robots" content="${page.noindex ? `noindex,${page.nofollow ? 'nofollow' : 'follow'}` : 'index,follow,max-image-preview:large'}" />`],
   ];
   return replacements.reduce((result, [pattern, value]) => result.replace(pattern, value), html);
 }
@@ -203,3 +203,12 @@ for (const page of pages) {
   await mkdir(dirname(output), { recursive: true });
   await writeFile(output, html, 'utf8');
 }
+
+const adminShell = replaceMeta(template, {
+  path: '/admin/login',
+  title: 'تسجيل دخول المسؤول | لحظة فن',
+  description: 'منطقة إدارية خاصة ومحمية لمنصة لحظة فن.',
+  noindex: true,
+  nofollow: true,
+});
+await writeFile(join(dist, 'admin-shell.html'), adminShell, 'utf8');

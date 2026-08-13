@@ -6,7 +6,7 @@ import {
   Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle,
   Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle,
   FileText, Edit3, XCircle, Mail, BellRing, Clock3, CreditCard, RotateCcw, Truck,
-  Award, Coins, ShieldCheck
+  Award, Coins, ShieldCheck, Grid3X3
 } from 'lucide-react';
 import RiyalSign from '../components/RiyalSign';
 import {
@@ -47,6 +47,11 @@ const channelLabels = {
   whatsapp: 'واتساب',
   sms: 'SMS',
   system: 'نظام',
+};
+
+const printOptionLabels = {
+  photo_paper: 'ورق صور', magnetic: 'مغناطيسي', adhesive: 'لاصق', mounted: 'مثبت على قاعدة',
+  glossy: 'لامع', matte: 'مطفي', none: 'بدون', borderless: 'بدون حواف', white_border: 'حواف بيضاء',
 };
 
 function normalizeTemplateKey(value) {
@@ -129,6 +134,8 @@ export default function Settings() {
   const [savingOperationRules, setSavingOperationRules] = useState(false);
   const [rewardRules, setRewardRules] = useState(DEFAULT_REWARD_RULES);
   const [savingRewardRules, setSavingRewardRules] = useState(false);
+  const [printVariants, setPrintVariants] = useState([]);
+  const [savingPrintVariantId, setSavingPrintVariantId] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -146,6 +153,20 @@ export default function Settings() {
         ));
         setOperationRules(normalizeOperationRules(settingsData));
         setRewardRules(normalizeRewardRules(settingsData));
+      }
+
+      const { data: printVariantsData, error: printVariantsError } = await supabase
+        .from('print_variants')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order')
+        .order('print_size');
+      if (printVariantsError) {
+        if (!/print_variants|is_available|schema cache|relation|does not exist/i.test(printVariantsError.message || '')) {
+          throw printVariantsError;
+        }
+      } else {
+        setPrintVariants((printVariantsData || []).map((variant) => ({ ...variant, draft_price: null })));
       }
 
       // 2. جلب المخزون
@@ -236,6 +257,75 @@ export default function Settings() {
       setCoupons(coupons.filter(c => c.id !== id));
       toast.success('تم الحذف');
     } catch { toast.error('فشل الحذف'); }
+  };
+
+  const getVariantPrice = (variant) => {
+    if (variant.draft_price !== null && variant.draft_price !== undefined) return variant.draft_price;
+    if (variant.pricing_mode === 'fixed') return variant.unit_price ?? '';
+    if (variant.pricing_mode === 'existing_a4') return prices.a4_price;
+    return prices.photo_4x6_price;
+  };
+
+  const updateVariantDraftPrice = (variantId, value) => {
+    setPrintVariants((current) => current.map((variant) => (
+      variant.id === variantId ? { ...variant, draft_price: value } : variant
+    )));
+  };
+
+  const savePrintVariantPrice = async (variant) => {
+    const unitPrice = Number(getVariantPrice(variant));
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      toast.error('أدخل سعرًا أكبر من صفر قبل تفعيل التركيبة');
+      return;
+    }
+    setSavingPrintVariantId(variant.id);
+    try {
+      const payload = {
+        pricing_mode: 'fixed',
+        unit_price: Number(unitPrice.toFixed(2)),
+        is_available: true,
+        updated_at: new Date().toISOString(),
+      };
+      const { data, error } = await supabase
+        .from('print_variants')
+        .update(payload)
+        .eq('id', variant.id)
+        .select('*')
+        .single();
+      if (error) throw error;
+      setPrintVariants((current) => current.map((item) => item.id === variant.id ? { ...data, draft_price: null } : item));
+      toast.success('تم حفظ سعر التركيبة وتفعيلها');
+    } catch (error) {
+      console.error(error);
+      toast.error('تعذر حفظ سعر تركيبة الطباعة');
+    } finally {
+      setSavingPrintVariantId(null);
+    }
+  };
+
+  const togglePrintVariantAvailability = async (variant) => {
+    const nextAvailable = !variant.is_available;
+    if (nextAvailable && Number(getVariantPrice(variant)) <= 0) {
+      toast.error('لا يمكن تفعيل تركيبة بلا سعر فعلي');
+      return;
+    }
+    setSavingPrintVariantId(variant.id);
+    try {
+      const { data, error } = await supabase
+        .from('print_variants')
+        .update({ is_available: nextAvailable, updated_at: new Date().toISOString() })
+        .eq('id', variant.id)
+        .select('*')
+        .single();
+      if (error) throw error;
+      setPrintVariants((current) => current.map((item) => item.id === variant.id ? { ...data, draft_price: null } : item));
+      toast.success(nextAvailable ? 'تم تفعيل التركيبة' : 'تم إيقاف التركيبة مؤقتًا');
+    } catch (error) {
+      console.error(error);
+      toast.error('تعذر تحديث حالة التركيبة');
+    } finally {
+      setSavingPrintVariantId(null);
+    }
   };
 
   const updateOperationRule = (key, value) => {
@@ -555,7 +645,61 @@ export default function Settings() {
               ))
             )}
           </div>
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-[#E8B4BC]/20 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E8B4BC]/15 px-5 py-5 sm:px-6">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-black text-[#171717]"><Grid3X3 size={20} className="text-[#C6A56B]" /> مصفوفة إعدادات الطباعة</h2>
+            <p className="mt-1 text-xs leading-6 text-[#171717]/50">لا سعر = لا طلب. عدّل سعر تركيبة أو أوقفها مؤقتًا من مكان واحد.</p>
+          </div>
+          <span className="rounded-full bg-[#FAF9F7] px-3 py-2 text-xs font-black text-[#171717]/60">{printVariants.filter((variant) => variant.is_available).length} مفعّلة</span>
         </div>
+
+        {printVariants.length === 0 ? (
+          <div className="px-6 py-10 text-center text-sm font-bold text-[#171717]/45">شغّل ملف SQL النهائي لخيارات الطباعة لإظهار المصفوفة.</div>
+        ) : (
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-[#FAF9F7] text-xs text-[#171717]/55">
+                  <tr>
+                    <th className="px-4 py-3 text-start">المقاس</th><th className="px-4 py-3 text-start">الخامة</th><th className="px-4 py-3 text-start">السطح</th><th className="px-4 py-3 text-start">الحواف</th><th className="px-4 py-3 text-start">السعر</th><th className="px-4 py-3 text-start">الحالة</th><th className="px-4 py-3 text-start">إجراء</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E8B4BC]/10">
+                  {printVariants.map((variant) => {
+                    const saving = savingPrintVariantId === variant.id;
+                    return (
+                      <tr key={variant.id} className="align-middle">
+                        <td className="px-4 py-3 font-black">{variant.print_size}</td>
+                        <td className="px-4 py-3">{printOptionLabels[variant.material] || variant.material}</td>
+                        <td className="px-4 py-3">{printOptionLabels[variant.surface] || variant.surface}</td>
+                        <td className="px-4 py-3">{printOptionLabels[variant.border_style] || variant.border_style}</td>
+                        <td className="px-4 py-3"><div className="flex min-w-32 items-center border border-[#E8B4BC]/20 bg-[#FAF9F7]"><input type="number" min="0" step="0.01" value={getVariantPrice(variant)} onChange={(event) => updateVariantDraftPrice(variant.id, event.target.value)} className="h-10 min-w-0 flex-1 bg-transparent px-3 font-black outline-none" dir="ltr" /><RiyalSign className="mx-2 opacity-45" /></div></td>
+                        <td className="px-4 py-3"><button type="button" disabled={saving} onClick={() => togglePrintVariantAvailability(variant)} className={`inline-flex min-h-10 items-center gap-2 px-3 text-xs font-black ${variant.is_available ? 'bg-emerald-50 text-emerald-700' : 'bg-[#FAF9F7] text-[#171717]/50'}`}>{variant.is_available ? <ToggleRight size={20} /> : <ToggleLeft size={20} />} {variant.is_available ? 'مفعّلة' : 'غير متاحة'}</button></td>
+                        <td className="px-4 py-3"><button type="button" disabled={saving} onClick={() => savePrintVariantPrice(variant)} className="inline-flex min-h-10 items-center gap-2 bg-[#171717] px-4 text-xs font-black text-white disabled:opacity-50">{saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} حفظ</button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="divide-y divide-[#E8B4BC]/10 md:hidden">
+              {printVariants.map((variant) => {
+                const saving = savingPrintVariantId === variant.id;
+                return (
+                  <article key={variant.id} className="p-4">
+                    <div className="flex items-start justify-between gap-3"><div><strong className="text-lg">{variant.print_size}</strong><p className="mt-1 text-xs font-bold text-[#171717]/55">{printOptionLabels[variant.material]} · {printOptionLabels[variant.surface]} · {printOptionLabels[variant.border_style]}</p></div><span className={`px-2 py-1 text-[10px] font-black ${variant.is_available ? 'bg-emerald-50 text-emerald-700' : 'bg-[#FAF9F7] text-[#171717]/50'}`}>{variant.is_available ? 'مفعّلة' : 'غير متاحة'}</span></div>
+                    <div className="mt-4 flex items-center gap-2"><div className="flex h-11 min-w-0 flex-1 items-center border border-[#E8B4BC]/20 bg-[#FAF9F7]"><input type="number" min="0" step="0.01" value={getVariantPrice(variant)} onChange={(event) => updateVariantDraftPrice(variant.id, event.target.value)} className="h-full min-w-0 flex-1 bg-transparent px-3 font-black outline-none" dir="ltr" /><RiyalSign className="mx-2 opacity-45" /></div><button type="button" disabled={saving} onClick={() => savePrintVariantPrice(variant)} className="flex h-11 w-11 items-center justify-center bg-[#171717] text-white disabled:opacity-50" aria-label="حفظ السعر">{saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}</button><button type="button" disabled={saving} onClick={() => togglePrintVariantAvailability(variant)} className="flex h-11 w-11 items-center justify-center border border-[#E8B4BC]/20" aria-label={variant.is_available ? 'إيقاف التركيبة' : 'تفعيل التركيبة'}>{variant.is_available ? <ToggleRight size={24} className="text-emerald-600" /> : <ToggleLeft size={24} />}</button></div>
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </section>
 
         {/* 3. قواعد التشغيل */}
         <form onSubmit={handleSaveOperationRules} className="md:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">

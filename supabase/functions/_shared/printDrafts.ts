@@ -45,13 +45,23 @@ export async function getPrintUnitPrice(
   if (variantId) {
     const { data: variant, error: variantError } = await supabase
       .from('print_variants')
-      .select('pricing_mode, unit_price, is_active')
+      .select('pricing_mode, unit_price, is_active, is_available')
       .eq('id', variantId)
       .maybeSingle();
     if (variantError) throw variantError;
-    if (!variant || !variant.is_active) throw new Error('print_variant_unavailable');
-    if (variant.pricing_mode === 'fixed') return Number(Number(variant.unit_price || 0).toFixed(2));
-    if (variant.pricing_mode === 'existing_a4') return Number(Number(settings?.a4_price || 0).toFixed(2));
+    if (!variant || !variant.is_active || variant.is_available === false) {
+      throw new Error('print_variant_unavailable');
+    }
+    if (variant.pricing_mode === 'fixed') {
+      const fixedPrice = Number(Number(variant.unit_price || 0).toFixed(2));
+      if (fixedPrice <= 0) throw new Error('print_variant_unavailable');
+      return fixedPrice;
+    }
+    if (variant.pricing_mode === 'existing_a4') {
+      const a4Price = Number(Number(settings?.a4_price || 0).toFixed(2));
+      if (a4Price <= 0) throw new Error('print_variant_unavailable');
+      return a4Price;
+    }
   } else if (printSize === 'A4') {
     return Number(Number(settings?.a4_price || 0).toFixed(2));
   }
@@ -61,16 +71,22 @@ export async function getPrintUnitPrice(
     else if (totalCopies <= Number(settings?.tier_2_limit || 0)) price = Number(settings?.tier_2_price || price);
     else price = Number(settings?.tier_3_price || price);
   }
-  return Number(price.toFixed(2));
+  const normalizedPrice = Number(price.toFixed(2));
+  if (normalizedPrice <= 0) throw new Error('print_variant_unavailable');
+  return normalizedPrice;
 }
 
 export async function recalculatePrintDraft(supabase: any, draftId: string) {
   const { data: draft, error: draftError } = await supabase
     .from('print_drafts')
-    .select('id, print_size, variant_id, status')
+    .select('*')
     .eq('id', draftId)
     .single();
   if (draftError) throw draftError;
+
+  if (draft.status === 'ready' && draft.snapshot_at) {
+    return { draft };
+  }
 
   const { data: files, error: filesError } = await supabase
     .from('print_draft_files')

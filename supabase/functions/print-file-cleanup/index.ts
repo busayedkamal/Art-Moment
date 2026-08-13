@@ -48,11 +48,19 @@ Deno.serve(async (req) => {
       try {
         const { data: files, error: filesError } = await supabase
           .from('print_draft_files')
-          .select('storage_path, preview_storage_path, size_bytes')
+          .select('storage_path, original_storage_path, preview_storage_path, size_bytes')
           .eq('draft_id', draft.id);
         if (filesError) throw filesError;
 
-        const originals = (files || []).map((file) => file.storage_path).filter(Boolean);
+        if (['draft', 'uploading', 'ready'].includes(String(draft.status))) {
+          const { error: expireError } = await supabase
+            .from('print_drafts')
+            .update({ status: 'expired', purge_reason: 'draft_expired', updated_at: now })
+            .eq('id', draft.id);
+          if (expireError) throw expireError;
+        }
+
+        const originals = (files || []).map((file) => file.original_storage_path || file.storage_path).filter(Boolean);
         const previews = (files || []).map((file) => file.preview_storage_path).filter(Boolean);
         for (const batch of chunks(originals)) {
           const { error } = await supabase.storage.from(ORIGINAL_BUCKET).remove(batch);
@@ -63,7 +71,7 @@ Deno.serve(async (req) => {
           if (error) throw error;
         }
 
-        const reason = draft.purge_reason || (draft.purge_after ? 'retention_period_ended' : 'abandoned_draft');
+        const reason = draft.purge_reason || (draft.purge_after ? 'retention_period_ended' : 'draft_expired');
         const { error: logError } = await supabase.from('print_file_deletion_logs').insert({
           draft_id: draft.id,
           store_order_id: draft.store_order_id,

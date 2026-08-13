@@ -80,13 +80,15 @@ const optionCopy = {
     none: 'بدون', borderless: 'بدون حواف', white_border: 'حواف بيضاء',
     fillTitle: 'ملء الورق', fillDescription: 'تملأ الصورة مساحة الطباعة، وقد يُقص جزء بسيط من الأطراف إذا اختلفت النسبة.',
     fitTitle: 'إظهار الصورة كاملة', fitDescription: 'تظهر الصورة كاملة، وقد تظهر هوامش عند اختلاف نسبة الصورة عن المقاس.',
-    unavailable: 'غير متوفر بهذا المقاس', uploadedFiles: 'الصور المرفوعة', totalPrints: 'إجمالي النسخ المطبوعة',
+    unavailable: 'غير متوفر بهذا المقاس', unavailableNow: 'غير متاح حاليًا', uploadedFiles: 'الصور المرفوعة', totalPrints: 'إجمالي النسخ المطبوعة',
     uploadProgress: 'تقدم رفع الصور', uploadedOf: 'تم رفع', draftRestored: 'تم استعادة مسودة طلب الطباعة',
     draftNumber: 'رقم المسودة', reviewConsent: 'راجعت الصور والكميات وإعدادات الطباعة، وأوافق على تنفيذ الطباعة وفق الملفات المرسلة والشروط.',
     orderConfiguration: 'إعداد الطباعة', paperType: 'نوع الخامة', fitSummary: 'ملاءمة الصورة',
     incompleteUploads: 'انتظري اكتمال رفع جميع الصور أو أعيدي محاولة الملفات المتعثرة.',
     queued: 'في قائمة الانتظار', details: 'التفاصيل', allPhotos: 'تطبيق على جميع الصور', recommendedProducts: 'أكملي حفظ ذكرياتك',
     recommendedHint: 'بعد إضافة الطلب، ستجدين في السلة منتجات متوافقة مع مقاس الطباعة.',
+    incompatibleMaterial: 'الخامة المختارة غير متاحة مع مقاس', chooseAnotherMaterial: 'اختاري خامة أخرى.',
+    configurationAdjusted: 'تم تحديث الخيارات لتناسب التركيبة المتاحة.', livePrice: 'السعر الحالي', quoteCopies: 'نسخة',
   },
   en: {
     material: 'Material', surface: 'Surface', borders: 'Borders', fitMethod: 'How the photo fits the print size',
@@ -94,13 +96,15 @@ const optionCopy = {
     none: 'None', borderless: 'Borderless', white_border: 'White border',
     fillTitle: 'Fill paper', fillDescription: 'Fills the print area and may crop a small part of the edges when aspect ratios differ.',
     fitTitle: 'Show full photo', fitDescription: 'Shows the complete photo and may add margins when aspect ratios differ.',
-    unavailable: 'Unavailable for this size', uploadedFiles: 'Uploaded files', totalPrints: 'Total printed copies',
+    unavailable: 'Unavailable for this size', unavailableNow: 'Currently unavailable', uploadedFiles: 'Uploaded files', totalPrints: 'Total printed copies',
     uploadProgress: 'Upload progress', uploadedOf: 'Uploaded', draftRestored: 'Your print draft was restored',
     draftNumber: 'Draft ID', reviewConsent: 'I reviewed the photos, quantities and print settings, and approve printing from the submitted files under the terms.',
     orderConfiguration: 'Print configuration', paperType: 'Material', fitSummary: 'Photo fit',
     incompleteUploads: 'Wait for every upload to finish or retry failed files.', queued: 'Queued', details: 'Details',
     allPhotos: 'Apply to every photo', recommendedProducts: 'Complete your memory set',
     recommendedHint: 'After adding this job, the cart will suggest products compatible with your print size.',
+    incompatibleMaterial: 'The selected material is unavailable for size', chooseAnotherMaterial: 'Choose another material.',
+    configurationAdjusted: 'Options were adjusted to an available combination.', livePrice: 'Current price', quoteCopies: 'prints',
   },
 };
 
@@ -116,6 +120,8 @@ const LEGACY_VARIANTS = ['4x6', 'A4'].flatMap((printSize, sizeIndex) => SURFACES
   border_style: 'borderless',
   pricing_mode: printSize === 'A4' ? 'existing_a4' : 'existing_4x6',
   unit_price: null,
+  effective_unit_price: null,
+  available: true,
   sort_order: (sizeIndex * 10) + surfaceIndex,
 })));
 
@@ -167,6 +173,8 @@ export default function PrintBuilder() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const previewUrlsRef = useRef(new Set());
+  const photoUpdateQueuesRef = useRef(new Map());
+  const photoUpdateErrorRef = useRef(false);
   const [step, setStep] = useState(1);
   const [printSize, setPrintSize] = useState('4x6');
   const [finish, setFinish] = useState('glossy');
@@ -185,6 +193,10 @@ export default function PrintBuilder() {
   const [cropPhotoId, setCropPhotoId] = useState(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState(false);
+  const [variantNotice, setVariantNotice] = useState('');
+  const [liveQuote, setLiveQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [pendingPhotoUpdates, setPendingPhotoUpdates] = useState(0);
 
   useEffect(() => () => {
     previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -197,9 +209,12 @@ export default function PrintBuilder() {
         const { data, error } = await supabase.functions.invoke('print-builder', { body: { action: 'list_variants' } });
         if (error) throw error;
         if (cancelled) return;
-        const nextVariants = data?.variants || [];
+        const receivedVariants = data?.variants || [];
+        const supportsAvailability = receivedVariants.some((variant) => typeof variant.available === 'boolean');
+        const nextVariants = supportsAvailability ? receivedVariants : LEGACY_VARIANTS;
         setVariants(nextVariants);
-        const initial = nextVariants.find((variant) => variant.print_size === '4x6') || nextVariants[0];
+        const initial = nextVariants.find((variant) => variant.available && variant.print_size === '4x6')
+          || nextVariants.find((variant) => variant.available);
         const hasSavedDraft = Boolean(localStorage.getItem(DRAFT_STORAGE_KEY));
         if (initial && !hasSavedDraft) {
           setSelectedVariantId((current) => current || initial.id);
@@ -276,6 +291,48 @@ export default function PrintBuilder() {
 
   const steps = [text.choose, text.upload, text.review, text.summary];
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId);
+  const availableVariants = variants.filter((variant) => variant.available !== false);
+  const quoteCopies = Math.max(1, totalCopies || defaultCopies);
+  const displayUnitPrice = Number(liveQuote?.unitPrice ?? draft?.snapshot_unit_price ?? draft?.unit_price ?? selectedVariant?.effective_unit_price ?? 0);
+  const displaySubtotal = Number(liveQuote?.subtotal ?? draft?.snapshot_subtotal ?? draft?.subtotal ?? (displayUnitPrice * quoteCopies));
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      if (!selectedVariantId || selectedVariant?.available === false) {
+        setLiveQuote(null);
+        return;
+      }
+      if (selectedVariantId.startsWith('legacy:')) {
+        setLiveQuote(draft ? {
+          unitPrice: Number(draft.unit_price || 0),
+          subtotal: Number(draft.subtotal || 0),
+          totalCopies: quoteCopies,
+        } : null);
+        return;
+      }
+      setQuoteLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('print-builder', {
+          body: { action: 'quote', variantId: selectedVariantId, totalCopies: quoteCopies },
+        });
+        if (error) throw error;
+        if (!cancelled) setLiveQuote(data);
+      } catch {
+        if (!cancelled) setLiveQuote(draft ? {
+          unitPrice: Number(draft.snapshot_unit_price ?? draft.unit_price ?? 0),
+          subtotal: Number(draft.snapshot_subtotal ?? draft.subtotal ?? 0),
+          totalCopies: quoteCopies,
+        } : null);
+      } finally {
+        if (!cancelled) setQuoteLoading(false);
+      }
+    }, 120);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [defaultCopies, draft, quoteCopies, selectedVariant?.available, selectedVariantId]);
 
   const chooseVariant = (changes) => {
     const desired = {
@@ -284,15 +341,27 @@ export default function PrintBuilder() {
       surface: changes.finish ?? finish,
       border_style: changes.borderStyle ?? borderStyle,
     };
-    let match = variants.find((variant) => (
+    let match = availableVariants.find((variant) => (
       variant.print_size === desired.print_size
       && variant.material === desired.material
       && variant.surface === desired.surface
       && variant.border_style === desired.border_style
     ));
     if (!match) {
-      match = variants.find((variant) => variant.print_size === desired.print_size && variant.material === desired.material)
-        || variants.find((variant) => variant.print_size === desired.print_size);
+      const sameMaterial = availableVariants.filter((variant) => (
+        variant.print_size === desired.print_size && variant.material === desired.material
+      ));
+      if (changes.printSize !== undefined && sameMaterial.length === 0) {
+        setPrintSize(desired.print_size);
+        setMaterial('');
+        setFinish('');
+        setBorderStyle('');
+        setSelectedVariantId('');
+        setVariantNotice(`${optionsText.incompatibleMaterial} ${desired.print_size}. ${optionsText.chooseAnotherMaterial}`);
+        setReviewConfirmed(false);
+        return false;
+      }
+      match = sameMaterial[0];
     }
     if (!match) return false;
     setSelectedVariantId(match.id);
@@ -300,6 +369,9 @@ export default function PrintBuilder() {
     setMaterial(match.material);
     setFinish(match.surface);
     setBorderStyle(match.border_style);
+    setReviewConfirmed(false);
+    const wasAdjusted = match.surface !== desired.surface || match.border_style !== desired.border_style;
+    setVariantNotice(wasAdjusted ? optionsText.configurationAdjusted : '');
     if (draft && accessToken) {
       invokeBuilder({
         action: 'update_draft', draftId: draft.id, accessToken, variantId: match.id,
@@ -423,16 +495,42 @@ export default function PrintBuilder() {
   };
 
   const updatePhoto = async (photoId, changes) => {
-    const previous = photos;
     setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, ...changes } : photo));
-    try {
-      const data = await invokeBuilder({
-        action: 'update_file', draftId: draft.id, accessToken, fileId: photoId, ...changes,
+    const previousQueue = photoUpdateQueuesRef.current.get(photoId) || Promise.resolve();
+    setPendingPhotoUpdates((current) => current + 1);
+
+    let queuedUpdate;
+    queuedUpdate = previousQueue
+      .catch(() => undefined)
+      .then(async () => {
+        const data = await invokeBuilder({
+          action: 'update_file', draftId: draft.id, accessToken, fileId: photoId, ...changes,
+        });
+        setDraft(data.draft);
+        return data;
+      })
+      .catch((error) => {
+        photoUpdateErrorRef.current = true;
+        toast.error(language === 'ar' ? 'تعذر حفظ التعديل.' : 'Could not save the change.');
+        return { error };
+      })
+      .finally(() => {
+        if (photoUpdateQueuesRef.current.get(photoId) === queuedUpdate) {
+          photoUpdateQueuesRef.current.delete(photoId);
+        }
+        setPendingPhotoUpdates((current) => Math.max(0, current - 1));
       });
-      setDraft(data.draft);
-    } catch (error) {
-      setPhotos(previous);
-      toast.error(language === 'ar' ? 'تعذر حفظ التعديل.' : 'Could not save the change.');
+
+    photoUpdateQueuesRef.current.set(photoId, queuedUpdate);
+    return queuedUpdate;
+  };
+
+  const flushPhotoUpdates = async () => {
+    const updates = [...photoUpdateQueuesRef.current.values()];
+    if (updates.length) await Promise.all(updates);
+    if (photoUpdateErrorRef.current) {
+      photoUpdateErrorRef.current = false;
+      throw new Error('photo_update_failed');
     }
   };
 
@@ -488,9 +586,14 @@ export default function PrintBuilder() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const goToSummary = () => {
+  const goToSummary = async () => {
     if (!uploadedPhotos.length) return toast.error(text.empty);
     if (photos.length !== uploadedPhotos.length) return toast.error(optionsText.incompleteUploads);
+    try {
+      await flushPhotoUpdates();
+    } catch {
+      return;
+    }
     setReviewConfirmed(false);
     setStep(4);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -501,10 +604,14 @@ export default function PrintBuilder() {
     try {
       if (!reviewConfirmed) return toast.error(optionsText.reviewConsent);
       if (photos.length !== uploadedPhotos.length) return toast.error(optionsText.incompleteUploads);
+      await flushPhotoUpdates();
       const data = await invokeBuilder({
         action: 'seal_draft', draftId: draft.id, accessToken, reviewConfirmed: true,
       });
       const readyDraft = data.draft;
+      const snapshotUnitPrice = Number(readyDraft.snapshot_unit_price ?? readyDraft.unit_price ?? 0);
+      const snapshotSubtotal = Number(readyDraft.snapshot_subtotal ?? readyDraft.subtotal ?? 0);
+      const snapshotTotalCopies = Number(readyDraft.snapshot_total_copies ?? readyDraft.total_copies ?? 0);
       const savedCart = JSON.parse(localStorage.getItem('art_moment_cart') || '[]');
       const cartItem = {
         id: `print-${readyDraft.id}`,
@@ -513,7 +620,7 @@ export default function PrintBuilder() {
         printDraftId: readyDraft.id,
         printDraftToken: accessToken,
         name: language === 'ar' ? `طباعة صور ${readyDraft.print_size}` : `${readyDraft.print_size} photo prints`,
-        price: Number(readyDraft.subtotal || 0),
+        price: snapshotSubtotal,
         qty: 1,
         fixedQuantity: true,
         inStock: true,
@@ -525,8 +632,10 @@ export default function PrintBuilder() {
           borderStyle: readyDraft.border_style,
           fitMode: readyDraft.fit_mode,
           fileCount: readyDraft.file_count,
-          totalCopies: readyDraft.total_copies,
-          unitPrice: readyDraft.unit_price,
+          totalCopies: snapshotTotalCopies,
+          unitPrice: snapshotUnitPrice,
+          totalPrice: snapshotSubtotal,
+          snapshotAt: readyDraft.snapshot_at,
         },
       };
       const nextCart = [...savedCart.filter((item) => item.printDraftId !== readyDraft.id), cartItem];
@@ -549,8 +658,6 @@ export default function PrintBuilder() {
       setIsSealing(false);
     }
   };
-
-  const displaySubtotal = Number(draft?.subtotal || 0);
 
   return (
     <div className="min-h-screen bg-[#FAF9F7] font-[Tajawal] text-[#171717]" dir={direction}>
@@ -623,8 +730,8 @@ export default function PrintBuilder() {
                 <legend className="mb-3 text-sm font-black">{text.size}</legend>
                 <div className="grid grid-cols-3 gap-2">
                   {['4x6', 'A5', 'A4'].map((size) => {
-                    const available = variants.some((variant) => variant.print_size === size);
-                    return <button key={size} type="button" disabled={!available} onClick={() => chooseVariant({ printSize: size })} className={`relative min-h-24 border p-3 text-start transition ${printSize === size ? 'border-[#171717] bg-[#171717] text-white' : 'border-black/10 bg-[#FAF9F7] hover:border-black/35'} disabled:cursor-not-allowed disabled:opacity-35`}><span className="block text-xl font-black">{size}</span><span className="mt-2 block text-[10px] opacity-60">{SIZE_DETAILS[size]}</span>{!available && <span className="mt-1 block text-[9px]">{optionsText.unavailable}</span>}{printSize === size && <CheckCircle2 className="absolute end-3 top-3" size={18} />}</button>;
+                    const available = availableVariants.some((variant) => variant.print_size === size);
+                    return <button key={size} type="button" disabled={!available} onClick={() => chooseVariant({ printSize: size })} className={`relative min-h-24 border p-3 text-start transition ${printSize === size ? 'border-[#171717] bg-[#171717] text-white' : 'border-black/10 bg-[#FAF9F7] hover:border-black/35'} disabled:cursor-not-allowed disabled:opacity-60`}><span className="block text-xl font-black">{size}</span><span className="mt-2 block text-[10px] opacity-60">{SIZE_DETAILS[size]}</span>{!available && <span className="mt-1 block text-[9px] font-bold">{optionsText.unavailableNow}</span>}{printSize === size && <CheckCircle2 className="absolute end-3 top-3" size={18} />}</button>;
                   })}
                 </div>
               </fieldset>
@@ -632,24 +739,31 @@ export default function PrintBuilder() {
                 <legend className="mb-3 text-sm font-black">{optionsText.material}</legend>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {MATERIALS.map((value) => {
-                    const available = variants.some((variant) => variant.print_size === printSize && variant.material === value);
-                    return <button key={value} type="button" disabled={!available} onClick={() => chooseVariant({ material: value })} className={`min-h-14 border px-3 py-2 text-xs font-black ${material === value ? 'border-[#E8B4BC] bg-[#E8B4BC]/15' : 'border-black/10'} disabled:cursor-not-allowed disabled:opacity-35`}>{optionsText[value]}{!available && <span className="mt-1 block text-[8px] font-bold">{optionsText.unavailable}</span>}</button>;
+                    const available = availableVariants.some((variant) => variant.print_size === printSize && variant.material === value);
+                    return <button key={value} type="button" disabled={!available} onClick={() => chooseVariant({ material: value })} className={`min-h-14 border px-3 py-2 text-xs font-black ${material === value ? 'border-[#E8B4BC] bg-[#E8B4BC]/15' : 'border-black/10'} disabled:cursor-not-allowed disabled:opacity-60`}>{optionsText[value]}{!available && <span className="mt-1 block text-[8px] font-bold">{optionsText.unavailableNow}</span>}</button>;
                   })}
                 </div>
               </fieldset>
-              {material === 'photo_paper' && <fieldset className="mt-7 border-t border-black/[0.06] pt-6"><legend className="mb-3 text-sm font-black">{optionsText.surface}</legend><div className="grid grid-cols-2 gap-2">{SURFACES.map((value) => { const available = variants.some((variant) => variant.print_size === printSize && variant.material === material && variant.surface === value); return <button key={value} type="button" disabled={!available} onClick={() => chooseVariant({ finish: value })} className={`min-h-14 border px-4 font-black ${finish === value ? 'border-[#E8B4BC] bg-[#E8B4BC]/15' : 'border-black/10'} disabled:opacity-35`}>{value === 'matte' ? text.matte : text.glossy}</button>; })}</div></fieldset>}
+              {material === 'photo_paper' && <fieldset className="mt-7 border-t border-black/[0.06] pt-6"><legend className="mb-3 text-sm font-black">{optionsText.surface}</legend><div className="grid grid-cols-2 gap-2">{SURFACES.map((value) => { const available = availableVariants.some((variant) => variant.print_size === printSize && variant.material === material && variant.surface === value); return <button key={value} type="button" disabled={!available} onClick={() => chooseVariant({ finish: value })} className={`min-h-14 border px-4 font-black ${finish === value ? 'border-[#E8B4BC] bg-[#E8B4BC]/15' : 'border-black/10'} disabled:opacity-60`}>{value === 'matte' ? text.matte : text.glossy}{!available && <span className="mt-1 block text-[9px]">{optionsText.unavailableNow}</span>}</button>; })}</div></fieldset>}
               <fieldset className="mt-7 border-t border-black/[0.06] pt-6">
                 <legend className="mb-3 text-sm font-black">{optionsText.borders}</legend>
                 <div className="grid grid-cols-2 gap-3">
-                  {BORDERS.map((value) => { const available = variants.some((variant) => variant.print_size === printSize && variant.material === material && variant.surface === finish && variant.border_style === value); return <button key={value} type="button" disabled={!available} onClick={() => chooseVariant({ borderStyle: value })} className={`border p-3 text-start ${borderStyle === value ? 'border-[#171717]' : 'border-black/10'} disabled:opacity-35`}><span className={`mb-3 block aspect-[3/2] bg-[#ddd] ${value === 'white_border' ? 'border-[8px] border-white shadow-inner' : ''}`} /><strong className="text-xs">{optionsText[value]}</strong></button>; })}
+                  {BORDERS.map((value) => { const available = availableVariants.some((variant) => variant.print_size === printSize && variant.material === material && variant.surface === finish && variant.border_style === value); return <button key={value} type="button" disabled={!available} onClick={() => chooseVariant({ borderStyle: value })} className={`border p-3 text-start ${borderStyle === value ? 'border-[#171717]' : 'border-black/10'} disabled:opacity-60`}><span className={`mb-3 block aspect-[3/2] bg-[#ddd] ${value === 'white_border' ? 'border-[8px] border-white shadow-inner' : ''}`} /><strong className="text-xs">{optionsText[value]}</strong>{!available && <span className="mt-1 block text-[9px] font-bold">{optionsText.unavailableNow}</span>}</button>; })}
                 </div>
               </fieldset>
+              {variantNotice && <p role="status" className="mt-5 border-s-4 border-amber-500 bg-amber-50 p-3 text-xs font-bold leading-6 text-amber-900">{variantNotice}</p>}
             </div>
             <div className="border-t-2 border-[#E8B4BC] bg-white p-5 sm:p-8">
               <div className="mb-6 flex items-center gap-3"><Crop size={24} className="text-[#C6A56B]" /><h2 className="text-xl font-black">{optionsText.fitMethod}</h2></div>
               <div className="space-y-3">{[['fill', optionsText.fillTitle, optionsText.fillDescription], ['fit', optionsText.fitTitle, optionsText.fitDescription]].map(([value, label, description]) => <button key={value} type="button" onClick={() => applyFitToAll(value)} className={`w-full border p-4 text-start transition ${fitMode === value ? 'border-[#171717] bg-[#171717] text-white' : 'border-black/10 bg-[#FAF9F7]'}`}><span className="flex items-center justify-between gap-3"><strong>{label}</strong>{fitMode === value && <CheckCircle2 size={18} />}</span><span className="mt-2 block text-xs leading-6 opacity-60">{description}</span></button>)}</div>
-              <div className="mt-7 border border-[#C6A56B]/30 bg-[#C6A56B]/10 p-4 text-xs font-bold leading-6 text-black/65">{selectedVariant ? `${printSize} · ${optionsText[material]} · ${finish === 'matte' ? text.matte : finish === 'glossy' ? text.glossy : optionsText.none} · ${optionsText[borderStyle]}` : optionsText.unavailable}</div>
-              <button type="button" disabled={!selectedVariantId || isPreparing} onClick={() => { setStep(2); fileInputRef.current?.click(); }} className="mt-8 flex min-h-12 w-full items-center justify-center gap-2 bg-[#171717] px-5 py-4 font-black text-white transition hover:bg-[#333] disabled:opacity-40">{text.continue} {direction === 'rtl' ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}</button>
+              <div className="mt-7 border border-[#C6A56B]/30 bg-[#C6A56B]/10 p-4">
+                <p className="text-xs font-bold leading-6 text-black/65">{selectedVariant?.available ? `${printSize} · ${optionsText[material]} · ${finish === 'matte' ? text.matte : finish === 'glossy' ? text.glossy : optionsText.none} · ${optionsText[borderStyle]}` : optionsText.unavailableNow}</p>
+                <div className="mt-4 flex items-end justify-between gap-4 border-t border-[#C6A56B]/20 pt-4">
+                  <div><span className="block text-[10px] font-bold text-black/45">{optionsText.livePrice}</span><strong className="mt-1 block text-2xl font-black">{quoteLoading ? '...' : formatMoney(displaySubtotal, language)}</strong></div>
+                  <span className="text-xs font-black text-black/55">{quoteCopies} {optionsText.quoteCopies} · {formatMoney(displayUnitPrice, language)}</span>
+                </div>
+              </div>
+              <button type="button" disabled={!selectedVariant?.available || isPreparing || (!selectedVariantId.startsWith('legacy:') && displayUnitPrice <= 0)} onClick={() => { setStep(2); fileInputRef.current?.click(); }} className="mt-8 flex min-h-12 w-full items-center justify-center gap-2 bg-[#171717] px-5 py-4 font-black text-white transition hover:bg-[#333] disabled:opacity-40">{text.continue} {direction === 'rtl' ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}</button>
             </div>
           </section>
         )}
@@ -730,6 +844,10 @@ export default function PrintBuilder() {
               <div><strong className="text-sm">{optionsText.fitMethod}</strong><p className="mt-1 text-xs leading-6 text-black/45">{fitMode === 'fill' ? optionsText.fillDescription : optionsText.fitDescription}</p></div>
               <div className="grid grid-cols-2 gap-2">{[['fill', optionsText.fillTitle], ['fit', optionsText.fitTitle]].map(([value, label]) => <button key={value} type="button" onClick={() => applyFitToAll(value)} className={`min-h-11 border px-3 text-xs font-black ${fitMode === value ? 'border-[#171717] bg-[#171717] text-white' : 'border-black/10'}`}>{label}</button>)}</div>
             </div>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-s-4 border-[#C6A56B] bg-[#C6A56B]/10 p-4">
+              <div><p className="text-xs font-bold text-black/50">{printSize} · {optionsText[material]} · {finish === 'matte' ? text.matte : finish === 'glossy' ? text.glossy : optionsText.none} · {optionsText[borderStyle]}</p><p className="mt-1 text-sm font-black">{totalCopies} {optionsText.quoteCopies}</p></div>
+              <div className="text-end"><span className="text-[10px] font-bold text-black/45">{optionsText.livePrice}</span><strong className="block text-2xl font-black">{quoteLoading ? '...' : formatMoney(displaySubtotal, language)}</strong></div>
+            </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {uploadedPhotos.map((photo) => (
                 <article key={photo.id} className="overflow-hidden border border-black/[0.08] bg-white">
@@ -757,7 +875,7 @@ export default function PrintBuilder() {
             </div>
             <div className="mt-7 flex flex-wrap gap-3">
               <button type="button" onClick={() => setStep(2)} className="border border-black/10 bg-white px-6 py-3 text-sm font-black">{text.addMore}</button>
-              <button type="button" onClick={goToSummary} className="flex flex-1 items-center justify-center gap-2 bg-[#171717] px-6 py-3 text-sm font-black text-white">{text.summary} {direction === 'rtl' ? <ArrowLeft size={17} /> : <ArrowRight size={17} />}</button>
+              <button type="button" disabled={pendingPhotoUpdates > 0} onClick={goToSummary} className="flex flex-1 items-center justify-center gap-2 bg-[#171717] px-6 py-3 text-sm font-black text-white disabled:opacity-50">{text.summary} {direction === 'rtl' ? <ArrowLeft size={17} /> : <ArrowRight size={17} />}</button>
             </div>
           </section>
         )}
@@ -767,7 +885,7 @@ export default function PrintBuilder() {
             <div className="bg-white p-5 sm:p-8">
               <h2 className="text-2xl font-black">{text.summary}</h2>
               <div className="mt-7 grid grid-cols-2 gap-px bg-black/10 sm:grid-cols-4">
-                {[[optionsText.uploadedFiles, uploadedPhotos.length], [optionsText.totalPrints, totalCopies], [text.unitPrice, formatMoney(draft?.unit_price, language)], [optionsText.fitSummary, fitMode === 'fill' ? optionsText.fillTitle : optionsText.fitTitle]].map(([label, value]) => (
+                {[[optionsText.uploadedFiles, uploadedPhotos.length], [optionsText.totalPrints, totalCopies], [text.unitPrice, formatMoney(displayUnitPrice, language)], [optionsText.fitSummary, fitMode === 'fill' ? optionsText.fillTitle : optionsText.fitTitle]].map(([label, value]) => (
                   <div key={label} className="bg-white p-4"><p className="text-[11px] text-black/45">{label}</p><p className="mt-2 text-xl font-black">{value}</p></div>
                 ))}
               </div>
@@ -787,7 +905,7 @@ export default function PrintBuilder() {
               <p className="mt-2 text-4xl font-black">{formatMoney(displaySubtotal, language)}</p>
               <div className="mt-6 space-y-3 border-y border-white/10 py-5 text-sm">
                 <div className="flex justify-between"><span className="text-white/50">{text.printCount}</span><strong>{draft?.total_copies || totalCopies}</strong></div>
-                <div className="flex justify-between"><span className="text-white/50">{text.unitPrice}</span><strong>{formatMoney(draft?.unit_price, language)}</strong></div>
+                <div className="flex justify-between"><span className="text-white/50">{text.unitPrice}</span><strong>{formatMoney(displayUnitPrice, language)}</strong></div>
               </div>
               <button type="button" disabled={isSealing || !reviewConfirmed || photos.length !== uploadedPhotos.length} onClick={addToCart} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 bg-white px-5 py-4 font-black text-[#171717] disabled:opacity-50">
                 {isSealing ? <Loader2 size={18} className="animate-spin" /> : <ShoppingCart size={18} />} {text.addCart}
@@ -799,9 +917,9 @@ export default function PrintBuilder() {
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-[#FAF9F7]/95 p-3 shadow-[0_-8px_30px_rgba(0,0,0,.08)] backdrop-blur sm:hidden">
-        {step === 1 && <button type="button" disabled={!selectedVariantId} onClick={() => { setStep(2); fileInputRef.current?.click(); }} className="min-h-12 w-full bg-[#171717] px-5 font-black text-white disabled:opacity-40">{text.continue}</button>}
+        {step === 1 && <button type="button" disabled={!selectedVariant?.available || (!selectedVariantId.startsWith('legacy:') && displayUnitPrice <= 0)} onClick={() => { setStep(2); fileInputRef.current?.click(); }} className="min-h-12 w-full bg-[#171717] px-5 font-black text-white disabled:opacity-40">{text.continue} · {formatMoney(displaySubtotal, language)}</button>}
         {step === 2 && <button type="button" disabled={!photos.length || activeUploads.length > 0 || failedPhotos.length > 0} onClick={goToReview} className="min-h-12 w-full bg-[#171717] px-5 font-black text-white disabled:opacity-40">{text.reviewButton} · {uploadedPhotos.length}/{photos.length}</button>}
-        {step === 3 && <button type="button" onClick={goToSummary} className="min-h-12 w-full bg-[#171717] px-5 font-black text-white">{text.summary} · {totalCopies} {text.copies}</button>}
+        {step === 3 && <button type="button" disabled={pendingPhotoUpdates > 0} onClick={goToSummary} className="min-h-12 w-full bg-[#171717] px-5 font-black text-white disabled:opacity-50">{text.summary} · {totalCopies} {text.copies}</button>}
         {step === 4 && <button type="button" disabled={isSealing || !reviewConfirmed} onClick={addToCart} className="flex min-h-12 w-full items-center justify-center gap-2 bg-[#171717] px-5 font-black text-white disabled:opacity-40"><ShoppingCart size={18} /> {text.addCart} · {formatMoney(displaySubtotal, language)}</button>}
       </div>
 

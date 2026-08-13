@@ -9,6 +9,9 @@
     { "source": "/store/cart", "destination": "/store/cart/index.html" },
     { "source": "/store", "destination": "/store/index.html" },
     { "source": "/print", "destination": "/print/index.html" },
+    { "source": "/admin/login", "destination": "/admin-shell.html" },
+    { "source": "/app", "destination": "/admin-shell.html" },
+    { "source": "/app/(.*)", "destination": "/admin-shell.html" },
     {
       "source": "/(.*)",
       "destination": "/index.html"

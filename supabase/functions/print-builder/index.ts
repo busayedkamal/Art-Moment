@@ -1,5 +1,5 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
-import { hashPrintDraftToken, recalculatePrintDraft, verifyPrintDraftAccess } from '../_shared/printDrafts.ts';
+import { getPrintUnitPrice, hashPrintDraftToken, recalculatePrintDraft, verifyPrintDraftAccess } from '../_shared/printDrafts.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 
 const BUCKET = 'print-originals';
@@ -29,6 +29,20 @@ function cleanCrop(value: unknown) {
   };
 }
 
+function catalogUnitPrice(variant: Record<string, unknown>, settings: Record<string, unknown> | null, totalCopies = 1) {
+  if (variant.is_available === false) return 0;
+  if (variant.pricing_mode === 'fixed') return Number(Number(variant.unit_price || 0).toFixed(2));
+  if (variant.pricing_mode === 'existing_a4') return Number(Number(settings?.a4_price || 0).toFixed(2));
+
+  let price = Number(settings?.photo_4x6_price || 0);
+  if (settings?.is_dynamic_pricing_enabled) {
+    if (totalCopies <= Number(settings?.tier_1_limit || 0)) price = Number(settings?.tier_1_price || price);
+    else if (totalCopies <= Number(settings?.tier_2_limit || 0)) price = Number(settings?.tier_2_price || price);
+    else price = Number(settings?.tier_3_price || price);
+  }
+  return Number(price.toFixed(2));
+}
+
 Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
@@ -42,12 +56,46 @@ Deno.serve(async (req) => {
     if (action === 'list_variants') {
       const { data: variants, error } = await supabase
         .from('print_variants')
-        .select('id, print_size, material, surface, border_style, pricing_mode, unit_price, sort_order')
+        .select('id, print_size, material, surface, border_style, pricing_mode, unit_price, is_active, is_available, sort_order')
         .eq('is_active', true)
         .order('sort_order')
         .order('print_size');
       if (error) throw error;
-      return jsonResponse({ variants: variants || [] });
+      const { data: settings, error: settingsError } = await supabase
+        .from('settings')
+        .select('a4_price, photo_4x6_price, is_dynamic_pricing_enabled, tier_1_limit, tier_1_price, tier_2_limit, tier_2_price, tier_3_price')
+        .eq('id', 1)
+        .maybeSingle();
+      if (settingsError) throw settingsError;
+      const pricedVariants = (variants || []).map((variant) => {
+        const effectiveUnitPrice = catalogUnitPrice(variant, settings, 1);
+        return {
+          ...variant,
+          effective_unit_price: effectiveUnitPrice,
+          available: variant.is_available !== false && effectiveUnitPrice > 0,
+        };
+      });
+      return jsonResponse({ variants: pricedVariants });
+    }
+
+    if (action === 'quote') {
+      const variantId = String(body?.variantId || '');
+      const totalCopies = Math.min(999999, Math.max(1, Math.floor(Number(body?.totalCopies || 1))));
+      const { data: variant, error: variantError } = await supabase
+        .from('print_variants')
+        .select('id, print_size, is_active, is_available')
+        .eq('id', variantId)
+        .maybeSingle();
+      if (variantError) throw variantError;
+      if (!variant || !variant.is_active || variant.is_available === false) {
+        return jsonResponse({ error: 'print_variant_unavailable' }, 409);
+      }
+      const unitPrice = await getPrintUnitPrice(supabase, variant.print_size, totalCopies, variant.id);
+      return jsonResponse({
+        totalCopies,
+        unitPrice,
+        subtotal: Number((unitPrice * totalCopies).toFixed(2)),
+      });
     }
 
     if (action === 'create_draft') {
@@ -57,11 +105,19 @@ Deno.serve(async (req) => {
         .select('*')
         .eq('id', variantId)
         .eq('is_active', true)
+        .eq('is_available', true)
         .maybeSingle();
       if (variantError) throw variantError;
       if (!variant) return jsonResponse({ error: 'print_variant_unavailable' }, 400);
       const fitMode = body?.fitMode === 'fit' ? 'fit' : 'fill';
       const defaultCopies = Math.min(999, Math.max(1, Math.floor(Number(body?.defaultCopies || 1))));
+      await getPrintUnitPrice(supabase, variant.print_size, defaultCopies, variant.id);
+      const { data: retentionSettings } = await supabase
+        .from('settings')
+        .select('print_draft_retention_days')
+        .limit(1)
+        .maybeSingle();
+      const retentionDays = Math.min(30, Math.max(1, Number(retentionSettings?.print_draft_retention_days || 7)));
       const accessToken = createAccessToken();
       const { data: draft, error } = await supabase.from('print_drafts').insert({
         access_token_hash: await hashPrintDraftToken(accessToken),
@@ -73,6 +129,7 @@ Deno.serve(async (req) => {
         border_style: variant.border_style,
         fit_mode: fitMode,
         default_copies: defaultCopies,
+        expires_at: new Date(Date.now() + retentionDays * 86400000).toISOString(),
       }).select('*').single();
       if (error) throw error;
       return jsonResponse({ draft, accessToken });
@@ -101,14 +158,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === 'seal_draft' && draft.status === 'ready' && draft.snapshot_at) {
+      return jsonResponse({ draft });
+    }
+
+    if (draft.status === 'ready') {
+      return jsonResponse({ error: 'print_draft_locked' }, 409);
+    }
+
     if (action === 'update_draft') {
-      if (draft.status === 'ready') return jsonResponse({ error: 'print_draft_locked' }, 409);
       const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (body?.variantId !== undefined) {
         const { data: variant, error: variantError } = await supabase
-          .from('print_variants').select('*').eq('id', String(body.variantId)).eq('is_active', true).maybeSingle();
+          .from('print_variants').select('*').eq('id', String(body.variantId)).eq('is_active', true).eq('is_available', true).maybeSingle();
         if (variantError) throw variantError;
         if (!variant) return jsonResponse({ error: 'print_variant_unavailable' }, 400);
+        await getPrintUnitPrice(supabase, variant.print_size, Number(draft.total_copies || draft.default_copies || 1), variant.id);
         updates.variant_id = variant.id;
         updates.print_size = variant.print_size;
         updates.material = variant.material;
@@ -187,7 +252,13 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'print_draft_empty' }, 400);
       }
       const { data: readyDraft, error } = await supabase.from('print_drafts').update({
-        status: 'ready', review_confirmed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        status: 'ready',
+        review_confirmed_at: new Date().toISOString(),
+        snapshot_unit_price: summary.draft.unit_price,
+        snapshot_subtotal: summary.draft.subtotal,
+        snapshot_total_copies: summary.draft.total_copies,
+        snapshot_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }).eq('id', draft.id).select('*').single();
       if (error) throw error;
       return jsonResponse({ draft: readyDraft });
@@ -241,7 +312,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('print-builder error:', error);
     const message = error instanceof Error ? error.message : 'print_builder_failed';
-    const status = /not_found/.test(message) ? 404 : /access|expired|locked/.test(message) ? 403 : 500;
+    const status = /not_found/.test(message) ? 404 : /access|expired|locked/.test(message) ? 403 : /unavailable/.test(message) ? 409 : 500;
     return jsonResponse({ error: message }, status);
   }
 });

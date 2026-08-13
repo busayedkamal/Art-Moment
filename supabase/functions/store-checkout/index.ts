@@ -269,20 +269,43 @@ Deno.serve(async (req) => {
     const printDraftsForOrder: Array<Record<string, unknown>> = [];
     for (const printItem of printItems) {
       const accessedDraft = await verifyPrintDraftAccess(supabase, printItem.draft_id, printItem.access_token);
-      const recalculated = await recalculatePrintDraft(supabase, accessedDraft.id);
-      const readyDraft = recalculated.draft;
+      let readyDraft = accessedDraft;
+      if (!readyDraft.snapshot_at) {
+        const recalculated = await recalculatePrintDraft(supabase, accessedDraft.id);
+        const { data: snapshottedDraft, error: snapshotError } = await supabase
+          .from('print_drafts')
+          .update({
+            snapshot_unit_price: recalculated.draft.unit_price,
+            snapshot_subtotal: recalculated.draft.subtotal,
+            snapshot_total_copies: recalculated.draft.total_copies,
+            snapshot_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', accessedDraft.id)
+          .eq('status', 'ready')
+          .select('*')
+          .single();
+        if (snapshotError) throw snapshotError;
+        readyDraft = snapshottedDraft;
+      }
       if (readyDraft.status !== 'ready' || Number(readyDraft.file_count || 0) < 1) {
         throw new Error('print_draft_not_ready');
       }
-      subtotal += Number(readyDraft.subtotal || 0);
+      const snapshotUnitPrice = Number(readyDraft.snapshot_unit_price ?? readyDraft.unit_price ?? 0);
+      const snapshotSubtotal = Number(readyDraft.snapshot_subtotal ?? readyDraft.subtotal ?? 0);
+      const snapshotTotalCopies = Number(readyDraft.snapshot_total_copies ?? readyDraft.total_copies ?? 0);
+      if (snapshotUnitPrice <= 0 || snapshotSubtotal <= 0 || snapshotTotalCopies < 1) {
+        throw new Error('print_snapshot_invalid');
+      }
+      subtotal += snapshotSubtotal;
       printDraftsForOrder.push(readyDraft);
       orderItems.push({
         product_id: null,
         item_type: 'print',
         item_name: `طباعة صور ${readyDraft.print_size}`,
         print_draft_id: readyDraft.id,
-        quantity: Number(readyDraft.total_copies || 0),
-        price_at_time: Number(readyDraft.unit_price || 0),
+        quantity: snapshotTotalCopies,
+        price_at_time: snapshotUnitPrice,
         selected_options: {
           print_size: readyDraft.print_size,
           material: readyDraft.material,
@@ -292,7 +315,10 @@ Deno.serve(async (req) => {
         },
         metadata: {
           file_count: Number(readyDraft.file_count || 0),
-          total_copies: Number(readyDraft.total_copies || 0),
+          total_copies: snapshotTotalCopies,
+          unit_price: snapshotUnitPrice,
+          total_price: snapshotSubtotal,
+          snapshot_at: readyDraft.snapshot_at,
           variant_id: readyDraft.variant_id,
           original_files_private: true,
         },
