@@ -19,6 +19,11 @@ function formatWhatsAppPhone(phone: string) {
   return `966${digits}`;
 }
 
+function normalizeEmail(value: unknown) {
+  const email = String(value || '').trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
+}
+
 function getStockRpcErrorMessage(error: { message?: string } | null) {
   const message = String(error?.message || '');
   if (/product_out_of_stock/i.test(message)) return 'product_out_of_stock';
@@ -165,15 +170,18 @@ Deno.serve(async (req) => {
   let rewardWalletId: number | null = null;
   let rewardOrderValue = 0;
   let orderedPrintDraftIds: string[] = [];
+  let createdGuestCustomerId: string | null = null;
 
   try {
     const body = await req.json();
     const customer = body?.customer || {};
     const payment = body?.payment || {};
     const couponCode = body?.couponCode;
+    const idempotencyKey = String(body?.idempotencyKey || '').trim().slice(0, 120) || null;
     const requestedRewardPoints = Math.max(0, Math.floor(Number(body?.rewardPoints || 0)));
     const items = Array.isArray(body?.items) ? body.items : [];
     let phone = normalizeSaudiPhone(customer.phone);
+    let customerEmail = normalizeEmail(customer.email);
     const allowedPaymentMethods = new Set(['bank_transfer', 'cash_on_delivery', 'card', 'wallet', 'manual', 'other']);
     const paymentMethod = allowedPaymentMethods.has(String(payment.method))
       ? String(payment.method)
@@ -205,6 +213,7 @@ Deno.serve(async (req) => {
     let verifiedCustomerId: string | null = null;
     let verifiedCustomerName = '';
     let verifiedCustomerEmail = '';
+    let isAuthenticatedCustomer = false;
 
     const tokenPayload = await verifyCustomerSessionToken(customer.sessionToken);
     if (tokenPayload?.sub) {
@@ -220,12 +229,86 @@ Deno.serve(async (req) => {
         verifiedCustomerId = String(tokenCustomer.id);
         verifiedCustomerName = String(tokenCustomer.name || '').trim();
         verifiedCustomerEmail = String(tokenCustomer.email || '').trim();
+        customerEmail = normalizeEmail(tokenCustomer.email);
         phone = accountPhone;
+        isAuthenticatedCustomer = true;
       }
     }
 
-    if (!isValidSaudiMobile(phone)) {
-      return jsonResponse({ error: 'invalid_phone' }, 400);
+    if (!isValidSaudiMobile(phone) || !customerEmail || !String(customer.name || verifiedCustomerName || '').trim()) {
+      return jsonResponse({ error: 'invalid_customer_details' }, 400);
+    }
+
+    if (!verifiedCustomerId) {
+      const variants = phoneVariants(phone);
+      const [phoneMatchResult, emailMatchResult] = await Promise.all([
+        supabase.from('customers').select('id, name, email, phone').in('phone', variants).limit(1).maybeSingle(),
+        supabase.from('customers').select('id, name, email, phone').ilike('email', customerEmail).limit(1).maybeSingle(),
+      ]);
+      if (phoneMatchResult.error) throw phoneMatchResult.error;
+      if (emailMatchResult.error) throw emailMatchResult.error;
+
+      const phoneMatch = phoneMatchResult.data;
+      const emailMatch = emailMatchResult.data;
+      if (phoneMatch && emailMatch && phoneMatch.id !== emailMatch.id) {
+        return jsonResponse({ error: 'customer_identity_conflict' }, 409);
+      }
+
+      const guestCustomer = phoneMatch || emailMatch;
+      if (guestCustomer) {
+        const exactPhone = normalizeSaudiPhone(guestCustomer.phone) === phone;
+        const exactEmail = normalizeEmail(guestCustomer.email) === customerEmail;
+        if (!exactPhone || !exactEmail) {
+          return jsonResponse({ error: 'guest_customer_exists_login_required' }, 409);
+        }
+        verifiedCustomerId = String(guestCustomer.id);
+        verifiedCustomerName = String(guestCustomer.name || '').trim();
+        verifiedCustomerEmail = normalizeEmail(guestCustomer.email);
+      } else {
+        let guestInsert = await supabase.from('customers').insert({
+          name: String(customer.name || 'عميل المتجر').trim(),
+          email: customerEmail,
+          phone,
+          password_hash: null,
+          marketing_opt_in: false,
+          account_origin: 'store_guest',
+        }).select('id, name, email, phone').single();
+        if (guestInsert.error && /account_origin|schema cache|column/i.test(guestInsert.error.message || '')) {
+          guestInsert = await supabase.from('customers').insert({
+            name: String(customer.name || 'عميل المتجر').trim(),
+            email: customerEmail,
+            phone,
+            password_hash: null,
+            marketing_opt_in: false,
+          }).select('id, name, email, phone').single();
+        }
+        if (guestInsert.error) throw guestInsert.error;
+        verifiedCustomerId = String(guestInsert.data.id);
+        verifiedCustomerName = String(guestInsert.data.name || '').trim();
+        verifiedCustomerEmail = normalizeEmail(guestInsert.data.email);
+        createdGuestCustomerId = verifiedCustomerId;
+      }
+    }
+
+    if (idempotencyKey && verifiedCustomerId) {
+      const existingOrderResult = await supabase
+        .from('store_orders')
+        .select('id, short_id, customer_id, total_amount, subtotal_amount, discount_amount, coupon_code, reward_points_used, points_used_amount')
+        .eq('checkout_idempotency_key', idempotencyKey)
+        .maybeSingle();
+      if (!existingOrderResult.error && existingOrderResult.data?.customer_id === verifiedCustomerId) {
+        const existingOrder = existingOrderResult.data;
+        return jsonResponse({
+          order: {
+            ...existingOrder,
+            amount_due: Math.max(0, Number(existingOrder.total_amount || 0) - Number(existingOrder.points_used_amount || 0)),
+          },
+          idempotent: true,
+        });
+      }
+      if (existingOrderResult.error && !/checkout_idempotency_key|schema cache|column/i.test(existingOrderResult.error.message || '')) {
+        throw existingOrderResult.error;
+      }
     }
 
     const productIds = normalizedItems.map((item: { product_id: number }) => item.product_id);
@@ -240,7 +323,7 @@ Deno.serve(async (req) => {
     }
 
     const productById = new Map((products || []).map((product: Record<string, unknown>) => [String(product.id), product]));
-    let subtotal = 0;
+    let productsSubtotal = 0;
 
     const orderItems: Array<Record<string, unknown>> = normalizedItems.map((item: {
       product_id: number;
@@ -257,7 +340,7 @@ Deno.serve(async (req) => {
 
       const resolvedOptions = resolveProductOptions(product.product_options, item.selected_options);
       const price = Number((Number(product.price || 0) + resolvedOptions.priceDelta).toFixed(2));
-      subtotal += price * item.quantity;
+      productsSubtotal += price * item.quantity;
       return {
         product_id: item.product_id,
         quantity: item.quantity,
@@ -267,6 +350,7 @@ Deno.serve(async (req) => {
     });
 
     const printDraftsForOrder: Array<Record<string, unknown>> = [];
+    let printSubtotal = 0;
     for (const printItem of printItems) {
       const accessedDraft = await verifyPrintDraftAccess(supabase, printItem.draft_id, printItem.access_token);
       let readyDraft = accessedDraft;
@@ -291,13 +375,24 @@ Deno.serve(async (req) => {
       if (readyDraft.status !== 'ready' || Number(readyDraft.file_count || 0) < 1) {
         throw new Error('print_draft_not_ready');
       }
+      if (readyDraft.variant_id) {
+        const { data: activeVariant, error: variantError } = await supabase
+          .from('print_variants')
+          .select('is_active, is_available')
+          .eq('id', readyDraft.variant_id)
+          .maybeSingle();
+        if (variantError) throw variantError;
+        if (!activeVariant?.is_active || activeVariant?.is_available === false) {
+          throw new Error('print_variant_unavailable');
+        }
+      }
       const snapshotUnitPrice = Number(readyDraft.snapshot_unit_price ?? readyDraft.unit_price ?? 0);
       const snapshotSubtotal = Number(readyDraft.snapshot_subtotal ?? readyDraft.subtotal ?? 0);
       const snapshotTotalCopies = Number(readyDraft.snapshot_total_copies ?? readyDraft.total_copies ?? 0);
       if (snapshotUnitPrice <= 0 || snapshotSubtotal <= 0 || snapshotTotalCopies < 1) {
         throw new Error('print_snapshot_invalid');
       }
-      subtotal += snapshotSubtotal;
+      printSubtotal += snapshotSubtotal;
       printDraftsForOrder.push(readyDraft);
       orderItems.push({
         product_id: null,
@@ -325,7 +420,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const coupon = await calculateStoreCouponDiscount(supabase, couponCode, subtotal);
+    const subtotal = Number((productsSubtotal + printSubtotal).toFixed(2));
+    const coupon = await calculateStoreCouponDiscount(supabase, couponCode, subtotal, {
+      products: productsSubtotal,
+      print: printSubtotal,
+    });
     const discountAmount = Number(coupon?.discountValue || 0);
     const finalTotal = Math.max(0, Number((subtotal - discountAmount).toFixed(2)));
     rewardOrderValue = finalTotal;
@@ -381,7 +480,7 @@ Deno.serve(async (req) => {
     ));
 
     if (requestedRewardPoints > 0) {
-      if (!verifiedCustomerId) return jsonResponse({ error: 'reward_login_required' }, 401);
+      if (!isAuthenticatedCustomer) return jsonResponse({ error: 'reward_login_required' }, 401);
       if (rewardSettings?.reward_program_enabled === false) {
         return jsonResponse({ error: 'reward_program_disabled' }, 409);
       }
@@ -420,7 +519,10 @@ Deno.serve(async (req) => {
       city: String(customer.city || '').trim() || null,
       district: String(customer.district || '').trim() || null,
       street: String(customer.street || '').trim() || null,
+      building_number: String(customer.buildingNumber || '').trim() || null,
+      postal_code: String(customer.postalCode || '').trim() || null,
     };
+    if (idempotencyKey) orderPayload.checkout_idempotency_key = idempotencyKey;
     if (verifiedCustomerId) orderPayload.customer_id = verifiedCustomerId;
 
     reservedStockItems = normalizedItems.map((item: { product_id: number; quantity: number }) => ({
@@ -446,8 +548,13 @@ Deno.serve(async (req) => {
       throw new Error('reward_points_migration_required');
     }
 
-    if (orderInsert.error && /customer_id|payment_status|payment_method|payment_reference|payment_failed_reason|refunded_amount|payment_updated_at|schema cache|column/i.test(orderInsert.error.message || '')) {
+    if (orderInsert.error && /customer_id|checkout_idempotency_key|building_number|postal_code|subtotal_amount|discount_amount|coupon_code|payment_status|payment_method|payment_reference|payment_failed_reason|refunded_amount|payment_updated_at|schema cache|column/i.test(orderInsert.error.message || '')) {
       if (/customer_id/i.test(orderInsert.error.message || '')) delete orderPayload.customer_id;
+      if (/checkout_idempotency_key/i.test(orderInsert.error.message || '')) delete orderPayload.checkout_idempotency_key;
+      if (/building_number|postal_code/i.test(orderInsert.error.message || '')) {
+        delete orderPayload.building_number;
+        delete orderPayload.postal_code;
+      }
       if (/subtotal_amount|discount_amount|coupon_code|schema cache|column/i.test(orderInsert.error.message || '')) {
         delete orderPayload.subtotal_amount;
         delete orderPayload.discount_amount;
@@ -509,6 +616,7 @@ Deno.serve(async (req) => {
 
     stockReserved = false;
     createdOrderId = null;
+    createdGuestCustomerId = null;
 
     try {
       await sendWhatsAppConfirmation(order, String(customerPin), {
@@ -594,13 +702,21 @@ Deno.serve(async (req) => {
       }).in('id', orderedPrintDraftIds);
       if (restoreDraftError) console.error('store-checkout print draft restore error:', restoreDraftError);
     }
+    if (createdGuestCustomerId) {
+      const { error: guestCleanupError } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', createdGuestCustomerId)
+        .is('password_hash', null);
+      if (guestCleanupError) console.error('store-checkout guest cleanup error:', guestCleanupError);
+    }
 
     const message = error instanceof Error ? error.message : 'checkout_failed';
-    const status = ['product_unavailable', 'product_out_of_stock', 'print_draft_not_ready', 'print_draft_locked', 'reward_points_balance_insufficient', 'reward_redemption_limit_exceeded', 'reward_minimum_redemption_not_met'].includes(message)
+    const status = ['product_unavailable', 'product_out_of_stock', 'print_draft_not_ready', 'print_draft_locked', 'print_variant_unavailable', 'coupon_scope_empty', 'reward_points_balance_insufficient', 'reward_redemption_limit_exceeded', 'reward_minimum_redemption_not_met', 'guest_customer_exists_login_required', 'customer_identity_conflict'].includes(message)
       ? 409
       : message === 'reward_points_migration_required'
         ? 503
-      : ['empty_cart', 'invalid_stock_items', 'not_authorized'].includes(message)
+      : ['empty_cart', 'invalid_stock_items', 'not_authorized', 'invalid_customer_details'].includes(message)
         ? 400
         : 500;
     return jsonResponse({ error: message }, status);

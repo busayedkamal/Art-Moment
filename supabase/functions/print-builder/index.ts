@@ -149,13 +149,115 @@ Deno.serve(async (req) => {
           if (item.path && item.signedUrl) previewByPath.set(item.path, item.signedUrl);
         });
       }
+      let variantAvailable = true;
+      if (draft.variant_id) {
+        const { data: variant, error: variantError } = await supabase
+          .from('print_variants')
+          .select('is_active, is_available')
+          .eq('id', draft.variant_id)
+          .maybeSingle();
+        if (variantError) throw variantError;
+        variantAvailable = Boolean(variant?.is_active && variant?.is_available !== false);
+      }
       return jsonResponse({
         draft,
+        variantAvailable,
         files: (files || []).map((file: Record<string, unknown>) => ({
           ...file,
           preview_url: previewByPath.get(String(file.preview_storage_path || '')) || null,
         })),
       });
+    }
+
+    if (action === 'clone_draft') {
+      if (draft.status !== 'ready' || !draft.snapshot_at) {
+        return jsonResponse({ error: 'print_draft_not_ready' }, 409);
+      }
+
+      const { data: sourceFiles, error: filesError } = await supabase
+        .from('print_draft_files')
+        .select('*')
+        .eq('draft_id', draft.id)
+        .order('sort_order')
+        .order('created_at');
+      if (filesError) throw filesError;
+      if (!sourceFiles?.length) return jsonResponse({ error: 'print_draft_empty' }, 409);
+
+      const { data: retentionSettings } = await supabase
+        .from('settings')
+        .select('print_draft_retention_days')
+        .limit(1)
+        .maybeSingle();
+      const retentionDays = Math.min(30, Math.max(1, Number(retentionSettings?.print_draft_retention_days || 7)));
+      const clonedAccessToken = createAccessToken();
+      const { data: clonedDraft, error: cloneError } = await supabase.from('print_drafts').insert({
+        access_token_hash: await hashPrintDraftToken(clonedAccessToken),
+        status: 'draft',
+        variant_id: draft.variant_id,
+        print_size: draft.print_size,
+        finish: draft.finish,
+        material: draft.material,
+        surface: draft.surface,
+        border_style: draft.border_style,
+        fit_mode: draft.fit_mode,
+        default_copies: draft.default_copies,
+        expires_at: new Date(Date.now() + retentionDays * 86400000).toISOString(),
+      }).select('*').single();
+      if (cloneError) throw cloneError;
+
+      const copiedOriginals: string[] = [];
+      const copiedPreviews: string[] = [];
+      try {
+        for (const sourceFile of sourceFiles) {
+          const nextFileId = crypto.randomUUID();
+          const sourceOriginalPath = String(sourceFile.original_storage_path || sourceFile.storage_path || '');
+          const extension = sourceOriginalPath.split('.').pop() || safeExtension(sourceFile.original_name, sourceFile.mime_type);
+          const nextOriginalPath = `${clonedDraft.id}/originals/${nextFileId}.${extension}`;
+          const nextPreviewPath = sourceFile.preview_storage_path
+            ? `${clonedDraft.id}/previews/${nextFileId}.webp`
+            : null;
+
+          const { error: originalCopyError } = await supabase.storage.from(BUCKET).copy(sourceOriginalPath, nextOriginalPath);
+          if (originalCopyError) throw originalCopyError;
+          copiedOriginals.push(nextOriginalPath);
+
+          if (nextPreviewPath) {
+            const { error: previewCopyError } = await supabase.storage
+              .from(PREVIEW_BUCKET)
+              .copy(String(sourceFile.preview_storage_path), nextPreviewPath);
+            if (previewCopyError) throw previewCopyError;
+            copiedPreviews.push(nextPreviewPath);
+          }
+
+          const { error: insertFileError } = await supabase.from('print_draft_files').insert({
+            id: nextFileId,
+            draft_id: clonedDraft.id,
+            original_name: sourceFile.original_name,
+            storage_path: nextOriginalPath,
+            original_storage_path: nextOriginalPath,
+            preview_storage_path: nextPreviewPath,
+            size_bytes: sourceFile.size_bytes,
+            mime_type: sourceFile.mime_type,
+            width: sourceFile.width,
+            height: sourceFile.height,
+            copies: sourceFile.copies,
+            rotation: sourceFile.rotation,
+            crop: sourceFile.crop,
+            resolution_status: sourceFile.resolution_status,
+            upload_status: 'uploaded',
+            sort_order: sourceFile.sort_order,
+          });
+          if (insertFileError) throw insertFileError;
+        }
+
+        const summary = await recalculatePrintDraft(supabase, clonedDraft.id);
+        return jsonResponse({ draft: summary.draft, accessToken: clonedAccessToken });
+      } catch (cloneFilesError) {
+        if (copiedOriginals.length) await supabase.storage.from(BUCKET).remove(copiedOriginals);
+        if (copiedPreviews.length) await supabase.storage.from(PREVIEW_BUCKET).remove(copiedPreviews);
+        await supabase.from('print_drafts').delete().eq('id', clonedDraft.id);
+        throw cloneFilesError;
+      }
     }
 
     if (action === 'seal_draft' && draft.status === 'ready' && draft.snapshot_at) {

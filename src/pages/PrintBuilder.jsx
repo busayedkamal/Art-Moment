@@ -613,6 +613,7 @@ export default function PrintBuilder() {
       const snapshotSubtotal = Number(readyDraft.snapshot_subtotal ?? readyDraft.subtotal ?? 0);
       const snapshotTotalCopies = Number(readyDraft.snapshot_total_copies ?? readyDraft.total_copies ?? 0);
       const savedCart = JSON.parse(localStorage.getItem('art_moment_cart') || '[]');
+      const savedDraftReference = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || 'null');
       const cartItem = {
         id: `print-${readyDraft.id}`,
         cartKey: `print:${readyDraft.id}`,
@@ -638,8 +639,15 @@ export default function PrintBuilder() {
           snapshotAt: readyDraft.snapshot_at,
         },
       };
-      const nextCart = [...savedCart.filter((item) => item.printDraftId !== readyDraft.id), cartItem];
+      const nextCart = [
+        ...savedCart.filter((item) => (
+          item.printDraftId !== readyDraft.id
+          && String(item.cartKey || '') !== String(savedDraftReference?.replaceCartKey || '')
+        )),
+        cartItem,
+      ];
       localStorage.setItem('art_moment_cart', JSON.stringify(nextCart));
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
       toast.success(text.saved);
       navigate('/store/cart');
     } catch (error) {

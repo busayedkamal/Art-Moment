@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin, LogIn, UserPlus, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin, LogIn, UserPlus, ShieldCheck, Pencil, Files, Package, ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { supabase } from '../lib/supabase';
@@ -26,15 +26,36 @@ async function getFunctionError(error) {
   }
 }
 
+function cartForStorage(items) {
+  return items.map((item) => {
+    const storedItem = { ...item };
+    delete storedItem.previewUrls;
+    delete storedItem.availabilityIssue;
+    delete storedItem.availabilityMessage;
+    delete storedItem.availabilityChecked;
+    return storedItem;
+  });
+}
+
+function formatMoney(value) {
+  return Number(value || 0).toFixed(2);
+}
+
 export default function StoreCart() {
+  const navigate = useNavigate();
+  const checkoutRef = useRef(null);
+  const idempotencyKeyRef = useRef(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
   const [cart, setCart] = useState([]);
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [phoneError, setPhoneError] = useState(false);
   const [city, setCity] = useState('');
   const [district, setDistrict] = useState('');
   const [street, setStreet] = useState('');
+  const [buildingNumber, setBuildingNumber] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
@@ -51,6 +72,10 @@ export default function StoreCart() {
   const [customerSession, setCustomerSession] = useState(() => getCustomerSession());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authInitialMode, setAuthInitialMode] = useState('login');
+  const [checkoutStep, setCheckoutStep] = useState(1);
+  const [printDeleteItem, setPrintDeleteItem] = useState(null);
+  const [isCloningPrint, setIsCloningPrint] = useState(false);
+  const [orderResult, setOrderResult] = useState(null);
 
   const openCustomerAuth = (nextMode = 'login') => {
     setAuthInitialMode(nextMode);
@@ -77,28 +102,69 @@ export default function StoreCart() {
           if (error) throw error;
 
           const stockById = new Map((data || []).map(product => [product.id, product]));
-          nextCart = nextCart
-            .map(item => {
-              const productStock = stockById.get(item.id);
-              const stockQuantity = normalizeStockQuantity(productStock?.stock_quantity ?? item.stockQuantity);
-              const inStock = (productStock?.in_stock ?? item.inStock ?? true) && (stockQuantity === null || stockQuantity > 0);
-              const hydratedItem = {
-                ...item,
-                cartKey: item.cartKey || getCartLineKey(item.id, item.selectedOptions),
-                stockQuantity,
-                inStock,
-              };
-              return { ...hydratedItem, qty: clampCartQuantity(hydratedItem, item.qty) };
-            })
-            .filter(item => item.inStock !== false && Number(item.qty) > 0);
-
-          if (nextCart.length !== savedCart.length || nextCart.some((item, index) => item.qty !== savedCart[index]?.qty)) {
-            localStorage.setItem('art_moment_cart', JSON.stringify(nextCart));
-            toast.success('تم تحديث السلة حسب الكمية المتوفرة');
-          }
+          nextCart = nextCart.map(item => {
+            if (item.itemType === 'print') return item;
+            const productStock = stockById.get(item.id);
+            const stockQuantity = normalizeStockQuantity(productStock?.stock_quantity ?? item.stockQuantity);
+            const inStock = Boolean(productStock)
+              && productStock?.in_stock !== false
+              && (stockQuantity === null || stockQuantity > 0);
+            const requestedQuantity = Math.max(1, Number(item.qty || 1));
+            const availabilityIssue = !inStock || (stockQuantity !== null && requestedQuantity > stockQuantity);
+            return {
+              ...item,
+              cartKey: item.cartKey || getCartLineKey(item.id, item.selectedOptions),
+              stockQuantity,
+              inStock,
+              availabilityChecked: true,
+              availabilityIssue,
+              availabilityMessage: !inStock
+                ? 'هذا المنتج غير متوفر حاليًا'
+                : availabilityIssue
+                  ? `المتوفر الآن ${stockQuantity} فقط`
+                  : '',
+            };
+          });
         } catch (error) {
           console.error('Error refreshing cart stock:', error);
         }
+      }
+
+      const printLines = nextCart.filter(item => item.itemType === 'print' && item.printDraftId && item.printDraftToken);
+      if (printLines.length > 0) {
+        const printDetails = await Promise.all(printLines.map(async (item) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('print-builder', {
+              body: {
+                action: 'get_draft',
+                draftId: item.printDraftId,
+                accessToken: item.printDraftToken,
+              },
+            });
+            if (error) throw error;
+            const draft = data?.draft || {};
+            return [getItemKey(item), {
+              previewUrls: (data?.files || []).map(file => file.preview_url).filter(Boolean).slice(0, 4),
+              availabilityChecked: true,
+              availabilityIssue: data?.variantAvailable === false || draft.status !== 'ready',
+              availabilityMessage: data?.variantAvailable === false
+                ? 'تركيبة الطباعة هذه متوقفة مؤقتًا'
+                : draft.status !== 'ready'
+                  ? 'طلب الطباعة يحتاج إلى مراجعة قبل الإتمام'
+                  : '',
+            }];
+          } catch (error) {
+            console.error('Error loading print cart preview:', error);
+            return [getItemKey(item), {
+              previewUrls: [],
+              availabilityChecked: true,
+              availabilityIssue: true,
+              availabilityMessage: 'تعذر التحقق من طلب الطباعة. افتحيه للتعديل أو أعيدي المحاولة.',
+            }];
+          }
+        }));
+        const detailsByKey = new Map(printDetails);
+        nextCart = nextCart.map(item => ({ ...item, ...(detailsByKey.get(getItemKey(item)) || {}) }));
       }
 
       if (!cancelled) {
@@ -118,6 +184,7 @@ export default function StoreCart() {
       setCustomerSession(customer);
       setName(customer.name || '');
       setPhone(customer.phone || '');
+      setEmail(customer.email || '');
 
       if (customer.sessionToken) {
         supabase.functions.invoke('customer-account', {
@@ -133,6 +200,7 @@ export default function StoreCart() {
           setSavedAddresses(addresses);
           if (data?.customer?.name) setName(data.customer.name);
           if (data?.customer?.phone) setPhone(data.customer.phone);
+          if (data?.customer?.email) setEmail(data.customer.email);
           setRewardSummary(data?.rewards || null);
 
           const firstAddress = addresses[0];
@@ -141,6 +209,8 @@ export default function StoreCart() {
             setCity(firstAddress.city || '');
             setDistrict(firstAddress.district || '');
             setStreet(firstAddress.street || '');
+            setBuildingNumber(firstAddress.buildingNumber || firstAddress.building_number || '');
+            setPostalCode(firstAddress.postalCode || firstAddress.postal_code || '');
             if (firstAddress.notes) setNotes(current => current || firstAddress.notes);
           }
         }).catch(error => {
@@ -171,7 +241,7 @@ export default function StoreCart() {
         ...item,
         cartKey: item.cartKey || getCartLineKey(item.id, item.selectedOptions),
       }));
-      localStorage.setItem('art_moment_cart', JSON.stringify(restored));
+      localStorage.setItem('art_moment_cart', JSON.stringify(cartForStorage(restored)));
       setCart(restored);
       toast.success('تمت استعادة سلتك المحفوظة');
     }).finally(() => {
@@ -206,7 +276,7 @@ export default function StoreCart() {
 
   const saveCart = (newCart) => {
     setCart(newCart);
-    localStorage.setItem('art_moment_cart', JSON.stringify(newCart));
+    localStorage.setItem('art_moment_cart', JSON.stringify(cartForStorage(newCart)));
     if (appliedCoupon) setAppliedCoupon(null);
   };
 
@@ -236,6 +306,62 @@ export default function StoreCart() {
   };
 
   const removeItem = (itemKey) => saveCart(cart.filter(item => getItemKey(item) !== String(itemKey)));
+
+  const requestRemoveItem = (item) => {
+    if (item.itemType === 'print') {
+      setPrintDeleteItem(item);
+      return;
+    }
+
+    const itemKey = getItemKey(item);
+    const removedIndex = cart.findIndex(line => getItemKey(line) === itemKey);
+    removeItem(itemKey);
+    toast((toastItem) => (
+      <div className="flex min-w-[250px] items-center justify-between gap-4 font-[Tajawal]" dir="rtl">
+        <span className="text-sm font-bold">تم حذف المنتج من السلة</span>
+        <button
+          type="button"
+          onClick={() => {
+            const current = JSON.parse(localStorage.getItem('art_moment_cart') || '[]');
+            const restored = [...current];
+            restored.splice(Math.max(0, removedIndex), 0, cartForStorage([item])[0]);
+            saveCart(restored);
+            toast.dismiss(toastItem.id);
+          }}
+          className="text-xs font-black text-[#B97882]"
+        >
+          تراجع
+        </button>
+      </div>
+    ), { duration: 5000 });
+  };
+
+  const editPrintItem = async (item) => {
+    setIsCloningPrint(true);
+    const toastId = toast.loading('جاري تجهيز نسخة قابلة للتعديل...');
+    try {
+      const { data, error } = await supabase.functions.invoke('print-builder', {
+        body: {
+          action: 'clone_draft',
+          draftId: item.printDraftId,
+          accessToken: item.printDraftToken,
+        },
+      });
+      if (error) throw new Error(await getFunctionError(error));
+      localStorage.setItem('art_moment_print_draft', JSON.stringify({
+        draftId: data.draft.id,
+        accessToken: data.accessToken,
+        replaceCartKey: getItemKey(item),
+      }));
+      toast.success('تم فتح نسخة جديدة للتعديل', { id: toastId });
+      navigate('/print');
+    } catch (error) {
+      console.error('Clone print draft error:', error);
+      toast.error('تعذر فتح طلب الطباعة للتعديل حاليًا', { id: toastId });
+    } finally {
+      setIsCloningPrint(false);
+    }
+  };
 
   const setExactQty = (itemKey, val) => {
     let reachedLimit = false;
@@ -275,10 +401,19 @@ export default function StoreCart() {
     setCity(address.city || '');
     setDistrict(address.district || '');
     setStreet(address.street || '');
+    setBuildingNumber(address.buildingNumber || address.building_number || '');
+    setPostalCode(address.postalCode || address.postal_code || '');
     if (address.notes) setNotes(current => current || address.notes);
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (Number(item.qty) || 0)), 0);
+  const productsSubtotal = cart
+    .filter(item => item.itemType !== 'print')
+    .reduce((sum, item) => sum + (Number(item.price) * (Number(item.qty) || 0)), 0);
+  const printsSubtotal = cart
+    .filter(item => item.itemType === 'print')
+    .reduce((sum, item) => sum + (Number(item.price) * (Number(item.qty) || 0)), 0);
+  const hasAvailabilityIssues = cart.some(item => item.availabilityIssue);
   const discountAmount = Math.min(subtotal, Number(appliedCoupon?.discountValue || 0));
   const finalTotal = Math.max(0, subtotal - discountAmount);
   const rewardPointValue = Number(rewardSummary?.pointValue || 0.01);
@@ -319,6 +454,7 @@ export default function StoreCart() {
             itemType: item.itemType,
             printDraftId: item.printDraftId,
             printDraftToken: item.printDraftToken,
+            selectedOptions: item.selectedOptions || {},
           })),
         },
       });
@@ -333,6 +469,8 @@ export default function StoreCart() {
       toast.error(
         error.message === 'invalid_coupon'
           ? 'الكوبون غير صالح أو غير نشط'
+          : error.message === 'coupon_scope_empty'
+            ? 'هذا الكوبون لا يشمل العناصر الموجودة في السلة'
           : 'تعذر تطبيق الكوبون حالياً',
         { id: toastId },
       );
@@ -342,16 +480,21 @@ export default function StoreCart() {
   };
 
   const handleCheckout = async () => {
-    const activeCustomerSession = getCustomerSession();
-    if (!activeCustomerSession?.sessionToken) {
-      openCustomerAuth('login');
-      toast('سجّلي الدخول أو أنشئي حساباً لإتمام الطلب مع حفظ سلتك.');
+    if (hasAvailabilityIssues) {
+      toast.error('راجعي العناصر غير المتوفرة قبل إتمام الطلب');
       return;
     }
-
     const isValidPhone = /^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim());
     if (!isValidPhone) { setPhoneError(true); return; }
     setPhoneError(false);
+    if (!name.trim()) {
+      toast.error('أدخلي الاسم لإتمام الطلب');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error('أدخلي بريدًا إلكترونيًا صحيحًا');
+      return;
+    }
 
     const exceededItem = cart.find(item => {
       const stock = getAvailableStock(item);
@@ -393,11 +536,14 @@ export default function StoreCart() {
             id: customerSession?.id,
             sessionToken: customerSession?.sessionToken,
             name: name || customerSession?.name,
+            email: email || customerSession?.email,
             phone: normalizeCustomerPhone(phone),
             notes,
             city,
             district,
             street,
+            buildingNumber,
+            postalCode,
           },
           items: cart.map(item => ({
             id: item.id,
@@ -412,6 +558,7 @@ export default function StoreCart() {
           },
           couponCode: appliedCoupon?.code || null,
           rewardPoints: requestedRewardPoints,
+          idempotencyKey: idempotencyKeyRef.current,
         },
       });
 
@@ -419,6 +566,19 @@ export default function StoreCart() {
         throw new Error(await getFunctionError(error));
       }
 
+      const completedSummary = {
+        ...data?.order,
+        printCopies: cart
+          .filter(item => item.itemType === 'print')
+          .reduce((sum, item) => sum + Number(item.printDetails?.totalCopies || 0), 0),
+        productCount: cart
+          .filter(item => item.itemType !== 'print')
+          .reduce((sum, item) => sum + Number(item.qty || 0), 0),
+        paymentMethod,
+        customerPin: data?.customer_pin || null,
+        isGuest: !customerSession?.sessionToken,
+      };
+      setOrderResult(completedSummary);
       saveCart([]);
       if (customerSession?.sessionToken) {
         void supabase.functions.invoke('abandoned-cart', {
@@ -445,6 +605,13 @@ export default function StoreCart() {
         reward_program_disabled: 'استخدام النقاط متوقف مؤقتاً.',
         reward_points_migration_required: 'نظام النقاط قيد التحديث. حاولي بعد قليل.',
         invalid_product_options: 'تحققي من اختيار المقاس أو اللون أو الخامة لكل منتج.',
+        product_unavailable: 'أحد منتجات السلة لم يعد متوفرًا. راجعي السلة ثم حاولي مجددًا.',
+        product_out_of_stock: 'الكمية المطلوبة لأحد المنتجات لم تعد متوفرة.',
+        print_variant_unavailable: 'تركيبة الطباعة المختارة متوقفة مؤقتًا. افتحي طلب الطباعة لتعديله.',
+        print_draft_not_ready: 'طلب الطباعة يحتاج إلى مراجعة قبل إتمام الطلب.',
+        coupon_scope_empty: 'الكوبون لا يشمل العناصر الموجودة في السلة.',
+        guest_customer_exists_login_required: 'هذه البيانات مرتبطة بحساب قائم. سجّلي الدخول لحماية الحساب وإتمام الطلب.',
+        customer_identity_conflict: 'الجوال والبريد مرتبطان بحسابين مختلفين. راجعي البيانات أو سجّلي الدخول.',
       };
       toast.error(checkoutMessages[error.message] || 'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.', { id: toastId });
     } finally {
@@ -458,25 +625,34 @@ export default function StoreCart() {
         <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center shadow-sm mb-6 animate-in zoom-in duration-500">
           <CheckCircle size={40} />
         </div>
-        <h2 className="text-2xl md:text-3xl font-black mb-3 text-center">تم استلام طلبك بنجاح! 🎉</h2>
+        <h2 className="text-2xl md:text-3xl font-black mb-3 text-center">شكرًا، تم استلام طلبك</h2>
         <p className="text-[#171717]/60 text-sm md:text-base mb-8 text-center max-w-md leading-relaxed">
-          طلبك الآن في حالة <strong className="text-[#E8B4BC]">"بانتظار التأكيد"</strong>.<br />
-          وحالة الدفع <strong className="text-red-500">بانتظار الدفع</strong>. يمكنك متابعة التفاصيل من صفحة طلباتي.
+          رقم الطلب <strong className="text-[#171717]">#{String(orderResult?.short_id || orderResult?.id || '').slice(0, 6)}</strong>
         </p>
+        <div className="mb-8 grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="border border-black/10 bg-white p-4 text-center"><span className="block text-xs text-black/50">نسخ الطباعة</span><strong>{orderResult?.printCopies || 0}</strong></div>
+          <div className="border border-black/10 bg-white p-4 text-center"><span className="block text-xs text-black/50">المنتجات</span><strong>{orderResult?.productCount || 0}</strong></div>
+          <div className="border border-black/10 bg-white p-4 text-center"><span className="block text-xs text-black/50">حالة الدفع</span><strong className="text-amber-700">بانتظار الدفع</strong></div>
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
-            to="/store/orders"
+            to={orderResult?.isGuest ? '/track' : (orderResult?.id ? `/store/orders/${orderResult.id}` : '/store/orders')}
             className="bg-[#171717] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#E8B4BC] transition-all hover:-translate-y-1"
           >
-            عرض طلباتي
+            تتبع الطلب
           </Link>
           <Link
-            to="/store"
+            to="/"
             className="bg-white text-[#171717] border border-[#E8B4BC]/20 px-8 py-3.5 rounded-full font-bold shadow-sm hover:bg-[#FAF9F7] transition-all"
           >
-            العودة للمتجر
+            العودة للرئيسية
           </Link>
         </div>
+        {orderResult?.isGuest && orderResult?.customerPin && (
+          <p className="mt-5 max-w-md border-s-4 border-[#C6A56B] bg-white px-4 py-3 text-center text-xs leading-6 text-black/60">
+            احتفظي برمز التتبع <strong className="text-base text-[#171717]">{orderResult.customerPin}</strong> مع رقم الطلب، أو أنشئي حسابًا لاحقًا بنفس الجوال والبريد لربط طلباتك.
+          </p>
+        )}
       </div>
     );
   }
@@ -526,73 +702,90 @@ export default function StoreCart() {
               ? item.selectedOptionLabels
               : getSelectedOptionLabels(item.productOptions, item.selectedOptions);
 
+            if (item.itemType === 'print') {
+              const details = item.printDetails || {};
+              const printOptions = formatPrintOptionSummary({
+                material: details.material,
+                surface: details.surface,
+                border_style: details.borderStyle,
+                fit_mode: details.fitMode,
+              });
+              return (
+                <article key={itemKey} className="border border-[#C6A56B]/35 bg-white shadow-sm">
+                  <div className="flex items-center justify-between border-b border-black/[0.06] px-4 py-3 sm:px-5">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center bg-[#171717] text-white"><Files size={19} /></span>
+                      <div><p className="text-[10px] font-black text-[#C6A56B]">خدمة طباعة خاصة</p><h3 className="font-black">طلب طباعة صور</h3></div>
+                    </div>
+                    <strong className="text-lg text-[#B97882]">{formatMoney(item.price)} ر.س</strong>
+                  </div>
+
+                  <div className="grid gap-5 p-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:p-5">
+                    <div className="grid h-fit grid-cols-2 gap-1.5" aria-label="معاينات صور الطباعة">
+                      {(item.previewUrls || []).length > 0 ? (item.previewUrls || []).map((url, index) => (
+                        <img key={url} src={url} alt={`معاينة ${index + 1}`} className="aspect-square w-full object-cover" />
+                      )) : (
+                        <div className="col-span-2 flex aspect-[2/1] items-center justify-center bg-[#FAF9F7] text-[#E8B4BC]"><ImageIcon size={26} /></div>
+                      )}
+                    </div>
+
+                    <div>
+                      <dl className="grid grid-cols-2 gap-x-5 gap-y-3 text-xs sm:grid-cols-3">
+                        {[
+                          ['المقاس', details.printSize || '—'],
+                          ['الملفات', `${details.fileCount || 0} ملف`],
+                          ['إجمالي النسخ', `${details.totalCopies || 0} نسخة`],
+                          ['سعر النسخة', `${formatMoney(details.unitPrice)} ر.س`],
+                          ['الإعدادات', printOptions || '—'],
+                        ].map(([label, value]) => (
+                          <div key={label} className={label === 'الإعدادات' ? 'col-span-2 sm:col-span-2' : ''}>
+                            <dt className="text-black/45">{label}</dt><dd className="mt-1 font-black text-black/80">{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                      {item.availabilityIssue && (
+                        <div className="mt-4 flex items-start gap-2 border-s-4 border-red-500 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+                          <AlertCircle size={16} className="mt-0.5 shrink-0" /> {item.availabilityMessage}
+                        </div>
+                      )}
+                      <div className="mt-5 flex flex-wrap gap-2 border-t border-black/[0.06] pt-4">
+                        <button type="button" onClick={() => editPrintItem(item)} disabled={isCloningPrint} className="inline-flex min-h-11 items-center gap-2 bg-[#171717] px-4 text-xs font-black text-white disabled:opacity-50">
+                          {isCloningPrint ? <Loader2 size={15} className="animate-spin" /> : <Pencil size={15} />} تعديل الطلب
+                        </button>
+                        <button type="button" onClick={() => requestRemoveItem(item)} className="inline-flex min-h-11 items-center gap-2 border border-red-200 px-4 text-xs font-black text-red-600">
+                          <Trash2 size={15} /> حذف
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            }
+
             return (
-            <div key={itemKey} className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8B4BC]/15 flex items-center gap-4 sm:gap-5 shadow-sm">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#FAF9F7] rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
-                {item.image
-                  ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                  : <ImageIcon size={20} className="text-[#E8B4BC]/30" />
-                }
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-sm line-clamp-1">{item.name}</h3>
-                {optionLabels.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {optionLabels.map((option) => (
-                      <span key={option.id} className="rounded-full bg-[#FAF9F7] px-2 py-0.5 text-[9px] font-black text-[#171717]/60">
-                        {option.name}: {option.label}
-                      </span>
-                    ))}
+              <article key={itemKey} className={`grid grid-cols-[5.5rem_minmax(0,1fr)] gap-4 border bg-white p-4 shadow-sm sm:grid-cols-[7rem_minmax(0,1fr)_auto] sm:items-center sm:p-5 ${item.availabilityIssue ? 'border-red-200' : 'border-black/[0.08]'}`}>
+                <div className="aspect-square overflow-hidden bg-[#FAF9F7]">
+                  {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <ImageIcon size={22} className="m-auto h-full text-[#E8B4BC]" />}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black text-[#C6A56B]">منتج من المتجر</p><h3 className="mt-0.5 font-black">{item.name}</h3></div><strong className="shrink-0 text-[#B97882] sm:hidden">{formatMoney(item.price * item.qty)} ر.س</strong></div>
+                  {optionLabels.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{optionLabels.map(option => <span key={option.id} className="bg-[#FAF9F7] px-2 py-1 text-[10px] font-bold text-black/55">{option.name}: {option.label}</span>)}</div>}
+                  {item.availabilityIssue ? (
+                    <p className="mt-2 flex items-center gap-1 text-xs font-black text-red-600"><AlertCircle size={14} /> {item.availabilityMessage}</p>
+                  ) : (
+                    <p className="mt-2 text-[10px] font-bold text-black/45">{availableStock === null ? 'متوفر' : `المتوفر: ${availableStock}`}</p>
+                  )}
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <div className="flex min-h-11 items-center border border-black/10 bg-[#FAF9F7]">
+                      <button type="button" aria-label="زيادة الكمية" onClick={() => updateQty(itemKey, 1)} disabled={reachedMax} className="flex h-11 w-11 items-center justify-center disabled:opacity-25"><Plus size={15} /></button>
+                      <input type="number" min="1" max={availableStock ?? undefined} value={item.qty} onChange={e => setExactQty(itemKey, e.target.value)} onBlur={() => handleBlurQty(itemKey, item.qty)} className="w-12 bg-transparent text-center text-sm font-black outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" dir="ltr" />
+                      <button type="button" aria-label="تقليل الكمية" onClick={() => updateQty(itemKey, -1)} className="flex h-11 w-11 items-center justify-center"><Minus size={15} /></button>
+                    </div>
+                    <button type="button" onClick={() => requestRemoveItem(item)} className="inline-flex min-h-11 items-center gap-2 px-2 text-xs font-black text-red-500"><Trash2 size={15} /> حذف</button>
                   </div>
-                )}
-                <p className="text-[10px] text-[#171717]/50 mt-1">{item.price} ر.س × {item.qty}</p>
-                {item.itemType === 'print' && item.printDetails && (
-                  <div className="mt-1 text-[10px] font-bold leading-5 text-[#B97882]">
-                    <p>{item.printDetails.fileCount} ملفات · {item.printDetails.totalCopies} نسخة · {item.printDetails.printSize}</p>
-                    <p>{formatPrintOptionSummary({ material: item.printDetails.material, surface: item.printDetails.surface, border_style: item.printDetails.borderStyle, fit_mode: item.printDetails.fitMode })}</p>
-                  </div>
-                )}
-                <p className={`text-[10px] font-bold mt-1 ${reachedMax ? 'text-amber-600' : 'text-[#171717]/45'}`}>
-                  {availableStock === null ? 'الكمية متاحة' : `المتوفر: ${availableStock}`}
-                </p>
-                <div className="font-black text-[#C6A56B] text-sm mt-1">{item.price * item.qty} ر.س</div>
-              </div>
-
-              <div className="flex flex-col items-center gap-2 shrink-0">
-                <button
-                  onClick={() => removeItem(itemKey)}
-                  className="text-red-300 hover:text-red-500 bg-red-50 p-1.5 rounded-lg transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
-                {!item.fixedQuantity && <div className="flex items-center gap-2 bg-[#FAF9F7] rounded-xl border border-[#E8B4BC]/20 p-1">
-                  <button
-                    onClick={() => updateQty(itemKey, 1)}
-                    disabled={reachedMax}
-                    className={`w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm transition-colors ${
-                      reachedMax ? 'text-[#171717]/25 cursor-not-allowed' : 'text-[#171717]'
-                    }`}
-                  >
-                    <Plus size={12} />
-                  </button>
-                  <input
-                    type="number"
-                    min="1"
-                    max={availableStock ?? undefined}
-                    value={item.qty}
-                    onChange={e => setExactQty(itemKey, e.target.value)}
-                    onBlur={() => handleBlurQty(itemKey, item.qty)}
-                    className="w-10 text-center font-black text-sm text-[#171717] bg-transparent outline-none focus:bg-white rounded-md transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    dir="ltr"
-                  />
-                  <button onClick={() => updateQty(itemKey, -1)} className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-sm text-[#171717]">
-                    <Minus size={12} />
-                  </button>
-                </div>}
-                {item.itemType === 'print' && <Link to="/print" className="text-[10px] font-black text-[#B97882]">تعديل الصور</Link>}
-              </div>
-            </div>
+                </div>
+                <div className="hidden min-w-24 text-left sm:block"><span className="block text-[10px] text-black/40">الإجمالي</span><strong className="text-lg text-[#B97882]">{formatMoney(item.price * item.qty)} ر.س</strong></div>
+              </article>
             );
           })}
           {cart.some((item) => item.itemType === 'print') && (
@@ -608,14 +801,18 @@ export default function StoreCart() {
         </div>
 
         {/* ملخص الطلب وبيانات العميل */}
-        <div className="space-y-6 min-w-0">
+        <div className="contents">
           {/* ملخص */}
-          <div className="art-panel p-6 rounded-[1.5rem]">
-            <h2 className="font-black text-[#171717] mb-4">ملخص الطلب</h2>
+          <div className="art-panel p-6 rounded-[1.5rem] lg:sticky lg:top-24 lg:z-10 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start">
+            <h2 className="font-black text-[#171717] mb-4">ملخص السلة</h2>
             <div className="space-y-3 mb-6 border-b border-[#FAF9F7] pb-4">
               <div className="flex justify-between text-sm">
-                <span className="text-[#171717]/60">المجموع الفرعي</span>
-                <span className="font-bold">{subtotal} ر.س</span>
+                <span className="flex items-center gap-2 text-[#171717]/60"><Package size={14} /> المنتجات</span>
+                <span className="font-bold">{formatMoney(productsSubtotal)} ر.س</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="flex items-center gap-2 text-[#171717]/60"><Files size={14} /> طلبات الطباعة</span>
+                <span className="font-bold">{formatMoney(printsSubtotal)} ر.س</span>
               </div>
               <div className="rounded-2xl bg-[#FAF9F7] border border-[#E8B4BC]/15 p-3">
                 <label className="mb-2 flex items-center gap-2 text-xs font-black text-[#171717]/60">
@@ -656,7 +853,7 @@ export default function StoreCart() {
                 </div>
                 {appliedCoupon && (
                   <div className="mt-2 flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-xs font-black text-emerald-600">
-                    <span>{appliedCoupon.code}</span>
+                    <span>{appliedCoupon.code}{appliedCoupon.scopeLabel ? ` · ${appliedCoupon.scopeLabel}` : ''}</span>
                     <span>-{discountAmount.toFixed(2)} ر.س</span>
                   </div>
                 )}
@@ -742,11 +939,43 @@ export default function StoreCart() {
               </div>
             </div>
             <div className="flex justify-between items-center">
-              <span className="font-black text-lg">المتبقي للدفع</span>
+              <span className="font-black text-lg">الإجمالي الحالي</span>
               <span className="font-black text-2xl text-[#E8B4BC]">{payableTotal.toFixed(2)} <span className="text-sm">ر.س</span></span>
+            </div>
+            {hasAvailabilityIssues && (
+              <div className="mt-4 flex items-start gap-2 bg-red-50 p-3 text-xs font-black text-red-700">
+                <AlertCircle size={16} className="shrink-0" /> يوجد عنصر يحتاج تعديلًا قبل إتمام الطلب.
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              disabled={hasAvailabilityIssues}
+              className="art-cta mt-5 flex min-h-12 w-full items-center justify-center gap-2 px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              متابعة لإتمام الطلب <ChevronLeft size={17} />
+            </button>
+            <Link to="/store" className="mt-3 flex min-h-11 items-center justify-center text-xs font-black text-black/55 hover:text-black">متابعة التسوق</Link>
+          </div>
+
+          <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
+          <div ref={checkoutRef} className="scroll-mt-24 border border-black/[0.08] bg-white p-4 shadow-sm sm:p-5">
+            <div className="grid grid-cols-3 gap-2" aria-label="خطوات إتمام الطلب">
+              {[
+                [1, 'بيانات العميل'],
+                [2, 'التوصيل'],
+                [3, 'الدفع والمراجعة'],
+              ].map(([stepNumber, label]) => (
+                <button key={stepNumber} type="button" onClick={() => setCheckoutStep(stepNumber)} className={`min-h-12 border-b-2 px-1 text-[10px] font-black sm:text-xs ${checkoutStep === stepNumber ? 'border-[#171717] text-[#171717]' : 'border-black/10 text-black/35'}`}>
+                  <span className="me-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#FAF9F7]">{stepNumber}</span>{label}
+                </button>
+              ))}
             </div>
           </div>
 
+          {checkoutStep === 1 && <div className="space-y-4">
           <div className={`rounded-[1.5rem] border p-5 sm:p-6 shadow-sm ${customerSession?.sessionToken ? 'border-emerald-200 bg-emerald-50/70' : 'border-[#E8B4BC]/20 bg-white'}`}>
             {customerSession?.sessionToken ? (
               <div className="flex items-center justify-between gap-4">
@@ -764,10 +993,10 @@ export default function StoreCart() {
               <div>
                 <div className="mb-4">
                   <h2 className="flex items-center gap-2 font-black text-[#171717]">
-                    <LogIn size={18} className="text-[#C6A56B]" /> الحساب وإتمام الطلب
+                    <LogIn size={18} className="text-[#C6A56B]" /> الإتمام كزائر أو عبر الحساب
                   </h2>
                   <p className="mt-1 text-xs leading-relaxed text-[#171717]/55">
-                    سجّلي الدخول إن كان لديك حساب، أو أنشئي حساباً جديداً. ستبقى المنتجات في سلتك وتُربط بطلباتك تلقائياً.
+                    يمكنك إتمام الطلب الآن دون إنشاء حساب. سجّلي الدخول فقط لاستخدام النقاط والعناوين المحفوظة ومشاهدة الطلب داخل «طلباتي».
                   </p>
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -790,43 +1019,40 @@ export default function StoreCart() {
             )}
           </div>
 
-          {/* بيانات التواصل والشحن */}
           <div className="art-panel p-6 rounded-[1.5rem]">
-            <h2 className="font-black text-[#171717] mb-4">بيانات التواصل والشحن</h2>
+            <h2 className="mb-4 font-black text-[#171717]">بيانات العميل</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-bold">الاسم <span className="text-red-500">*</span></label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} className="art-input w-full rounded-xl px-4 py-2.5 outline-none" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold">رقم الجوال <span className="text-red-500">*</span></label>
+                <input type="tel" dir="ltr" value={phone} onChange={e => { setPhone(e.target.value); setPhoneError(false); }} placeholder="05XXXXXXXX" className={`art-input w-full rounded-xl px-4 py-2.5 text-right outline-none ${phoneError ? 'border-red-400 bg-red-50' : ''}`} />
+                {phoneError && <span className="mt-1 flex items-center gap-1 text-[10px] text-red-500"><AlertCircle size={10} /> يرجى إدخال رقم جوال صحيح</span>}
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-xs font-bold">البريد الإلكتروني <span className="text-red-500">*</span></label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} readOnly={Boolean(customerSession?.sessionToken)} placeholder="name@example.com" className={`art-input w-full rounded-xl px-4 py-2.5 outline-none ${customerSession?.sessionToken ? 'bg-[#FAF9F7]' : 'bg-white'}`} dir="ltr" />
+              </div>
+            </div>
+          </div>
+          <button type="button" onClick={() => {
+            if (!/^(05|9665|\+9665)[0-9]{8}$/.test(phone.trim())) { setPhoneError(true); return; }
+            if (!name.trim()) return toast.error('أدخلي الاسم أولًا');
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return toast.error('أدخلي بريدًا إلكترونيًا صحيحًا');
+            setCheckoutStep(2);
+            checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }} className="art-cta flex min-h-12 w-full items-center justify-center gap-2 px-5 text-sm font-black">
+            متابعة إلى التوصيل <ChevronLeft size={17} />
+          </button>
+          </div>}
+
+          {/* بيانات التواصل والشحن */}
+          {checkoutStep === 2 && <div className="space-y-4">
+          <div className="art-panel p-6 rounded-[1.5rem]">
+            <h2 className="font-black text-[#171717] mb-4">عنوان التوصيل</h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold mb-1.5 text-[#171717]">
-                  رقم الجوال <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  dir="ltr"
-                  value={phone}
-                  onChange={e => { setPhone(e.target.value); setPhoneError(false); }}
-                  placeholder="05XXXXXXXX"
-                  className={`art-input w-full rounded-xl px-4 py-2.5 outline-none text-right ${
-                    phoneError
-                      ? 'border-red-400 focus:border-red-500 bg-red-50'
-                      : 'border-[#E8B4BC]/20 focus:border-[#E8B4BC]'
-                  }`}
-                />
-                {phoneError && (
-                  <span className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
-                    <AlertCircle size={10} /> يرجى إدخال رقم جوال صحيح
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold mb-1.5 text-[#171717]/70">الاسم (اختياري)</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="art-input w-full rounded-xl px-4 py-2.5 outline-none"
-                />
-              </div>
-
               {savedAddresses.length > 0 ? (
                 <div className="rounded-2xl border border-[#E8B4BC]/15 bg-[#FAF9F7] p-3">
                   <label className="mb-2 flex items-center gap-2 text-xs font-black text-[#171717]/65">
@@ -889,15 +1115,23 @@ export default function StoreCart() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1.5 text-[#171717]">
-                    الشارع / وصف البيت <span className="text-red-500">*</span>
+                    الشارع <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={street}
                     onChange={e => setStreet(e.target.value)}
-                    placeholder="اسم الشارع أو رقم المبنى"
+                    placeholder="اسم الشارع"
                     className="art-input w-full rounded-xl px-4 py-2.5 outline-none"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-1.5 text-[#171717]">رقم المبنى / الوصف</label>
+                  <input type="text" value={buildingNumber} onChange={e => setBuildingNumber(e.target.value)} placeholder="رقم المبنى أو وصف الموقع" className="art-input w-full rounded-xl px-4 py-2.5 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-1.5 text-[#171717]">الرمز البريدي</label>
+                  <input type="text" inputMode="numeric" dir="ltr" maxLength="5" value={postalCode} onChange={e => setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))} placeholder="00000" className="art-input w-full rounded-xl px-4 py-2.5 outline-none" />
                 </div>
               </div>
 
@@ -913,6 +1147,17 @@ export default function StoreCart() {
             </div>
           </div>
 
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setCheckoutStep(1)} className="min-h-12 flex-1 border border-black/10 bg-white px-4 text-sm font-black">السابق</button>
+            <button type="button" onClick={() => {
+              if (!city || !district.trim() || !street.trim()) return toast.error('أكملي عنوان التوصيل أولًا');
+              setCheckoutStep(3);
+              checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }} className="art-cta min-h-12 flex-[2] px-4 text-sm font-black">متابعة إلى الدفع</button>
+          </div>
+          </div>}
+
+          {checkoutStep === 3 && <div className="space-y-4">
           <div className="art-panel p-6 rounded-[1.5rem]">
             <h2 className="font-black text-[#171717] mb-4 flex items-center gap-2">
               <Wallet size={18} className="text-[#C6A56B]" /> طريقة الدفع
@@ -952,24 +1197,59 @@ export default function StoreCart() {
             </div>
           </div>
 
+          <div className="border border-black/[0.08] bg-white p-5">
+            <h3 className="font-black">مراجعة الطلب</h3>
+            <div className="mt-4 space-y-3 text-xs">
+              {cart.filter(item => item.itemType === 'print').map(item => (
+                <div key={getItemKey(item)} className="flex justify-between gap-4"><span><strong>طلب طباعة</strong><span className="block text-black/45">{item.printDetails?.fileCount || 0} ملف · {item.printDetails?.totalCopies || 0} نسخة · {item.printDetails?.printSize}</span></span><strong>{formatMoney(item.price)} ر.س</strong></div>
+              ))}
+              {cart.filter(item => item.itemType !== 'print').map(item => (
+                <div key={getItemKey(item)} className="flex justify-between gap-4"><span><strong>{item.name}</strong><span className="block text-black/45">الكمية: {item.qty}</span></span><strong>{formatMoney(item.price * item.qty)} ر.س</strong></div>
+              ))}
+              <div className="border-t border-black/10 pt-3"><span className="text-black/45">عنوان التوصيل</span><p className="mt-1 font-bold">{[city, district, street, buildingNumber, postalCode].filter(Boolean).join('، ')}</p></div>
+            </div>
+          </div>
+
+          <button type="button" onClick={() => setCheckoutStep(2)} className="min-h-11 w-full border border-black/10 bg-white px-4 text-sm font-black">العودة إلى التوصيل</button>
           <button
             onClick={handleCheckout}
-            disabled={customerSession?.sessionToken ? (!phone || !city || !district || !street || isSubmitting) : isSubmitting}
+            disabled={hasAvailabilityIssues || !name || !phone || !email || !city || !district || !street || isSubmitting}
             className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg ${
-              (!customerSession?.sessionToken || (phone && city && district && street)) && !isSubmitting
+              name && phone && email && city && district && street && !isSubmitting
                 ? 'art-cta'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
             }`}
           >
             {isSubmitting
               ? <><Loader2 size={18} className="animate-spin" /> جاري تسجيل الطلب...</>
-              : customerSession?.sessionToken
-                ? <><ShoppingBag size={18} /> إتمام الطلب الآن</>
-                : <><LogIn size={18} /> تسجيل الدخول لإتمام الطلب</>
+              : <><ShoppingBag size={18} /> تأكيد الطلب وإرساله</>
             }
           </button>
+          </div>}
+          </div>
         </div>
       </main>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-white/95 p-3 shadow-[0_-8px_24px_rgba(23,23,23,0.08)] backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-xl items-center gap-3">
+          <div className="min-w-24"><span className="block text-[10px] text-black/45">الإجمالي الحالي</span><strong className="text-lg text-[#B97882]">{payableTotal.toFixed(2)} ر.س</strong></div>
+          <button type="button" disabled={hasAvailabilityIssues} onClick={() => checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="art-cta min-h-12 flex-1 px-4 text-sm font-black disabled:opacity-40">إتمام الطلب</button>
+        </div>
+      </div>
+
+      {printDeleteItem && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="delete-print-title" onMouseDown={(event) => event.target === event.currentTarget && setPrintDeleteItem(null)}>
+          <div className="w-full max-w-md bg-white p-6 shadow-2xl">
+            <div className="flex h-11 w-11 items-center justify-center bg-red-50 text-red-600"><Trash2 size={20} /></div>
+            <h2 id="delete-print-title" className="mt-4 text-xl font-black">حذف طلب الطباعة؟</h2>
+            <p className="mt-2 text-sm leading-7 text-black/55">سيُزال هذا الطلب من السلة. الصور المرتبطة به ستخضع لسياسة حذف المسودات والملفات.</p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => setPrintDeleteItem(null)} className="min-h-12 border border-black/10 font-black">إلغاء</button>
+              <button type="button" onClick={() => { removeItem(getItemKey(printDeleteItem)); setPrintDeleteItem(null); toast.success('تم حذف طلب الطباعة من السلة'); }} className="min-h-12 bg-red-600 font-black text-white">حذف الطلب</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CustomerAuthModal
         isOpen={isAuthModalOpen}
@@ -981,6 +1261,7 @@ export default function StoreCart() {
           setCustomerSession(nextSession);
           if (nextSession?.name) setName(nextSession.name);
           if (nextSession?.phone) setPhone(nextSession.phone);
+          if (nextSession?.email) setEmail(nextSession.email);
         }}
       />
     </div>

@@ -5,6 +5,7 @@ type CouponRecord = {
   discount_type: string;
   discount_amount: number;
   is_active?: boolean;
+  scope?: 'all' | 'products' | 'print';
 };
 
 export type StoreCouponResult = {
@@ -14,6 +15,8 @@ export type StoreCouponResult = {
   discountValue: number;
   subtotal: number;
   totalAfterDiscount: number;
+  scope: 'all' | 'products' | 'print';
+  scopeLabel: string;
 };
 
 export function normalizeCouponCode(value: unknown) {
@@ -24,6 +27,7 @@ export async function calculateStoreCouponDiscount(
   supabase: ReturnType<typeof getServiceClient>,
   codeInput: unknown,
   subtotalInput: unknown,
+  scopedSubtotals?: { products?: unknown; print?: unknown },
 ) {
   const code = normalizeCouponCode(codeInput);
   const subtotal = Math.max(0, Number(subtotalInput || 0));
@@ -31,23 +35,43 @@ export async function calculateStoreCouponDiscount(
   if (!code) return null;
   if (subtotal <= 0) throw new Error('empty_cart');
 
-  const { data: coupon, error } = await supabase
+  let couponResult = await supabase
     .from('coupons')
-    .select('code, discount_type, discount_amount, is_active')
+    .select('code, discount_type, discount_amount, is_active, scope')
     .ilike('code', code)
     .eq('is_active', true)
     .limit(1)
     .maybeSingle();
 
+  if (couponResult.error && /scope|schema cache|column/i.test(couponResult.error.message || '')) {
+    couponResult = await supabase
+      .from('coupons')
+      .select('code, discount_type, discount_amount, is_active')
+      .ilike('code', code)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+  }
+
+  const { data: coupon, error } = couponResult;
   if (error) throw error;
   if (!coupon) throw new Error('invalid_coupon');
 
   const typedCoupon = coupon as CouponRecord;
+  const scope = ['products', 'print'].includes(String(typedCoupon.scope))
+    ? typedCoupon.scope as 'products' | 'print'
+    : 'all';
+  const eligibleSubtotal = scope === 'products'
+    ? Math.max(0, Number(scopedSubtotals?.products || 0))
+    : scope === 'print'
+      ? Math.max(0, Number(scopedSubtotals?.print || 0))
+      : subtotal;
+  if (eligibleSubtotal <= 0) throw new Error('coupon_scope_empty');
   const rawAmount = Math.max(0, Number(typedCoupon.discount_amount || 0));
   const discountValue = typedCoupon.discount_type === 'percent'
-    ? subtotal * Math.min(rawAmount, 100) / 100
+    ? eligibleSubtotal * Math.min(rawAmount, 100) / 100
     : rawAmount;
-  const safeDiscount = Math.min(subtotal, Number(discountValue.toFixed(2)));
+  const safeDiscount = Math.min(eligibleSubtotal, Number(discountValue.toFixed(2)));
 
   return {
     code: typedCoupon.code,
@@ -56,5 +80,7 @@ export async function calculateStoreCouponDiscount(
     discountValue: safeDiscount,
     subtotal,
     totalAfterDiscount: Math.max(0, Number((subtotal - safeDiscount).toFixed(2))),
+    scope,
+    scopeLabel: scope === 'products' ? 'المنتجات فقط' : scope === 'print' ? 'الطباعة فقط' : 'كل الطلب',
   } satisfies StoreCouponResult;
 }

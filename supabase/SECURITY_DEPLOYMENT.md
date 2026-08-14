@@ -249,6 +249,30 @@ The job runs daily at 04:30 Asia/Riyadh. It permanently removes originals and
 previews for unfinished drafts after the configured draft period, and for terminal
 orders after the configured post-order period. Only deletion metadata is retained.
 
+## Mixed cart and guest checkout
+
+Run the mixed-cart migration in the SQL Editor:
+
+```text
+supabase/migrations/202608130001_mixed_cart_checkout.sql
+```
+
+Then deploy the functions that validate print snapshots, product availability,
+coupon scope, and the final server-side total:
+
+```powershell
+$ProjectRef = "dftmbamuyupgzpqfoixl"
+npx supabase functions deploy print-builder --no-verify-jwt --project-ref $ProjectRef
+npx supabase functions deploy store-coupons --project-ref $ProjectRef
+npx supabase functions deploy store-checkout --project-ref $ProjectRef
+```
+
+Guest checkout creates an unclaimed customer record only when both the phone and
+email are new. Exact existing identities can receive the new order, but conflicting
+phone/email pairs require sign-in. Reward-point redemption always requires an
+authenticated customer session. Checkout idempotency prevents repeated clicks from
+creating duplicate orders.
+
 ## Telegram bot setup
 
 The bot token must never be committed or placed in a Vite environment variable. Store it only in Supabase Secrets. The webhook secret may contain letters, numbers, `_`, and `-`.

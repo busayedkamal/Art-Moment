@@ -124,7 +124,8 @@ export default function Settings() {
   const [newCoupon, setNewCoupon] = useState({ 
     code: '', 
     discount_type: 'fixed', // or 'percent'
-    discount_amount: '' 
+    discount_amount: '',
+    scope: 'all',
   });
   const [messageTemplates, setMessageTemplates] = useState([]);
   const [templateForm, setTemplateForm] = useState(emptyTemplateForm);
@@ -233,11 +234,12 @@ export default function Settings() {
         code: newCoupon.code.toUpperCase(),
         discount_type: newCoupon.discount_type,
         discount_amount: Number(newCoupon.discount_amount),
+        scope: newCoupon.scope,
         is_active: true
       }]).select().single();
       if (error) throw error;
       setCoupons([data, ...coupons]);
-      setNewCoupon({ code: '', discount_type: 'fixed', discount_amount: '' });
+      setNewCoupon({ code: '', discount_type: 'fixed', discount_amount: '', scope: 'all' });
       toast.success('تم إضافة الكوبون');
     } catch (error) { toast.error('فشل الإضافة'); }
   };
@@ -986,6 +988,18 @@ export default function Settings() {
                 <option value="percent">نسبة مئوية (%)</option>
               </select>
             </div>
+            <div className="w-full md:w-40">
+              <label className="text-xs font-bold text-[#171717]/60 block mb-1">يشمل الخصم</label>
+              <select
+                className="w-full border rounded-xl px-4 py-2 bg-white"
+                value={newCoupon.scope}
+                onChange={e => setNewCoupon({...newCoupon, scope: e.target.value})}
+              >
+                <option value="all">كل الطلب</option>
+                <option value="products">المنتجات فقط</option>
+                <option value="print">الطباعة فقط</option>
+              </select>
+            </div>
             <div className="w-full md:w-32">
               <label className="text-xs font-bold text-[#171717]/60 block mb-1">القيمة</label>
               <input 
@@ -1019,6 +1033,9 @@ export default function Settings() {
                     <div className="text-sm text-[#171717]/60 mt-1 flex items-center gap-1">
                       خصم: <span className="font-bold text-[#171717]/80">{coupon.discount_amount}</span>
                       {coupon.discount_type === 'percent' ? <Percent size={12}/> : <RiyalSign size="0.8em" />}
+                    </div>
+                    <div className="mt-1 text-[10px] font-bold text-[#C6A56B]">
+                      {coupon.scope === 'products' ? 'المنتجات فقط' : coupon.scope === 'print' ? 'الطباعة فقط' : 'كل الطلب'}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
