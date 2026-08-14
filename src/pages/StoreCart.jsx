@@ -45,6 +45,7 @@ export default function StoreCart() {
   const navigate = useNavigate();
   const checkoutRef = useRef(null);
   const idempotencyKeyRef = useRef(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
+  const submittingRef = useRef(false);
   const [cart, setCart] = useState([]);
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
@@ -519,6 +520,8 @@ export default function StoreCart() {
       }
     }
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     const toastId = toast.loading('جاري إرسال الطلب...');
 
@@ -615,6 +618,7 @@ export default function StoreCart() {
       };
       toast.error(checkoutMessages[error.message] || 'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.', { id: toastId });
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

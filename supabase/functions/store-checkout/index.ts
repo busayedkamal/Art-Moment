@@ -298,11 +298,18 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (!existingOrderResult.error && existingOrderResult.data?.customer_id === verifiedCustomerId) {
         const existingOrder = existingOrderResult.data;
+        const { data: trackingWallet } = await supabase
+          .from('wallets')
+          .select('subscription_code')
+          .eq('customer_id', verifiedCustomerId)
+          .limit(1)
+          .maybeSingle();
         return jsonResponse({
           order: {
             ...existingOrder,
             amount_due: Math.max(0, Number(existingOrder.total_amount || 0) - Number(existingOrder.points_used_amount || 0)),
           },
+          customer_pin: trackingWallet?.subscription_code || null,
           idempotent: true,
         });
       }
@@ -544,11 +551,61 @@ Deno.serve(async (req) => {
       .select('id, short_id, customer_name, phone, total_amount')
       .single();
 
+    if (orderInsert.error?.code === '23505' && idempotencyKey) {
+      if (stockReserved && reservedStockItems.length > 0) {
+        const { error: restoreError } = await supabase.rpc('restore_store_stock', {
+          items: reservedStockItems,
+        });
+        if (restoreError) throw restoreError;
+        stockReserved = false;
+      }
+
+      if (createdGuestCustomerId) {
+        const { error: guestCleanupError } = await supabase
+          .from('customers')
+          .delete()
+          .eq('id', createdGuestCustomerId)
+          .is('password_hash', null);
+        if (guestCleanupError) throw guestCleanupError;
+        createdGuestCustomerId = null;
+      }
+
+      const { data: existingOrder, error: existingOrderError } = await supabase
+        .from('store_orders')
+        .select('id, short_id, customer_id, total_amount, subtotal_amount, discount_amount, coupon_code, reward_points_used, points_used_amount')
+        .eq('checkout_idempotency_key', idempotencyKey)
+        .maybeSingle();
+      if (existingOrderError || !existingOrder) {
+        throw existingOrderError || orderInsert.error;
+      }
+      const { data: trackingWallet } = existingOrder.customer_id
+        ? await supabase
+          .from('wallets')
+          .select('subscription_code')
+          .eq('customer_id', existingOrder.customer_id)
+          .limit(1)
+          .maybeSingle()
+        : { data: null };
+
+      return jsonResponse({
+        order: {
+          ...existingOrder,
+          amount_due: Math.max(0, Number(existingOrder.total_amount || 0) - Number(existingOrder.points_used_amount || 0)),
+        },
+        customer_pin: trackingWallet?.subscription_code || null,
+        idempotent: true,
+      });
+    }
+
     if (orderInsert.error && /reward_points_used|points_used_amount/i.test(orderInsert.error.message || '')) {
       throw new Error('reward_points_migration_required');
     }
 
-    if (orderInsert.error && /customer_id|checkout_idempotency_key|building_number|postal_code|subtotal_amount|discount_amount|coupon_code|payment_status|payment_method|payment_reference|payment_failed_reason|refunded_amount|payment_updated_at|schema cache|column/i.test(orderInsert.error.message || '')) {
+    const isSchemaCompatibilityError = Boolean(orderInsert.error) && (
+      ['42703', 'PGRST204'].includes(String(orderInsert.error?.code || ''))
+      || /schema cache|column .* does not exist/i.test(orderInsert.error?.message || '')
+    );
+    if (orderInsert.error && isSchemaCompatibilityError) {
       if (/customer_id/i.test(orderInsert.error.message || '')) delete orderPayload.customer_id;
       if (/checkout_idempotency_key/i.test(orderInsert.error.message || '')) delete orderPayload.checkout_idempotency_key;
       if (/building_number|postal_code/i.test(orderInsert.error.message || '')) {
