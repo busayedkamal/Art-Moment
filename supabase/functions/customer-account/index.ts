@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
       if (updateError) throw updateError;
 
       try {
-        await notifyCustomer(customer.email, 'تم تغيير كلمة المرور', 'تم تغيير كلمة مرور حسابك في لحظة فن. إذا لم تقومي بهذا الإجراء تواصلي معنا فوراً.');
+        await notifyCustomer(customer.email, 'تم تغيير كلمة المرور', 'تم تغيير كلمة مرور حسابك في لحظة فن. إذا لم تقم بهذا الإجراء تواصل معنا فوراً.');
       } catch (emailError) {
         console.error('customer password email error:', emailError);
       }

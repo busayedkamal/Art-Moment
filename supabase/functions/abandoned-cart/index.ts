@@ -78,7 +78,7 @@ function reminderHtml(customerName: string, items: Array<Record<string, unknown>
       <div style="max-width:560px;margin:auto;background:#fff;border:1px solid #ead8da;border-radius:20px;padding:26px">
         <p style="color:#C5A059;font-weight:800;margin:0 0 8px">لحظة فن Art Moment</p>
         <h2 style="margin:0 0 12px">منتجاتك ما زالت بانتظارك</h2>
-        <p>مرحباً ${customerName || 'عميلنا العزيز'}، حفظنا المنتجات التي اخترتها لتكملي طلبك وقتما يناسبك.</p>
+        <p>مرحباً ${customerName || 'عميلنا العزيز'}، حفظنا المنتجات التي اخترتها لتكمل طلبك وقتما يناسبك.</p>
         <table style="width:100%;border-collapse:collapse;margin:18px 0">${rows}</table>
         <p style="font-weight:800">قيمة السلة التقريبية: ${subtotal.toFixed(2)} ر.س</p>
         <a href="${cartUrl}" style="display:inline-block;background:#4A4A4A;color:#fff;text-decoration:none;padding:12px 22px;border-radius:12px;font-weight:800">

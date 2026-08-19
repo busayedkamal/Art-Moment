@@ -882,7 +882,7 @@ export default function CustomerOrdersPage() {
       console.error(err);
       const message = String(err?.message || '');
       const friendly = message.includes('reward_minimum_redemption_not_met')
-        ? 'لم تصلي إلى الحد الأدنى للاستبدال.'
+        ? 'لم تصل إلى الحد الأدنى للاستبدال.'
         : message.includes('reward_redemption_limit_exceeded') || message.includes('reward_redemption_exceeds_unpaid_products')
           ? 'عدد النقاط يتجاوز الحد المسموح لهذا الطلب.'
           : message.includes('reward_points_balance_insufficient') || message.includes('reward_points_lots_insufficient')
@@ -1028,8 +1028,8 @@ export default function CustomerOrdersPage() {
     } catch (err) {
       console.error(err);
       setError(err.message === 'unauthorized'
-        ? 'انتهت جلسة الدخول. سجلي الدخول مرة أخرى لعرض طلباتك.'
-        : 'تعذر تحميل طلباتك حالياً. حاولي مرة أخرى.');
+        ? 'انتهت جلسة الدخول. سجل الدخول مرة أخرى لعرض طلباتك.'
+        : 'تعذر تحميل طلباتك حالاً. حاول مرة أخرى.');
     } finally {
       setLoading(false);
     }

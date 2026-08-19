@@ -23,7 +23,7 @@ import { trackStoreEvent } from '../utils/storeAnalytics';
 
 const errorMessages = {
   customer_exists: 'رقم الجوال أو البريد الإلكتروني مسجل مسبقاً. سجل الدخول بدلاً من إنشاء حساب جديد.',
-  customer_not_found: 'هذا البريد غير مسجل. أكملي البيانات لإنشاء حساب جديد.',
+  customer_not_found: 'هذا البريد غير مسجل. أكمل البيانات لإنشاء حساب جديد.',
   email_send_failed: 'تعذر إرسال كود الاسترداد الآن. تأكد من إعدادات البريد وحاول مرة أخرى.',
   invalid_credentials: 'بيانات الدخول غير صحيحة.',
   invalid_reset_code: 'كود الاسترداد غير صحيح أو انتهت صلاحيته.',
@@ -142,7 +142,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
         setFormData((prev) => prefillSignupIdentifier(prev, identifier));
         setAccountCheck('new');
         setMode('signup');
-        toast.success('هذا البريد جديد، أكملي بياناتك لإنشاء الحساب.');
+        toast.success('هذا البريد جديد، أكمل بياناتك لإنشاء الحساب.');
       } catch (error) {
         if (!cancelled) {
           console.error('Account lookup failed:', error);
@@ -483,7 +483,7 @@ export default function CustomerAuthModal({ isOpen, onClose, redirectTo = '/stor
               />
               {isLogin && accountCheck !== 'idle' && (
                 <p className={`mt-1.5 px-1 text-[10px] font-bold ${accountCheck === 'exists' ? 'text-emerald-600' : 'text-[#C6A56B]'}`}>
-                  {accountCheck === 'checking' ? 'جاري التحقق من البريد...' : 'الحساب موجود، أدخلي كلمة المرور للمتابعة.'}
+                  {accountCheck === 'checking' ? 'جاري التحقق من البريد...' : 'الحساب موجود، أدخل كلمة المرور للمتابعة.'}
                 </p>
               )}
             </div>

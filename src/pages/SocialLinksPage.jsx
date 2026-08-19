@@ -144,7 +144,7 @@ export default function SocialLinksPage() {
           <p className="mt-4 text-xs font-black text-[#C6A56B]">الحسابات الرسمية</p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">لحظة فن في مكان واحد</h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[#171717]/65 sm:text-base">
-            تابعي جديد الطباعة والمنتجات، وتواصلي معنا مباشرة عبر حساباتنا الرسمية.
+            تابع جديد الطباعة والمنتجات، وتواصل معنا مباشرة عبر حساباتنا الرسمية.
           </p>
         </section>
 

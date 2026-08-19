@@ -163,7 +163,7 @@ export default function TrackOrderPage() {
       const message = String(err?.message || '');
       toast.error(
         message.includes('reward_minimum_redemption_not_met')
-          ? 'لم تصلي إلى الحد الأدنى للاستبدال.'
+          ? 'لم تصل إلى الحد الأدنى للاستبدال.'
           : message.includes('reward_redemption_limit_exceeded') || message.includes('reward_redemption_exceeds_unpaid_products')
             ? 'عدد النقاط يتجاوز الحد المسموح لهذا الطلب.'
             : message.includes('reward_points_balance_insufficient')

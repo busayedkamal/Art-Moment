@@ -158,7 +158,7 @@ values
 رمز استعادة كلمة المرور الخاص بك:
 {reset_code}
 
-ينتهي الرمز خلال {expires_minutes} دقيقة. إذا لم تطلبي هذا الإجراء، تجاهلي الرسالة.',
+ينتهي الرمز خلال {expires_minutes} دقيقة. إذا لم تطلب هذا الإجراء، تجاهل الرسالة.',
     array['customer_name', 'reset_code', 'expires_minutes']
   ),
   (

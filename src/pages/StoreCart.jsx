@@ -602,19 +602,19 @@ export default function StoreCart() {
     } catch (error) {
       console.error('Checkout Error:', error);
       const checkoutMessages = {
-        reward_points_balance_insufficient: 'رصيد النقاط غير كافٍ. حدّثي الصفحة ثم حاولي مجدداً.',
+        reward_points_balance_insufficient: 'رصيد النقاط غير كافٍ. حدّث الصفحة ثم حاول مجدداً.',
         reward_redemption_limit_exceeded: `الحد الأعلى لهذا الطلب ${maximumRewardPoints.toLocaleString()} نقطة.`,
         reward_minimum_redemption_not_met: `الحد الأدنى للاستبدال ${minimumRewardPoints.toLocaleString()} نقطة.`,
         reward_program_disabled: 'استخدام النقاط متوقف مؤقتاً.',
-        reward_points_migration_required: 'نظام النقاط قيد التحديث. حاولي بعد قليل.',
-        invalid_product_options: 'تحققي من اختيار المقاس أو اللون أو الخامة لكل منتج.',
-        product_unavailable: 'أحد منتجات السلة لم يعد متوفرًا. راجعي السلة ثم حاولي مجددًا.',
+        reward_points_migration_required: 'نظام النقاط قيد التحديث. حاول بعد قليل.',
+        invalid_product_options: 'تحقق من اختيار المقاس أو اللون أو الخامة لكل منتج.',
+        product_unavailable: 'أحد منتجات السلة لم يعد متوفرًا. راجع السلة ثم حاول مجددًا.',
         product_out_of_stock: 'الكمية المطلوبة لأحد المنتجات لم تعد متوفرة.',
-        print_variant_unavailable: 'تركيبة الطباعة المختارة متوقفة مؤقتًا. افتحي طلب الطباعة لتعديله.',
+        print_variant_unavailable: 'تركيبة الطباعة المختارة متوقفة مؤقتًا. افتح طلب الطباعة لتعديله.',
         print_draft_not_ready: 'طلب الطباعة يحتاج إلى مراجعة قبل إتمام الطلب.',
         coupon_scope_empty: 'الكوبون لا يشمل العناصر الموجودة في السلة.',
-        guest_customer_exists_login_required: 'هذه البيانات مرتبطة بحساب قائم. سجّلي الدخول لحماية الحساب وإتمام الطلب.',
-        customer_identity_conflict: 'الجوال والبريد مرتبطان بحسابين مختلفين. راجعي البيانات أو سجّلي الدخول.',
+        guest_customer_exists_login_required: 'هذه البيانات مرتبطة بحساب قائم. سجّل الدخول لحماية الحساب وإتمام الطلب.',
+        customer_identity_conflict: 'الجوال والبريد مرتبطان بحسابين مختلفين. راجع البيانات أو سجّل الدخول.',
       };
       toast.error(checkoutMessages[error.message] || 'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.', { id: toastId });
     } finally {
@@ -654,7 +654,7 @@ export default function StoreCart() {
         </div>
         {orderResult?.isGuest && orderResult?.customerPin && (
           <p className="mt-5 max-w-md border-s-4 border-[#C6A56B] bg-white px-4 py-3 text-center text-xs leading-6 text-black/60">
-            احتفظي برمز التتبع <strong className="text-base text-[#171717]">{orderResult.customerPin}</strong> مع رقم الطلب، أو أنشئي حسابًا لاحقًا بنفس الجوال والبريد لربط طلباتك.
+            احتفظ برمز التتبع <strong className="text-base text-[#171717]">{orderResult.customerPin}</strong> مع رقم الطلب، أو أنشئي حسابًا لاحقًا بنفس الجوال والبريد لربط طلباتك.
           </p>
         )}
       </div>
