@@ -995,14 +995,18 @@ export default function OrderDetails() {
     const remaining = currentFinancials.remainingAmount.toFixed(2);
 
     const siteLink = 'https://www.art-moment.com/track';
+    const trackingNumber = String(order.short_id || order.id || '').slice(0, 12);
+    const trackingDetails = order.tracking_access_token
+      ? `رقم الطلب: *${trackingNumber}*\nرمز التتبع الآمن: *${order.tracking_access_token}*\n`
+      : `رقم الطلب: *${trackingNumber}*\n`;
 
     let msg = '';
     if (type === 'ready') {
       msg =
         `يا هلا ${order.customer_name} ✨\n` +
-        `طلبك رقم *${order.id.slice(0, 5)}* جاهز للاستلام!\n` +
+        `طلبك رقم *${trackingNumber}* جاهز للاستلام!\n` +
         (Number(remaining) > 0 ? `المتبقي: *${remaining} ريال*\n` : `الحساب: *خالص*\n`) +
-        `\nتابع طلبك وسجل طلباتك من هنا:\n${siteLink}`;
+        `\n${trackingDetails}تابع طلبك من هنا:\n${siteLink}`;
     } else if (type === 'invoice') {
       // المدفوع: "كامل" إذا المتبقي = 0، وإلا مجموع الدفعات النقدية
       const totalPaidCash = currentFinancials.cashPaid;
@@ -1013,7 +1017,7 @@ export default function OrderDetails() {
 
       msg =
         `اهلاً بكِ *${order.customer_name}* 🌸\n` +
-        `رقم الطلب: *${order.id.slice(0, 8)}*\n\n` +
+        `${trackingDetails}\n` +
         `🧾 *تفاصيل الفاتورة:*\n` +
         `الاجمالي: *${Number(order.total_amount || 0).toFixed(2)}* ريال\n` +
         `المدفوع: *${paidDisplay}*\n` +

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CustomerAuthModal from '../components/CustomerAuthModal';
+import SeoHead from '../components/SeoHead';
 import { RewardPointsSummary, RewardRedemptionForm } from '../components/RewardPointsSummary';
 import { supabase } from '../lib/supabase';
 import { getCustomerSession } from '../utils/customerSession';
@@ -855,6 +856,7 @@ export default function CustomerOrdersPage() {
   const [rewards, setRewards] = useState(null);
   const [friendshipCode, setFriendshipCode] = useState(null);
   const [applyingRewardPoints, setApplyingRewardPoints] = useState(false);
+  const [orderFilter, setOrderFilter] = useState('all');
 
   const canLoadOrders = Boolean(customer?.sessionToken);
 
@@ -1044,9 +1046,25 @@ export default function CustomerOrdersPage() {
     const active = orders.filter((order) => !['delivered', 'cancelled', 'returned'].includes(order.status)).length;
     return { total, active };
   }, [orders]);
+  const filteredOrders = useMemo(() => {
+    if (orderFilter === 'current') {
+      return orders.filter((order) => !['delivered', 'cancelled', 'returned'].includes(order.status));
+    }
+    if (orderFilter === 'completed') {
+      return orders.filter((order) => ['delivered', 'cancelled', 'returned'].includes(order.status));
+    }
+    return orders;
+  }, [orderFilter, orders]);
 
   return (
-    <div className="art-page min-h-screen font-sans text-[#171717] pb-20" dir="rtl">
+    <div className="art-page min-h-screen font-[Tajawal] text-[#171717] pb-20" dir="rtl">
+      <SeoHead
+        title={orderId ? "تفاصيل الطلب | لحظة فن" : "طلباتي | لحظة فن"}
+        description="مساحة العميل الخاصة لعرض الطلبات وتفاصيل المنتجات والدفع والتوصيل بأمان."
+        path={orderId ? "/store/orders/" + orderId : "/store/orders"}
+        noindex
+        nofollow
+      />
       <header className="art-nav art-nav-scrolled sticky top-0 z-40">
         <div className="art-shell h-16 flex items-center justify-between">
           <Link to="/store" className="inline-flex items-center gap-2 text-sm font-black text-[#171717]/65 hover:text-[#E8B4BC]">
@@ -1191,6 +1209,29 @@ export default function CustomerOrdersPage() {
 
             <RewardPointsSummary rewards={rewards} />
 
+            {orders.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 border border-[#E8B4BC]/15 bg-white p-2 shadow-sm" aria-label="تصفية الطلبات">
+                {[
+                  ['all', 'الكل', orders.length],
+                  ['current', 'الحالية', stats.active],
+                  ['completed', 'المكتملة', orders.length - stats.active],
+                ].map(([value, label, count]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setOrderFilter(value)}
+                    className={'min-h-11 px-4 py-2 text-sm font-black transition-colors ' + (
+                      orderFilter === value
+                        ? 'bg-[#171717] text-white'
+                        : 'bg-[#FAF9F7] text-[#171717]/65 hover:text-[#171717]'
+                    )}
+                  >
+                    {label} <span className="ms-1 text-xs opacity-65">{count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {orders.length === 0 ? (
               <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 shadow-sm p-8 text-center">
                 <ShoppingBag size={42} className="mx-auto mb-4 text-[#E8B4BC]/45" />
@@ -1200,9 +1241,15 @@ export default function CustomerOrdersPage() {
                   <ShoppingBag size={18} /> تصفح المتجر
                 </Link>
               </section>
+            ) : filteredOrders.length === 0 ? (
+              <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 shadow-sm p-8 text-center">
+                <ShoppingBag size={42} className="mx-auto mb-4 text-[#E8B4BC]/45" />
+                <h2 className="font-black text-xl mb-2">لا توجد طلبات ضمن هذه الفئة</h2>
+                <p className="text-sm text-[#171717]/55">اختَر تصنيفًا آخر لعرض بقية طلباتك.</p>
+              </section>
             ) : (
               <div className="grid xl:grid-cols-2 gap-5">
-                {orders.map((order) => <OrderCard key={order.id} order={order} />)}
+                {filteredOrders.map((order) => <OrderCard key={order.id} order={order} />)}
               </div>
             )}
           </div>

@@ -20,7 +20,12 @@ function normalizeOrderItem(item: Record<string, unknown>) {
       ? (product as Record<string, unknown>).product_options
       : [],
     itemType: item.item_type || 'product',
-    metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : {},
+    metadata: item.metadata && typeof item.metadata === 'object'
+      ? Object.fromEntries(
+          Object.entries(item.metadata as Record<string, unknown>)
+            .filter(([key]) => !/url|uri|path|file|image|preview|original|storage|bucket|token/i.test(key)),
+        )
+      : {},
   };
 }
 

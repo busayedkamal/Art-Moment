@@ -582,7 +582,7 @@ export default function StoreCart() {
           .filter(item => item.itemType !== 'print')
           .reduce((sum, item) => sum + Number(item.qty || 0), 0),
         paymentMethod,
-        customerPin: data?.customer_pin || null,
+        trackingToken: data?.tracking_token || null,
         isGuest: !customerSession?.sessionToken,
       };
       setOrderResult(completedSummary);
@@ -645,7 +645,11 @@ export default function StoreCart() {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
-            to={orderResult?.isGuest ? '/track' : (orderResult?.id ? `/store/orders/${orderResult.id}` : '/store/orders')}
+            to={orderResult?.isGuest ? '/track' : (orderResult?.id ? '/store/orders/' + orderResult.id : '/store/orders')}
+            state={orderResult?.isGuest ? {
+              orderNumber: String(orderResult?.short_id || orderResult?.id || ''),
+              trackingToken: orderResult?.trackingToken || '',
+            } : undefined}
             className="bg-[#171717] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#E8B4BC] transition-all hover:-translate-y-1"
           >
             تتبع الطلب
@@ -657,9 +661,9 @@ export default function StoreCart() {
             العودة للرئيسية
           </Link>
         </div>
-        {orderResult?.isGuest && orderResult?.customerPin && (
+        {orderResult?.isGuest && orderResult?.trackingToken && (
           <p className="mt-5 max-w-md border-s-4 border-[#C6A56B] bg-white px-4 py-3 text-center text-xs leading-6 text-black/60">
-            احتفظ برمز التتبع <strong className="text-base text-[#171717]">{orderResult.customerPin}</strong> مع رقم الطلب، أو أنشئي حسابًا لاحقًا بنفس الجوال والبريد لربط طلباتك.
+            احتفظ برمز التتبع الآمن <strong className="break-all font-mono text-sm text-[#171717]" dir="ltr">{orderResult.trackingToken}</strong> مع رقم الطلب، أو أنشئي حسابًا لاحقًا بنفس الجوال والبريد لربط طلباتك.
           </p>
         )}
       </div>

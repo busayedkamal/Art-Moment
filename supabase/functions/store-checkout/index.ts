@@ -91,7 +91,7 @@ function resolveProductOptions(
 
 async function sendWhatsAppConfirmation(
   order: Record<string, unknown>,
-  customerPin: string,
+  trackingToken: string,
   rewards?: { points?: number; value?: number },
 ) {
   const enabled = Deno.env.get('WHATSAPP_ENABLED') === 'true';
@@ -114,7 +114,7 @@ async function sendWhatsAppConfirmation(
     `الإجمالي: *${totalAmount} ريال*\n` +
     rewardLine +
     `المتبقي للدفع: *${Math.max(0, Number(totalAmount) - Number(rewards?.value || 0)).toFixed(2)} ريال*\n` +
-    `رمز التتبع (PIN): *${customerPin}*\n\n` +
+    `رمز التتبع الآمن: *${trackingToken}*\n\n` +
     `طلبك الآن بانتظار التأكيد. شكراً لاختيارك لحظة فن.`;
 
   await fetch(`https://api.ultramsg.com/${instanceId}/messages/chat`, {
@@ -126,7 +126,7 @@ async function sendWhatsAppConfirmation(
 
 function orderEmailHtml(
   order: Record<string, unknown>,
-  customerPin: string,
+  trackingToken: string,
   coupon?: { discountValue?: unknown } | null,
   rewards?: { points?: number; value?: number },
 ) {
@@ -148,7 +148,7 @@ function orderEmailHtml(
           ${discount > 0 ? `<p style="margin:6px 0 0;color:#059669">الخصم: <strong>${discount.toFixed(2)} ريال</strong></p>` : ''}
           ${rewardPoints > 0 ? `<p style="margin:6px 0 0;color:#B97882">مدفوع بالنقاط: <strong>${rewardPoints} نقطة (${rewardValue.toFixed(2)} ريال)</strong></p>` : ''}
           <p style="margin:6px 0 0">المتبقي للدفع: <strong>${amountDue.toFixed(2)} ريال</strong></p>
-          <p style="margin:6px 0 0">رمز التتبع: <strong>${customerPin}</strong></p>
+          <p style="margin:6px 0 0">رمز التتبع الآمن: <strong>${trackingToken}</strong></p>
         </div>
         <p style="font-size:13px;color:#777;margin:0">يمكنك متابعة الطلب من صفحة طلباتي داخل المتجر.</p>
       </div>
@@ -295,23 +295,17 @@ Deno.serve(async (req) => {
     if (idempotencyKey && verifiedCustomerId) {
       const existingOrderResult = await supabase
         .from('store_orders')
-        .select('id, short_id, customer_id, total_amount, subtotal_amount, discount_amount, coupon_code, reward_points_used, points_used_amount')
+        .select('id, short_id, tracking_access_token, customer_id, total_amount, subtotal_amount, discount_amount, coupon_code, reward_points_used, points_used_amount')
         .eq('checkout_idempotency_key', idempotencyKey)
         .maybeSingle();
       if (!existingOrderResult.error && existingOrderResult.data?.customer_id === verifiedCustomerId) {
         const existingOrder = existingOrderResult.data;
-        const { data: trackingWallet } = await supabase
-          .from('wallets')
-          .select('subscription_code')
-          .eq('customer_id', verifiedCustomerId)
-          .limit(1)
-          .maybeSingle();
         return jsonResponse({
           order: {
             ...existingOrder,
             amount_due: Math.max(0, Number(existingOrder.total_amount || 0) - Number(existingOrder.points_used_amount || 0)),
           },
-          customer_pin: trackingWallet?.subscription_code || null,
+        tracking_token: existingOrder.tracking_access_token,
           idempotent: true,
         });
       }
@@ -550,7 +544,7 @@ Deno.serve(async (req) => {
     let orderInsert = await supabase
       .from('store_orders')
       .insert(orderPayload)
-      .select('id, short_id, customer_name, phone, total_amount')
+      .select('id, short_id, tracking_access_token, customer_name, phone, total_amount')
       .single();
 
     if (orderInsert.error?.code === '23505' && idempotencyKey) {
@@ -574,27 +568,18 @@ Deno.serve(async (req) => {
 
       const { data: existingOrder, error: existingOrderError } = await supabase
         .from('store_orders')
-        .select('id, short_id, customer_id, total_amount, subtotal_amount, discount_amount, coupon_code, reward_points_used, points_used_amount')
+        .select('id, short_id, tracking_access_token, customer_id, total_amount, subtotal_amount, discount_amount, coupon_code, reward_points_used, points_used_amount')
         .eq('checkout_idempotency_key', idempotencyKey)
         .maybeSingle();
       if (existingOrderError || !existingOrder) {
         throw existingOrderError || orderInsert.error;
       }
-      const { data: trackingWallet } = existingOrder.customer_id
-        ? await supabase
-          .from('wallets')
-          .select('subscription_code')
-          .eq('customer_id', existingOrder.customer_id)
-          .limit(1)
-          .maybeSingle()
-        : { data: null };
-
       return jsonResponse({
         order: {
           ...existingOrder,
           amount_due: Math.max(0, Number(existingOrder.total_amount || 0) - Number(existingOrder.points_used_amount || 0)),
         },
-        customer_pin: trackingWallet?.subscription_code || null,
+        tracking_token: existingOrder.tracking_access_token,
         idempotent: true,
       });
     }
@@ -630,12 +615,13 @@ Deno.serve(async (req) => {
       orderInsert = await supabase
         .from('store_orders')
         .insert(orderPayload)
-        .select('id, short_id, customer_name, phone, total_amount')
+        .select('id, short_id, tracking_access_token, customer_name, phone, total_amount')
         .single();
     }
 
     if (orderInsert.error) throw orderInsert.error;
     const order = orderInsert.data;
+    const trackingToken = String(order.tracking_access_token || '');
     createdOrderId = String(order.id);
 
     const { error: itemsError } = await supabase
@@ -678,7 +664,7 @@ Deno.serve(async (req) => {
     createdGuestCustomerId = null;
 
     try {
-      await sendWhatsAppConfirmation(order, String(customerPin), {
+      await sendWhatsAppConfirmation(order, trackingToken, {
         points: requestedRewardPoints,
         value: pointsUsedAmount,
       });
@@ -691,8 +677,8 @@ Deno.serve(async (req) => {
         await sendEmail({
           to: verifiedCustomerEmail,
           subject: `تم استلام طلبك #${String(order.short_id || order.id).slice(0, 6)} - لحظة فن`,
-          html: orderEmailHtml(order, String(customerPin), coupon, { points: requestedRewardPoints, value: pointsUsedAmount }),
-          text: `تم استلام طلبك من لحظة فن. رقم الطلب: #${String(order.short_id || order.id).slice(0, 6)}. الإجمالي: ${Number(order.total_amount || 0).toFixed(2)} ريال. مدفوع بالنقاط: ${requestedRewardPoints} نقطة (${pointsUsedAmount.toFixed(2)} ريال). المتبقي للدفع: ${Math.max(0, Number(order.total_amount || 0) - pointsUsedAmount).toFixed(2)} ريال. رمز التتبع: ${customerPin}.`,
+          html: orderEmailHtml(order, trackingToken, coupon, { points: requestedRewardPoints, value: pointsUsedAmount }),
+          text: `تم استلام طلبك من لحظة فن. رقم الطلب: #${String(order.short_id || order.id).slice(0, 6)}. الإجمالي: ${Number(order.total_amount || 0).toFixed(2)} ريال. مدفوع بالنقاط: ${requestedRewardPoints} نقطة (${pointsUsedAmount.toFixed(2)} ريال). المتبقي للدفع: ${Math.max(0, Number(order.total_amount || 0) - pointsUsedAmount).toFixed(2)} ريال. رمز التتبع الآمن: ${trackingToken}.`,
           tags: [{ name: 'type', value: 'store_order_confirmation' }],
         });
       } catch (emailError) {
@@ -706,7 +692,7 @@ Deno.serve(async (req) => {
         await sendEmail({
           to: adminEmail,
           subject: `طلب متجر جديد #${String(order.short_id || order.id).slice(0, 6)}`,
-          html: orderEmailHtml(order, String(customerPin), coupon, { points: requestedRewardPoints, value: pointsUsedAmount }),
+          html: orderEmailHtml(order, trackingToken, coupon, { points: requestedRewardPoints, value: pointsUsedAmount }),
           text: `طلب متجر جديد #${String(order.short_id || order.id).slice(0, 6)} بقيمة ${Number(order.total_amount || 0).toFixed(2)} ريال.`,
           tags: [{ name: 'type', value: 'store_order_admin_notification' }],
         });
@@ -727,7 +713,7 @@ Deno.serve(async (req) => {
         points_used_amount: pointsUsedAmount,
         amount_due: Number((finalTotal - pointsUsedAmount).toFixed(2)),
       },
-      customer_pin: customerPin,
+      tracking_token: trackingToken,
     });
   } catch (error) {
     console.error('store-checkout error:', error);

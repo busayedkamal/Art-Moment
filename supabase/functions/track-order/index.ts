@@ -1,223 +1,302 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
-import { verifyCustomerSessionToken } from '../_shared/customerToken.ts';
-import { normalizeSaudiPhone, phoneVariants } from '../_shared/phone.ts';
-import { fetchRewardPointsSummary } from '../_shared/rewardPoints.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 
-function asOrderList(data: unknown[] | null | undefined, orderType: string) {
-  return (data || []).map((order) => ({ ...(order as Record<string, unknown>), order_type: orderType }));
+type RecordValue = Record<string, unknown>;
+
+const PUBLIC_STATUS = {
+  pending_payment: { label: 'بانتظار الدفع', description: 'بانتظار إكمال الدفع أو مراجعته.' },
+  confirmed: { label: 'تم استلام الطلب', description: 'وصل الطلب إلى لحظة فن وتم تأكيده.' },
+  processing: { label: 'قيد التجهيز', description: 'يجري تجهيز الطلب بعناية.' },
+  ready: { label: 'جاهز', description: 'أصبح الطلب جاهزًا للتسليم أو الشحن.' },
+  shipped: { label: 'تم الشحن', description: 'تم تسليم الطلب إلى شركة الشحن.' },
+  completed: { label: 'مكتمل', description: 'تم تسليم الطلب بنجاح.' },
+  cancelled: { label: 'ملغي', description: 'تم إلغاء الطلب.' },
+  attention_required: { label: 'يحتاج متابعة', description: 'توجد خطوة تحتاج إلى تواصل أو مراجعة.' },
+} as const;
+
+const PUBLIC_STEPS = ['confirmed', 'processing', 'ready', 'shipped', 'completed'];
+
+function cleanText(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value.trim() : fallback;
 }
 
-function phoneFilterValues(input: unknown) {
-  return phoneVariants(normalizeSaudiPhone(input));
+function money(value: unknown) {
+  return Number(Number(value || 0).toFixed(2));
 }
 
-async function fetchCustomerStats(
-  supabase: ReturnType<typeof getServiceClient>,
-  variants: string[],
-  printOrders: Record<string, unknown>[] = [],
-  storeOrders: Record<string, unknown>[] = [],
-) {
-  const { data: walletsFound, error: walletsError } = await supabase
-    .from('wallets')
-    .select('id, points_balance, reward_points_balance')
-    .in('phone', variants);
+function safeOptions(value: unknown): Record<string, string | number | boolean | null> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.entries(value as RecordValue).reduce((result, [key, item]) => {
+    if (/url|uri|path|file|image|preview|original|storage|bucket|token/i.test(key)) return result;
+    if (['string', 'number', 'boolean'].includes(typeof item) || item === null) {
+      result[key] = item as string | number | boolean | null;
+    }
+    return result;
+  }, {} as Record<string, string | number | boolean | null>);
+}
 
-  if (walletsError) throw walletsError;
+function storePublicStatus(order: RecordValue) {
+  const paymentStatus = cleanText(order.payment_status);
+  const status = cleanText(order.status, 'pending_verification');
+  if (paymentStatus === 'payment_failed') return 'attention_required';
+  if (paymentStatus === 'pending_payment' && status === 'pending_verification') return 'pending_payment';
+  const map: Record<string, keyof typeof PUBLIC_STATUS> = {
+    pending_verification: 'confirmed',
+    confirmed: 'confirmed',
+    processing: 'processing',
+    ready_for_delivery: 'ready',
+    shipped: 'shipped',
+    delivered: 'completed',
+    cancelled: 'cancelled',
+    returned: 'cancelled',
+  };
+  return map[status] || 'attention_required';
+}
 
-  const wallets = walletsFound || [];
-  const walletIds = wallets.map((wallet: Record<string, unknown>) => wallet.id);
-  const { data: rewardSettings, error: rewardSettingsError } = await supabase
-    .from('settings')
-    .select('reward_point_value, reward_expiry_months')
-    .eq('id', 1)
-    .maybeSingle();
-  if (rewardSettingsError) throw rewardSettingsError;
-  const pointValue = Number(rewardSettings?.reward_point_value || 0.01);
-  const preferredWallet = [...wallets].sort((left, right) => {
-    const leftPoints = Number(left.reward_points_balance ?? Math.round(Number(left.points_balance || 0) / pointValue));
-    const rightPoints = Number(right.reward_points_balance ?? Math.round(Number(right.points_balance || 0) / pointValue));
-    return rightPoints - leftPoints || Number(right.id || 0) - Number(left.id || 0);
-  })[0];
-  let refreshedWallet = preferredWallet;
-  if (preferredWallet?.id) {
-    await supabase.rpc('expire_reward_points', { p_wallet_id: preferredWallet.id });
-    const { data } = await supabase
-      .from('wallets')
-      .select('id, points_balance, reward_points_balance')
-      .eq('id', preferredWallet.id)
-      .maybeSingle();
-    refreshedWallet = data || preferredWallet;
+function printPublicStatus(order: RecordValue) {
+  const status = cleanText(order.status, 'new');
+  const map: Record<string, keyof typeof PUBLIC_STATUS> = {
+    new: 'confirmed',
+    printing: 'processing',
+    done: 'ready',
+    delivered: 'completed',
+    cancelled: 'cancelled',
+  };
+  return map[status] || 'attention_required';
+}
+
+function buildTimeline(statusCode: keyof typeof PUBLIC_STATUS, history: RecordValue[] = []) {
+  if (statusCode === 'cancelled' || statusCode === 'attention_required' || statusCode === 'pending_payment') {
+    return [{
+      code: statusCode,
+      ...PUBLIC_STATUS[statusCode],
+      occurredAt: history.at(-1)?.created_at || null,
+      reason: history.at(-1)?.reason || null,
+      current: true,
+    }];
   }
-  const points = Number(refreshedWallet?.reward_points_balance
-    ?? Math.round(Number(refreshedWallet?.points_balance || 0) / pointValue));
-  const rewardSummary = variants[0]
-    ? await fetchRewardPointsSummary(supabase, variants[0], { includeActivities: false })
-    : null;
-
-  let packages = 0;
-  if (walletIds.length > 0) {
-    const { data: packageTransactions, error: packageError } = await supabase
-      .from('wallet_transactions')
-      .select('type, points, amount_value')
-      .in('wallet_id', walletIds)
-      .in('type', ['package_charge', 'package_redeem']);
-
-    if (packageError) throw packageError;
-
-    (packageTransactions || []).forEach((tx: Record<string, unknown>) => {
-      if (tx.type === 'package_charge') packages += Number(tx.points || 0);
-      if (tx.type === 'package_redeem') packages -= Number(tx.amount_value || 0);
-    });
-  }
-
-  let totalPayments = 0;
-  let totalDebt = 0;
-
-  printOrders.forEach((order) => {
-    const total = Number(order.total_amount || 0);
-    const paid = Number(order.deposit || 0) + Number(order.wallet_used || 0);
-    totalPayments += paid;
-    totalDebt += Math.max(0, total - paid);
+  const currentIndex = Math.max(0, PUBLIC_STEPS.indexOf(statusCode));
+  return PUBLIC_STEPS.slice(0, currentIndex + 1).map((code, index) => {
+    const matching = history.find((entry) => storePublicStatus(entry) === code);
+    return {
+      code,
+      ...PUBLIC_STATUS[code as keyof typeof PUBLIC_STATUS],
+      occurredAt: matching?.created_at || null,
+      reason: matching?.reason || null,
+      current: index === currentIndex,
+    };
   });
+}
 
-  storeOrders.forEach((order) => {
-    const total = Number(order.total_amount || 0) + Number(order.delivery_fee || 0);
-    const paid = Number(order.amount_paid || 0) + Number(order.points_used_amount || 0);
-    totalPayments += paid;
-    totalDebt += Math.max(0, total - paid);
-  });
+function normalizeStoreOrder(order: RecordValue, history: RecordValue[]) {
+  const statusCode = storePublicStatus(order);
+  const items = Array.isArray(order.store_order_items)
+    ? order.store_order_items.map((item) => {
+      const row = item as RecordValue;
+      return {
+        id: row.id,
+        kind: cleanText(row.item_type, 'product'),
+        name: cleanText(row.item_name, 'منتج من لحظة فن'),
+        quantity: Number(row.quantity || 0),
+        unitPrice: money(row.price_at_time),
+        lineTotal: money(Number(row.quantity || 0) * Number(row.price_at_time || 0)),
+        options: safeOptions(row.selected_options),
+        status: statusCode,
+      };
+    })
+    : [];
 
   return {
-    points,
-    pointsValue: Number((points * pointValue).toFixed(2)),
-    pointsExpiryMonths: Number(rewardSettings?.reward_expiry_months || 4),
-    rewards: rewardSummary,
-    packages: Math.max(0, packages),
-    totalPayments,
-    totalDebt,
+    orderType: 'store',
+    orderNumber: cleanText(order.short_id) || String(order.id || '').slice(0, 6),
+    status: { code: statusCode, ...PUBLIC_STATUS[statusCode] },
+    timeline: buildTimeline(statusCode, history),
+    createdAt: order.created_at,
+    updatedAt: order.updated_at || null,
+    items,
+    financials: {
+      subtotal: money(order.subtotal_amount ?? order.total_amount),
+      discount: money(order.discount_amount),
+      couponCode: cleanText(order.coupon_code) || null,
+      productsTotal: money(order.total_amount),
+      deliveryFee: money(order.delivery_fee),
+      cashPaid: money(order.amount_paid),
+      rewardPointsUsed: Number(order.reward_points_used || 0),
+      pointsPaid: money(order.points_used_amount),
+      refunded: money(order.refunded_amount),
+      remaining: Math.max(0, money(
+        Number(order.total_amount || 0)
+        + Number(order.delivery_fee || 0)
+        - Number(order.amount_paid || 0)
+        - Number(order.points_used_amount || 0),
+      )),
+    },
+    shipment: order.tracking_number
+      ? {
+          courier: cleanText(order.courier_name) || null,
+          trackingNumber: cleanText(order.tracking_number),
+        }
+      : null,
   };
 }
 
-async function fetchPaymentsMap(supabase: ReturnType<typeof getServiceClient>, printOrders: Record<string, unknown>[]) {
-  const printIds = printOrders.map((order) => order.id).filter(Boolean);
-  if (printIds.length === 0) return {};
+function normalizePrintOrder(order: RecordValue) {
+  const statusCode = printPublicStatus(order);
+  const dates: Record<string, unknown> = {
+    confirmed: order.date_new || order.created_at,
+    processing: order.date_printing,
+    ready: order.date_done,
+    completed: order.date_delivered,
+  };
+  const timeline = statusCode === 'cancelled' || statusCode === 'attention_required'
+    ? [{ code: statusCode, ...PUBLIC_STATUS[statusCode], occurredAt: order.created_at, current: true }]
+    : PUBLIC_STEPS
+      .slice(0, Math.max(0, PUBLIC_STEPS.indexOf(statusCode)) + 1)
+      .map((code) => ({
+        code,
+        ...PUBLIC_STATUS[code as keyof typeof PUBLIC_STATUS],
+        occurredAt: dates[code] || null,
+        current: code === statusCode,
+      }));
 
-  const { data: payments, error } = await supabase
-    .from('order_payments')
-    .select('id, order_id, amount, payment_date, note, created_at')
-    .in('order_id', printIds)
-    .order('payment_date', { ascending: true });
+  const items = [
+    Number(order.photo_4x6_qty || 0) > 0
+      ? { kind: 'print', name: 'طباعة صور 4×6', quantity: Number(order.photo_4x6_qty), status: statusCode }
+      : null,
+    Number(order.a4_qty || 0) > 0
+      ? { kind: 'print', name: 'طباعة صور A4', quantity: Number(order.a4_qty), status: statusCode }
+      : null,
+  ].filter(Boolean);
 
-  if (error) throw error;
+  const total = money(order.total_amount);
+  const cashPaid = money(order.deposit);
+  const pointsPaid = money(order.points_used_amount ?? order.wallet_used);
 
-  return (payments || []).reduce((map: Record<string, unknown[]>, payment: Record<string, unknown>) => {
-    const key = String(payment.order_id);
-    if (!map[key]) map[key] = [];
-    map[key].push(payment);
-    return map;
-  }, {});
+  return {
+    orderType: 'print',
+    orderNumber: cleanText(order.short_id) || String(order.id || '').slice(0, 6),
+    status: { code: statusCode, ...PUBLIC_STATUS[statusCode] },
+    timeline,
+    createdAt: order.created_at,
+    updatedAt: order.date_delivered || order.date_done || order.date_printing || order.date_new || order.created_at || null,
+    items,
+    financials: {
+      subtotal: money(order.subtotal),
+      discount: money(
+        Number(order.direct_discount_amount || 0)
+        + Number(order.coupon_discount_amount || 0)
+        + Number(order.package_discount_amount || 0),
+      ),
+      couponCode: cleanText(order.coupon_code) || null,
+      productsTotal: total,
+      deliveryFee: money(order.delivery_fee),
+      cashPaid,
+      pointsPaid,
+      refunded: 0,
+      remaining: Math.max(0, money(total - cashPaid - pointsPaid)),
+    },
+    shipment: null,
+  };
+}
+
+async function sha256(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function getClientIp(req: Request) {
+  return cleanText(req.headers.get('x-forwarded-for')).split(',')[0]?.trim()
+    || cleanText(req.headers.get('x-real-ip'))
+    || 'unknown';
 }
 
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);
   if (optionsResponse) return optionsResponse;
+  if (req.method !== 'POST') return jsonResponse({ error: 'method_not_allowed' }, 405);
 
-  if (req.method !== 'POST') {
-    return jsonResponse({ error: 'method_not_allowed' }, 405);
-  }
+  const supabase = getServiceClient();
 
   try {
     const body = await req.json();
-    const mode = body?.mode === 'history' ? 'history' : 'id';
-    const supabase = getServiceClient();
+    const orderNumber = cleanText(body?.orderNumber || body?.searchId)
+      .replace('#', '')
+      .toLowerCase()
+      .slice(0, 12);
+    const trackingToken = cleanText(body?.trackingToken || body?.token).toLowerCase();
+    const ipHash = await sha256(getClientIp(req));
+    const orderKeyHash = await sha256(orderNumber || 'missing');
+    const since = new Date(Date.now() - (15 * 60 * 1000)).toISOString();
 
-    if (mode === 'id') {
-      const shortId = String(body?.searchId || '').replace('#', '').trim().toLowerCase().slice(0, 6);
-      if (!shortId) return jsonResponse({ error: 'missing_order_id' }, 400);
-
-      const [printRes, storeRes] = await Promise.all([
-        supabase.from('orders').select('*').eq('short_id', shortId).maybeSingle(),
-        supabase
-          .from('store_orders')
-          .select('*, store_order_items(item_type, item_name, metadata, quantity, price_at_time, selected_options, products(name, image))')
-          .eq('short_id', shortId)
-          .maybeSingle(),
-      ]);
-
-      if (printRes.error) throw printRes.error;
-      if (storeRes.error) throw storeRes.error;
-
-      const printOrders = printRes.data ? [{ ...printRes.data, order_type: 'print' }] : [];
-      const storeOrders = !printRes.data && storeRes.data ? [{ ...storeRes.data, order_type: 'store' }] : [];
-      const orders = [...printOrders, ...storeOrders];
-
-      if (orders.length === 0) return jsonResponse({ error: 'order_not_found' }, 404);
-
-      const paymentsMap = await fetchPaymentsMap(supabase, printOrders);
-      const variants = orders[0]?.phone ? phoneFilterValues(orders[0].phone) : [];
-      let customerStats = variants.length > 0
-        ? await fetchCustomerStats(supabase, variants, printOrders, storeOrders)
-        : null;
-      const tokenPayload = body?.sessionToken
-        ? await verifyCustomerSessionToken(body.sessionToken)
-        : null;
-      if (customerStats?.rewards && tokenPayload?.sub) {
-        const { data: signedInCustomer } = await supabase
-          .from('customers')
-          .select('id, phone')
-          .eq('id', tokenPayload.sub)
-          .maybeSingle();
-        const ownsOrder = signedInCustomer && (
-          String(storeOrders[0]?.customer_id || '') === String(signedInCustomer.id)
-          || phoneFilterValues(signedInCustomer.phone).some((phone) => variants.includes(phone))
-        );
-        if (!ownsOrder) customerStats = { ...customerStats, rewards: null };
-      } else if (customerStats?.rewards) {
-        customerStats = { ...customerStats, rewards: null };
-      }
-
-      return jsonResponse({ orders, paymentsMap, customerStats });
+    const { count: failedAttempts, error: rateError } = await supabase
+      .from('public_tracking_attempts')
+      .select('id', { count: 'exact', head: true })
+      .eq('ip_hash', ipHash)
+      .eq('succeeded', false)
+      .gte('created_at', since);
+    if (rateError) throw rateError;
+    if (Number(failedAttempts || 0) >= 10) {
+      return jsonResponse({ error: 'tracking_unavailable' }, 429);
     }
 
-    const phone = normalizeSaudiPhone(body?.phone);
-    const pin = String(body?.pin || '').trim();
-    const variants = phoneFilterValues(phone);
+    if (!orderNumber || trackingToken.length < 24) {
+      await supabase.from('public_tracking_attempts').insert({
+        ip_hash: ipHash,
+        order_key_hash: orderKeyHash,
+        succeeded: false,
+      });
+      return jsonResponse({ error: 'tracking_not_found' }, 404);
+    }
 
-    if (!phone || !pin) return jsonResponse({ error: 'missing_history_credentials' }, 400);
-
-    const { data: wallet, error: walletError } = await supabase
-      .from('wallets')
-      .select('id')
-      .eq('subscription_code', pin)
-      .in('phone', variants)
-      .limit(1)
-      .maybeSingle();
-
-    if (walletError) throw walletError;
-    if (!wallet) return jsonResponse({ error: 'invalid_history_credentials' }, 401);
-
-    const [printRes, storeRes] = await Promise.all([
-      supabase.from('orders').select('*').in('phone', variants),
+    const [printResult, storeResult] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('id, short_id, status, created_at, date_new, date_printing, date_done, date_delivered, photo_4x6_qty, a4_qty, subtotal, delivery_fee, total_amount, deposit, wallet_used, direct_discount_amount, coupon_discount_amount, coupon_code, package_discount_amount, points_used_amount')
+        .eq('short_id', orderNumber)
+        .eq('tracking_access_token', trackingToken)
+        .maybeSingle(),
       supabase
         .from('store_orders')
-        .select('*, store_order_items(item_type, item_name, metadata, quantity, price_at_time, selected_options, products(name, image))')
-        .in('phone', variants),
+        .select('id, short_id, status, payment_status, payment_method, subtotal_amount, discount_amount, coupon_code, total_amount, delivery_fee, amount_paid, reward_points_used, points_used_amount, refunded_amount, tracking_number, courier_name, created_at, updated_at, store_order_items(id, item_type, item_name, quantity, price_at_time, selected_options)')
+        .eq('short_id', orderNumber)
+        .eq('tracking_access_token', trackingToken)
+        .maybeSingle(),
     ]);
 
-    if (printRes.error) throw printRes.error;
-    if (storeRes.error) throw storeRes.error;
+    if (printResult.error) throw printResult.error;
+    if (storeResult.error) throw storeResult.error;
 
-    const printOrders = asOrderList(printRes.data, 'print');
-    const storeOrders = asOrderList(storeRes.data, 'store');
-    const orders = [...printOrders, ...storeOrders].sort(
-      (a, b) => new Date(String(b.created_at)).getTime() - new Date(String(a.created_at)).getTime(),
-    );
+    const matched = storeResult.data || printResult.data;
+    if (!matched) {
+      await supabase.from('public_tracking_attempts').insert({
+        ip_hash: ipHash,
+        order_key_hash: orderKeyHash,
+        succeeded: false,
+      });
+      return jsonResponse({ error: 'tracking_not_found' }, 404);
+    }
 
-    const paymentsMap = await fetchPaymentsMap(supabase, printOrders);
-    const customerStats = await fetchCustomerStats(supabase, variants, printOrders, storeOrders);
+    let order;
+    if (storeResult.data) {
+      const { data: history, error: historyError } = await supabase
+        .from('store_order_status_history')
+        .select('status, reason, created_at')
+        .eq('store_order_id', storeResult.data.id)
+        .order('created_at', { ascending: true });
+      if (historyError) throw historyError;
+      order = normalizeStoreOrder(storeResult.data as RecordValue, (history || []) as RecordValue[]);
+    } else {
+      order = normalizePrintOrder(printResult.data as RecordValue);
+    }
 
-    return jsonResponse({ orders, paymentsMap, customerStats });
+    await supabase.from('public_tracking_attempts').insert({
+      ip_hash: ipHash,
+      order_key_hash: orderKeyHash,
+      succeeded: true,
+    });
+
+    return jsonResponse({ order });
   } catch (error) {
     console.error('track-order error:', error);
     return jsonResponse({ error: 'tracking_failed' }, 500);
