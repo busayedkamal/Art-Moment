@@ -49,6 +49,7 @@ function normalizeProductOptions(rawOptions: unknown) {
         return {
           value,
           priceDelta: Number(valueObject.priceDelta || valueObject.price_delta || 0),
+          available: valueObject.available !== false,
         };
       }).filter((value) => value.value)
       : [];
@@ -75,6 +76,7 @@ function resolveProductOptions(
     const selectedValue = String(selections[option.id] || '').trim();
     const matchedValue = option.values.find((value) => value.value === selectedValue);
     if (option.required && !matchedValue) throw new Error('invalid_product_options');
+    if (matchedValue?.available === false) throw new Error('product_option_unavailable');
     if (matchedValue) {
       normalizedSelections[option.id] = matchedValue.value;
       priceDelta += Number(matchedValue.priceDelta || 0);
@@ -769,7 +771,7 @@ Deno.serve(async (req) => {
     }
 
     const message = error instanceof Error ? error.message : 'checkout_failed';
-    const status = ['product_unavailable', 'product_out_of_stock', 'print_draft_not_ready', 'print_draft_locked', 'print_variant_unavailable', 'coupon_scope_empty', 'reward_points_balance_insufficient', 'reward_redemption_limit_exceeded', 'reward_minimum_redemption_not_met', 'guest_customer_exists_login_required', 'customer_identity_conflict'].includes(message)
+    const status = ['product_unavailable', 'product_option_unavailable', 'product_out_of_stock', 'print_draft_not_ready', 'print_draft_locked', 'print_variant_unavailable', 'coupon_scope_empty', 'reward_points_balance_insufficient', 'reward_redemption_limit_exceeded', 'reward_minimum_redemption_not_met', 'guest_customer_exists_login_required', 'customer_identity_conflict'].includes(message)
       ? 409
       : message === 'reward_points_migration_required'
         ? 503

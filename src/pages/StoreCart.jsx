@@ -472,7 +472,11 @@ export default function StoreCart() {
           ? 'الكوبون غير صالح أو غير نشط'
           : error.message === 'coupon_scope_empty'
             ? 'هذا الكوبون لا يشمل العناصر الموجودة في السلة'
-          : 'تعذر تطبيق الكوبون حالياً',
+            : error.message === 'product_option_unavailable'
+              ? 'أحد خيارات المنتج لم يعد متوفرًا. اختاري بديلًا متاحًا قبل تطبيق الكوبون.'
+              : error.message === 'invalid_product_options'
+                ? 'تحققي من اختيار خصائص كل منتج قبل تطبيق الكوبون.'
+                : 'تعذر تطبيق الكوبون حالياً',
         { id: toastId },
       );
     } finally {
@@ -609,6 +613,7 @@ export default function StoreCart() {
         reward_points_migration_required: 'نظام النقاط قيد التحديث. حاول بعد قليل.',
         invalid_product_options: 'تحقق من اختيار المقاس أو اللون أو الخامة لكل منتج.',
         product_unavailable: 'أحد منتجات السلة لم يعد متوفرًا. راجع السلة ثم حاول مجددًا.',
+        product_option_unavailable: 'أحد خيارات المنتج لم يعد متوفرًا. احذف المنتج من السلة واختر بديلًا متاحًا.',
         product_out_of_stock: 'الكمية المطلوبة لأحد المنتجات لم تعد متوفرة.',
         print_variant_unavailable: 'تركيبة الطباعة المختارة متوقفة مؤقتًا. افتح طلب الطباعة لتعديله.',
         print_draft_not_ready: 'طلب الطباعة يحتاج إلى مراجعة قبل إتمام الطلب.',

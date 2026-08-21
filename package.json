@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build && node scripts/generate-seo-pages.mjs",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "check:product-detail": "node scripts/check-product-detail-release.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",

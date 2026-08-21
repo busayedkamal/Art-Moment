@@ -19,6 +19,7 @@ function productOptionPriceDelta(rawOptions: unknown, rawSelections: unknown) {
       return String(value.value || value.label || '').trim() === selected;
     }) as Record<string, unknown> | undefined;
     if (option.required !== false && !matched) throw new Error('invalid_product_options');
+    if (matched?.available === false) throw new Error('product_option_unavailable');
     if (matched) delta += Number(matched.priceDelta || matched.price_delta || 0);
   }
   return delta;
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
     const message = error instanceof Error ? error.message : 'coupon_validation_failed';
     const status = ['invalid_coupon', 'missing_coupon', 'empty_cart'].includes(message)
       ? 400
-      : ['product_unavailable', 'product_out_of_stock', 'coupon_scope_empty'].includes(message)
+      : ['product_unavailable', 'product_option_unavailable', 'product_out_of_stock', 'coupon_scope_empty'].includes(message)
         ? 409
         : 500;
     return jsonResponse({ error: message }, status);

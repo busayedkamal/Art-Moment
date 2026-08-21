@@ -22,6 +22,7 @@ export function normalizeProductOptions(rawOptions) {
             labelEn,
             priceDelta: Number(valueObject.priceDelta || valueObject.price_delta || 0),
             colorHex: String(valueObject.colorHex || valueObject.color_hex || '').trim() || null,
+            available: valueObject.available !== false,
           };
         })
         .filter(Boolean);
@@ -57,7 +58,7 @@ export function normalizeSelectedOptions(rawSelections, productOptions = []) {
 
   normalizeProductOptions(productOptions).forEach((option) => {
     const selectedValue = String(selections[option.id] || '').trim();
-    const match = option.values.find((value) => value.value === selectedValue);
+    const match = option.values.find((value) => value.value === selectedValue && value.available !== false);
     if (match) normalized[option.id] = match.value;
   });
 

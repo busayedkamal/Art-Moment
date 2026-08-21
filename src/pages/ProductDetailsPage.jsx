@@ -173,7 +173,8 @@ export default function ProductDetailsPage() {
       setSelectedImage(normalized.image || normalized.hoverImage || '');
       const defaultSelections = {};
       normalized.productOptions.forEach((option) => {
-        if (option.values.length === 1) defaultSelections[option.id] = option.values[0].value;
+        const availableValues = option.values.filter((value) => value.available !== false);
+        if (availableValues.length === 1) defaultSelections[option.id] = availableValues[0].value;
       });
       setSelectedOptions(defaultSelections);
       const { data: recommendationRows } = await supabase
@@ -187,7 +188,13 @@ export default function ProductDetailsPage() {
         setRecommendations(getRecommendedProducts(normalized, candidates));
       }
       setLoading(false);
-      trackStoreEvent('product_view', { productId: normalized.id, category: normalized.category });
+      const openedFromShare = new URLSearchParams(window.location.search).get('ref') === 'share';
+      trackStoreEvent('product_view', {
+        product_id: normalized.id,
+        product_type: getProductType(normalized),
+        category: normalized.category,
+        source: openedFromShare ? 'share' : 'direct',
+      });
     }
 
     loadProduct();
@@ -222,6 +229,9 @@ export default function ProductDetailsPage() {
   const isPrintingBundle = productType === 'printing_bundle';
   const bundleCapacity = isPrintingBundle ? getBundleCapacity(product) : null;
   const productUrl = product ? 'https://art-moment.com/store/products/' + product.id : '';
+  const sharedProductUrl = productUrl ? productUrl + '?ref=share' : '';
+  const shareCardUrl = product ? `https://art-moment.com/seo/products/${encodeURIComponent(String(product.id))}-share.jpg` : '';
+  const shareMetadata = product ? { product_id: product.id, product_type: productType } : {};
   const shareText = product
     ? (language === 'en'
       ? 'See ' + product.name + ' from Art Moment. View the details and current price:'
@@ -337,9 +347,9 @@ export default function ProductDetailsPage() {
 
   const copyProductLink = async () => {
     try {
-      await navigator.clipboard.writeText(productUrl);
+      await navigator.clipboard.writeText(sharedProductUrl);
       toast.success(text.copied);
-      trackStoreEvent('product_share', { productId: product.id, channel: 'copy' });
+      trackStoreEvent('product_share_copy', shareMetadata);
       setIsShareOpen(false);
     } catch {
       setIsShareOpen(true);
@@ -347,11 +357,11 @@ export default function ProductDetailsPage() {
   };
 
   const handleShare = async () => {
-    const shareData = { title: product.name, text: shareText, url: productUrl };
+    const shareData = { title: product.name, text: shareText, url: sharedProductUrl };
+    trackStoreEvent('product_share_open', shareMetadata);
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-        trackStoreEvent('product_share', { productId: product.id, channel: 'native' });
         return;
       } catch (shareError) {
         if (shareError?.name === 'AbortError') return;
@@ -393,7 +403,7 @@ export default function ProductDetailsPage() {
         title={`${product.name} | ${language === 'en' ? 'Art Moment Store' : 'متجر لحظة فن'}`}
         description={(product.description || text.fallback).slice(0, 160)}
         path={`/store/products/${product.id}`}
-        image={images[0]}
+        image={shareCardUrl}
         type="product"
         structuredData={structuredData}
       />
@@ -462,26 +472,26 @@ export default function ProductDetailsPage() {
               {isShareOpen && (
                 <div className="absolute end-0 top-14 z-30 grid min-w-56 grid-cols-2 gap-2 rounded-xl border border-[#E8B4BC]/20 bg-white p-3 shadow-xl">
                   <a
-                    href={'https://wa.me/?text=' + encodeURIComponent(shareText + '\n' + productUrl)}
+                    href={'https://wa.me/?text=' + encodeURIComponent(shareText + '\n' + sharedProductUrl)}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => trackStoreEvent('product_share', { productId: product.id, channel: 'whatsapp' })}
+                    onClick={() => trackStoreEvent('product_share_whatsapp', shareMetadata)}
                     className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-50 px-3 text-xs font-black text-emerald-700"
                   >
                     <MessageCircle size={16} /> WhatsApp
                   </a>
                   <a
-                    href={'https://t.me/share/url?url=' + encodeURIComponent(productUrl) + '&text=' + encodeURIComponent(shareText)}
+                    href={'https://t.me/share/url?url=' + encodeURIComponent(sharedProductUrl) + '&text=' + encodeURIComponent(shareText)}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => trackStoreEvent('product_share', { productId: product.id, channel: 'telegram' })}
+                    onClick={() => trackStoreEvent('product_share_telegram', shareMetadata)}
                     className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-50 px-3 text-xs font-black text-sky-700"
                   >
                     <Send size={16} /> Telegram
                   </a>
                   <a
-                    href={'mailto:?subject=' + encodeURIComponent(product.name) + '&body=' + encodeURIComponent(shareText + '\n' + productUrl)}
-                    onClick={() => trackStoreEvent('product_share', { productId: product.id, channel: 'email' })}
+                    href={'mailto:?subject=' + encodeURIComponent(product.name) + '&body=' + encodeURIComponent(shareText + '\n' + sharedProductUrl)}
+                    onClick={() => trackStoreEvent('product_share_email', shareMetadata)}
                     className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#FAF9F7] px-3 text-xs font-black text-[#171717]"
                   >
                     <Mail size={16} /> {language === 'en' ? 'Email' : 'البريد'}
@@ -538,21 +548,27 @@ export default function ProductDetailsPage() {
                     <div className="flex flex-wrap gap-2">
                       {option.values.map((value) => {
                         const active = normalizedSelections[option.id] === value.value;
+                        const unavailable = value.available === false;
                         return (
                           <button
                             key={value.value}
                             type="button"
+                            disabled={unavailable}
                             onClick={() => setSelectedOptions((current) => ({ ...current, [option.id]: value.value }))}
+                            aria-label={unavailable ? `${value.label} - ${language === 'en' ? 'Unavailable' : 'غير متوفر'}` : value.label}
                             className={`flex min-h-11 items-center gap-2 rounded-xl border px-4 py-2 text-sm font-black transition-colors ${
-                              active
-                                ? 'border-[#C6A56B] bg-[#C6A56B] text-white'
-                                : 'border-[#E8B4BC]/20 bg-white hover:border-[#C6A56B]/50'
+                              unavailable
+                                ? 'cursor-not-allowed border-black/8 bg-black/[0.03] text-black/30 line-through'
+                                : active
+                                  ? 'border-[#C6A56B] bg-[#C6A56B] text-white'
+                                  : 'border-[#E8B4BC]/20 bg-white hover:border-[#C6A56B]/50'
                             }`}
                           >
                             {value.colorHex && (
                               <span className="h-4 w-4 rounded-full border border-black/10" style={{ backgroundColor: value.colorHex }} />
                             )}
                             {value.label}
+                            {unavailable && <span className="text-[10px] no-underline">{language === 'en' ? 'Unavailable' : 'غير متوفر'}</span>}
                             {active && <Check size={14} />}
                           </button>
                         );

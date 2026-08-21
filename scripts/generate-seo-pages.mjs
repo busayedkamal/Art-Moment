@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import { loadEnv } from 'vite';
+import sharp from 'sharp';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
@@ -222,19 +223,91 @@ function productCategoryLabel(category) {
   return labels[String(category || '').toLowerCase()] || String(category || 'منتجات لحظة فن');
 }
 
-async function materializeProductImage(product) {
-  const image = normalizeProductImages(product)[0];
-  if (!image) return siteUrl + '/pwa-512x512.png';
-  if (/^https?:\/\//i.test(image)) return image;
-  if (image.startsWith('/')) return new URL(image, siteUrl).toString();
+function getProductShareSubtitle(product) {
+  const category = String(product.category || '').toLowerCase();
+  const searchable = [product.name, product.description, JSON.stringify(product.specifications || {})]
+    .filter(Boolean)
+    .join(' ');
+  if (category === 'printing' || /باقة|package|طباعة/i.test(searchable)) {
+    const values = (searchable.match(/\d[\d,]*/g) || [])
+      .map((value) => Number(value.replaceAll(',', '')))
+      .filter(Number.isFinite);
+    if (values.length > 0) return 'حتى ' + Math.max(...values) + ' صورة';
+  }
+  return productCategoryLabel(product.category);
+}
 
-  const match = image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/s);
-  if (!match) return siteUrl + '/pwa-512x512.png';
-  const extension = match[1] === 'image/png' ? 'png' : match[1] === 'image/webp' ? 'webp' : 'jpg';
-  const fileName = encodeURIComponent(String(product.id)) + '.' + extension;
+function wrapShareTitle(value, maxLength = 18) {
+  const words = String(value || '').trim().split(/\s+/).filter(Boolean);
+  const lines = [];
+  for (const word of words) {
+    const current = lines.at(-1) || '';
+    if (!current || current.length + word.length + 1 > maxLength) lines.push(word);
+    else lines[lines.length - 1] = current + ' ' + word;
+  }
+  return lines.slice(0, 3);
+}
+
+async function readProductImageBuffer(product) {
+  const image = normalizeProductImages(product)[0];
+  try {
+    if (/^https?:\/\//i.test(image || '')) {
+      const response = await fetch(image, { signal: AbortSignal.timeout(12000) });
+      if (response.ok) return Buffer.from(await response.arrayBuffer());
+    }
+    if (image?.startsWith('/')) {
+      return await readFile(join(dist, image.replace(/^\/+/, '')));
+    }
+    const match = String(image || '').match(/^data:image\/(?:jpeg|png|webp);base64,(.+)$/s);
+    if (match) return Buffer.from(match[1], 'base64');
+  } catch (error) {
+    console.warn('Unable to load product share image:', product.id, error.message);
+  }
+  return readFile(join(dist, 'pwa-512x512.png'));
+}
+
+async function materializeProductImage(product) {
+  const fileName = encodeURIComponent(String(product.id)) + '-share.jpg';
   const output = join(dist, 'seo', 'products', fileName);
+  const source = await readProductImageBuffer(product);
+  const productImage = await sharp(source)
+    .rotate()
+    .resize(630, 630, { fit: 'cover', position: 'attention', background: '#ffffff' })
+    .flatten({ background: '#ffffff' })
+    .jpeg({ quality: 86, chromaSubsampling: '4:4:4' })
+    .toBuffer();
+  const titleLines = wrapShareTitle(product.name);
+  const titleSize = titleLines.length > 2 ? 49 : 57;
+  const title = titleLines.map((line, index) => (
+    '<text x="500" y="' + (250 + (index * 72)) + '" text-anchor="start" direction="rtl" '
+      + 'font-family="Tajawal,Arial,sans-serif" font-size="' + titleSize + '" font-weight="800" fill="#171717">'
+      + escapeHtml(line) + '</text>'
+  )).join('');
+  const subtitleY = 250 + (titleLines.length * 72) + 22;
+  const overlay = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="570" height="630" viewBox="0 0 570 630">'
+      + '<rect width="570" height="630" fill="#FAF9F7"/>'
+      + '<path d="M42 66h38M42 66v38M528 566h-38M528 566v-38" fill="none" stroke="#C6A56B" stroke-width="4"/>'
+      + '<circle cx="496" cy="86" r="8" fill="#E8B4BC"/>'
+      + '<text x="472" y="94" text-anchor="start" direction="rtl" font-family="Tajawal,Arial,sans-serif" font-size="29" font-weight="800" fill="#171717">لحظة فن</text>'
+      + '<text x="410" y="126" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="2" fill="#8F713C">ART MOMENT</text>'
+      + '<line x1="72" y1="166" x2="500" y2="166" stroke="#E8B4BC" stroke-opacity="0.55"/>'
+      + title
+      + '<text x="500" y="' + subtitleY + '" text-anchor="start" direction="rtl" font-family="Tajawal,Arial,sans-serif" font-size="25" font-weight="700" fill="#B96F7D">'
+      + escapeHtml(getProductShareSubtitle(product)) + '</text>'
+      + '<text x="500" y="555" text-anchor="start" direction="rtl" font-family="Tajawal,Arial,sans-serif" font-size="18" font-weight="600" fill="#625D59">تفاصيل المنتج في متجر لحظة فن</text>'
+      + '</svg>',
+  );
   await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, Buffer.from(match[2], 'base64'));
+  await sharp({
+    create: { width: 1200, height: 630, channels: 3, background: '#FAF9F7' },
+  })
+    .composite([
+      { input: overlay, left: 0, top: 0 },
+      { input: productImage, left: 570, top: 0 },
+    ])
+    .jpeg({ quality: 84, chromaSubsampling: '4:2:0' })
+    .toFile(output);
   return siteUrl + '/seo/products/' + fileName;
 }
 
@@ -348,7 +421,8 @@ for (const page of pages) {
 }
 
 for (const product of products) {
-  if (!product || !product.id || !product.name) continue;
+  if (!product || !product.id || !String(product.name || '').trim()) continue;
+  product.name = String(product.name).trim();
   const encodedId = encodeURIComponent(String(product.id));
   const description = String(product.description || ('تعرّف على ' + product.name + ' من متجر لحظة فن، مع السعر والتوفر وتفاصيل المنتج.'))
     .replace(/\s+/g, ' ')

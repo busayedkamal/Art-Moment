@@ -617,6 +617,7 @@ export default function ProductManagement() {
                                             labelEn: item.values?.[valueIndex]?.labelEn || '',
                                             priceDelta: Number(item.values?.[valueIndex]?.priceDelta || 0),
                                             colorHex: item.values?.[valueIndex]?.colorHex || null,
+                                            available: item.values?.[valueIndex]?.available !== false,
                                           })),
                                         }
                                       : item
@@ -678,6 +679,43 @@ export default function ProductManagement() {
                             >
                               <Trash2 size={15} />
                             </button>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <p className="mb-2 text-[10px] font-black text-[#171717]/55">توفر قيم الخاصية</p>
+                            <div className="flex flex-wrap gap-2">
+                              {(option.values || []).map((value, valueIndex) => {
+                                const available = value.available !== false;
+                                return (
+                                  <button
+                                    key={`${value.value || value.label}-${valueIndex}`}
+                                    type="button"
+                                    onClick={() => setForm((current) => ({
+                                      ...current,
+                                      productOptions: current.productOptions.map((item, index) => (
+                                        index === optionIndex
+                                          ? {
+                                              ...item,
+                                              values: item.values.map((itemValue, indexValue) => (
+                                                indexValue === valueIndex ? { ...itemValue, available: !available } : itemValue
+                                              )),
+                                            }
+                                          : item
+                                      )),
+                                    }))}
+                                    className={`flex min-h-10 items-center gap-2 rounded-lg border px-3 text-[11px] font-black ${
+                                      available
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                        : 'border-red-200 bg-red-50 text-red-600'
+                                    }`}
+                                    title={available ? 'اضغط لتعطيل هذه القيمة' : 'اضغط لإتاحة هذه القيمة'}
+                                  >
+                                    {available ? <Check size={14} /> : <X size={14} />}
+                                    {value.label || value.value}
+                                    <span>{available ? 'متاح' : 'غير متاح'}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       </div>
