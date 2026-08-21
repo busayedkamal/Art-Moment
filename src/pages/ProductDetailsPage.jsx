@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Check, ChevronDown, Clock3, Image as ImageIcon,
-  Minus, PackageCheck, Plus, RotateCcw, ShieldCheck, ShoppingCart,
+  Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Copy, Image as ImageIcon,
+  Mail, Maximize2, MessageCircle, Minus, PackageCheck, Plus, Printer, RotateCcw,
+  Send, Share2, ShieldCheck, ShoppingCart, Sparkles, X,
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -30,6 +31,8 @@ function fromDb(product, language) {
       : (product?.description || ''),
     price: Number(product?.price || 0),
     category: product?.category || '',
+    productType: product?.product_type || '',
+    sortOrder: product?.sort_order ?? 0,
     image: product?.image || null,
     hoverImage: product?.hover_image || null,
     galleryImages: Array.isArray(product?.gallery_images) ? product.gallery_images.filter(Boolean) : [],
@@ -67,6 +70,53 @@ function getCategoryLabel(category, language) {
   return labels[category]?.[language] || category || (language === 'en' ? 'Art Moment products' : 'منتجات لحظة فن');
 }
 
+function getProductType(product) {
+  const explicitType = String(product?.productType || '').trim().toLowerCase();
+  if (explicitType) return explicitType;
+  const category = String(product?.category || '').toLowerCase();
+  const searchable = [product?.name, product?.description].filter(Boolean).join(' ').toLowerCase();
+  if (category === 'albums' || category === 'ألبومات') return 'album';
+  if (category === 'frames' || category === 'إطارات') return 'frame';
+  if (category === 'stickers' || category === 'ملصقات') return 'accessory';
+  if (category === 'printing' || category === 'طباعة' || /باقة|package|طباعة/.test(searchable)) return 'printing_bundle';
+  return 'product';
+}
+
+function getBundleCapacity(product) {
+  const entries = Object.entries(product?.specifications || {});
+  const capacityEntry = entries.find(([key]) => /سعة|عدد الصور|capacity|photos/i.test(key));
+  const source = capacityEntry?.[1] || [product?.name, product?.description].filter(Boolean).join(' ');
+  const matches = String(source).match(/\d[\d,]*/g) || [];
+  const values = matches.map((value) => Number(value.replaceAll(',', ''))).filter(Number.isFinite);
+  return values.length > 0 ? Math.max(...values) : null;
+}
+
+function getRecommendedProducts(currentProduct, candidates) {
+  const currentText = [currentProduct?.name, currentProduct?.description, currentProduct?.category].filter(Boolean).join(' ').toLowerCase();
+  const isA4 = currentText.includes('a4');
+  const isSmallPrint = /(?:10\s*[x×*]\s*15)|(?:4\s*[x×*]\s*6)/i.test(currentText);
+  const currentType = getProductType(currentProduct);
+
+  return candidates
+    .filter((candidate) => String(candidate.id) !== String(currentProduct.id) && isProductAvailable(candidate))
+    .map((candidate) => {
+      const candidateText = [candidate.name, candidate.description, candidate.category].filter(Boolean).join(' ').toLowerCase();
+      const candidateType = getProductType(candidate);
+      let score = candidate.category !== currentProduct.category ? 1 : 0;
+      if (isA4 && candidateType === 'frame') score += 5;
+      if (isA4 && candidateText.includes('a4')) score += 3;
+      if (isSmallPrint && candidateType === 'album') score += 5;
+      if (isSmallPrint && /(?:10\s*[x×*]\s*15)|(?:4\s*[x×*]\s*6)/i.test(candidateText)) score += 3;
+      if (currentType === 'album' && candidateType === 'printing_bundle') score += 5;
+      if (currentType === 'printing_bundle' && candidateType === 'album') score += 5;
+      if (currentType === 'frame' && candidateType === 'printing_bundle') score += 4;
+      return { candidate, score };
+    })
+    .sort((left, right) => right.score - left.score || left.candidate.sortOrder - right.candidate.sortOrder)
+    .slice(0, 4)
+    .map(({ candidate }) => candidate);
+}
+
 export default function ProductDetailsPage() {
   const { productId } = useParams();
   const { language, direction } = useLanguage();
@@ -77,6 +127,8 @@ export default function ProductDetailsPage() {
     stockOnly: (count) => `Only ${count} available`, fallback: 'Carefully selected by Art Moment to preserve your memories.',
     package: 'What is included', preparation: 'Preparation and dispatch', returns: 'Return policy', faq: 'Frequently asked questions',
     secure: 'Secure checkout', original: 'Authentic product details', support: 'Support before and after your order', quantity: 'Quantity',
+    share: 'Share product', copied: 'Product link copied', related: 'You may also like', printNow: 'Print photos for this product',
+    bundle: 'This package includes', bundleCapacity: (count) => 'Print up to ' + count + ' photos', choosePackage: 'Choose package', close: 'Close image',
   } : {
     notFound: 'تعذر العثور على هذا المنتج.', back: 'المتجر', price: 'السعر', available: 'متوفر',
     availableCount: (count) => `المتوفر ${count}`, unavailable: 'غير متوفر', add: 'إضافة إلى السلة',
@@ -84,6 +136,8 @@ export default function ProductDetailsPage() {
     stockOnly: (count) => `المتوفر حالياً ${count} فقط`, fallback: 'منتج مختار بعناية من لحظة فن لتوثيق ذكرياتك.',
     package: 'محتويات العبوة', preparation: 'التجهيز والشحن', returns: 'سياسة الاسترجاع', faq: 'أسئلة متكررة',
     secure: 'دفع آمن', original: 'تفاصيل واضحة للمنتج', support: 'دعم قبل الطلب وبعده', quantity: 'الكمية',
+    share: 'مشاركة المنتج', copied: 'تم نسخ رابط المنتج', related: 'قد يعجبك أيضًا', printNow: 'اطبعي صورك لهذا المنتج',
+    bundle: 'تتضمن الباقة', bundleCapacity: (count) => 'اطبعي حتى ' + count + ' صورة ضمن الباقة', choosePackage: 'اختيار الباقة', close: 'إغلاق الصورة',
   };
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -92,6 +146,9 @@ export default function ProductDetailsPage() {
   const [selectedOptions, setSelectedOptions] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [cartCount, setCartCount] = useState(0);
+  const [recommendations, setRecommendations] = useState([]);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isImageOpen, setIsImageOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +176,16 @@ export default function ProductDetailsPage() {
         if (option.values.length === 1) defaultSelections[option.id] = option.values[0].value;
       });
       setSelectedOptions(defaultSelections);
+      const { data: recommendationRows } = await supabase
+        .from('products')
+        .select('*')
+        .neq('id', data.id)
+        .order('sort_order', { ascending: true })
+        .limit(16);
+      if (!cancelled) {
+        const candidates = (recommendationRows || []).map((row) => fromDb(row, language));
+        setRecommendations(getRecommendedProducts(normalized, candidates));
+      }
       setLoading(false);
       trackStoreEvent('product_view', { productId: normalized.id, category: normalized.category });
     }
@@ -150,6 +217,16 @@ export default function ProductDetailsPage() {
     () => getProductPriceWithOptions(product?.price, product?.productOptions, normalizedSelections),
     [normalizedSelections, product?.price, product?.productOptions],
   );
+
+  const productType = getProductType(product);
+  const isPrintingBundle = productType === 'printing_bundle';
+  const bundleCapacity = isPrintingBundle ? getBundleCapacity(product) : null;
+  const productUrl = product ? 'https://art-moment.com/store/products/' + product.id : '';
+  const shareText = product
+    ? (language === 'en'
+      ? 'See ' + product.name + ' from Art Moment. View the details and current price:'
+      : 'شاهد هذا المنتج من لحظة فن: ' + product.name + '. اطلع على التفاصيل والسعر الحالي:')
+    : '';
 
   const structuredData = useMemo(() => {
     if (!product) return [];
@@ -258,6 +335,38 @@ export default function ProductDetailsPage() {
     toast.success(text.added);
   };
 
+  const copyProductLink = async () => {
+    try {
+      await navigator.clipboard.writeText(productUrl);
+      toast.success(text.copied);
+      trackStoreEvent('product_share', { productId: product.id, channel: 'copy' });
+      setIsShareOpen(false);
+    } catch {
+      setIsShareOpen(true);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = { title: product.name, text: shareText, url: productUrl };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        trackStoreEvent('product_share', { productId: product.id, channel: 'native' });
+        return;
+      } catch (shareError) {
+        if (shareError?.name === 'AbortError') return;
+      }
+    }
+    setIsShareOpen((current) => !current);
+  };
+
+  const showAdjacentImage = (directionDelta) => {
+    if (images.length < 2) return;
+    const currentIndex = Math.max(0, images.indexOf(selectedImage));
+    const nextIndex = (currentIndex + directionDelta + images.length) % images.length;
+    setSelectedImage(images[nextIndex]);
+  };
+
   if (loading) {
     return (
       <div className="art-page flex min-h-screen items-center justify-center font-[Tajawal]" dir={direction}>
@@ -300,13 +409,23 @@ export default function ProductDetailsPage() {
         </nav>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] lg:items-start">
           <section className="min-w-0">
-            <div className="aspect-square overflow-hidden rounded-2xl border border-[#E8B4BC]/12 bg-white">
+            <button
+              type="button"
+              onClick={() => selectedImage && setIsImageOpen(true)}
+              className="group relative block aspect-square w-full overflow-hidden rounded-2xl border border-[#E8B4BC]/12 bg-white text-start"
+              aria-label={language === 'en' ? 'Enlarge product image' : 'تكبير صورة المنتج'}
+            >
               {selectedImage ? (
-                <img src={selectedImage} alt={product.name} width="900" height="900" loading="eager" decoding="async" fetchPriority="high" className="h-full w-full object-contain p-3 sm:p-7" />
+                <img src={selectedImage} alt={product.name} width="900" height="900" loading="eager" decoding="async" fetchPriority="high" className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-[1.02] sm:p-7" />
               ) : (
                 <ImageIcon className="h-full w-full p-24 text-[#E8B4BC]/15" />
               )}
-            </div>
+              {selectedImage && (
+                <span className="absolute bottom-3 end-3 flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white/90 text-[#171717] shadow-sm backdrop-blur">
+                  <Maximize2 size={18} />
+                </span>
+              )}
+            </button>
             {images.length > 1 && (
               <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6">
                 {images.map((image) => (
@@ -329,10 +448,70 @@ export default function ProductDetailsPage() {
             <span className="inline-flex rounded-full bg-[#E8B4BC]/10 px-3 py-1 text-[11px] font-black text-[#B97882]">
               {getCategoryLabel(product.category, language)}
             </span>
-            <h1 className="art-page-title mt-4">{product.name}</h1>
+            <div className="relative mt-4 flex items-start justify-between gap-4">
+              <h1 className="art-page-title min-w-0">{product.name}</h1>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#E8B4BC]/20 bg-white text-[#171717] transition-colors hover:border-[#C6A56B] hover:text-[#B96F7D]"
+                aria-label={text.share}
+                title={text.share}
+              >
+                <Share2 size={19} />
+              </button>
+              {isShareOpen && (
+                <div className="absolute end-0 top-14 z-30 grid min-w-56 grid-cols-2 gap-2 rounded-xl border border-[#E8B4BC]/20 bg-white p-3 shadow-xl">
+                  <a
+                    href={'https://wa.me/?text=' + encodeURIComponent(shareText + '\n' + productUrl)}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => trackStoreEvent('product_share', { productId: product.id, channel: 'whatsapp' })}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-50 px-3 text-xs font-black text-emerald-700"
+                  >
+                    <MessageCircle size={16} /> WhatsApp
+                  </a>
+                  <a
+                    href={'https://t.me/share/url?url=' + encodeURIComponent(productUrl) + '&text=' + encodeURIComponent(shareText)}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => trackStoreEvent('product_share', { productId: product.id, channel: 'telegram' })}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-50 px-3 text-xs font-black text-sky-700"
+                  >
+                    <Send size={16} /> Telegram
+                  </a>
+                  <a
+                    href={'mailto:?subject=' + encodeURIComponent(product.name) + '&body=' + encodeURIComponent(shareText + '\n' + productUrl)}
+                    onClick={() => trackStoreEvent('product_share', { productId: product.id, channel: 'email' })}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#FAF9F7] px-3 text-xs font-black text-[#171717]"
+                  >
+                    <Mail size={16} /> {language === 'en' ? 'Email' : 'البريد'}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={copyProductLink}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#FAF9F7] px-3 text-xs font-black text-[#171717]"
+                  >
+                    <Copy size={16} /> {language === 'en' ? 'Copy' : 'نسخ الرابط'}
+                  </button>
+                </div>
+              )}
+            </div>
             <p className="art-body mt-4 font-medium">
               {product.description || text.fallback}
             </p>
+
+            {isPrintingBundle && (
+              <section className="mt-5 border-s-4 border-[#C6A56B] bg-[#C6A56B]/8 p-4">
+                <div className="flex items-start gap-3">
+                  <PackageCheck size={22} className="mt-0.5 shrink-0 text-[#C6A56B]" />
+                  <div>
+                    <h2 className="text-sm font-black text-[#171717]">{text.bundle}</h2>
+                    {bundleCapacity && <p className="mt-1 text-lg font-black text-[#B97882]">{text.bundleCapacity(bundleCapacity)}</p>}
+                    {product.packageContents && <p className="mt-2 whitespace-pre-line text-sm leading-7 text-[#171717]/65">{product.packageContents}</p>}
+                  </div>
+                </div>
+              </section>
+            )}
 
             <div className="mt-6 flex items-end justify-between border-y border-[#E8B4BC]/12 py-5">
               <div>
@@ -461,17 +640,115 @@ export default function ProductDetailsPage() {
                 disabled={!isProductAvailable(product)}
                 className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#171717] px-5 text-sm font-black text-white shadow-lg transition-colors hover:bg-[#C6A56B] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
-                <ShoppingCart size={19} /> {text.add}
+                <ShoppingCart size={19} /> {isPrintingBundle ? text.choosePackage : text.add}
               </button>
             </div>
           </section>
         </div>
+
+        {['album', 'frame', 'printing_bundle'].includes(productType) && (
+          <section className="mt-12 flex flex-col items-start justify-between gap-5 border-y border-[#171717]/8 py-7 sm:flex-row sm:items-center">
+            <div>
+              <span className="text-xs font-black text-[#B97882]">{language === 'en' ? 'Art Moment printing' : 'طباعة لحظة فن'}</span>
+              <h2 className="mt-1 text-xl font-black text-[#171717]">{text.printNow}</h2>
+              <p className="mt-1 text-sm leading-7 text-[#171717]/55">
+                {language === 'en'
+                  ? 'Choose the print size, upload your photos privately, then review the price before checkout.'
+                  : 'اختاري المقاس، ارفعي صورك بخصوصية، ثم راجعي العدد والسعر قبل إتمام الطلب.'}
+              </p>
+            </div>
+            <Link to="/print" className="flex min-h-12 shrink-0 items-center justify-center gap-2 bg-[#171717] px-6 text-sm font-black text-white transition-colors hover:bg-[#C6A56B]">
+              <Printer size={18} /> {language === 'en' ? 'Open Print Builder' : 'ابدئي طباعة الصور'}
+            </Link>
+          </section>
+        )}
+
+        {recommendations.length > 0 && (
+          <section className="mt-12" aria-labelledby="related-products-heading">
+            <div className="mb-5 flex items-center gap-2">
+              <Sparkles size={20} className="text-[#C6A56B]" />
+              <h2 id="related-products-heading" className="text-xl font-black text-[#171717]">{text.related}</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {recommendations.map((recommendation) => (
+                <Link
+                  key={recommendation.id}
+                  to={'/store/products/' + recommendation.id}
+                  className="group min-w-0 border border-[#E8B4BC]/15 bg-white p-3 transition-colors hover:border-[#C6A56B]/45"
+                >
+                  <div className="aspect-square overflow-hidden bg-[#FAF9F7]">
+                    {recommendation.image ? (
+                      <img
+                        src={recommendation.image}
+                        alt={recommendation.name}
+                        width="420"
+                        height="420"
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <ImageIcon className="h-full w-full p-12 text-[#E8B4BC]/20" />
+                    )}
+                  </div>
+                  <h3 className="mt-3 line-clamp-2 text-sm font-black leading-6 text-[#171717]">{recommendation.name}</h3>
+                  <p className="mt-1 font-black text-[#B97882]">{Number(recommendation.price || 0).toFixed(2)} {language === 'en' ? 'SAR' : 'ر.س'}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
+
+      {isImageOpen && selectedImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={product.name}
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-3 sm:p-8"
+          onClick={() => setIsImageOpen(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setIsImageOpen(false)}
+            className="absolute end-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#171717]"
+            aria-label={text.close}
+          >
+            <X size={22} />
+          </button>
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); showAdjacentImage(direction === 'rtl' ? 1 : -1); }}
+                className="absolute start-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-[#171717] sm:start-6"
+                aria-label={language === 'en' ? 'Previous image' : 'الصورة السابقة'}
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); showAdjacentImage(direction === 'rtl' ? -1 : 1); }}
+                className="absolute end-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-[#171717] sm:end-6"
+                aria-label={language === 'en' ? 'Next image' : 'الصورة التالية'}
+              >
+                <ChevronRight size={24} />
+              </button>
+            </>
+          )}
+          <img
+            src={selectedImage}
+            alt={product.name}
+            onClick={(event) => event.stopPropagation()}
+            className="max-h-[88vh] max-w-[88vw] object-contain"
+          />
+        </div>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto grid max-w-xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <button type="button" onClick={addToCart} disabled={!isProductAvailable(product)} className="flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-5 text-sm font-black text-white disabled:bg-gray-300">
-            <ShoppingCart size={19} /> {text.add}
+            <ShoppingCart size={19} /> {isPrintingBundle ? text.choosePackage : text.add}
           </button>
           <div className="text-end"><span className="block text-[9px] font-bold text-black/40">{text.price}</span><strong className="text-lg font-black text-[#C6A56B]">{unitPrice.toFixed(2)}</strong></div>
         </div>

@@ -7,6 +7,7 @@
     { "source": "/store/frames", "destination": "/store/frames/index.html" },
     { "source": "/store/photo-supplies", "destination": "/store/photo-supplies/index.html" },
     { "source": "/store/cart", "destination": "/store/cart/index.html" },
+    { "source": "/store/products/:productId", "destination": "/store/products/:productId/index.html" },
     { "source": "/store", "destination": "/store/index.html" },
     { "source": "/print", "destination": "/print/index.html" },
     { "source": "/admin/login", "destination": "/admin-shell.html" },

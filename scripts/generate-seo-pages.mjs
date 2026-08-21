@@ -1,4 +1,4 @@
-/* global AbortSignal, console, fetch */
+/* global AbortSignal, Buffer, console, fetch */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
@@ -112,18 +112,32 @@ const escapeHtml = (value) => String(value)
 
 function replaceMeta(html, page) {
   const canonical = new URL(page.path, siteUrl).toString();
+  const image = page.image
+    ? new URL(page.image, siteUrl).toString()
+    : siteUrl + '/pwa-512x512.png';
   const replacements = [
-    [/<title>.*?<\/title>/s, `<title>${escapeHtml(page.title)}</title>`],
-    [/<meta name="description" content=".*?"\s*\/>/s, `<meta name="description" content="${escapeHtml(page.description)}" />`],
-    [/<link rel="canonical" href=".*?"\s*\/>/s, `<link rel="canonical" href="${canonical}" />`],
-    [/<meta property="og:title" content=".*?"\s*\/>/s, `<meta property="og:title" content="${escapeHtml(page.title)}" />`],
-    [/<meta property="og:description" content=".*?"\s*\/>/s, `<meta property="og:description" content="${escapeHtml(page.description)}" />`],
-    [/<meta property="og:url" content=".*?"\s*\/>/s, `<meta property="og:url" content="${canonical}" />`],
-    [/<meta name="twitter:title" content=".*?"\s*\/>/s, `<meta name="twitter:title" content="${escapeHtml(page.title)}" />`],
-    [/<meta name="twitter:description" content=".*?"\s*\/>/s, `<meta name="twitter:description" content="${escapeHtml(page.description)}" />`],
-    [/<meta name="robots" content=".*?"\s*\/>/s, `<meta name="robots" content="${page.noindex ? `noindex,${page.nofollow ? 'nofollow' : 'follow'}` : 'index,follow,max-image-preview:large'}" />`],
+    [/<title>.*?<\/title>/s, '<title>' + escapeHtml(page.title) + '</title>'],
+    [/<meta name="description" content=".*?"\s*\/>/s, '<meta name="description" content="' + escapeHtml(page.description) + '" />'],
+    [/<link rel="canonical" href=".*?"\s*\/>/s, '<link rel="canonical" href="' + canonical + '" />'],
+    [/<meta property="og:title" content=".*?"\s*\/>/s, '<meta property="og:title" content="' + escapeHtml(page.title) + '" />'],
+    [/<meta property="og:description" content=".*?"\s*\/>/s, '<meta property="og:description" content="' + escapeHtml(page.description) + '" />'],
+    [/<meta property="og:type" content=".*?"\s*\/>/s, '<meta property="og:type" content="' + (page.type || 'website') + '" />'],
+    [/<meta property="og:url" content=".*?"\s*\/>/s, '<meta property="og:url" content="' + canonical + '" />'],
+    [/<meta property="og:image" content=".*?"\s*\/>/s, '<meta property="og:image" content="' + escapeHtml(image) + '" />'],
+    [/<meta name="twitter:title" content=".*?"\s*\/>/s, '<meta name="twitter:title" content="' + escapeHtml(page.title) + '" />'],
+    [/<meta name="twitter:description" content=".*?"\s*\/>/s, '<meta name="twitter:description" content="' + escapeHtml(page.description) + '" />'],
+    [/<meta name="twitter:image" content=".*?"\s*\/>/s, '<meta name="twitter:image" content="' + escapeHtml(image) + '" />'],
+    [/<meta name="robots" content=".*?"\s*\/>/s, '<meta name="robots" content="' + (page.noindex ? 'noindex,' + (page.nofollow ? 'nofollow' : 'follow') : 'index,follow,max-image-preview:large') + '" />'],
   ];
   return replacements.reduce((result, [pattern, value]) => result.replace(pattern, value), html);
+}
+
+function appendStructuredData(html, nodes) {
+  const graph = (Array.isArray(nodes) ? nodes : [nodes]).filter(Boolean);
+  if (graph.length === 0) return html;
+  const json = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })
+    .replaceAll('<', '\\u003c');
+  return html.replace('</head>', '<script type="application/ld+json">' + json + '</script></head>');
 }
 
 async function fetchCatalogProducts() {
@@ -192,6 +206,135 @@ function staticContent(page, products) {
   return `<main id="seo-static-content" style="font-family:Tajawal,Arial,sans-serif;direction:rtl;max-width:1180px;margin:0 auto;padding:32px 20px;color:#171717"><header style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ddd;padding-bottom:20px"><a href="/" style="font-weight:800;color:#171717;text-decoration:none">لحظة فن Art Moment</a><a href="/store/cart" style="color:#171717">السلة</a></header>${breadcrumb}<section style="padding:48px 0"><h1 style="font-size:40px;font-weight:800;line-height:1.3;margin:0 0 20px">${escapeHtml(page.heading)}</h1><p style="max-width:720px;font-size:16px;line-height:1.75;color:#555">${escapeHtml(page.body)}</p><nav style="display:flex;flex-wrap:wrap;gap:12px;margin-top:28px">${links}</nav></section>${staticProductList(page, products)}</main>`;
 }
 
+function normalizeProductImages(product) {
+  const gallery = Array.isArray(product.gallery_images) ? product.gallery_images : [];
+  return [...new Set([product.image, product.hover_image, ...gallery]
+    .filter((image) => typeof image === 'string' && image.trim()))];
+}
+
+function productCategoryLabel(category) {
+  const labels = {
+    albums: 'ألبومات الصور',
+    frames: 'إطارات الصور',
+    stickers: 'مستلزمات حفظ الصور',
+    printing: 'باقات وطباعة الصور',
+  };
+  return labels[String(category || '').toLowerCase()] || String(category || 'منتجات لحظة فن');
+}
+
+async function materializeProductImage(product) {
+  const image = normalizeProductImages(product)[0];
+  if (!image) return siteUrl + '/pwa-512x512.png';
+  if (/^https?:\/\//i.test(image)) return image;
+  if (image.startsWith('/')) return new URL(image, siteUrl).toString();
+
+  const match = image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/s);
+  if (!match) return siteUrl + '/pwa-512x512.png';
+  const extension = match[1] === 'image/png' ? 'png' : match[1] === 'image/webp' ? 'webp' : 'jpg';
+  const fileName = encodeURIComponent(String(product.id)) + '.' + extension;
+  const output = join(dist, 'seo', 'products', fileName);
+  await mkdir(dirname(output), { recursive: true });
+  await writeFile(output, Buffer.from(match[2], 'base64'));
+  return siteUrl + '/seo/products/' + fileName;
+}
+
+function productStaticContent(product, page) {
+  // Keep the initial HTML lightweight; the interactive app loads the full gallery.
+  const images = page.image ? [page.image] : [];
+  const price = Number(product.price || 0).toFixed(2);
+  const hasTrackedStock = product.stock_quantity !== null && product.stock_quantity !== undefined;
+  const stock = Number(product.stock_quantity || 0);
+  const available = product.in_stock !== false && (!hasTrackedStock || stock > 0);
+  const stockLabel = available
+    ? hasTrackedStock ? 'متوفر (' + stock + ')' : 'متوفر'
+    : 'غير متوفر حاليًا';
+  const specifications = product.specifications && typeof product.specifications === 'object'
+    ? Object.entries(product.specifications)
+    : [];
+  const gallery = images.map((item, index) => (
+    '<li style="list-style:none"><img src="' + escapeHtml(item) + '" alt="' + escapeHtml(product.name)
+      + (index ? ' - صورة ' + (index + 1) : '') + '" width="720" height="720" '
+      + (index ? 'loading="lazy"' : '')
+      + ' style="display:block;width:100%;aspect-ratio:1;object-fit:contain;background:#fff"></li>'
+  )).join('');
+  const specs = specifications.length > 0
+    ? '<section style="margin-top:32px"><h2>المواصفات</h2><dl>'
+      + specifications.map(([name, value]) => (
+        '<div style="display:flex;justify-content:space-between;gap:24px;padding:12px 0;border-bottom:1px solid #eee">'
+        + '<dt>' + escapeHtml(name) + '</dt><dd style="font-weight:700;margin:0">' + escapeHtml(value) + '</dd></div>'
+      )).join('')
+      + '</dl></section>'
+    : '';
+  const details = [
+    ['محتويات العبوة', product.package_contents],
+    ['التجهيز والشحن', product.preparation_time],
+    ['الاستبدال والاسترجاع', product.return_policy],
+  ].filter(([, value]) => value)
+    .map(([title, value]) => (
+      '<section style="padding:20px 0;border-top:1px solid #eee"><h2 style="font-size:20px">' + title
+      + '</h2><p style="color:#625d59;line-height:1.9;white-space:pre-line">' + escapeHtml(value) + '</p></section>'
+    )).join('');
+
+  return '<main id="seo-static-content" style="font-family:Tajawal,Arial,sans-serif;direction:rtl;max-width:1180px;margin:0 auto;padding:32px 20px;color:#171717">'
+    + '<header style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ddd;padding-bottom:20px">'
+    + '<a href="/" style="font-weight:800;color:#171717;text-decoration:none">لحظة فن Art Moment</a><a href="/store/cart" style="color:#171717">السلة</a></header>'
+    + '<nav aria-label="مسار التنقل" style="margin:24px 0;font-size:14px"><a href="/">الرئيسية</a><span aria-hidden="true"> / </span>'
+    + '<a href="/store">المتجر</a><span aria-hidden="true"> / </span><span aria-current="page">' + escapeHtml(product.name) + '</span></nav>'
+    + '<article style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:40px;align-items:start"><section>'
+    + '<ul style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:0;margin:0">'
+    + (gallery || '<li style="list-style:none;background:#f6f3f0;aspect-ratio:1"></li>') + '</ul></section><section>'
+    + '<p style="color:#b97882;font-weight:800">' + escapeHtml(productCategoryLabel(product.category)) + '</p>'
+    + '<h1 style="font-size:40px;line-height:1.3;margin:12px 0">' + escapeHtml(product.name) + '</h1>'
+    + '<p style="font-size:30px;font-weight:900;color:#c6a56b">' + price + ' ر.س</p>'
+    + '<p style="display:inline-block;padding:8px 12px;background:' + (available ? '#ecfdf5' : '#fff1f2')
+    + ';color:' + (available ? '#047857' : '#dc2626') + ';font-weight:800">' + stockLabel + '</p>'
+    + '<p style="font-size:16px;line-height:1.9;color:#625d59">' + escapeHtml(product.description || page.description) + '</p>'
+    + '<a href="' + escapeHtml(page.path) + '" style="display:inline-block;margin-top:20px;padding:14px 24px;background:#171717;color:#fff;font-weight:800;text-decoration:none">'
+    + 'عرض الخيارات وإضافة المنتج للسلة</a>' + specs + details + '</section></article></main>';
+}
+
+function productStructuredData(product, page) {
+  const images = page.image ? [page.image] : [];
+  const hasTrackedStock = product.stock_quantity !== null && product.stock_quantity !== undefined;
+  const stock = Number(product.stock_quantity || 0);
+  const available = product.in_stock !== false && (!hasTrackedStock || stock > 0);
+  const canonical = new URL(page.path, siteUrl).toString();
+  const productNode = {
+    '@type': 'Product',
+    '@id': canonical + '#product',
+    name: product.name,
+    description: product.description || page.description,
+    image: images,
+    sku: String(product.id),
+    category: productCategoryLabel(product.category),
+    offers: {
+      '@type': 'Offer',
+      url: canonical,
+      priceCurrency: 'SAR',
+      price: Number(product.price || 0).toFixed(2),
+      availability: available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
+    },
+  };
+  if (product.product_group_code) {
+    productNode.isVariantOf = {
+      '@type': 'ProductGroup',
+      productGroupID: product.product_group_code,
+      name: product.name,
+    };
+  }
+  return [
+    productNode,
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'الرئيسية', item: siteUrl + '/' },
+        { '@type': 'ListItem', position: 2, name: 'المتجر', item: siteUrl + '/store' },
+        { '@type': 'ListItem', position: 3, name: product.name, item: canonical },
+      ],
+    },
+  ];
+}
 const products = await fetchCatalogProducts();
 
 for (const page of pages) {
@@ -204,6 +347,28 @@ for (const page of pages) {
   await writeFile(output, html, 'utf8');
 }
 
+for (const product of products) {
+  if (!product || !product.id || !product.name) continue;
+  const encodedId = encodeURIComponent(String(product.id));
+  const description = String(product.description || ('تعرّف على ' + product.name + ' من متجر لحظة فن، مع السعر والتوفر وتفاصيل المنتج.'))
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 160);
+  const shareImage = await materializeProductImage(product);
+  const productPage = {
+    path: '/store/products/' + encodedId,
+    title: product.name + ' | متجر لحظة فن',
+    description,
+    image: shareImage,
+    type: 'product',
+  };
+  let html = replaceMeta(template, productPage);
+  html = appendStructuredData(html, productStructuredData(product, productPage));
+  html = html.replace('<div id="root"></div>', productStaticContent(product, productPage) + '<div id="root"></div>');
+  const output = join(dist, 'store', 'products', encodedId, 'index.html');
+  await mkdir(dirname(output), { recursive: true });
+  await writeFile(output, html, 'utf8');
+}
 const adminShell = replaceMeta(template, {
   path: '/admin/login',
   title: 'تسجيل دخول المسؤول | لحظة فن',
