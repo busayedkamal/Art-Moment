@@ -31,9 +31,9 @@ const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/
 const copy = {
   ar: {
     back: 'العودة للرئيسية', title: 'اطبع صورك', lead: 'حوّل صورك إلى مطبوعات حقيقية بخطوات واضحة.',
-    privacy: 'صورك محفوظة في مساحة خاصة ولا تظهر للعامة.', choose: 'اختاري الطباعة', upload: 'ارفعي الصور',
+    privacy: 'صورك محفوظة في مساحة خاصة ولا تظهر للعامة.', choose: 'اختر الطباعة', upload: 'ارفعي الصور',
     review: 'راجعي الصور', summary: 'راجعي السعر', size: 'مقاس الطباعة', finish: 'التشطيب', glossy: 'لامع', matte: 'مطفي',
-    perPrint: 'للصورة الواحدة', continue: 'متابعة لرفع الصور', dropTitle: 'اسحبي الصور هنا أو اختاريها من جهازك',
+    perPrint: 'للصورة الواحدة', continue: 'متابعة لرفع الصور', dropTitle: 'اسحبي الصور هنا أو اخترها من جهازك',
     dropHint: 'JPG أو PNG أو WebP أو HEIC، بحد أقصى 35MB للصورة', browse: 'اختيار الصور', files: 'ملف',
     copies: 'نسخة مطبوعة', uploading: 'جاري الرفع', uploaded: 'اكتمل الرفع', failed: 'تعذر الرفع', retry: 'إعادة المحاولة',
     low: 'الدقة قد لا تكون كافية لهذا المقاس', good: 'الدقة مناسبة', rotate: 'تدوير', crop: 'قص', remove: 'حذف',
@@ -87,7 +87,7 @@ const optionCopy = {
     incompleteUploads: 'انتظري اكتمال رفع جميع الصور أو أعيدي محاولة الملفات المتعثرة.',
     queued: 'في قائمة الانتظار', details: 'التفاصيل', allPhotos: 'تطبيق على جميع الصور', recommendedProducts: 'أكملي حفظ ذكرياتك',
     recommendedHint: 'بعد إضافة الطلب، ستجدين في السلة منتجات متوافقة مع مقاس الطباعة.',
-    incompatibleMaterial: 'الخامة المختارة غير متاحة مع مقاس', chooseAnotherMaterial: 'اختاري خامة أخرى.',
+    incompatibleMaterial: 'الخامة المختارة غير متاحة مع مقاس', chooseAnotherMaterial: 'اختر خامة أخرى.',
     configurationAdjusted: 'تم تحديث الخيارات لتناسب التركيبة المتاحة.', livePrice: 'السعر الحالي', quoteCopies: 'نسخة',
   },
   en: {

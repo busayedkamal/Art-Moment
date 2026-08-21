@@ -306,9 +306,9 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
   };
 
   const returnValidationMessage = selectedItems.length === 0
-    ? 'اختاري كمية منتج واحد على الأقل.'
+    ? 'اختر كمية منتج واحد على الأقل.'
     : reason.trim().length < 3
-      ? 'اكتبي سبب الاسترجاع بوضوح.'
+      ? 'اكتب سبب الاسترجاع بوضوح.'
       : 'الطلب جاهز للإرسال إلى الإدارة.';
 
   const submitReturnRequest = async () => {
@@ -318,7 +318,7 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
       return;
     }
     if (reason.trim().length < 3 || selectedItems.length === 0) {
-      toast.error('اختاري المنتجات واكتبي سبب الاسترجاع');
+      toast.error('اختر المنتجات واكتب سبب الاسترجاع');
       return;
     }
 
@@ -368,7 +368,7 @@ function ReturnRequestPanel({ order, onSubmitted, returnWindowDays }) {
             <RotateCcw size={18} className="text-[#C6A56B]" /> الاسترجاع والاسترداد
           </h2>
           <p className="text-xs text-[#171717]/55 mt-1">
-            اختاري المنتجات المراد استرجاعها وسيتم مراجعة الطلب من الإدارة.
+            اختر المنتجات المراد استرجاعها وسيتم مراجعة الطلب من الإدارة.
           </p>
         </div>
         {latestRequest && <ReturnStatusBadge status={latestRequest.status} />}

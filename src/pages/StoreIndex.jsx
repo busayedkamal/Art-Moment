@@ -214,7 +214,7 @@ export default function StoreIndex() {
   const addToCart = (product) => {
     if (product.productOptions?.length > 0) {
       navigate(`/store/products/${product.id}`);
-      toast('اختاري خصائص المنتج أولاً');
+      toast('اختر خصائص المنتج أولاً');
       return;
     }
 

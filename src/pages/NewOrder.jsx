@@ -755,7 +755,7 @@ export default function NewOrder() {
               <label className="text-sm font-bold text-[#C6A56B]">ملاحظات إضافية</label>
               <textarea {...register('notes')} rows="4"
                 className="w-full bg-[#FAF9F7] border-2 border-[#C6A56B]/30 rounded-2xl px-4 py-3 text-sm text-[#171717] placeholder-[#171717]/40 focus:bg-white focus:border-[#C6A56B] focus:ring-4 focus:ring-[#C6A56B]/20 outline-none resize-none transition-all"
-                placeholder="اكتبي ملاحظاتك هنا..." />
+                placeholder="اكتب ملاحظاتك هنا..." />
             </div>
           </div>
         </div>

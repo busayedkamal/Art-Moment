@@ -795,7 +795,7 @@ export default function StoreCart() {
           {cart.some((item) => item.itemType === 'print') && (
             <div className="border-s-4 border-[#C6A56B] bg-white p-5 shadow-sm">
               <h3 className="font-black text-[#171717]">أكملي مجموعة ذكرياتك</h3>
-              <p className="mt-1 text-xs leading-6 text-[#171717]/55">اختاري ألبومًا أو إطارًا مناسبًا لمقاس الصور الموجودة في السلة.</p>
+              <p className="mt-1 text-xs leading-6 text-[#171717]/55">اختر ألبومًا أو إطارًا مناسبًا لمقاس الصور الموجودة في السلة.</p>
               <div className="mt-3 flex gap-2">
                 <Link to="/store/albums" className="min-h-11 flex-1 border border-[#E8B4BC]/25 bg-[#FAF9F7] px-4 py-3 text-center text-xs font-black">عرض الألبومات</Link>
                 <Link to="/store/frames" className="min-h-11 flex-1 border border-[#E8B4BC]/25 bg-[#FAF9F7] px-4 py-3 text-center text-xs font-black">عرض الإطارات</Link>
