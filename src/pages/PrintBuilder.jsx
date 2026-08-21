@@ -654,8 +654,8 @@ export default function PrintBuilder() {
       console.error('Seal print draft error:', error);
       const reason = await functionError(error);
       const messageByReason = {
-        print_draft_empty: language === 'ar' ? 'أضيفي صورة واحدة على الأقل قبل المتابعة.' : 'Add at least one photo before continuing.',
-        print_draft_expired: language === 'ar' ? 'انتهت صلاحية مسودة الصور. ابدئي طلب طباعة جديدًا.' : 'This photo draft has expired. Start a new print order.',
+        print_draft_empty: language === 'ar' ? 'أضف صورة واحدة على الأقل قبل المتابعة.' : 'Add at least one photo before continuing.',
+        print_draft_expired: language === 'ar' ? 'انتهت صلاحية مسودة الصور. ابدأ طلب طباعة جديدًا.' : 'This photo draft has expired. Start a new print order.',
         print_draft_locked: language === 'ar' ? 'تمت إضافة هذا الطلب للسلة مسبقًا.' : 'This print order has already been added to the cart.',
         print_uploads_incomplete: optionsText.incompleteUploads,
         print_review_confirmation_required: optionsText.reviewConsent,

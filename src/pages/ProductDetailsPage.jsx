@@ -654,11 +654,11 @@ export default function ProductDetailsPage() {
               <p className="mt-1 text-sm leading-7 text-[#171717]/55">
                 {language === 'en'
                   ? 'Choose the print size, upload your photos privately, then review the price before checkout.'
-                  : 'اختاري المقاس، ارفعي صورك بخصوصية، ثم راجعي العدد والسعر قبل إتمام الطلب.'}
+                  : 'اختر المقاس، ارفع صورك بخصوصية، ثم راجع العدد والسعر قبل إتمام الطلب.'}
               </p>
             </div>
             <Link to="/print" className="flex min-h-12 shrink-0 items-center justify-center gap-2 bg-[#171717] px-6 text-sm font-black text-white transition-colors hover:bg-[#C6A56B]">
-              <Printer size={18} /> {language === 'en' ? 'Open Print Builder' : 'ابدئي طباعة الصور'}
+              <Printer size={18} /> {language === 'en' ? 'Open Print Builder' : 'ابدأ طباعة الصور'}
             </Link>
           </section>
         )}

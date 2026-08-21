@@ -1195,7 +1195,7 @@ export default function CustomerOrdersPage() {
               <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 shadow-sm p-8 text-center">
                 <ShoppingBag size={42} className="mx-auto mb-4 text-[#E8B4BC]/45" />
                 <h2 className="font-black text-2xl mb-2">لا توجد طلبات متجر بعد</h2>
-                <p className="text-sm text-[#171717]/55 mb-6">ابدئي من المتجر، وستظهر طلباتك هنا تلقائياً بعد تأكيدها.</p>
+                <p className="text-sm text-[#171717]/55 mb-6">ابدأ من المتجر، وستظهر طلباتك هنا تلقائياً بعد تأكيدها.</p>
                 <Link to="/store" className="art-cta px-8 py-3 rounded-2xl font-black inline-flex items-center gap-2">
                   <ShoppingBag size={18} /> تصفح المتجر
                 </Link>
