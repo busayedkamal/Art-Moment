@@ -51,6 +51,7 @@ check('Track rate limit enabled', trackFunction.includes("from('public_tracking_
 check('Track uses generic mismatch', trackFunction.includes("error: 'tracking_not_found'"));
 check('Track has no public history credentials', !/body\?\.phone|body\?\.pin/.test(trackFunction));
 check('Account history requires customer session', trackFunction.includes('verifyCustomerSessionToken(sessionToken)') && trackFunction.includes("String(body?.mode || '') === 'history'") && trackPage.includes('getCustomerSession'));
+check('Friendship code uses wallet RPC', trackFunction.includes("'get_or_create_friendship_code'") && !trackFunction.includes("select('id, name, phone, subscription_code')"));
 check('Track UI has two credentials', trackPage.includes('orderNumber') && trackPage.includes('trackingToken') && !trackPage.includes('رقم الجوال المسجل'));
 check('Track UI restores secure history tab', trackPage.includes("historyTab: 'سجل طلباتي'") && trackPage.includes('CustomerAuthModal'));
 check('Tracking token stays out of URL', !trackPage.includes('useSearchParams') && !trackPage.includes('setParams'));

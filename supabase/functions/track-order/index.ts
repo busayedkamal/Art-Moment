@@ -231,7 +231,7 @@ async function getSecureCustomerHistory(
 
   const { data: customer, error: customerError } = await supabase
     .from('customers')
-    .select('id, name, phone, subscription_code')
+    .select('id, name, phone')
     .eq('id', tokenPayload.sub)
     .maybeSingle();
   if (customerError) throw customerError;
@@ -295,12 +295,22 @@ async function getSecureCustomerHistory(
     })),
   ].sort((a, b) => new Date(String(b.createdAt || 0)).getTime() - new Date(String(a.createdAt || 0)).getTime());
   const rewards = await fetchRewardPointsSummary(supabase, customer.phone);
+  const { data: friendshipCode, error: friendshipCodeError } = await supabase.rpc(
+    'get_or_create_friendship_code',
+    {
+      p_phone: customer.phone,
+      p_customer_name: customer.name,
+    },
+  );
+  if (friendshipCodeError) {
+    console.error('track-order friendship code lookup failed:', friendshipCodeError);
+  }
 
   return {
     customer: {
       id: customer.id,
       name: customer.name,
-      subscriptionCode: customer.subscription_code || null,
+      subscriptionCode: friendshipCode || null,
     },
     orders,
     rewards,
