@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -6,18 +6,24 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  History,
   Loader2,
+  LogIn,
   Package,
+  RefreshCw,
   Search,
   ShieldCheck,
   ShoppingBag,
   Truck,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import CustomerAuthModal from '../components/CustomerAuthModal';
 import PublicHeader from '../components/PublicHeader';
+import { RewardPointsSummary } from '../components/RewardPointsSummary';
 import SeoHead from '../components/SeoHead';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase } from '../lib/supabase';
+import { getCustomerSession } from '../utils/customerSession';
 
 async function getFunctionError(error) {
   try {
@@ -92,9 +98,169 @@ function optionText(options) {
     .join(' • ');
 }
 
+function CustomerHistoryView({ data, language, loading, error, onRefresh }) {
+  const text = language === 'en' ? {
+    title: 'Your account overview',
+    orders: 'All previous orders',
+    totalOrders: 'Total orders',
+    activeOrders: 'Active orders',
+    remaining: 'Outstanding total',
+    storeCredit: 'Store credit',
+    print: 'Print order',
+    store: 'Store order',
+    quantity: 'Qty',
+    empty: 'No previous orders are linked to this account yet.',
+    openStoreOrder: 'Open full order details',
+    account: 'Manage my account',
+    allStoreOrders: 'Store orders',
+    retry: 'Try again',
+  } : {
+    title: 'نظرة عامة على حسابك',
+    orders: 'كل الطلبات السابقة',
+    totalOrders: 'إجمالي الطلبات',
+    activeOrders: 'طلبات نشطة',
+    remaining: 'إجمالي المبالغ المتبقية',
+    storeCredit: 'الرصيد النقدي بالمتجر',
+    print: 'طلب طباعة',
+    store: 'طلب متجر',
+    quantity: 'الكمية',
+    empty: 'لا توجد طلبات سابقة مرتبطة بهذا الحساب حتى الآن.',
+    openStoreOrder: 'فتح تفاصيل الطلب كاملة',
+    account: 'إدارة حسابي',
+    allStoreOrders: 'طلبات المتجر',
+    retry: 'إعادة المحاولة',
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-64 flex-col items-center justify-center border border-[#E8B4BC]/20 bg-white p-8 text-[#171717]/55">
+        <Loader2 size={32} className="mb-4 animate-spin text-[#C6A56B]" />
+        <p className="font-bold">{language === 'en' ? 'Loading your account...' : 'جاري تحميل سجل طلباتك...'}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div role="alert" className="border border-red-200 bg-red-50 p-6 text-center text-red-700">
+        <AlertCircle size={30} className="mx-auto mb-3" />
+        <p className="font-bold">{error}</p>
+        <button type="button" onClick={onRefresh} className="mt-4 min-h-11 bg-[#171717] px-5 py-2 font-black text-white">
+          {text.retry}
+        </button>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const orders = data.orders || [];
+  const activeOrders = orders.filter((item) => !['completed', 'cancelled'].includes(item.status?.code)).length;
+  const remaining = orders.reduce((total, item) => total + Number(item.financials?.remaining || 0), 0);
+
+  return (
+    <div className="space-y-5">
+      <section className="border border-[#C6A56B]/25 bg-white p-5 sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-black text-[#C6A56B]">{text.title}</p>
+            <h2 className="mt-1 text-2xl font-black">{data.customer?.name || '-'}</h2>
+            {data.customer?.subscriptionCode && (
+              <p className="mt-2 text-xs text-[#171717]/50">
+                {language === 'en' ? 'Friendship code' : 'كود الصداقة'}:
+                <strong className="ms-2 font-mono text-[#171717]" dir="ltr">{data.customer.subscriptionCode}</strong>
+              </p>
+            )}
+          </div>
+          <button type="button" onClick={onRefresh} className="flex min-h-11 items-center gap-2 border border-[#171717]/10 bg-[#FAF9F7] px-4 py-2 text-sm font-black">
+            <RefreshCw size={16} /> {language === 'en' ? 'Refresh' : 'تحديث'}
+          </button>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="bg-[#FAF9F7] p-4"><span className="text-[11px] text-[#171717]/50">{text.totalOrders}</span><p className="mt-1 text-2xl font-black">{orders.length}</p></div>
+          <div className="bg-[#C6A56B]/10 p-4"><span className="text-[11px] text-[#9E7D35]">{text.activeOrders}</span><p className="mt-1 text-2xl font-black text-[#9E7D35]">{activeOrders}</p></div>
+          <div className="bg-[#E8B4BC]/10 p-4"><span className="text-[11px] text-[#B97882]">{text.remaining}</span><p className="mt-1 text-lg font-black text-[#B97882]">{formatCurrency(remaining, language)}</p></div>
+          <div className="bg-emerald-50 p-4"><span className="text-[11px] text-emerald-700/65">{text.storeCredit}</span><p className="mt-1 text-lg font-black text-emerald-700">{formatCurrency(data.rewards?.storeCreditSar, language)}</p></div>
+        </div>
+      </section>
+
+      <RewardPointsSummary rewards={data.rewards} />
+
+      <section>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-black">{text.orders}</h2>
+          <span className="text-xs font-bold text-[#171717]/45">{orders.length}</span>
+        </div>
+
+        {orders.length === 0 ? (
+          <div className="border border-[#E8B4BC]/20 bg-white p-8 text-center">
+            <ShoppingBag size={36} className="mx-auto mb-3 text-[#E8B4BC]" />
+            <p className="font-bold text-[#171717]/60">{text.empty}</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {orders.map((item) => (
+              <article key={item.id || item.orderNumber} className="border border-[#E8B4BC]/20 bg-white p-5 shadow-sm">
+                <header className="flex items-start justify-between gap-4 border-b border-[#171717]/8 pb-4">
+                  <div>
+                    <p className="text-[11px] font-black text-[#C6A56B]">{item.orderType === 'print' ? text.print : text.store}</p>
+                    <h3 className="mt-1 font-mono text-lg font-black" dir="ltr">#{item.orderNumber}</h3>
+                    <p className="mt-1 text-[11px] text-[#171717]/45">{formatDate(item.createdAt, language)}</p>
+                  </div>
+                  <span className="bg-[#FAF9F7] px-3 py-1.5 text-xs font-black">{statusCopy(item.status?.code, language)[0]}</span>
+                </header>
+
+                <div className="divide-y divide-[#171717]/8">
+                  {(item.items || []).slice(0, 3).map((orderItem, index) => (
+                    <div key={orderItem.id || index} className="flex items-center justify-between gap-3 py-3 text-sm">
+                      <span className="font-bold">{orderItem.name}</span>
+                      <span className="shrink-0 text-xs text-[#171717]/50">{text.quantity}: {orderItem.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-4 border-t border-[#171717]/8 pt-4">
+                  <span className="text-xs text-[#171717]/50">{text.remaining}</span>
+                  <strong className={Number(item.financials?.remaining || 0) > 0 ? 'text-[#B97882]' : 'text-emerald-700'}>
+                    {formatCurrency(item.financials?.remaining, language)}
+                  </strong>
+                </div>
+
+                {item.orderType === 'store' && (
+                  <Link to={`/store/orders/${item.id}`} className="mt-4 flex min-h-11 items-center justify-center gap-2 bg-[#171717] px-4 py-2 text-sm font-black text-white">
+                    <ShieldCheck size={16} /> {text.openStoreOrder}
+                  </Link>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link to="/store/account" className="flex min-h-12 items-center justify-center gap-2 border border-[#C6A56B]/30 bg-white px-5 py-3 font-black">
+          <ShieldCheck size={18} /> {text.account}
+        </Link>
+        <Link to="/store/orders" className="flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-5 py-3 font-black text-white">
+          <ShoppingBag size={18} /> {text.allStoreOrders}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function TrackOrderPage() {
   const { language, direction } = useLanguage();
   const location = useLocation();
+  const [activeTab, setActiveTab] = useState(() => (
+    new URLSearchParams(location.search).get('tab') === 'history' ? 'history' : 'track'
+  ));
+  const [customerSession, setCustomerSession] = useState(() => getCustomerSession());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [historyData, setHistoryData] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const [orderNumber, setOrderNumber] = useState(() => location.state?.orderNumber || '');
   const [trackingToken, setTrackingToken] = useState(() => location.state?.trackingToken || '');
   const [order, setOrder] = useState(null);
@@ -135,6 +301,12 @@ export default function TrackOrderPage() {
     account: 'View all my orders',
     storeLink: 'Back to store',
     noItems: 'Item details are being prepared.',
+    trackTab: 'Order number',
+    historyTab: 'My order history',
+    secureHistoryTitle: 'Sign in to view your complete history',
+    secureHistoryCopy: 'Your print and store orders, reward points, expiring points and store credit are protected inside your account.',
+    secureHistoryAction: 'Sign in and view history',
+    friendshipNotice: 'The subscription number is a shareable friendship code, not an account password.',
   } : {
     title: 'تتبع طلبك',
     description: 'أدخل رقم الطلب ورمز التتبع الآمن المرفق بتأكيد الطلب.',
@@ -168,10 +340,53 @@ export default function TrackOrderPage() {
     account: 'عرض جميع طلباتي',
     storeLink: 'العودة للمتجر',
     noItems: 'يجري تجهيز تفاصيل محتويات الطلب.',
+    trackTab: 'رقم الطلب',
+    historyTab: 'سجل طلباتي',
+    secureHistoryTitle: 'سجّلي الدخول لعرض سجلك الكامل',
+    secureHistoryCopy: 'طلبات الطباعة والمتجر والنقاط القريبة من الانتهاء والرصيد النقدي محفوظة داخل حسابك الآمن.',
+    secureHistoryAction: 'تسجيل الدخول وعرض السجل',
+    friendshipNotice: 'رقم الاشتراك كود صداقة قابل للمشاركة، وليس كلمة مرور للحساب.',
   };
 
   const shipmentLink = useMemo(() => trackingUrl(order?.shipment), [order]);
 
+  const loadHistory = useCallback(async () => {
+    const session = getCustomerSession();
+    setCustomerSession(session);
+    if (!session?.sessionToken) {
+      setHistoryData(null);
+      setHistoryError('');
+      return;
+    }
+
+    setHistoryLoading(true);
+    setHistoryError('');
+    try {
+      const { data, error: functionError } = await supabase.functions.invoke('track-order', {
+        body: {
+          mode: 'history',
+          sessionToken: session.sessionToken,
+        },
+      });
+      if (functionError) throw new Error(await getFunctionError(functionError));
+      setHistoryData(data || null);
+    } catch (requestError) {
+      const message = String(requestError?.message || '');
+      if (message.includes('unauthorized')) {
+        setCustomerSession(null);
+        setHistoryData(null);
+        setHistoryError(language === 'en' ? 'Your session has expired. Sign in again.' : 'انتهت جلسة الحساب. سجّلي الدخول من جديد.');
+      } else {
+        setHistoryError(language === 'en' ? 'Your order history is temporarily unavailable.' : 'تعذر تحميل سجل الطلبات مؤقتاً.');
+      }
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [language]);
+
+  useEffect(() => {
+    if (activeTab === 'history' && customerSession?.sessionToken) loadHistory();
+  }, [activeTab, customerSession?.sessionToken, loadHistory]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -227,6 +442,29 @@ export default function TrackOrderPage() {
             <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[#171717]/60">{text.description}</p>
           </div>
 
+          <div className="mb-6 grid grid-cols-2 border border-[#171717]/10 bg-white p-1 shadow-sm" role="tablist" aria-label={text.title}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'track'}
+              onClick={() => setActiveTab('track')}
+              className={`flex min-h-12 items-center justify-center gap-2 px-4 py-3 text-sm font-black transition-colors ${activeTab === 'track' ? 'bg-[#171717] text-white' : 'text-[#171717]/60'}`}
+            >
+              <Package size={18} /> {text.trackTab}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'history'}
+              onClick={() => setActiveTab('history')}
+              className={`flex min-h-12 items-center justify-center gap-2 px-4 py-3 text-sm font-black transition-colors ${activeTab === 'history' ? 'bg-[#C6A56B] text-white' : 'text-[#171717]/60'}`}
+            >
+              <History size={18} /> {text.historyTab}
+            </button>
+          </div>
+
+          {activeTab === 'track' ? (
+            <>
           <form id="tracking-form" onSubmit={submit} className="border border-[#E8B4BC]/25 bg-white p-5 shadow-sm sm:p-7">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
@@ -366,8 +604,46 @@ export default function TrackOrderPage() {
               </div>
             </article>
           )}
+            </>
+          ) : customerSession?.sessionToken ? (
+            <CustomerHistoryView
+              data={historyData}
+              language={language}
+              loading={historyLoading}
+              error={historyError}
+              onRefresh={loadHistory}
+            />
+          ) : (
+            <section className="border border-[#E8B4BC]/25 bg-white p-7 text-center shadow-sm sm:p-10">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#C6A56B]/12 text-[#C6A56B]">
+                <LogIn size={27} />
+              </div>
+              <h2 className="text-2xl font-black">{text.secureHistoryTitle}</h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[#171717]/60">{text.secureHistoryCopy}</p>
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="mx-auto mt-6 flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-7 py-3 font-black text-white"
+              >
+                <LogIn size={18} /> {text.secureHistoryAction}
+              </button>
+              <p className="mt-5 flex items-start justify-center gap-2 text-xs leading-6 text-[#9E7D35]">
+                <ShieldCheck size={16} className="mt-1 shrink-0" /> {text.friendshipNotice}
+              </p>
+            </section>
+          )}
         </section>
       </main>
+
+      <CustomerAuthModal
+        isOpen={isAuthModalOpen}
+        initialMode="login"
+        redirectTo="/track?tab=history"
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setCustomerSession(getCustomerSession());
+        }}
+      />
     </div>
   );
 }

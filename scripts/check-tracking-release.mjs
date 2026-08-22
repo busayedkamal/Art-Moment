@@ -49,8 +49,10 @@ check('Order detail rewrite before list', dynamicOrdersRewrite >= 0 && dynamicOr
 check('Track requires full order and token', trackFunction.includes("eq('tracking_access_token', trackingToken)") && trackFunction.includes("eq('short_id', orderNumber)") && !trackFunction.includes("orderNumber.slice(0, 6)"));
 check('Track rate limit enabled', trackFunction.includes("from('public_tracking_attempts')") && trackFunction.includes('>= 10'));
 check('Track uses generic mismatch', trackFunction.includes("error: 'tracking_not_found'"));
-check('Track has no history credentials', !/mode:\s*'history'|body\?\.phone|body\?\.pin/.test(trackFunction));
+check('Track has no public history credentials', !/body\?\.phone|body\?\.pin/.test(trackFunction));
+check('Account history requires customer session', trackFunction.includes('verifyCustomerSessionToken(sessionToken)') && trackFunction.includes("String(body?.mode || '') === 'history'") && trackPage.includes('getCustomerSession'));
 check('Track UI has two credentials', trackPage.includes('orderNumber') && trackPage.includes('trackingToken') && !trackPage.includes('رقم الجوال المسجل'));
+check('Track UI restores secure history tab', trackPage.includes("historyTab: 'سجل طلباتي'") && trackPage.includes('CustomerAuthModal'));
 check('Tracking token stays out of URL', !trackPage.includes('useSearchParams') && !trackPage.includes('setParams'));
 check('Orders page is private', ordersPage.includes('noindex') && ordersPage.includes('nofollow') && ordersPage.includes('sessionToken'));
 check('Orders filters present', ordersPage.includes("orderFilter === 'current'") && ordersPage.includes("orderFilter === 'completed'"));
@@ -59,7 +61,8 @@ check('Checkout does not expose customer PIN', !checkoutFunction.includes('custo
 check('Secure tokens cover both order tables', migration.includes('alter table public.orders') && migration.includes('alter table public.store_orders'));
 check('Status history trigger included', migration.includes('store_orders_status_history_trigger'));
 
-const selectFragments = [...trackFunction.matchAll(/\.select\('([^']+)'/g)].map((match) => match[1]);
+const publicLookupBlock = trackFunction.match(/const \[printResult, storeResult\][\s\S]*?const matched/)?.[0] || '';
+const selectFragments = [...publicLookupBlock.matchAll(/\.select\('([^']+)'/g)].map((match) => match[1]);
 const forbiddenPublicFields = ['phone', 'email', 'customer_name', 'city', 'district', 'street', 'building_number', 'postal_code', 'image', 'metadata', 'original', 'preview'];
 const leakedField = selectFragments.flatMap((fragment) => forbiddenPublicFields.filter((field) => new RegExp('(^|[, ])' + field + '([, )]|$)', 'i').test(fragment)));
 check('Public tracking selects no personal or image fields', leakedField.length === 0, leakedField.join(', '));

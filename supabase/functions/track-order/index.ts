@@ -1,4 +1,7 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { verifyCustomerSessionToken } from '../_shared/customerToken.ts';
+import { phoneVariants } from '../_shared/phone.ts';
+import { fetchRewardPointsSummary } from '../_shared/rewardPoints.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 
 type RecordValue = Record<string, unknown>;
@@ -211,6 +214,99 @@ function getClientIp(req: Request) {
     || 'unknown';
 }
 
+function uniqueRows(rows: RecordValue[]) {
+  const byId = new Map<string, RecordValue>();
+  rows.forEach((row) => {
+    if (row?.id) byId.set(String(row.id), row);
+  });
+  return [...byId.values()];
+}
+
+async function getSecureCustomerHistory(
+  supabase: ReturnType<typeof getServiceClient>,
+  sessionToken: unknown,
+) {
+  const tokenPayload = await verifyCustomerSessionToken(sessionToken);
+  if (!tokenPayload?.sub) return null;
+
+  const { data: customer, error: customerError } = await supabase
+    .from('customers')
+    .select('id, name, phone, subscription_code')
+    .eq('id', tokenPayload.sub)
+    .maybeSingle();
+  if (customerError) throw customerError;
+  if (!customer) return null;
+
+  const phones = phoneVariants(customer.phone);
+  const printFields = 'id, short_id, status, created_at, date_new, date_printing, date_done, date_delivered, photo_4x6_qty, a4_qty, subtotal, delivery_fee, total_amount, deposit, wallet_used, direct_discount_amount, coupon_discount_amount, coupon_code, package_discount_amount, points_used_amount';
+  const storeFields = 'id, short_id, status, payment_status, payment_method, subtotal_amount, discount_amount, coupon_code, total_amount, delivery_fee, amount_paid, reward_points_used, points_used_amount, refunded_amount, tracking_number, courier_name, created_at, updated_at, store_order_items(id, item_type, item_name, quantity, price_at_time, selected_options)';
+
+  const printPromise = phones.length > 0
+    ? supabase.from('orders').select(printFields).in('phone', phones)
+    : Promise.resolve({ data: [], error: null });
+  const storeByCustomerPromise = supabase
+    .from('store_orders')
+    .select(storeFields)
+    .eq('customer_id', customer.id);
+  const storeByPhonePromise = phones.length > 0
+    ? supabase.from('store_orders').select(storeFields).in('phone', phones)
+    : Promise.resolve({ data: [], error: null });
+
+  const [printResult, storeByCustomer, storeByPhone] = await Promise.all([
+    printPromise,
+    storeByCustomerPromise,
+    storeByPhonePromise,
+  ]);
+  if (printResult.error) throw printResult.error;
+  if (storeByCustomer.error && !/customer_id|schema cache|column/i.test(storeByCustomer.error.message || '')) {
+    throw storeByCustomer.error;
+  }
+  if (storeByPhone.error) throw storeByPhone.error;
+
+  const storeRows = uniqueRows([
+    ...((storeByCustomer.data || []) as RecordValue[]),
+    ...((storeByPhone.data || []) as RecordValue[]),
+  ]);
+  const storeIds = storeRows.map((row) => String(row.id)).filter(Boolean);
+  const historyByOrder = new Map<string, RecordValue[]>();
+
+  if (storeIds.length > 0) {
+    const { data: statusRows, error: statusError } = await supabase
+      .from('store_order_status_history')
+      .select('store_order_id, status, reason, created_at')
+      .in('store_order_id', storeIds)
+      .order('created_at', { ascending: true });
+    if (statusError) throw statusError;
+    (statusRows || []).forEach((row) => {
+      const key = String(row.store_order_id);
+      if (!historyByOrder.has(key)) historyByOrder.set(key, []);
+      historyByOrder.get(key)?.push(row as RecordValue);
+    });
+  }
+
+  const orders = [
+    ...storeRows.map((row) => ({
+      ...normalizeStoreOrder(row, historyByOrder.get(String(row.id)) || []),
+      id: row.id,
+    })),
+    ...((printResult.data || []) as RecordValue[]).map((row) => ({
+      ...normalizePrintOrder(row),
+      id: row.id,
+    })),
+  ].sort((a, b) => new Date(String(b.createdAt || 0)).getTime() - new Date(String(a.createdAt || 0)).getTime());
+  const rewards = await fetchRewardPointsSummary(supabase, customer.phone);
+
+  return {
+    customer: {
+      id: customer.id,
+      name: customer.name,
+      subscriptionCode: customer.subscription_code || null,
+    },
+    orders,
+    rewards,
+  };
+}
+
 Deno.serve(async (req) => {
   const optionsResponse = handleOptions(req);
   if (optionsResponse) return optionsResponse;
@@ -220,6 +316,12 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+    if (String(body?.mode || '') === 'history') {
+      const history = await getSecureCustomerHistory(supabase, body?.sessionToken);
+      if (!history) return jsonResponse({ error: 'unauthorized' }, 401);
+      return jsonResponse(history);
+    }
+
     const orderNumber = cleanText(body?.orderNumber || body?.searchId)
       .replace('#', '')
       .toLowerCase()
