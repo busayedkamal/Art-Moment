@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin, LogIn, UserPlus, ShieldCheck, Pencil, Files, Package, ChevronLeft } from 'lucide-react';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin, LogIn, UserPlus, ShieldCheck, Pencil, Files, Package, ChevronLeft, Printer, BookOpen, Frame, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { supabase } from '../lib/supabase';
@@ -16,6 +16,7 @@ import {
 import { getCartLineKey, getSelectedOptionLabels } from '../utils/productOptions';
 import { formatPrintOptionSummary } from '../utils/printOptions';
 import { getStoreAnonymousId, trackStoreEvent } from '../utils/storeAnalytics';
+import { useLanguage } from '../contexts/LanguageContext';
 
 async function getFunctionError(error) {
   try {
@@ -43,6 +44,7 @@ function formatMoney(value) {
 
 export default function StoreCart() {
   const navigate = useNavigate();
+  const { language, direction } = useLanguage();
   const checkoutRef = useRef(null);
   const idempotencyKeyRef = useRef(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
   const submittingRef = useRef(false);
@@ -77,6 +79,8 @@ export default function StoreCart() {
   const [printDeleteItem, setPrintDeleteItem] = useState(null);
   const [isCloningPrint, setIsCloningPrint] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
+  const [printDraftSummary, setPrintDraftSummary] = useState(null);
+  const [printDraftChecked, setPrintDraftChecked] = useState(false);
 
   const openCustomerAuth = (nextMode = 'login') => {
     setAuthInitialMode(nextMode);
@@ -220,6 +224,43 @@ export default function StoreCart() {
       }
     }
 
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPrintDraftSummary = async () => {
+      try {
+        const savedDraft = JSON.parse(localStorage.getItem('art_moment_print_draft') || 'null');
+        if (!savedDraft?.draftId || !savedDraft?.accessToken) return;
+
+        const { data, error } = await supabase.functions.invoke('print-builder', {
+          body: {
+            action: 'get_draft',
+            draftId: savedDraft.draftId,
+            accessToken: savedDraft.accessToken,
+          },
+        });
+        if (error) throw error;
+        if (cancelled || !data?.draft || data.draft.status === 'ordered') return;
+
+        const uploadedFiles = (data.files || []).filter(file => file.upload_status === 'uploaded');
+        setPrintDraftSummary({
+          id: data.draft.id,
+          printSize: data.draft.print_size || '',
+          surface: data.draft.surface || data.draft.finish || '',
+          fileCount: uploadedFiles.length,
+          totalCopies: uploadedFiles.reduce((sum, file) => sum + Number(file.copies || 1), 0),
+        });
+      } catch (error) {
+        console.error('Error loading saved print draft summary:', error);
+      } finally {
+        if (!cancelled) setPrintDraftChecked(true);
+      }
+    };
+
+    void loadPrintDraftSummary();
     return () => { cancelled = true; };
   }, []);
 
@@ -670,17 +711,120 @@ export default function StoreCart() {
     );
   }
 
-  if (cart.length === 0) {
+  if (!cartHydrated || !remoteRestoreChecked || (cart.length === 0 && !printDraftChecked)) {
     return (
-      <div className="art-page min-h-screen font-[Tajawal] flex flex-col items-center justify-center p-4 text-[#171717]" dir="rtl">
-        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-[#E8B4BC]/30">
-          <ShoppingBag size={40} />
+      <div className="art-page flex min-h-screen items-start justify-center px-4 pt-28 font-[Tajawal] text-[#171717]" dir={direction}>
+        <div className="flex items-center gap-3 text-sm font-bold text-black/50" role="status" aria-live="polite">
+          <Loader2 className="animate-spin text-[#C6A56B]" size={22} />
+          <span>{language === 'ar' ? 'نجهّز سلتك...' : 'Preparing your cart...'}</span>
         </div>
-        <h1 className="art-page-title mb-2">سلة التسوق</h1>
-        <p className="text-[#171717]/50 text-sm mb-8">سلة المشتريات فارغة. لم تقم بإضافة أي منتجات بعد.</p>
-        <Link to="/store" className="bg-[#171717] text-white px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-[#E8B4BC] transition-colors">
-          تصفح المتجر
-        </Link>
+      </div>
+    );
+  }
+
+  if (cart.length === 0) {
+    const isArabic = language === 'ar';
+    const categoryLinks = [
+      { to: '/print', icon: Printer, label: isArabic ? 'طباعة الصور' : 'Photo printing' },
+      { to: '/store/albums', icon: BookOpen, label: isArabic ? 'ألبومات الصور' : 'Photo albums' },
+      { to: '/store/frames', icon: Frame, label: isArabic ? 'إطارات الصور' : 'Photo frames' },
+      { to: '/store/photo-supplies', icon: Sparkles, label: isArabic ? 'مستلزمات الصور' : 'Photo supplies' },
+    ];
+    const surfaceLabel = printDraftSummary?.surface === 'matte'
+      ? (isArabic ? 'مطفي' : 'Matte')
+      : (isArabic ? 'لامع' : 'Glossy');
+    const draftDetail = printDraftSummary
+      ? [
+          printDraftSummary.printSize,
+          surfaceLabel,
+          printDraftSummary.fileCount > 0
+            ? (isArabic ? `${printDraftSummary.fileCount} صورة · ${printDraftSummary.totalCopies} نسخة` : `${printDraftSummary.fileCount} photos · ${printDraftSummary.totalCopies} copies`)
+            : (isArabic ? 'لم تُرفع صور بعد' : 'No photos uploaded yet'),
+        ].filter(Boolean).join(' · ')
+      : '';
+
+    const dismissPrintDraft = () => {
+      localStorage.removeItem('art_moment_print_draft');
+      setPrintDraftSummary(null);
+      toast.success(isArabic ? 'تمت إزالة المسودة من هذا الجهاز' : 'Draft removed from this device');
+    };
+
+    return (
+      <div className="art-page min-h-screen px-4 pb-20 pt-14 font-[Tajawal] text-[#171717] sm:pt-20" dir={direction}>
+        <main className="mx-auto w-full max-w-[700px]">
+          <section className="text-center" aria-labelledby="empty-cart-title">
+            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full border border-[#E8B4BC]/35 bg-white text-[#E8B4BC] shadow-sm">
+              <ShoppingBag size={34} strokeWidth={1.8} />
+            </div>
+            <h1 id="empty-cart-title" className="text-3xl font-black sm:text-4xl">
+              {isArabic ? 'سلة التسوق' : 'Shopping cart'}
+            </h1>
+            <p className="mt-4 text-lg font-black">
+              {isArabic ? 'سلتك فارغة حاليًا' : 'Your cart is currently empty'}
+            </p>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-black/55 sm:text-base">
+              {isArabic
+                ? 'ابدأ بطباعة صورك أو تصفح منتجات لحظة فن لحفظ أجمل ذكرياتك.'
+                : 'Start by printing your photos or browse Art Moment products to preserve your favorite memories.'}
+            </p>
+          </section>
+
+          {printDraftSummary && (
+            <section className="mt-8 border-s-4 border-[#C6A56B] bg-white p-5 shadow-sm" aria-label={isArabic ? 'مسودة الطباعة المحفوظة' : 'Saved print draft'}>
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FAF9F7] text-[#C6A56B]">
+                  <Files size={20} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-black">{isArabic ? 'لديك طلب طباعة غير مكتمل' : 'You have an unfinished print order'}</h2>
+                  <p className="mt-1 break-words text-sm leading-6 text-black/55">{draftDetail}</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <Link to="/print" className="flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-5 py-3 text-sm font-black text-white transition-colors hover:bg-[#B97882]">
+                  <Printer size={18} /> {isArabic ? 'متابعة طلب الطباعة' : 'Continue print order'}
+                </Link>
+                <button type="button" onClick={dismissPrintDraft} className="min-h-12 border border-black/10 bg-[#FAF9F7] px-5 py-3 text-sm font-bold text-black/55 transition-colors hover:border-[#E8B4BC] hover:text-[#171717]">
+                  {isArabic ? 'إزالة المسودة' : 'Remove draft'}
+                </button>
+              </div>
+            </section>
+          )}
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <Link to="/print" className="flex min-h-14 items-center justify-center gap-2 bg-[#171717] px-6 py-4 font-black text-white shadow-sm transition-colors hover:bg-[#B97882]">
+              <Printer size={20} /> {isArabic ? 'اطبع صورك الآن' : 'Print your photos'}
+            </Link>
+            <Link to="/store" className="flex min-h-14 items-center justify-center gap-2 border border-[#171717] bg-transparent px-6 py-4 font-black text-[#171717] transition-colors hover:bg-white">
+              <ShoppingBag size={20} /> {isArabic ? 'تصفح المتجر' : 'Browse the store'}
+            </Link>
+          </div>
+
+          <section className="mt-12" aria-labelledby="empty-cart-categories">
+            <h2 id="empty-cart-categories" className="mb-4 text-lg font-black">
+              {isArabic ? 'ماذا تبحث عنه؟' : 'What are you looking for?'}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {categoryLinks.map(({ to, icon, label }) => (
+                <Link key={to} to={to} className="group flex min-h-28 flex-col justify-between rounded-lg border border-black/10 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-[#E8B4BC] hover:shadow-md">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FAF9F7] text-[#B97882]">
+                    {React.createElement(icon, { size: 20 })}
+                  </span>
+                  <span className="mt-4 flex items-center justify-between gap-2 text-sm font-black">
+                    <span>{label}</span>
+                    <ChevronLeft size={16} className={direction === 'ltr' ? 'rotate-180' : ''} />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <div className="mt-10 grid gap-3 border-t border-black/10 pt-5 text-center text-xs font-bold text-black/55 sm:grid-cols-3 sm:text-sm">
+            <span className="flex items-center justify-center gap-2"><CheckCircle size={16} className="text-[#C6A56B]" />{isArabic ? 'جودة طباعة احترافية' : 'Professional print quality'}</span>
+            <span className="flex items-center justify-center gap-2"><ShieldCheck size={16} className="text-[#C6A56B]" />{isArabic ? 'خصوصية لصورك' : 'Your photos stay private'}</span>
+            <span className="flex items-center justify-center gap-2"><ShoppingBag size={16} className="text-[#C6A56B]" />{isArabic ? 'طلب آمن وسهل' : 'Safe and easy ordering'}</span>
+          </div>
+        </main>
       </div>
     );
   }
