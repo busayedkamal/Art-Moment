@@ -249,6 +249,7 @@ export default function StoreCart() {
         setPrintDraftSummary({
           id: data.draft.id,
           printSize: data.draft.print_size || '',
+          material: data.draft.material || '',
           surface: data.draft.surface || data.draft.finish || '',
           fileCount: uploadedFiles.length,
           totalCopies: uploadedFiles.reduce((sum, file) => sum + Number(file.copies || 1), 0),
@@ -730,20 +731,21 @@ export default function StoreCart() {
       { to: '/store/frames', icon: Frame, label: isArabic ? 'إطارات الصور' : 'Photo frames' },
       { to: '/store/photo-supplies', icon: Sparkles, label: isArabic ? 'مستلزمات الصور' : 'Photo supplies' },
     ];
+    const materialLabel = printDraftSummary?.material === 'photo_paper'
+      ? (isArabic ? 'ورق صور' : 'Photo paper')
+      : (printDraftSummary?.material || '');
     const surfaceLabel = printDraftSummary?.surface === 'matte'
       ? (isArabic ? 'مطفي' : 'Matte')
       : (isArabic ? 'لامع' : 'Glossy');
-    const draftDetail = printDraftSummary
-      ? [
-          printDraftSummary.printSize,
-          surfaceLabel,
-          printDraftSummary.fileCount > 0
-            ? (isArabic ? `${printDraftSummary.fileCount} صورة · ${printDraftSummary.totalCopies} نسخة` : `${printDraftSummary.fileCount} photos · ${printDraftSummary.totalCopies} copies`)
-            : (isArabic ? 'لم تُرفع صور بعد' : 'No photos uploaded yet'),
-        ].filter(Boolean).join(' · ')
+    const draftConfiguration = printDraftSummary
+      ? [printDraftSummary.printSize, materialLabel, surfaceLabel].filter(Boolean).join(' · ')
       : '';
+    const draftQuantity = printDraftSummary?.fileCount > 0
+      ? (isArabic ? `${printDraftSummary.fileCount} ملفًا · ${printDraftSummary.totalCopies} نسخة` : `${printDraftSummary.fileCount} files · ${printDraftSummary.totalCopies} copies`)
+      : (isArabic ? 'لم تُرفع صور بعد' : 'No photos uploaded yet');
 
     const dismissPrintDraft = () => {
+      trackStoreEvent('empty_cart_draft_delete');
       localStorage.removeItem('art_moment_print_draft');
       setPrintDraftSummary(null);
       toast.success(isArabic ? 'تمت إزالة المسودة من هذا الجهاز' : 'Draft removed from this device');
@@ -762,7 +764,7 @@ export default function StoreCart() {
             <p className="mt-4 text-lg font-black">
               {isArabic ? 'سلتك فارغة حاليًا' : 'Your cart is currently empty'}
             </p>
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-black/55 sm:text-base">
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-[#6B6561] sm:text-base">
               {isArabic
                 ? 'ابدأ بطباعة صورك أو تصفح منتجات لحظة فن لحفظ أجمل ذكرياتك.'
                 : 'Start by printing your photos or browse Art Moment products to preserve your favorite memories.'}
@@ -777,11 +779,12 @@ export default function StoreCart() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <h2 className="font-black">{isArabic ? 'لديك طلب طباعة غير مكتمل' : 'You have an unfinished print order'}</h2>
-                  <p className="mt-1 break-words text-sm leading-6 text-black/55">{draftDetail}</p>
+                  <p className="mt-1 break-words text-sm font-bold leading-6 text-[#6B6561]">{draftConfiguration}</p>
+                  <p className="text-sm leading-6 text-[#6B6561]">{draftQuantity}</p>
                 </div>
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <Link to="/print" className="flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-5 py-3 text-sm font-black text-white transition-colors hover:bg-[#B97882]">
+                <Link to="/print" onClick={() => trackStoreEvent('empty_cart_draft_resume')} className="flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-5 py-3 text-sm font-black text-white transition-colors hover:bg-[#B97882] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A56B]">
                   <Printer size={18} /> {isArabic ? 'متابعة طلب الطباعة' : 'Continue print order'}
                 </Link>
                 <button type="button" onClick={dismissPrintDraft} className="min-h-12 border border-black/10 bg-[#FAF9F7] px-5 py-3 text-sm font-bold text-black/55 transition-colors hover:border-[#E8B4BC] hover:text-[#171717]">
@@ -792,10 +795,10 @@ export default function StoreCart() {
           )}
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            <Link to="/print" className="flex min-h-14 items-center justify-center gap-2 bg-[#171717] px-6 py-4 font-black text-white shadow-sm transition-colors hover:bg-[#B97882]">
+            <Link to="/print" onClick={() => trackStoreEvent('empty_cart_print_click')} className="flex min-h-14 items-center justify-center gap-2 bg-[#171717] px-6 py-4 font-black text-white shadow-sm transition-colors hover:bg-[#B97882] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A56B]">
               <Printer size={20} /> {isArabic ? 'اطبع صورك الآن' : 'Print your photos'}
             </Link>
-            <Link to="/store" className="flex min-h-14 items-center justify-center gap-2 border border-[#171717] bg-transparent px-6 py-4 font-black text-[#171717] transition-colors hover:bg-white">
+            <Link to="/store" onClick={() => trackStoreEvent('empty_cart_store_click')} className="flex min-h-14 items-center justify-center gap-2 border border-[#171717] bg-transparent px-6 py-4 font-black text-[#171717] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A56B]">
               <ShoppingBag size={20} /> {isArabic ? 'تصفح المتجر' : 'Browse the store'}
             </Link>
           </div>
@@ -806,9 +809,9 @@ export default function StoreCart() {
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {categoryLinks.map(({ to, icon, label }) => (
-                <Link key={to} to={to} className="group flex min-h-28 flex-col justify-between rounded-lg border border-black/10 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-[#E8B4BC] hover:shadow-md">
+                <Link key={to} to={to} onClick={() => trackStoreEvent('empty_cart_category_click', { categoryPath: to })} className="group flex min-h-28 cursor-pointer flex-col justify-between rounded-lg border border-black/10 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-[#E8B4BC] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A56B]">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FAF9F7] text-[#B97882]">
-                    {React.createElement(icon, { size: 20 })}
+                    {React.createElement(icon, { size: 20, strokeWidth: 1.8 })}
                   </span>
                   <span className="mt-4 flex items-center justify-between gap-2 text-sm font-black">
                     <span>{label}</span>
@@ -819,7 +822,7 @@ export default function StoreCart() {
             </div>
           </section>
 
-          <div className="mt-10 grid gap-3 border-t border-black/10 pt-5 text-center text-xs font-bold text-black/55 sm:grid-cols-3 sm:text-sm">
+          <div className="mt-10 grid gap-3 border-t border-black/10 pt-5 text-center text-xs font-bold text-[#6B6561] sm:grid-cols-3 sm:text-sm">
             <span className="flex items-center justify-center gap-2"><CheckCircle size={16} className="text-[#C6A56B]" />{isArabic ? 'جودة طباعة احترافية' : 'Professional print quality'}</span>
             <span className="flex items-center justify-center gap-2"><ShieldCheck size={16} className="text-[#C6A56B]" />{isArabic ? 'خصوصية لصورك' : 'Your photos stay private'}</span>
             <span className="flex items-center justify-center gap-2"><ShoppingBag size={16} className="text-[#C6A56B]" />{isArabic ? 'طلب آمن وسهل' : 'Safe and easy ordering'}</span>
