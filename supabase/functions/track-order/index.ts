@@ -162,18 +162,30 @@ function normalizePrintOrder(order: RecordValue) {
         current: code === statusCode,
       }));
 
+  const photo4x6Quantity = Number(order.photo_4x6_qty || 0);
+  const photo4x6UnitPrice = money(order.photo_4x6_unit_price);
+  const a4Quantity = Number(order.a4_qty || 0);
+  const a4UnitPrice = money(order.a4_unit_price);
   const items = [
-    Number(order.photo_4x6_qty || 0) > 0
-      ? { kind: 'print', name: 'طباعة صور 4×6', quantity: Number(order.photo_4x6_qty), status: statusCode }
+    photo4x6Quantity > 0
+      ? { kind: 'print', name: 'طباعة صور 4×6', quantity: photo4x6Quantity, unitPrice: photo4x6UnitPrice, lineTotal: money(photo4x6Quantity * photo4x6UnitPrice), status: statusCode }
       : null,
-    Number(order.a4_qty || 0) > 0
-      ? { kind: 'print', name: 'طباعة صور A4', quantity: Number(order.a4_qty), status: statusCode }
+    a4Quantity > 0
+      ? { kind: 'print', name: 'طباعة صور A4', quantity: a4Quantity, unitPrice: a4UnitPrice, lineTotal: money(a4Quantity * a4UnitPrice), status: statusCode }
       : null,
   ].filter(Boolean);
 
   const total = money(order.total_amount);
   const cashPaid = money(order.deposit);
   const pointsPaid = money(order.points_used_amount ?? order.wallet_used);
+  const directDiscount = money(order.direct_discount_amount);
+  const couponDiscount = money(order.coupon_discount_amount);
+  const packageDiscount = money(order.package_discount_amount);
+  const discounts = [
+    directDiscount > 0 ? { type: 'direct', amount: directDiscount } : null,
+    couponDiscount > 0 ? { type: 'coupon', amount: couponDiscount, code: cleanText(order.coupon_code) || null } : null,
+    packageDiscount > 0 ? { type: 'package', amount: packageDiscount } : null,
+  ].filter(Boolean);
 
   return {
     orderType: 'print',
@@ -185,11 +197,8 @@ function normalizePrintOrder(order: RecordValue) {
     items,
     financials: {
       subtotal: money(order.subtotal),
-      discount: money(
-        Number(order.direct_discount_amount || 0)
-        + Number(order.coupon_discount_amount || 0)
-        + Number(order.package_discount_amount || 0),
-      ),
+      discount: money(directDiscount + couponDiscount + packageDiscount),
+      discounts,
       couponCode: cleanText(order.coupon_code) || null,
       productsTotal: total,
       deliveryFee: money(order.delivery_fee),
@@ -236,6 +245,15 @@ function uniqueRows(rows: RecordValue[]) {
     if (row?.id) byId.set(String(row.id), row);
   });
   return [...byId.values()];
+}
+
+function orderBelongsToCustomer(order: RecordValue, customer: RecordValue) {
+  const orderCustomerId = cleanText(order.customer_id);
+  const customerId = cleanText(customer.id);
+  if (orderCustomerId && customerId && orderCustomerId === customerId) return true;
+
+  const customerPhones = new Set(phoneVariants(customer.phone));
+  return phoneVariants(order.phone).some((phone) => customerPhones.has(phone));
 }
 
 async function getSecureCustomerHistory(
@@ -424,6 +442,7 @@ Deno.serve(async (req) => {
     if (storeResult.error) console.error('track-order store lookup failed:', storeResult.error);
     if (printResult.error && storeResult.error) throw new Error('order_sources_unavailable');
 
+    const isStoreOrder = !storeResult.error && Boolean(storeResult.data);
     const matched = (storeResult.error ? null : storeResult.data)
       || (printResult.error ? null : printResult.data);
     if (!matched) {
@@ -436,17 +455,85 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'tracking_not_found' }, 404);
     }
 
+    let detailsAllowed = false;
+    let detailRow: RecordValue | null = null;
+    const optionalSessionToken = body?.sessionToken;
+
+    if (optionalSessionToken) {
+      let tokenPayload = null;
+      try {
+        tokenPayload = await verifyCustomerSessionToken(optionalSessionToken);
+      } catch (error) {
+        console.error('track-order optional session verification failed:', error);
+      }
+
+      if (tokenPayload?.sub) {
+        const { data: sessionCustomer, error: sessionCustomerError } = await supabase
+          .from('customers')
+          .select('id, phone')
+          .eq('id', tokenPayload.sub)
+          .maybeSingle();
+        if (sessionCustomerError) {
+          console.error('track-order optional customer lookup failed:', sessionCustomerError);
+        } else if (sessionCustomer) {
+          const sourceTable = isStoreOrder ? 'store_orders' : 'orders';
+          const { data: candidateDetail, error: detailError } = await supabase
+            .from(sourceTable)
+            .select('*')
+            .eq('id', (matched as RecordValue).id)
+            .maybeSingle();
+          if (detailError) {
+            console.error('track-order owned detail lookup failed:', detailError);
+          } else if (candidateDetail && orderBelongsToCustomer(candidateDetail as RecordValue, sessionCustomer as RecordValue)) {
+            detailRow = candidateDetail as RecordValue;
+            detailsAllowed = true;
+          }
+        }
+      }
+    }
+
+    if (!detailsAllowed && body?.phone) {
+      const requestedPhones = new Set(phoneVariants(body.phone));
+      if (requestedPhones.size > 0) {
+        const sourceTable = isStoreOrder ? 'store_orders' : 'orders';
+        const { data: candidateDetail, error: detailError } = await supabase
+          .from(sourceTable)
+          .select('*')
+          .eq('id', (matched as RecordValue).id)
+          .maybeSingle();
+        if (detailError) {
+          console.error('track-order phone detail lookup failed:', detailError);
+        } else if (
+          candidateDetail
+          && phoneVariants((candidateDetail as RecordValue).phone).some((phone) => requestedPhones.has(phone))
+        ) {
+          detailRow = candidateDetail as RecordValue;
+          detailsAllowed = true;
+        }
+      }
+    }
+
     let order;
-    if (!storeResult.error && storeResult.data) {
+    if (isStoreOrder && storeResult.data) {
+      const storeRow = detailRow || (storeResult.data as RecordValue);
+      if (detailsAllowed) {
+        const { data: items, error: itemsError } = await supabase
+          .from('store_order_items')
+          .select('*')
+          .eq('store_order_id', storeRow.id);
+        if (itemsError) console.error('track-order owned items lookup failed:', itemsError);
+        else storeRow.store_order_items = items || [];
+      }
+
       const { data: history, error: historyError } = await supabase
         .from('store_order_status_history')
         .select('status, reason, created_at')
-        .eq('store_order_id', storeResult.data.id)
+        .eq('store_order_id', storeRow.id)
         .order('created_at', { ascending: true });
       if (historyError) console.error('track-order public status history failed:', historyError);
-      order = normalizeStoreOrder(storeResult.data as RecordValue, (history || []) as RecordValue[]);
+      order = normalizeStoreOrder(storeRow, (history || []) as RecordValue[]);
     } else {
-      order = normalizePrintOrder(printResult.data as RecordValue);
+      order = normalizePrintOrder(detailRow || (printResult.data as RecordValue));
     }
 
     localFailedAttempts.delete(ipHash);
@@ -456,7 +543,12 @@ Deno.serve(async (req) => {
       succeeded: true,
     });
 
+    if (detailsAllowed) {
+      return jsonResponse({ order, detailsProtected: false });
+    }
+
     return jsonResponse({
+      detailsProtected: true,
       order: {
         orderType: order.orderType,
         orderNumber: order.orderNumber,

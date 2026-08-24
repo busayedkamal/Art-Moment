@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -109,6 +109,7 @@ function CustomerHistoryView({ data, language, loading, error, onRefresh }) {
     print: 'Print order',
     store: 'Store order',
     quantity: 'Qty',
+    unitPrice: 'Unit price',
     empty: 'No previous orders are linked to this account yet.',
     openStoreOrder: 'Open full order details',
     account: 'Manage my account',
@@ -124,6 +125,7 @@ function CustomerHistoryView({ data, language, loading, error, onRefresh }) {
     print: 'طلب طباعة',
     store: 'طلب متجر',
     quantity: 'الكمية',
+    unitPrice: 'سعر الوحدة',
     empty: 'لا توجد طلبات سابقة مرتبطة بهذا الحساب حتى الآن.',
     openStoreOrder: 'فتح تفاصيل الطلب كاملة',
     account: 'إدارة حسابي',
@@ -261,8 +263,11 @@ export default function TrackOrderPage() {
   const [historyData, setHistoryData] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
-  const [orderNumber, setOrderNumber] = useState(() => location.state?.orderNumber || '');
-
+  const [orderNumber, setOrderNumber] = useState(() => (
+    new URLSearchParams(location.search).get('order') || location.state?.orderNumber || ''
+  ));
+  const [phone, setPhone] = useState('');
+  const autoTrackRequested = useRef(false);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -273,9 +278,11 @@ export default function TrackOrderPage() {
     description: 'Enter the order number included with your order confirmation.',
     orderNumber: 'Order number',
     orderPlaceholder: 'Example: 8a6c08',
+    phone: 'Mobile number linked to the order',
+    phonePlaceholder: 'Example: 05xxxxxxxx',
 
     submit: 'Track order',
-    privacy: 'Only order progress is shown here. Customer contact details, payments and original photo files stay private inside the account.',
+    privacy: 'The mobile number verifies ownership and is never displayed. Original photo files remain private inside the account.',
     invalid: 'The order number was not found. Check it and try again.',
     limited: 'Too many attempts. Please wait a few minutes and try again.',
     failed: 'Tracking is temporarily unavailable. Please try again.',
@@ -285,9 +292,13 @@ export default function TrackOrderPage() {
     timeline: 'Order progress',
     items: 'Order items',
     quantity: 'Qty',
+    unitPrice: 'Unit price',
     financials: 'Payment summary',
     subtotal: 'Subtotal',
     discount: 'Discount',
+    directDiscount: 'Direct discount',
+    packageDiscount: 'Package discount',
+    totalAfterDiscount: 'Total after discount',
     coupon: 'Coupon',
     delivery: 'Delivery',
     cashPaid: 'Cash paid',
@@ -306,14 +317,19 @@ export default function TrackOrderPage() {
     secureHistoryCopy: 'Your print and store orders, reward points, expiring points and store credit are protected inside your account.',
     secureHistoryAction: 'Sign in and view history',
     friendshipNotice: 'The subscription number is a shareable friendship code, not an account password.',
+    protectedTitle: 'Full order details are protected',
+    protectedCopy: 'Enter the mobile number linked to this order, or sign in, to view quantities and payment details.',
+    protectedAction: 'Sign in to view full details',
   } : {
     title: 'تتبع طلبك',
     description: 'أدخل رقم الطلب المرفق بتأكيد الطلب لمعرفة حالته.',
     orderNumber: 'رقم الطلب',
     orderPlaceholder: 'مثال: 8a6c08',
+    phone: 'رقم الجوال المرتبط بالطلب',
+    phonePlaceholder: 'مثال: 05xxxxxxxx',
 
     submit: 'تتبع الطلب',
-    privacy: 'نعرض تقدم الطلب فقط، وتبقى بيانات التواصل والدفع وملفات الصور الأصلية خاصة داخل الحساب.',
+    privacy: 'يُستخدم رقم الجوال للتحقق من ملكية الطلب ولا يتم عرضه، وتبقى ملفات الصور الأصلية خاصة داخل الحساب.',
     invalid: 'رقم الطلب غير موجود. تحقق من الرقم ثم حاول مجددًا.',
     limited: 'تمت محاولات كثيرة. انتظر عدة دقائق ثم حاول مجددًا.',
     failed: 'خدمة التتبع غير متاحة مؤقتًا. حاول مرة أخرى.',
@@ -323,9 +339,13 @@ export default function TrackOrderPage() {
     timeline: 'تقدم الطلب',
     items: 'محتويات الطلب',
     quantity: 'الكمية',
+    unitPrice: 'سعر الوحدة',
     financials: 'ملخص الدفع',
     subtotal: 'المجموع الفرعي',
     discount: 'الخصم',
+    directDiscount: 'خصم مباشر',
+    packageDiscount: 'خصم باقة',
+    totalAfterDiscount: 'الإجمالي بعد الخصم',
     coupon: 'الكوبون',
     delivery: 'التوصيل',
     cashPaid: 'المدفوع نقدًا',
@@ -344,6 +364,9 @@ export default function TrackOrderPage() {
     secureHistoryCopy: 'طلبات الطباعة والمتجر والنقاط القريبة من الانتهاء والرصيد النقدي محفوظة داخل حسابك الآمن.',
     secureHistoryAction: 'تسجيل الدخول وعرض السجل',
     friendshipNotice: 'رقم الاشتراك كود صداقة قابل للمشاركة، وليس كلمة مرور للحساب.',
+    protectedTitle: 'تفاصيل الطلب الكاملة محمية',
+    protectedCopy: 'أدخلي رقم الجوال المرتبط بالطلب أو سجّلي الدخول لعرض الكميات وتفاصيل الدفع.',
+    protectedAction: 'تسجيل الدخول وعرض التفاصيل',
   };
 
   const shipmentLink = useMemo(() => trackingUrl(order?.shipment), [order]);
@@ -406,11 +429,13 @@ export default function TrackOrderPage() {
       const { data, error: functionError } = await supabase.functions.invoke('track-order', {
         body: {
           orderNumber: cleanOrder,
+          phone: phone.trim() || null,
+          sessionToken: getCustomerSession()?.sessionToken || null,
         },
       });
       if (functionError) throw new Error(await getFunctionError(functionError));
       if (!data?.order) throw new Error('tracking_not_found');
-      setOrder(data.order);
+      setOrder({ ...data.order, detailsProtected: Boolean(data.detailsProtected) });
 
     } catch (requestError) {
       const code = String(requestError?.message || '');
@@ -421,6 +446,19 @@ export default function TrackOrderPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const orderFromUrl = new URLSearchParams(location.search).get('order');
+    if (
+      !autoTrackRequested.current
+      && orderFromUrl
+      && customerSession?.sessionToken
+      && orderNumber.trim()
+    ) {
+      autoTrackRequested.current = true;
+      window.setTimeout(() => document.getElementById('tracking-form')?.requestSubmit(), 0);
+    }
+  }, [customerSession?.sessionToken, location.search, orderNumber]);
 
   return (
     <div className="art-page min-h-screen bg-[#FAF9F7] font-[Tajawal] text-[#171717]" dir={direction}>
@@ -466,7 +504,7 @@ export default function TrackOrderPage() {
           {activeTab === 'track' ? (
             <>
           <form id="tracking-form" onSubmit={submit} className="border border-[#E8B4BC]/25 bg-white p-5 shadow-sm sm:p-7">
-            <div>
+            <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-xs font-black text-[#171717]/65">{text.orderNumber}</span>
                 <input
@@ -478,7 +516,18 @@ export default function TrackOrderPage() {
                   className="art-input h-14 w-full px-4 text-center font-mono"
                 />
               </label>
-
+              <label className="block">
+                <span className="mb-2 block text-xs font-black text-[#171717]/65">{text.phone}</span>
+                <input
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder={text.phonePlaceholder}
+                  autoComplete="tel"
+                  inputMode="tel"
+                  dir="ltr"
+                  className="art-input h-14 w-full px-4 text-center font-mono"
+                />
+              </label>
             </div>
             <button
               type="submit"
@@ -534,6 +583,21 @@ export default function TrackOrderPage() {
                 </ol>
               </section>
 
+              {order.detailsProtected && (
+                <section className="border border-[#C6A56B]/30 bg-[#C6A56B]/8 p-6 text-center sm:p-8">
+                  <ShieldCheck size={30} className="mx-auto mb-3 text-[#C6A56B]" />
+                  <h3 className="text-xl font-black">{text.protectedTitle}</h3>
+                  <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-[#171717]/60">{text.protectedCopy}</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="mx-auto mt-5 flex min-h-12 items-center justify-center gap-2 bg-[#171717] px-6 py-3 font-black text-white"
+                  >
+                    <LogIn size={18} /> {text.protectedAction}
+                  </button>
+                </section>
+              )}
+
               {Array.isArray(order.items) && (
               <section className="border border-[#E8B4BC]/20 bg-white p-5 sm:p-7">
                 <h3 className="mb-5 flex items-center gap-2 font-black">
@@ -549,6 +613,7 @@ export default function TrackOrderPage() {
                         </div>
                         <div className="shrink-0 text-end">
                           <p className="text-xs text-[#171717]/50">{text.quantity}: {item.quantity}</p>
+                          {Number(item.unitPrice || 0) > 0 && <p className="mt-1 text-xs text-[#171717]/50">{text.unitPrice}: {formatCurrency(item.unitPrice, language)}</p>}
                           {item.lineTotal !== undefined && <p className="mt-1 font-black text-[#C6A56B]">{formatCurrency(item.lineTotal, language)}</p>}
                         </div>
                       </div>
@@ -565,7 +630,13 @@ export default function TrackOrderPage() {
                 </h3>
                 <dl className="space-y-3 text-sm">
                   <div className="flex justify-between gap-4"><dt className="text-[#171717]/55">{text.subtotal}</dt><dd className="font-black">{formatCurrency(order.financials?.subtotal, language)}</dd></div>
-                  {Number(order.financials?.discount || 0) > 0 && <div className="flex justify-between gap-4 text-emerald-700"><dt>{order.financials?.couponCode ? `${text.coupon} ${order.financials.couponCode}` : text.discount}</dt><dd className="font-black">-{formatCurrency(order.financials.discount, language)}</dd></div>}
+                  {Array.isArray(order.financials?.discounts) && order.financials.discounts.length > 0 ? order.financials.discounts.map((discount, index) => (
+                    <div key={`${discount.type}-${index}`} className="flex justify-between gap-4 text-emerald-700">
+                      <dt>{discount.type === 'coupon' ? `${text.coupon}${discount.code ? ` ${discount.code}` : ''}` : discount.type === 'package' ? text.packageDiscount : text.directDiscount}</dt>
+                      <dd className="font-black">-{formatCurrency(discount.amount, language)}</dd>
+                    </div>
+                  )) : Number(order.financials?.discount || 0) > 0 && <div className="flex justify-between gap-4 text-emerald-700"><dt>{order.financials?.couponCode ? `${text.coupon} ${order.financials.couponCode}` : text.discount}</dt><dd className="font-black">-{formatCurrency(order.financials.discount, language)}</dd></div>}
+                  <div className="flex justify-between gap-4"><dt className="text-[#171717]/55">{text.totalAfterDiscount}</dt><dd className="font-black">{formatCurrency(order.financials?.productsTotal, language)}</dd></div>
                   <div className="flex justify-between gap-4"><dt className="text-[#171717]/55">{text.delivery}</dt><dd className="font-black">{formatCurrency(order.financials?.deliveryFee, language)}</dd></div>
                   {Number(order.financials?.cashPaid || 0) > 0 && <div className="flex justify-between gap-4 text-emerald-700"><dt>{text.cashPaid}</dt><dd className="font-black">{formatCurrency(order.financials.cashPaid, language)}</dd></div>}
                   {Number(order.financials?.pointsPaid || 0) > 0 && <div className="flex justify-between gap-4 text-[#B97882]"><dt>{text.pointsPaid}</dt><dd className="font-black">{formatCurrency(order.financials.pointsPaid, language)}</dd></div>}
@@ -632,10 +703,14 @@ export default function TrackOrderPage() {
       <CustomerAuthModal
         isOpen={isAuthModalOpen}
         initialMode="login"
-        redirectTo="/track?tab=history"
+        redirectTo={activeTab === 'history' ? '/track?tab=history' : '/track?order=' + encodeURIComponent(orderNumber)}
         onClose={() => {
           setIsAuthModalOpen(false);
-          setCustomerSession(getCustomerSession());
+          const nextSession = getCustomerSession();
+          setCustomerSession(nextSession);
+          if (nextSession?.sessionToken && orderNumber.trim()) {
+            window.setTimeout(() => document.getElementById('tracking-form')?.requestSubmit(), 0);
+          }
         }}
       />
     </div>

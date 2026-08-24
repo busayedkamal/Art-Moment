@@ -32,6 +32,7 @@ const [
 check('Track HTML title', trackHtml.includes('<title>تتبع طلبك | لحظة فن</title>'));
 check('Track HTML H1', /<h1[^>]*>تتبع طلبك<\/h1>/.test(trackHtml));
 check('Track robots', trackHtml.includes('name="robots" content="noindex,follow"'));
+check('Track HTML has no obsolete token copy', !trackHtml.includes('رمز التتبع الآمن'));
 check('Orders HTML title', ordersHtml.includes('<title>طلباتي | لحظة فن</title>'));
 check('Orders HTML H1', /<h1[^>]*>طلباتي<\/h1>/.test(ordersHtml));
 check('Orders robots', ordersHtml.includes('name="robots" content="noindex,nofollow"'));
@@ -48,12 +49,13 @@ check('Order detail rewrite before list', dynamicOrdersRewrite >= 0 && dynamicOr
 
 check('Track accepts random order number only', trackFunction.includes("eq('short_id', orderNumber)") && trackFunction.includes('orderNumber.length < 5') && !trackFunction.includes("eq('tracking_access_token', trackingToken)"));
 check('Public lookup returns status summary only', trackFunction.includes('orderType: order.orderType') && trackFunction.includes('timeline: order.timeline') && !trackFunction.includes('order: { ...order'));
+check('Full details require session or matching phone', trackFunction.includes('optionalSessionToken') && trackFunction.includes('requestedPhones') && trackFunction.includes('if (detailsAllowed)'));
 check('Track rate limit enabled', trackFunction.includes("from('public_tracking_attempts')") && trackFunction.includes('>= 10'));
 check('Track uses generic mismatch', trackFunction.includes("error: 'tracking_not_found'"));
-check('Track has no public history credentials', !/body\?\.phone|body\?\.pin/.test(trackFunction));
+check('Phone verification never returns the phone', trackFunction.includes('requestedPhones') && trackFunction.includes('detailsAllowed = true') && !trackFunction.includes('phone: order.phone'));
 check('Account history requires customer session', trackFunction.includes('verifyCustomerSessionToken(sessionToken)') && trackFunction.includes("String(body?.mode || '') === 'history'") && trackPage.includes('getCustomerSession'));
 check('Friendship code uses wallet RPC', trackFunction.includes("'get_or_create_friendship_code'") && !trackFunction.includes("select('id, name, phone, subscription_code')"));
-check('Track UI asks for order number only', trackPage.includes('orderNumber') && !trackPage.includes('trackingToken') && !trackPage.includes('رمز التتبع الآمن'));
+check('Track UI asks for order and ownership phone', trackPage.includes('orderNumber') && trackPage.includes('phone.trim()') && !trackPage.includes('trackingToken') && !trackPage.includes('رمز التتبع الآمن'));
 check('Track UI restores secure history tab', trackPage.includes("historyTab: 'سجل طلباتي'") && trackPage.includes('CustomerAuthModal'));
 check('Tracking token stays out of URL', !trackPage.includes('useSearchParams') && !trackPage.includes('setParams'));
 check('Orders page is private', ordersPage.includes('noindex') && ordersPage.includes('nofollow') && ordersPage.includes('sessionToken'));
