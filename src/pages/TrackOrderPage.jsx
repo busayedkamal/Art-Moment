@@ -23,7 +23,7 @@ import { RewardPointsSummary } from '../components/RewardPointsSummary';
 import SeoHead from '../components/SeoHead';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase } from '../lib/supabase';
-import { getCustomerSession } from '../utils/customerSession';
+import { clearCustomerSession, getCustomerSession } from '../utils/customerSession';
 
 async function getFunctionError(error) {
   try {
@@ -262,7 +262,7 @@ export default function TrackOrderPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [orderNumber, setOrderNumber] = useState(() => location.state?.orderNumber || '');
-  const [trackingToken, setTrackingToken] = useState(() => location.state?.trackingToken || '');
+
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -270,14 +270,13 @@ export default function TrackOrderPage() {
 
   const text = language === 'en' ? {
     title: 'Track your order',
-    description: 'Enter the order number and secure tracking token included with your order confirmation.',
+    description: 'Enter the order number included with your order confirmation.',
     orderNumber: 'Order number',
     orderPlaceholder: 'Example: 8a6c08',
-    token: 'Secure tracking token',
-    tokenPlaceholder: 'Paste the tracking token',
+
     submit: 'Track order',
-    privacy: 'Your tracking token protects the order details. We never display customer contact details or original photo files here.',
-    invalid: 'The order number and tracking token do not match. Check both values and try again.',
+    privacy: 'Only order progress is shown here. Customer contact details, payments and original photo files stay private inside the account.',
+    invalid: 'The order number was not found. Check it and try again.',
     limited: 'Too many attempts. Please wait a few minutes and try again.',
     failed: 'Tracking is temporarily unavailable. Please try again.',
     store: 'Store order',
@@ -309,14 +308,13 @@ export default function TrackOrderPage() {
     friendshipNotice: 'The subscription number is a shareable friendship code, not an account password.',
   } : {
     title: 'تتبع طلبك',
-    description: 'أدخل رقم الطلب ورمز التتبع الآمن المرفق بتأكيد الطلب.',
+    description: 'أدخل رقم الطلب المرفق بتأكيد الطلب لمعرفة حالته.',
     orderNumber: 'رقم الطلب',
     orderPlaceholder: 'مثال: 8a6c08',
-    token: 'رمز التتبع الآمن',
-    tokenPlaceholder: 'الصق رمز التتبع',
+
     submit: 'تتبع الطلب',
-    privacy: 'رمز التتبع يحمي تفاصيل الطلب. لا نعرض هنا بيانات تواصل العميل أو ملفات الصور الأصلية.',
-    invalid: 'رقم الطلب ورمز التتبع غير متطابقين. تحقق من القيمتين ثم حاول مجددًا.',
+    privacy: 'نعرض تقدم الطلب فقط، وتبقى بيانات التواصل والدفع وملفات الصور الأصلية خاصة داخل الحساب.',
+    invalid: 'رقم الطلب غير موجود. تحقق من الرقم ثم حاول مجددًا.',
     limited: 'تمت محاولات كثيرة. انتظر عدة دقائق ثم حاول مجددًا.',
     failed: 'خدمة التتبع غير متاحة مؤقتًا. حاول مرة أخرى.',
     store: 'طلب متجر',
@@ -368,11 +366,15 @@ export default function TrackOrderPage() {
           sessionToken: session.sessionToken,
         },
       });
-      if (functionError) throw new Error(await getFunctionError(functionError));
+      if (functionError) {
+        if (Number(functionError?.context?.status) === 401) throw new Error('unauthorized');
+        throw new Error(await getFunctionError(functionError));
+      }
       setHistoryData(data || null);
     } catch (requestError) {
       const message = String(requestError?.message || '');
       if (message.includes('unauthorized')) {
+        clearCustomerSession();
         setCustomerSession(null);
         setHistoryData(null);
         setHistoryError(language === 'en' ? 'Your session has expired. Sign in again.' : 'انتهت جلسة الحساب. سجّلي الدخول من جديد.');
@@ -391,8 +393,7 @@ export default function TrackOrderPage() {
   const submit = async (event) => {
     event.preventDefault();
     const cleanOrder = orderNumber.replace('#', '').trim();
-    const cleanToken = trackingToken.trim();
-    if (!cleanOrder || !cleanToken) {
+    if (!cleanOrder) {
       setError(text.invalid);
       setOrder(null);
       return;
@@ -405,7 +406,6 @@ export default function TrackOrderPage() {
       const { data, error: functionError } = await supabase.functions.invoke('track-order', {
         body: {
           orderNumber: cleanOrder,
-          trackingToken: cleanToken,
         },
       });
       if (functionError) throw new Error(await getFunctionError(functionError));
@@ -466,7 +466,7 @@ export default function TrackOrderPage() {
           {activeTab === 'track' ? (
             <>
           <form id="tracking-form" onSubmit={submit} className="border border-[#E8B4BC]/25 bg-white p-5 shadow-sm sm:p-7">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div>
               <label className="block">
                 <span className="mb-2 block text-xs font-black text-[#171717]/65">{text.orderNumber}</span>
                 <input
@@ -478,17 +478,7 @@ export default function TrackOrderPage() {
                   className="art-input h-14 w-full px-4 text-center font-mono"
                 />
               </label>
-              <label className="block">
-                <span className="mb-2 block text-xs font-black text-[#171717]/65">{text.token}</span>
-                <input
-                  value={trackingToken}
-                  onChange={(event) => setTrackingToken(event.target.value)}
-                  placeholder={text.tokenPlaceholder}
-                  autoComplete="off"
-                  dir="ltr"
-                  className="art-input h-14 w-full px-4 text-center font-mono"
-                />
-              </label>
+
             </div>
             <button
               type="submit"
@@ -544,6 +534,7 @@ export default function TrackOrderPage() {
                 </ol>
               </section>
 
+              {Array.isArray(order.items) && (
               <section className="border border-[#E8B4BC]/20 bg-white p-5 sm:p-7">
                 <h3 className="mb-5 flex items-center gap-2 font-black">
                   <ShoppingBag size={19} className="text-[#E8B4BC]" /> {text.items}
@@ -565,7 +556,9 @@ export default function TrackOrderPage() {
                   </div>
                 ) : <p className="text-sm text-[#171717]/50">{text.noItems}</p>}
               </section>
+              )}
 
+              {order.financials && (
               <section className="border border-[#E8B4BC]/20 bg-white p-5 sm:p-7">
                 <h3 className="mb-5 flex items-center gap-2 font-black">
                   <CreditCard size={19} className="text-[#C6A56B]" /> {text.financials}
@@ -580,6 +573,7 @@ export default function TrackOrderPage() {
                   <div className="flex justify-between gap-4 border-t border-[#171717]/10 pt-4 text-base"><dt className="font-black">{text.remaining}</dt><dd className="font-black text-[#E8B4BC]">{formatCurrency(order.financials?.remaining, language)}</dd></div>
                 </dl>
               </section>
+              )}
 
               {order.shipment && (
                 <section className="border border-[#C6A56B]/25 bg-[#C6A56B]/8 p-5 sm:p-7">

@@ -208,10 +208,26 @@ async function sha256(value: string) {
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+const localFailedAttempts = new Map<string, number[]>();
+
 function getClientIp(req: Request) {
   return cleanText(req.headers.get('x-forwarded-for')).split(',')[0]?.trim()
     || cleanText(req.headers.get('x-real-ip'))
     || 'unknown';
+}
+
+function getLocalFailedAttemptCount(ipHash: string) {
+  const cutoff = Date.now() - (15 * 60 * 1000);
+  const attempts = (localFailedAttempts.get(ipHash) || []).filter((timestamp) => timestamp >= cutoff);
+  if (attempts.length > 0) localFailedAttempts.set(ipHash, attempts);
+  else localFailedAttempts.delete(ipHash);
+  return attempts.length;
+}
+
+function rememberLocalFailedAttempt(ipHash: string) {
+  const attempts = localFailedAttempts.get(ipHash) || [];
+  attempts.push(Date.now());
+  localFailedAttempts.set(ipHash, attempts.slice(-10));
 }
 
 function uniqueRows(rows: RecordValue[]) {
@@ -226,7 +242,12 @@ async function getSecureCustomerHistory(
   supabase: ReturnType<typeof getServiceClient>,
   sessionToken: unknown,
 ) {
-  const tokenPayload = await verifyCustomerSessionToken(sessionToken);
+  let tokenPayload = null;
+  try {
+    tokenPayload = await verifyCustomerSessionToken(sessionToken);
+  } catch (error) {
+    console.error('track-order customer token verification failed:', error);
+  }
   if (!tokenPayload?.sub) return null;
 
   const { data: customer, error: customerError } = await supabase
@@ -238,18 +259,15 @@ async function getSecureCustomerHistory(
   if (!customer) return null;
 
   const phones = phoneVariants(customer.phone);
-  const printFields = 'id, short_id, status, created_at, date_new, date_printing, date_done, date_delivered, photo_4x6_qty, a4_qty, subtotal, delivery_fee, total_amount, deposit, wallet_used, direct_discount_amount, coupon_discount_amount, coupon_code, package_discount_amount, points_used_amount';
-  const storeFields = 'id, short_id, status, payment_status, payment_method, subtotal_amount, discount_amount, coupon_code, total_amount, delivery_fee, amount_paid, reward_points_used, points_used_amount, refunded_amount, tracking_number, courier_name, created_at, updated_at, store_order_items(id, item_type, item_name, quantity, price_at_time, selected_options)';
-
   const printPromise = phones.length > 0
-    ? supabase.from('orders').select(printFields).in('phone', phones)
+    ? supabase.from('orders').select('*').in('phone', phones)
     : Promise.resolve({ data: [], error: null });
   const storeByCustomerPromise = supabase
     .from('store_orders')
-    .select(storeFields)
+    .select('*')
     .eq('customer_id', customer.id);
   const storeByPhonePromise = phones.length > 0
-    ? supabase.from('store_orders').select(storeFields).in('phone', phones)
+    ? supabase.from('store_orders').select('*').in('phone', phones)
     : Promise.resolve({ data: [], error: null });
 
   const [printResult, storeByCustomer, storeByPhone] = await Promise.all([
@@ -257,31 +275,50 @@ async function getSecureCustomerHistory(
     storeByCustomerPromise,
     storeByPhonePromise,
   ]);
-  if (printResult.error) throw printResult.error;
-  if (storeByCustomer.error && !/customer_id|schema cache|column/i.test(storeByCustomer.error.message || '')) {
-    throw storeByCustomer.error;
-  }
-  if (storeByPhone.error) throw storeByPhone.error;
+  if (printResult.error) console.error('track-order print history failed:', printResult.error);
+  if (storeByCustomer.error) console.error('track-order store customer history failed:', storeByCustomer.error);
+  if (storeByPhone.error) console.error('track-order store phone history failed:', storeByPhone.error);
 
   const storeRows = uniqueRows([
-    ...((storeByCustomer.data || []) as RecordValue[]),
-    ...((storeByPhone.data || []) as RecordValue[]),
+    ...((storeByCustomer.error ? [] : storeByCustomer.data || []) as RecordValue[]),
+    ...((storeByPhone.error ? [] : storeByPhone.data || []) as RecordValue[]),
   ]);
   const storeIds = storeRows.map((row) => String(row.id)).filter(Boolean);
   const historyByOrder = new Map<string, RecordValue[]>();
 
   if (storeIds.length > 0) {
+    const { data: itemRows, error: itemError } = await supabase
+      .from('store_order_items')
+      .select('*')
+      .in('store_order_id', storeIds);
+    if (itemError) {
+      console.error('track-order store items history failed:', itemError);
+    } else {
+      const itemsByOrder = new Map<string, RecordValue[]>();
+      (itemRows || []).forEach((row) => {
+        const key = String(row.store_order_id);
+        if (!itemsByOrder.has(key)) itemsByOrder.set(key, []);
+        itemsByOrder.get(key)?.push(row as RecordValue);
+      });
+      storeRows.forEach((row) => {
+        row.store_order_items = itemsByOrder.get(String(row.id)) || [];
+      });
+    }
+
     const { data: statusRows, error: statusError } = await supabase
       .from('store_order_status_history')
       .select('store_order_id, status, reason, created_at')
       .in('store_order_id', storeIds)
       .order('created_at', { ascending: true });
-    if (statusError) throw statusError;
-    (statusRows || []).forEach((row) => {
-      const key = String(row.store_order_id);
-      if (!historyByOrder.has(key)) historyByOrder.set(key, []);
-      historyByOrder.get(key)?.push(row as RecordValue);
-    });
+    if (statusError) {
+      console.error('track-order status history failed:', statusError);
+    } else {
+      (statusRows || []).forEach((row) => {
+        const key = String(row.store_order_id);
+        if (!historyByOrder.has(key)) historyByOrder.set(key, []);
+        historyByOrder.get(key)?.push(row as RecordValue);
+      });
+    }
   }
 
   const orders = [
@@ -289,12 +326,17 @@ async function getSecureCustomerHistory(
       ...normalizeStoreOrder(row, historyByOrder.get(String(row.id)) || []),
       id: row.id,
     })),
-    ...((printResult.data || []) as RecordValue[]).map((row) => ({
+    ...((printResult.error ? [] : printResult.data || []) as RecordValue[]).map((row) => ({
       ...normalizePrintOrder(row),
       id: row.id,
     })),
   ].sort((a, b) => new Date(String(b.createdAt || 0)).getTime() - new Date(String(a.createdAt || 0)).getTime());
-  const rewards = await fetchRewardPointsSummary(supabase, customer.phone);
+  let rewards = null;
+  try {
+    rewards = await fetchRewardPointsSummary(supabase, customer.phone);
+  } catch (error) {
+    console.error('track-order rewards history failed:', error);
+  }
   const { data: friendshipCode, error: friendshipCodeError } = await supabase.rpc(
     'get_or_create_friendship_code',
     {
@@ -336,7 +378,7 @@ Deno.serve(async (req) => {
       .replace('#', '')
       .toLowerCase()
       .slice(0, 12);
-    const trackingToken = cleanText(body?.trackingToken || body?.token).toLowerCase();
+
     const ipHash = await sha256(getClientIp(req));
     const orderKeyHash = await sha256(orderNumber || 'missing');
     const since = new Date(Date.now() - (15 * 60 * 1000)).toISOString();
@@ -347,12 +389,16 @@ Deno.serve(async (req) => {
       .eq('ip_hash', ipHash)
       .eq('succeeded', false)
       .gte('created_at', since);
-    if (rateError) throw rateError;
-    if (Number(failedAttempts || 0) >= 10) {
+    if (rateError) console.error('track-order persistent rate limit unavailable:', rateError);
+    const recentFailures = rateError
+      ? getLocalFailedAttemptCount(ipHash)
+      : Number(failedAttempts || 0);
+    if (recentFailures >= 10) {
       return jsonResponse({ error: 'tracking_unavailable' }, 429);
     }
 
-    if (!orderNumber || trackingToken.length < 24) {
+    if (orderNumber.length < 5) {
+      rememberLocalFailedAttempt(ipHash);
       await supabase.from('public_tracking_attempts').insert({
         ip_hash: ipHash,
         order_key_hash: orderKeyHash,
@@ -364,23 +410,24 @@ Deno.serve(async (req) => {
     const [printResult, storeResult] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, short_id, status, created_at, date_new, date_printing, date_done, date_delivered, photo_4x6_qty, a4_qty, subtotal, delivery_fee, total_amount, deposit, wallet_used, direct_discount_amount, coupon_discount_amount, coupon_code, package_discount_amount, points_used_amount')
+        .select('id, short_id, status, created_at')
         .eq('short_id', orderNumber)
-        .eq('tracking_access_token', trackingToken)
         .maybeSingle(),
       supabase
         .from('store_orders')
-        .select('id, short_id, status, payment_status, payment_method, subtotal_amount, discount_amount, coupon_code, total_amount, delivery_fee, amount_paid, reward_points_used, points_used_amount, refunded_amount, tracking_number, courier_name, created_at, updated_at, store_order_items(id, item_type, item_name, quantity, price_at_time, selected_options)')
+        .select('id, short_id, status, created_at')
         .eq('short_id', orderNumber)
-        .eq('tracking_access_token', trackingToken)
         .maybeSingle(),
     ]);
 
-    if (printResult.error) throw printResult.error;
-    if (storeResult.error) throw storeResult.error;
+    if (printResult.error) console.error('track-order print lookup failed:', printResult.error);
+    if (storeResult.error) console.error('track-order store lookup failed:', storeResult.error);
+    if (printResult.error && storeResult.error) throw new Error('order_sources_unavailable');
 
-    const matched = storeResult.data || printResult.data;
+    const matched = (storeResult.error ? null : storeResult.data)
+      || (printResult.error ? null : printResult.data);
     if (!matched) {
+      rememberLocalFailedAttempt(ipHash);
       await supabase.from('public_tracking_attempts').insert({
         ip_hash: ipHash,
         order_key_hash: orderKeyHash,
@@ -390,25 +437,35 @@ Deno.serve(async (req) => {
     }
 
     let order;
-    if (storeResult.data) {
+    if (!storeResult.error && storeResult.data) {
       const { data: history, error: historyError } = await supabase
         .from('store_order_status_history')
         .select('status, reason, created_at')
         .eq('store_order_id', storeResult.data.id)
         .order('created_at', { ascending: true });
-      if (historyError) throw historyError;
+      if (historyError) console.error('track-order public status history failed:', historyError);
       order = normalizeStoreOrder(storeResult.data as RecordValue, (history || []) as RecordValue[]);
     } else {
       order = normalizePrintOrder(printResult.data as RecordValue);
     }
 
+    localFailedAttempts.delete(ipHash);
     await supabase.from('public_tracking_attempts').insert({
       ip_hash: ipHash,
       order_key_hash: orderKeyHash,
       succeeded: true,
     });
 
-    return jsonResponse({ order });
+    return jsonResponse({
+      order: {
+        orderType: order.orderType,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        timeline: order.timeline,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      },
+    });
   } catch (error) {
     console.error('track-order error:', error);
     return jsonResponse({ error: 'tracking_failed' }, 500);
