@@ -502,7 +502,6 @@ export const UI_TRANSLATIONS = {
   'تمت إضافة المنتج إلى السلة': 'Product added to cart',
   'زيادة الكمية': 'Increase quantity',
   'تقليل الكمية': 'Decrease quantity',
-  'اختر': 'Choose',
   'فقط': 'only',
   'إتمام الطلب الآن': 'Checkout now',
   'بيانات التواصل والشحن': 'Contact and delivery details',

@@ -228,6 +228,7 @@ function getStatusUpdateErrorMessage(error) {
   }
   if (/product_out_of_stock/i.test(message)) return 'لا توجد كمية كافية لإعادة فتح الطلب';
   if (/product_unavailable/i.test(message)) return 'أحد منتجات الطلب لم يعد متاحاً في المخزون';
+  if (/cancel_last_active_item_requires_order_cancellation/i.test(message)) return 'لإلغاء آخر عنصر، ألغِ الطلب بالكامل من حالة الطلب';
   if (/invalid_status_transition/i.test(message)) return 'هذا الانتقال غير متاح للحالة الحالية';
   if (/not_authorized/i.test(message)) return 'لا تملك صلاحية تحديث هذا الطلب';
   return 'فشل تحديث الحالة';
@@ -1068,7 +1069,7 @@ export default function StoreOrdersManagement() {
       toast.success(`تم تحديث العنصر إلى: ${statusInfo.label}`, { id: toastId });
     } catch (err) {
       console.error(err);
-      toast.error('تعذر تحديث حالة العنصر', { id: toastId });
+      toast.error(getStatusUpdateErrorMessage(err), { id: toastId });
     } finally {
       setItemStatusUpdatingId(null);
     }
@@ -1710,6 +1711,10 @@ export default function StoreOrdersManagement() {
                         const itemStatuses = item.item_type === 'print' ? PRINT_ITEM_STATUSES : PRODUCT_ITEM_STATUSES;
                         const currentItemStatus = item.status || (item.item_type === 'print' ? 'files_received' : 'pending');
                         const currentItemStatusInfo = getStoreOrderItemStatus(currentItemStatus, item.item_type);
+                        const activeItemCount = orderItems.filter((entry) => (
+                          entry.status || (entry.item_type === 'print' ? 'files_received' : 'pending')
+                        ) !== 'cancelled').length;
+                        const isLastActiveItem = currentItemStatus !== 'cancelled' && activeItemCount === 1;
                         const allowedItemStatuses = new Set([
                           currentItemStatus,
                           ...getStoreOrderItemTransitions(currentItemStatus, item.item_type),
@@ -1754,10 +1759,17 @@ export default function StoreOrdersManagement() {
                               className="min-h-11 rounded-xl border border-[#E8B4BC]/25 bg-white px-3 text-xs font-black text-[#171717] outline-none focus:border-[#C6A56B] disabled:cursor-not-allowed disabled:opacity-50"
                               aria-label={`تغيير حالة ${itemName}`}
                             >
-                              {Object.entries(itemStatuses).filter(([statusCode]) => allowedItemStatuses.has(statusCode)).map(([statusCode, statusInfo]) => (
+                              {Object.entries(itemStatuses).filter(([statusCode]) => (
+                                allowedItemStatuses.has(statusCode) && !(statusCode === 'cancelled' && isLastActiveItem)
+                              )).map(([statusCode, statusInfo]) => (
                                 <option key={statusCode} value={statusCode}>{statusInfo.label}</option>
                               ))}
                             </select>
+                            {isLastActiveItem && (
+                              <p className="text-[10px] font-bold text-[#B97882] sm:max-w-52">
+                                لإلغاء آخر عنصر، استخدم إلغاء الطلب بالكامل.
+                              </p>
+                            )}
                           </div>
 
                           {item.item_type === 'print' && item.print_files?.length > 0 && (

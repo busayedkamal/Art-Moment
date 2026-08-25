@@ -7,8 +7,9 @@ const read = (path) => readFile(join(root, path), 'utf8');
 const checks = [];
 const check = (name, condition) => checks.push({ name, ok: Boolean(condition) });
 
-const [migration, checkout, customerOrders, trackOrder, customerPage, trackPage, adminPage, itemStatuses] = await Promise.all([
+const [baseMigration, hardeningMigration, checkout, customerOrders, trackOrder, customerPage, trackPage, adminPage, itemStatuses] = await Promise.all([
   read('supabase/migrations/202608250001_mixed_order_item_statuses.sql'),
+  read('supabase/migrations/202608250002_mixed_order_item_status_hardening.sql'),
   read('supabase/functions/store-checkout/index.ts'),
   read('supabase/functions/customer-orders/index.ts'),
   read('supabase/functions/track-order/index.ts'),
@@ -17,6 +18,8 @@ const [migration, checkout, customerOrders, trackOrder, customerPage, trackPage,
   read('src/pages/StoreOrdersManagement.jsx'),
   read('src/utils/storeOrderItemStatus.js'),
 ]);
+
+const migration = [baseMigration, hardeningMigration].join(String.fromCharCode(10));
 
 check('Product and print item status sets exist', itemStatuses.includes('PRODUCT_ITEM_STATUSES') && itemStatuses.includes('PRINT_ITEM_STATUSES'));
 check('Item transitions are explicit', itemStatuses.includes('PRODUCT_ITEM_TRANSITIONS') && itemStatuses.includes('PRINT_ITEM_TRANSITIONS'));
@@ -28,6 +31,12 @@ check('Concurrent item changes serialize on the order', migration.includes('wher
 check('Aggregate order status is derived atomically', migration.includes('attention_count > 0') && migration.includes('ready_count = active_count') && migration.includes("next_order_status := 'processing'"));
 check('Invalid item transitions are rejected in SQL', migration.includes('invalid_item_status_transition'));
 check('Cancellation updates all item states and inventory', migration.includes("status_reason_code = 'order_cancelled'") && migration.includes('restore_store_stock'));
+check('Cancelling one product restores its stock once', migration.includes("current_item.status <> 'cancelled' and p_status = 'cancelled'") && migration.includes('perform public.restore_store_stock(jsonb_build_array'));
+check('Full order cancellation excludes previously cancelled items', migration.includes("p_status = 'cancelled' and status <> 'cancelled'") && migration.includes("status_reason_code = 'order_cancelled'"));
+check('Reopening an order restores only order-cancelled items', migration.includes("status = 'cancelled' and status_reason_code = 'order_cancelled'"));
+check('Reactivating a cancelled product reserves stock again', migration.includes("current_item.status = 'cancelled' and p_status <> 'cancelled'") && migration.includes('perform public.reserve_store_stock(jsonb_build_array'));
+check('Last active item requires full order cancellation', migration.includes('cancel_last_active_item_requires_order_cancellation') && adminPage.includes('لإلغاء آخر عنصر، استخدم إلغاء الطلب بالكامل'));
+check('Printed items wait for ready before order readiness', migration.includes("item_type = 'print' and status = 'ready'") && !migration.includes("item_type = 'print' and status in ('printed', 'ready')"));
 check('Checkout snapshots product identity', checkout.includes("item_type: 'product'") && checkout.includes('item_name: String(product.name') && checkout.includes('item_image: product.image'));
 check('Checkout initializes both item kinds', checkout.includes("status: 'pending'") && checkout.includes("status: 'files_received'"));
 check('Customer orders return safe item status fields', customerOrders.includes('statusUpdatedAt') && customerOrders.includes('status_updated_at') && !customerOrders.includes('status_reason_code'));
