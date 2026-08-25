@@ -9,10 +9,16 @@ export const STORE_ORDER_STATUSES = {
     description: 'تم اعتماد الطلب وتجهيزه للمعالجة.',
     tone: 'bg-indigo-50 text-indigo-700 border-indigo-100',
   },
+
   processing: {
     label: 'قيد التجهيز',
     description: 'يجري تجهيز المنتجات وتغليفها بعناية.',
     tone: 'bg-amber-50 text-amber-700 border-amber-100',
+  },
+  attention_required: {
+    label: 'يحتاج متابعة',
+    description: 'يوجد عنصر يحتاج مراجعة، وسيتواصل معك الفريق عند الحاجة.',
+    tone: 'bg-rose-50 text-rose-700 border-rose-100',
   },
   ready_for_delivery: {
     label: 'جاهز للتسليم',
@@ -59,7 +65,7 @@ export function getStoreOrderStatus(status) {
 }
 
 export function getStoreOrderStepIndex(status) {
-  if (status === 'cancelled' || status === 'returned') return -1;
+  if (status === 'cancelled' || status === 'returned' || status === 'attention_required') return -1;
   const index = STORE_ORDER_STEPS.indexOf(status);
   return index === -1 ? 0 : index;
 }

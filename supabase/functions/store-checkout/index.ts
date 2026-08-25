@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
     if (productIds.length > 0) {
       const productResult = await supabase
         .from('products')
-        .select('id, name, price, in_stock, stock_quantity, product_options')
+        .select('id, name, price, image, in_stock, stock_quantity, product_options')
         .in('id', productIds);
       if (productResult.error) throw productResult.error;
       products = productResult.data || [];
@@ -346,6 +346,10 @@ Deno.serve(async (req) => {
       productsSubtotal += price * item.quantity;
       return {
         product_id: item.product_id,
+        item_type: 'product',
+        item_name: String(product.name || 'منتج من لحظة فن'),
+        item_image: product.image || null,
+        status: 'pending',
         quantity: item.quantity,
         price_at_time: price,
         selected_options: resolvedOptions.selections,
@@ -401,6 +405,7 @@ Deno.serve(async (req) => {
         product_id: null,
         item_type: 'print',
         item_name: `طباعة صور ${readyDraft.print_size}`,
+        status: 'files_received',
         print_draft_id: readyDraft.id,
         quantity: snapshotTotalCopies,
         price_at_time: snapshotUnitPrice,

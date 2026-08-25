@@ -21,6 +21,12 @@ import { logAdminActivity } from '../utils/adminActivity';
 import { getEmailErrorMessage } from '../utils/emailErrors';
 import { getSelectedOptionLabels } from '../utils/productOptions';
 import { formatPrintOptionSummary } from '../utils/printOptions';
+import {
+  getStoreOrderItemStatus,
+  getStoreOrderItemTransitions,
+  PRINT_ITEM_STATUSES,
+  PRODUCT_ITEM_STATUSES,
+} from '../utils/storeOrderItemStatus';
 
 // ─── FSM Configuration ────────────────────────────────────────────────────────
 
@@ -42,6 +48,12 @@ const STATUS_CONFIG = {
     bgClass: 'bg-amber-100',   textClass: 'text-amber-700',
     btnClass: 'bg-amber-500 hover:bg-amber-400 text-white',
     icon: Printer,
+  },
+  attention_required: {
+    label: 'يحتاج متابعة',
+    bgClass: 'bg-rose-100', textClass: 'text-rose-700',
+    btnClass: 'bg-rose-600 hover:bg-rose-500 text-white',
+    icon: AlertCircle,
   },
   ready_for_delivery: {
     label: 'جاهز للتسليم',
@@ -124,9 +136,10 @@ async function saveUrlToDirectory(directoryHandle, url, filename) {
 
 const VALID_TRANSITIONS = {
   pending_verification: ['confirmed', 'cancelled'],
-  confirmed:            ['processing', 'cancelled'],
-  processing:           ['ready_for_delivery', 'cancelled'],
-  ready_for_delivery:   ['shipped', 'delivered', 'cancelled'],
+  confirmed:            ['processing', 'attention_required', 'cancelled'],
+  processing:           ['ready_for_delivery', 'attention_required', 'cancelled'],
+  attention_required:   ['confirmed', 'processing', 'ready_for_delivery', 'cancelled'],
+  ready_for_delivery:   ['shipped', 'delivered', 'attention_required', 'cancelled'],
   shipped:              ['delivered', 'returned'],
   delivered:            ['returned'],
   cancelled:            ['confirmed'],
@@ -262,6 +275,7 @@ export default function StoreOrdersManagement() {
   const [returnsLoading, setReturnsLoading] = useState(false);
   const [returnUpdatingId, setReturnUpdatingId] = useState(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [itemStatusUpdatingId, setItemStatusUpdatingId] = useState(null);
   const [trackingNumber, setTrackingNumber] = useState('');
   const [courierName, setCourierName] = useState('سمسا');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1014,6 +1028,51 @@ export default function StoreOrdersManagement() {
     }
   };
 
+  const handleItemStatusChange = async (item, newStatus) => {
+    if (!selectedOrder || itemStatusUpdatingId || item.status === newStatus) return;
+
+    setItemStatusUpdatingId(item.id);
+    const toastId = toast.loading('جاري تحديث حالة العنصر...');
+    try {
+      const { data, error } = await supabase.rpc('set_store_order_item_status', {
+        p_order_item_id: item.id,
+        p_status: newStatus,
+        p_reason_code: newStatus === 'attention_required' ? 'manual_review' : null,
+        p_note: null,
+      });
+      if (error) throw error;
+
+      const result = Array.isArray(data) ? data[0] : data;
+      const nextOrderStatus = result?.order_status || selectedOrder.status;
+      setOrderItems((current) => current.map((entry) => (
+        entry.id === item.id
+          ? { ...entry, status: newStatus, status_updated_at: new Date().toISOString() }
+          : entry
+      )));
+      setSelectedOrder((current) => ({ ...current, status: nextOrderStatus }));
+      setOrders((current) => current.map((entry) => (
+        entry.id === selectedOrder.id ? { ...entry, status: nextOrderStatus } : entry
+      )));
+
+      const statusInfo = getStoreOrderItemStatus(newStatus, item.item_type);
+      await logAdminActivity({
+        action: 'store_order_item_status_updated',
+        entityType: 'store_order_item',
+        entityId: item.id,
+        entityLabel: item.item_name || item.product?.name || 'عنصر طلب متجر',
+        oldValues: { status: item.status || null },
+        newValues: { status: newStatus },
+        metadata: { store_order_id: selectedOrder.id, status_label: statusInfo.label },
+      });
+      fetchOrderActivityLogs(selectedOrder);
+      toast.success(`تم تحديث العنصر إلى: ${statusInfo.label}`, { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('تعذر تحديث حالة العنصر', { id: toastId });
+    } finally {
+      setItemStatusUpdatingId(null);
+    }
+  };
   const handleReturnStatusChange = async (returnRequest, newStatus) => {
     if (!selectedOrder || returnUpdatingId) return;
 
@@ -1648,6 +1707,13 @@ export default function StoreOrdersManagement() {
                           item.product?.product_options,
                           item.selected_options,
                         );
+                        const itemStatuses = item.item_type === 'print' ? PRINT_ITEM_STATUSES : PRODUCT_ITEM_STATUSES;
+                        const currentItemStatus = item.status || (item.item_type === 'print' ? 'files_received' : 'pending');
+                        const currentItemStatusInfo = getStoreOrderItemStatus(currentItemStatus, item.item_type);
+                        const allowedItemStatuses = new Set([
+                          currentItemStatus,
+                          ...getStoreOrderItemTransitions(currentItemStatus, item.item_type),
+                        ]);
                         return (
                         <div key={item.id || idx} className="bg-[#FAF9F7] rounded-2xl p-3">
                           <div className="flex items-center gap-3">
@@ -1674,6 +1740,24 @@ export default function StoreOrdersManagement() {
                             <span className="font-black text-[#C6A56B] text-sm shrink-0">
                               {(item.price_at_time * item.quantity).toFixed(2)} ر.س
                             </span>
+                          </div>
+
+                          <div className="mt-3 flex flex-col gap-2 border-t border-[#E8B4BC]/15 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-[10px] font-bold text-[#171717]/45">حالة هذا العنصر</p>
+                              <p className="text-xs font-black text-[#171717]">{currentItemStatusInfo.label}</p>
+                            </div>
+                            <select
+                              value={currentItemStatus}
+                              onChange={(event) => handleItemStatusChange(item, event.target.value)}
+                              disabled={itemStatusUpdatingId === item.id || ['shipped', 'delivered', 'cancelled', 'returned'].includes(selectedOrder.status)}
+                              className="min-h-11 rounded-xl border border-[#E8B4BC]/25 bg-white px-3 text-xs font-black text-[#171717] outline-none focus:border-[#C6A56B] disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`تغيير حالة ${itemName}`}
+                            >
+                              {Object.entries(itemStatuses).filter(([statusCode]) => allowedItemStatuses.has(statusCode)).map(([statusCode, statusInfo]) => (
+                                <option key={statusCode} value={statusCode}>{statusInfo.label}</option>
+                              ))}
+                            </select>
                           </div>
 
                           {item.item_type === 'print' && item.print_files?.length > 0 && (

@@ -16,6 +16,7 @@ import {
   MessageCircle,
   Minus,
   Package,
+  Printer,
   Plus,
   ReceiptText,
   RefreshCw,
@@ -35,6 +36,7 @@ import { getCustomerSession } from '../utils/customerSession';
 import { clampCartQuantity, normalizeStockQuantity } from '../utils/productStock';
 import { getCartLineKey, getSelectedOptionLabels } from '../utils/productOptions';
 import { formatPrintOptionSummary } from '../utils/printOptions';
+import { getStoreOrderItemStatus, summarizeMixedOrderItems } from '../utils/storeOrderItemStatus';
 import {
   getPaymentState,
   getStorePaymentMethod,
@@ -230,6 +232,15 @@ function StatusBadge({ status }) {
   );
 }
 
+function ItemStatusBadge({ item }) {
+  const info = getStoreOrderItemStatus(item.status, item.itemType);
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black ${info.tone}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {info.label}
+    </span>
+  );
+}
 function PaymentBadge({ order }) {
   const payment = getPaymentState(order);
   return (
@@ -586,6 +597,7 @@ function OrderCard({ order }) {
           <div>
             <p className="text-[11px] text-[#171717]/45 font-bold mb-1">رقم الطلب</p>
             <h2 className="font-black text-xl text-[#171717]" dir="ltr">#{order.shortId}</h2>
+            <p className="mt-1 text-xs font-bold text-[#171717]/50">{summarizeMixedOrderItems(order.items)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={order.status} />
@@ -634,7 +646,7 @@ function OrderCard({ order }) {
   );
 }
 
-function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownloadReceipt, onApplyRewardPoints, applyingRewardPoints, returnWindowDays }) {
+function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onRepeatPrint, onDownloadReceipt, onApplyRewardPoints, applyingRewardPoints, returnWindowDays }) {
   const trackingUrl = getTrackingUrl(order);
   const total = Number(order.totalAmount || 0) + Number(order.deliveryFee || 0);
   const remaining = Math.max(0, total - Number(order.amountPaid || 0) - Number(order.pointsUsedAmount || 0));
@@ -708,8 +720,20 @@ function OrderDetails({ order, rewards, onReturnSubmitted, onReorder, onDownload
                         .join(' • ')}
                     </p>
                   )}
-                  {item.itemType === 'print' && <p className="mt-1 text-[10px] font-bold text-[#B97882]">{formatPrintOptionSummary(item.selectedOptions)}</p>}
+                  {item.itemType === 'print' && (
+                    <>
+                      <p className="mt-1 text-[10px] font-bold text-[#B97882]">{formatPrintOptionSummary(item.selectedOptions)}</p>
+                      <button
+                        type="button"
+                        onClick={() => onRepeatPrint?.(item)}
+                        className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-[#C6A56B]/25 bg-white px-3 text-[11px] font-black text-[#8C6A2F] hover:border-[#C6A56B]"
+                      >
+                        <RotateCcw size={13} /> اطبع بنفس الإعدادات
+                      </button>
+                    </>
+                  )}
                   <p className="text-xs text-[#171717]/50 mt-1">الكمية: {item.quantity}</p>
+                  <div className="mt-2"><ItemStatusBadge item={item} /></div>
                 </div>
                 <div className="text-left shrink-0">
                   <p className="font-black text-[#C6A56B]">{formatCurrency(item.price * item.quantity)}</p>
@@ -898,9 +922,22 @@ export default function CustomerOrdersPage() {
     }
   };
 
+  const handleRepeatPrint = (item) => {
+    const options = item?.selectedOptions || {};
+    const params = new URLSearchParams();
+    ['print_size', 'material', 'surface', 'border_style', 'fit_mode'].forEach((key) => {
+      if (options[key]) params.set(key, String(options[key]));
+    });
+    navigate(`/print${params.toString() ? `?${params.toString()}` : ''}`);
+  };
   const handleReorder = async (order) => {
     const productIds = [...new Set((order.items || []).map(item => item.productId).filter(Boolean))];
     if (productIds.length === 0) {
+      const printItem = (order.items || []).find((item) => item.itemType === 'print');
+      if (printItem) {
+        handleRepeatPrint(printItem);
+        return;
+      }
       toast.error('لا توجد منتجات قابلة لإعادة الطلب');
       return;
     }
@@ -1141,6 +1178,7 @@ export default function CustomerOrdersPage() {
               rewards={rewards}
               onReturnSubmitted={loadOrders}
               onReorder={handleReorder}
+              onRepeatPrint={handleRepeatPrint}
               onDownloadReceipt={handleDownloadReceipt}
               onApplyRewardPoints={handleApplyRewardPoints}
               applyingRewardPoints={applyingRewardPoints}
@@ -1237,9 +1275,14 @@ export default function CustomerOrdersPage() {
                 <ShoppingBag size={42} className="mx-auto mb-4 text-[#E8B4BC]/45" />
                 <h2 className="font-black text-2xl mb-2">لا توجد طلبات متجر بعد</h2>
                 <p className="text-sm text-[#171717]/55 mb-6">ابدأ من المتجر، وستظهر طلباتك هنا تلقائياً بعد تأكيدها.</p>
-                <Link to="/store" className="art-cta px-8 py-3 rounded-2xl font-black inline-flex items-center gap-2">
-                  <ShoppingBag size={18} /> تصفح المتجر
-                </Link>
+                <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                  <Link to="/print" className="art-cta px-8 py-3 rounded-2xl font-black inline-flex items-center justify-center gap-2">
+                    <Printer size={18} /> اطبع صورك الآن
+                  </Link>
+                  <Link to="/store" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#171717]/15 bg-white px-8 py-3 font-black text-[#171717] hover:border-[#C6A56B]">
+                    <ShoppingBag size={18} /> تصفح المتجر
+                  </Link>
+                </div>
               </section>
             ) : filteredOrders.length === 0 ? (
               <section className="bg-white rounded-[2rem] border border-[#E8B4BC]/15 shadow-sm p-8 text-center">

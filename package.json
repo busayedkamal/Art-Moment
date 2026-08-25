@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "check:product-detail": "node scripts/check-product-detail-release.mjs",
-    "check:tracking": "node scripts/check-tracking-release.mjs"
+    "check:tracking": "node scripts/check-tracking-release.mjs",
+    "check:mixed-orders": "node scripts/check-mixed-orders-release.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",

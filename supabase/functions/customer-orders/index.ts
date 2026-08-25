@@ -10,7 +10,7 @@ function normalizeOrderItem(item: Record<string, unknown>) {
     id: item.id,
     productId: item.product_id,
     name: item.item_name || (product as Record<string, unknown> | undefined)?.name || 'منتج غير متاح',
-    image: (product as Record<string, unknown> | undefined)?.image || null,
+    image: item.item_image || (product as Record<string, unknown> | undefined)?.image || null,
     quantity: Number(item.quantity || 0),
     price: Number(item.price_at_time || 0),
     selectedOptions: item.selected_options && typeof item.selected_options === 'object'
@@ -20,6 +20,8 @@ function normalizeOrderItem(item: Record<string, unknown>) {
       ? (product as Record<string, unknown>).product_options
       : [],
     itemType: item.item_type || 'product',
+    status: item.status || (item.item_type === 'print' ? 'files_received' : 'pending'),
+    statusUpdatedAt: item.status_updated_at || null,
     metadata: item.metadata && typeof item.metadata === 'object'
       ? Object.fromEntries(
           Object.entries(item.metadata as Record<string, unknown>)
@@ -36,7 +38,7 @@ function normalizeReturnItem(item: Record<string, unknown>) {
     storeOrderItemId: item.store_order_item_id,
     productId: item.product_id,
     name: (product as Record<string, unknown> | undefined)?.name || 'منتج غير متاح',
-    image: (product as Record<string, unknown> | undefined)?.image || null,
+    image: item.item_image || (product as Record<string, unknown> | undefined)?.image || null,
     quantity: Number(item.quantity || 0),
     price: Number(item.price_at_time || 0),
   };
@@ -206,7 +208,7 @@ Deno.serve(async (req) => {
     const orderId = String(body?.orderId || '').trim();
     const selectFields = `
       *,
-      store_order_items(id, product_id, item_type, item_name, print_draft_id, metadata, quantity, price_at_time, selected_options, products(name, image, product_options))
+      store_order_items(id, product_id, item_type, item_name, item_image, print_draft_id, metadata, quantity, price_at_time, selected_options, status, status_updated_at, products(name, image, product_options))
     `;
 
     const phoneValues = phoneVariants(customer.phone);

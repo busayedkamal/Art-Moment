@@ -91,6 +91,21 @@ function statusCopy(code, language) {
   return STATUS_TEXT[language]?.[code] || STATUS_TEXT[language].attention_required;
 }
 
+function itemStatusCopy(status, language) {
+  const code = typeof status === 'string' ? status : status?.code;
+  const labels = language === 'en' ? {
+    pending: 'Product received', reserved: 'Product reserved', preparing: 'In preparation',
+    files_received: 'Photos received', queued: 'Queued for printing', printing: 'Printing',
+    printed: 'Printing completed', ready: 'Ready', fulfilled: 'Completed',
+    attention_required: 'Needs attention', cancelled: 'Cancelled',
+  } : {
+    pending: 'تم استلام المنتج', reserved: 'تم حجز المنتج', preparing: 'قيد التجهيز',
+    files_received: 'تم استلام الصور', queued: 'في قائمة الطباعة', printing: 'قيد الطباعة',
+    printed: 'اكتملت الطباعة', ready: 'جاهز', fulfilled: 'مكتمل',
+    attention_required: 'يحتاج متابعة', cancelled: 'ملغي',
+  };
+  return labels[code] || (typeof status === 'object' ? status?.label : null);
+}
 function optionText(options) {
   return Object.entries(options || {})
     .filter(([, value]) => value !== null && value !== '')
@@ -609,6 +624,12 @@ export default function TrackOrderPage() {
                       <div key={item.id || index} className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0">
                         <div>
                           <p className="font-black">{item.name}</p>
+                          {itemStatusCopy(item.status, language) && (
+                            <span className="mt-2 inline-flex items-center gap-1 border border-[#C6A56B]/25 bg-[#C6A56B]/8 px-2 py-1 text-[11px] font-black text-[#8C6A2F]">
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                              {itemStatusCopy(item.status, language)}
+                            </span>
+                          )}
                           {optionText(item.options) && <p className="mt-1 text-xs leading-6 text-[#171717]/50">{optionText(item.options)}</p>}
                         </div>
                         <div className="shrink-0 text-end">

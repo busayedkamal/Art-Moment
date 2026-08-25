@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowRight,
@@ -171,6 +171,7 @@ export default function PrintBuilder() {
   const text = copy[language] || copy.ar;
   const optionsText = optionCopy[language] || optionCopy.ar;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const fileInputRef = useRef(null);
   const previewUrlsRef = useRef(new Set());
   const photoUpdateQueuesRef = useRef(new Map());
@@ -213,7 +214,18 @@ export default function PrintBuilder() {
         const supportsAvailability = receivedVariants.some((variant) => typeof variant.available === 'boolean');
         const nextVariants = supportsAvailability ? receivedVariants : LEGACY_VARIANTS;
         setVariants(nextVariants);
-        const initial = nextVariants.find((variant) => variant.available && variant.print_size === '4x6')
+        const requestedSize = searchParams.get('print_size');
+        const requestedMaterial = searchParams.get('material');
+        const requestedSurface = searchParams.get('surface');
+        const requestedBorder = searchParams.get('border_style');
+        const requestedFitMode = searchParams.get('fit_mode');
+        const initial = nextVariants.find((variant) => (
+          variant.available
+          && (!requestedSize || variant.print_size === requestedSize)
+          && (!requestedMaterial || variant.material === requestedMaterial)
+          && (!requestedSurface || variant.surface === requestedSurface)
+          && (!requestedBorder || variant.border_style === requestedBorder)
+        )) || nextVariants.find((variant) => variant.available && variant.print_size === '4x6')
           || nextVariants.find((variant) => variant.available);
         const hasSavedDraft = Boolean(localStorage.getItem(DRAFT_STORAGE_KEY));
         if (initial && !hasSavedDraft) {
@@ -222,6 +234,7 @@ export default function PrintBuilder() {
           setMaterial(initial.material);
           setFinish(initial.surface);
           setBorderStyle(initial.border_style);
+          if (['fit', 'fill'].includes(requestedFitMode)) setFitMode(requestedFitMode);
         }
       } catch (error) {
         console.info('Print variants are not deployed yet; using the current print sizes.', error?.message || '');
@@ -233,7 +246,7 @@ export default function PrintBuilder() {
     };
     loadVariants();
     return () => { cancelled = true; };
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;

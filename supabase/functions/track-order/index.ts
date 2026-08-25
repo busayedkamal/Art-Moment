@@ -91,6 +91,29 @@ function buildTimeline(statusCode: keyof typeof PUBLIC_STATUS, history: RecordVa
   });
 }
 
+function normalizeItemStatus(item: RecordValue) {
+  const kind = cleanText(item.item_type, 'product');
+  const fallback = kind === 'print' ? 'files_received' : 'pending';
+  const code = cleanText(item.status, fallback);
+  const labels: Record<string, string> = {
+    pending: 'تم استلام المنتج',
+    reserved: 'تم حجز المنتج',
+    preparing: 'قيد التجهيز',
+    fulfilled: 'مكتمل',
+    files_received: 'تم استلام الصور',
+    queued: 'في قائمة الطباعة',
+    printing: 'قيد الطباعة',
+    printed: 'اكتملت الطباعة',
+    ready: kind === 'print' ? 'الطباعة جاهزة' : 'المنتج جاهز',
+    attention_required: 'يحتاج متابعة',
+    cancelled: 'ملغي',
+  };
+  return {
+    code,
+    label: labels[code] || labels[fallback],
+    updatedAt: item.status_updated_at || null,
+  };
+}
 function normalizeStoreOrder(order: RecordValue, history: RecordValue[]) {
   const statusCode = storePublicStatus(order);
   const items = Array.isArray(order.store_order_items)
@@ -104,7 +127,7 @@ function normalizeStoreOrder(order: RecordValue, history: RecordValue[]) {
         unitPrice: money(row.price_at_time),
         lineTotal: money(Number(row.quantity || 0) * Number(row.price_at_time || 0)),
         options: safeOptions(row.selected_options),
-        status: statusCode,
+        status: normalizeItemStatus(row),
       };
     })
     : [];

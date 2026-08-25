@@ -1,3 +1,4 @@
+/* global URL, console, process */
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
