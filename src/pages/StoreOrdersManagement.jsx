@@ -857,7 +857,7 @@ export default function StoreOrdersManagement() {
         finalPaid    = cashDue;
 
         const confirmed = window.confirm(
-          `المبلغ المدخل (${numericPaidInput} ر.س) أكبر من المتبقي النقدي (${cashDue} ر.س).\n\nهل تريد سداد الطلب بالكامل وتحويل الفائض (${excessAmount} ر.س) إلى رصيد إضافي للعميل؟`
+          `المبلغ المدخل (${numericPaidInput} ر.س) أكبر من المتبقي النقدي (${cashDue} ر.س).\n\nهل تريد سداد الطلب بالكامل وتحويل الفائض (${excessAmount} ر.س) إلى رصيد الباقات غير المنتهي؟`
         );
         if (!confirmed) return;
       }
@@ -893,25 +893,15 @@ export default function StoreOrdersManagement() {
       if (orderError) throw orderError;
 
       if (excessAmount > 0 && selectedOrder.phone) {
-        let shortPhone = selectedOrder.phone.replace(/\D/g, '');
-        if (shortPhone.startsWith('966')) shortPhone = shortPhone.slice(3);
-        if (shortPhone.startsWith('0'))   shortPhone = shortPhone.slice(1);
-        const phoneQ = `phone.eq.${shortPhone},phone.eq.0${shortPhone},phone.eq.966${shortPhone},phone.eq.+966${shortPhone}`;
-
-        const { data: wallet } = await supabase.from('wallets').select('*').or(phoneQ).maybeSingle();
-        if (wallet) {
-          const { error: creditError } = await supabase.rpc('adjust_store_credit', {
-            p_wallet_id: wallet.id,
-            p_amount_delta: excessAmount,
-            p_reason: 'فائض دفعة طلب متجر',
-            p_source_type: 'store_order',
-            p_source_id: selectedOrder.id,
-          });
-          if (creditError) throw creditError;
-          toast.success(`تم سداد الطلب وإضافة الفائض (${excessAmount} ر.س) إلى رصيد المتجر المستقل.`);
-        } else {
-          toast.error('تم سداد الطلب، لكن لم يُعثر على محفظة مسجلة للعميل.');
-        }
+        const { error: creditError } = await supabase.rpc('credit_customer_package_balance', {
+          p_phone: selectedOrder.phone,
+          p_amount: excessAmount,
+          p_reason: 'فائض دفعة طلب متجر',
+          p_source_type: 'store_order_excess',
+          p_source_id: selectedOrder.id,
+        });
+        if (creditError) throw creditError;
+        toast.success(`تم سداد الطلب وإضافة الفائض (${excessAmount} ر.س) إلى رصيد الباقات غير المنتهي.`);
       } else {
         toast.success('تم تحديث المدفوعات بنجاح');
       }
@@ -932,7 +922,7 @@ export default function StoreOrdersManagement() {
           refunded_amount: finalRefunded,
         },
         metadata: {
-          excess_wallet_transfer: excessAmount,
+          excess_package_transfer: excessAmount,
           total_amount: numericTotal,
         },
       });

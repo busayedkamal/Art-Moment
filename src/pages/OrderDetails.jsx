@@ -596,73 +596,38 @@ export default function OrderDetails() {
     }
   };
 
-  // ✅ تعديل: تحويل الفائض للمحفظة لمرة واحدة وموازنة الطلب
+  // تحويل الفائض إلى رصيد باقات غير منتهٍ مع موازنة الطلب في عملية واحدة.
   const convertExcessToWallet = async () => {
     if (isConvertingExcess) return; // منع النقر المزدوج
 
     const excessAmount = getPrintOrderFinancials(order, transactions).overpaidAmount;
     if (excessAmount <= 0) return;
 
-    const cleanPhone = normalizePhone(order.phone);
-    if (!cleanPhone) return toast.error('رقم الجوال غير صالح');
-
     setIsConvertingExcess(true);
     const toastId = toast.loading('جاري التحويل...');
-    
-    try {
-      // 1. إضافة الفائض للمحفظة
-      let { data: wallet, error } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('phone', cleanPhone)
-        .maybeSingle();
 
+    try {
+      const { data: result, error } = await supabase.rpc(
+        'convert_print_order_excess_to_package_balance',
+        { p_order_id: id },
+      );
       if (error) throw error;
 
-      if (!wallet) {
-        const { data: newWallet, error: createError } = await supabase
-          .from('wallets')
-          .insert([{ phone: cleanPhone, points_balance: 0, reward_points_balance: 0, store_credit_balance: 0 }])
-          .select()
-          .single();
-        if (createError) throw createError;
-        wallet = newWallet;
+      const creditedAmount = Number(result?.amount || excessAmount);
+      const newTotalPaid = Number(result?.cashPaid ?? Math.max(0, Number(order.deposit || 0) - creditedAmount));
+      const payment = result?.payment;
+
+      if (payment?.id) {
+        setPayments(prev => prev.some(item => item.id === payment.id) ? prev : [...prev, payment]);
       }
-
-      const { error: creditError } = await supabase.rpc('adjust_store_credit', {
-        p_wallet_id: wallet.id,
-        p_amount_delta: excessAmount,
-        p_reason: 'فائض دفعة طلب طباعة',
-        p_source_type: 'print_order',
-        p_source_id: id,
-      });
-      if (creditError) throw creditError;
-
-      // 2. إضافة دفعة سالبة للطلب لضبط المتبقي ليكون 0 (حتى يختفي الزر)
-      const { data: payData, error: payError } = await supabase
-        .from('order_payments')
-        .insert([{
-          order_id: id,
-          amount: -excessAmount,
-          payment_date: new Date().toISOString().split('T')[0],
-          note: 'تحويل الفائض للمحفظة'
-        }])
-        .select()
-        .single();
-
-      if (payError) throw payError;
-
-      const newTotalPaid = Number(order.deposit || 0) - excessAmount;
-      await supabase
-        .from('orders')
-        .update({ deposit: newTotalPaid })
-        .eq('id', id);
-
-      setPayments(prev => [...prev, payData]);
-      setOrder(prev => ({ ...prev, deposit: newTotalPaid }));
+      setOrder(prev => ({ ...prev, deposit: newTotalPaid, payment_status: 'paid' }));
 
       toast.dismiss(toastId);
-      toast.success('تم تحويل الفائض إلى رصيد متجر مستقل وتصفير حساب الطلب');
+      toast.success(
+        result?.alreadyCredited
+          ? 'الفائض موجود بالفعل في رصيد الباقات'
+          : `تم تحويل الفائض (${creditedAmount.toFixed(2)} ر.س) إلى رصيد الباقات غير المنتهي`,
+      );
     } catch (err) {
       toast.dismiss(toastId);
       console.error(err);
@@ -2021,7 +1986,7 @@ export default function OrderDetails() {
                       disabled={isConvertingExcess}
                       className="flex-1 py-2 bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs flex items-center justify-center gap-1 hover:bg-indigo-200 transition-colors disabled:opacity-50"
                     >
-                      <Wallet size={12} /> تحويل الفائض ({Math.abs(remaining).toFixed(2)})
+                      <Wallet size={12} /> تحويل الفائض لرصيد الباقات ({Math.abs(remaining).toFixed(2)})
                     </button>
                   )}
                 </div>
