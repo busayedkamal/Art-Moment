@@ -33,6 +33,7 @@ function catalogUnitPrice(variant: Record<string, unknown>, settings: Record<str
   if (variant.is_available === false) return 0;
   if (variant.pricing_mode === 'fixed') return Number(Number(variant.unit_price || 0).toFixed(2));
   if (variant.pricing_mode === 'existing_a4') return Number(Number(settings?.a4_price || 0).toFixed(2));
+  if (variant.pricing_mode === 'existing_a5') return Number(Number(settings?.a5_price || 0).toFixed(2));
 
   let price = Number(settings?.photo_4x6_price || 0);
   if (settings?.is_dynamic_pricing_enabled) {
@@ -63,7 +64,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
       const { data: settings, error: settingsError } = await supabase
         .from('settings')
-        .select('a4_price, photo_4x6_price, is_dynamic_pricing_enabled, tier_1_limit, tier_1_price, tier_2_limit, tier_2_price, tier_3_price')
+        .select('a4_price, a5_price, photo_4x6_price, is_dynamic_pricing_enabled, tier_1_limit, tier_1_price, tier_2_limit, tier_2_price, tier_3_price')
         .eq('id', 1)
         .maybeSingle();
       if (settingsError) throw settingsError;

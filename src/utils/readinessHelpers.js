@@ -58,7 +58,8 @@ export function getReadinessInfo(order) {
   // صور
   const photos4x6 = toNumber(order.photos4x6, 0)
   const photosA4 = toNumber(order.photosA4, 0)
-  const photosCount = photos4x6 + photosA4
+  const photosA5 = toNumber(order.photosA5, 0)
+  const photosCount = photos4x6 + photosA4 + photosA5
   const hasPhotos = photosCount > 0
 
   // مبالغ (ملاحظة: totalAmount = 0 لا يعني نقص بيانات)

@@ -103,6 +103,7 @@ export default function Settings() {
   // إعدادات الأسعار + إعدادات واتساب الجديدة
   const [prices, setPrices] = useState({
     a4_price: 0,
+    a5_price: 0,
     photo_4x6_price: 0,
     delivery_fee_default: 0,
     // حقول التسعير الديناميكي
@@ -265,6 +266,7 @@ export default function Settings() {
     if (variant.draft_price !== null && variant.draft_price !== undefined) return variant.draft_price;
     if (variant.pricing_mode === 'fixed') return variant.unit_price ?? '';
     if (variant.pricing_mode === 'existing_a4') return prices.a4_price;
+    if (variant.pricing_mode === 'existing_a5') return prices.a5_price ?? 0;
     return prices.photo_4x6_price;
   };
 
@@ -508,6 +510,10 @@ export default function Settings() {
               <div>
                 <label className="text-xs font-bold text-[#171717]/60 block mb-1">سعر طباعة A4</label>
                 <input type="number" step="0.5" value={prices.a4_price} onChange={e => setPrices({...prices, a4_price: e.target.value})} className="w-full bg-[#FAF9F7] border rounded-xl px-4 py-2"/>
+              </div>
+              <div>
+                <label htmlFor="a5Price" className="text-xs font-bold text-[#171717]/60 block mb-1">سعر طباعة A5</label>
+                <input id="a5Price" type="number" min="0" step="0.01" value={prices.a5_price ?? 0} onChange={e => setPrices({...prices, a5_price: e.target.value})} className="w-full bg-[#FAF9F7] border rounded-xl px-4 py-2"/>
               </div>
               <div>
                 <label className="text-xs font-bold text-[#171717]/60 block mb-1">سعر طباعة 4x6 (الأساسي)</label>

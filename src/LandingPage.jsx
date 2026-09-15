@@ -99,8 +99,8 @@ const FAQS = [
   {
     q: 'ما المقاسات المتاحة؟',
     qEn: 'Which print sizes are available?',
-    a: 'نوفر مقاسات الصور الشائعة مثل 4x6، إضافة إلى A4 وخيارات أخرى تظهر داخل المتجر حسب التوفر.',
-    aEn: 'Popular sizes such as 4x6 and A4 are available, along with other options shown in the store when in stock.',
+    a: 'نوفر مقاسات الصور 4x6 وA5 وA4، وتظهر خيارات الطباعة داخل المتجر حسب التوفر.',
+    aEn: 'We offer 4x6, A5, and A4 photo prints. Printing options appear in the store based on availability.',
   },
   {
     q: 'كيف أعرف أين وصل طلبي؟',

@@ -37,7 +37,7 @@ export async function getPrintUnitPrice(
 ) {
   const { data: settings, error } = await supabase
     .from('settings')
-    .select('a4_price, photo_4x6_price, is_dynamic_pricing_enabled, tier_1_limit, tier_1_price, tier_2_limit, tier_2_price, tier_3_price')
+    .select('a4_price, a5_price, photo_4x6_price, is_dynamic_pricing_enabled, tier_1_limit, tier_1_price, tier_2_limit, tier_2_price, tier_3_price')
     .eq('id', 1)
     .maybeSingle();
   if (error) throw error;
@@ -57,13 +57,15 @@ export async function getPrintUnitPrice(
       if (fixedPrice <= 0) throw new Error('print_variant_unavailable');
       return fixedPrice;
     }
-    if (variant.pricing_mode === 'existing_a4') {
-      const a4Price = Number(Number(settings?.a4_price || 0).toFixed(2));
-      if (a4Price <= 0) throw new Error('print_variant_unavailable');
-      return a4Price;
+    if (['existing_a4', 'existing_a5'].includes(variant.pricing_mode)) {
+      const sizePrice = Number(Number(settings?.[variant.pricing_mode === 'existing_a5' ? 'a5_price' : 'a4_price'] || 0).toFixed(2));
+      if (sizePrice <= 0) throw new Error('print_variant_unavailable');
+      return sizePrice;
     }
-  } else if (printSize === 'A4') {
-    return Number(Number(settings?.a4_price || 0).toFixed(2));
+  } else if (['A4', 'A5'].includes(printSize)) {
+    const sizePrice = Number(Number(settings?.[printSize === 'A5' ? 'a5_price' : 'a4_price'] || 0).toFixed(2));
+    if (sizePrice <= 0) throw new Error('print_variant_unavailable');
+    return sizePrice;
   }
   let price = Number(settings?.photo_4x6_price || 0);
   if (settings?.is_dynamic_pricing_enabled) {

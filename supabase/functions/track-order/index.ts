@@ -189,9 +189,14 @@ function normalizePrintOrder(order: RecordValue) {
   const photo4x6UnitPrice = money(order.photo_4x6_unit_price);
   const a4Quantity = Number(order.a4_qty || 0);
   const a4UnitPrice = money(order.a4_unit_price);
+  const a5Quantity = Number(order.a5_qty || 0);
+  const a5UnitPrice = money(order.a5_unit_price);
   const items = [
     photo4x6Quantity > 0
       ? { kind: 'print', name: 'طباعة صور 4×6', quantity: photo4x6Quantity, unitPrice: photo4x6UnitPrice, lineTotal: money(photo4x6Quantity * photo4x6UnitPrice), status: statusCode }
+      : null,
+    a5Quantity > 0
+      ? { kind: 'print', name: 'طباعة صور A5', quantity: a5Quantity, unitPrice: a5UnitPrice, lineTotal: money(a5Quantity * a5UnitPrice), status: statusCode }
       : null,
     a4Quantity > 0
       ? { kind: 'print', name: 'طباعة صور A4', quantity: a4Quantity, unitPrice: a4UnitPrice, lineTotal: money(a4Quantity * a4UnitPrice), status: statusCode }

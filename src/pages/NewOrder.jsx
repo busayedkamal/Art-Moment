@@ -22,7 +22,7 @@ export default function NewOrder() {
   const [loadingSettings, setLoadingSettings] = useState(true);
 
   const [settings, setSettings] = useState({
-    a4_price: 2, photo_4x6_price: 1, delivery_fee_default: 0,
+    a4_price: 2, a5_price: 0, photo_4x6_price: 1, delivery_fee_default: 0,
     is_dynamic_pricing_enabled: false,
     tier_1_limit: 20, tier_1_price: 2,
     tier_2_limit: 50, tier_2_price: 1.5,
@@ -59,7 +59,7 @@ export default function NewOrder() {
     defaultValues: {
       customerName: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
       source: 'الهفوف', sourceOther: '',
-      a4Qty: '', photo4x6Qty: '', deliveryFee: 0, deposit: 0, notes: '',
+      a4Qty: '', a5Qty: '', photo4x6Qty: '', deliveryFee: 0, deposit: 0, notes: '',
       manualDiscount: 0, friendshipCode: ''
     }
   });
@@ -69,8 +69,8 @@ export default function NewOrder() {
   const nameWatcher = watch('customerName');
   const friendshipCodeWatcher = watch('friendshipCode');
   const currentCity = watch('source');
-  const [a4Qty, photo4x6Qty, deliveryFee, deposit, manualDiscount] = watch([
-    'a4Qty', 'photo4x6Qty', 'deliveryFee', 'deposit', 'manualDiscount'
+  const [a4Qty, a5Qty, photo4x6Qty, deliveryFee, deposit, manualDiscount] = watch([
+    'a4Qty', 'a5Qty', 'photo4x6Qty', 'deliveryFee', 'deposit', 'manualDiscount'
   ]);
 
   const normalizePhone = (raw) => {
@@ -331,6 +331,7 @@ export default function NewOrder() {
   }
 
   const subtotal = (Number(a4Qty || 0) * settings.a4_price)
+    + (Number(a5Qty || 0) * Number(settings.a5_price || 0))
     + (Number(photo4x6Qty || 0) * active4x6Price);
 
   let couponDiscountValue = 0;
@@ -389,6 +390,9 @@ export default function NewOrder() {
   const onSubmit = async (data) => {
     try {
       const cleanPhone = normalizePhone(data.phone);
+      if (Number(data.a5Qty) > 0 && !(Number(settings.a5_price) > 0)) {
+        throw new Error('حدد سعر طباعة A5 في الإعدادات أولاً');
+      }
       if (usePoints) {
         if (pointsUsedCount < rewardRules.minimumRedemptionPoints) {
           throw new Error(`الحد الأدنى للاستبدال ${rewardRules.minimumRedemptionPoints.toLocaleString()} نقطة`);
@@ -405,6 +409,7 @@ export default function NewOrder() {
         source: data.source,
         source_other: data.sourceOther,
         a4_qty: Number(data.a4Qty) || 0,
+        a5_qty: Number(data.a5Qty) || 0,
         photo_4x6_qty: Number(data.photo4x6Qty) || 0,
         album_qty: 0,
         album_price: 0,
@@ -419,6 +424,7 @@ export default function NewOrder() {
         reward_points_used: pointsUsedCount,
         photo_4x6_unit_price: Number(active4x6Price) || 0,
         a4_unit_price: Number(settings.a4_price) || 0,
+        a5_unit_price: Number(data.a5Qty) > 0 ? Number(settings.a5_price) : null,
         manual_discount: directDiscountValue + couponDiscountValue + packageDiscountValue,
         subtotal: subtotal,
         total_amount: total,
@@ -536,8 +542,9 @@ export default function NewOrder() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">طلب جديد</h1>
-          <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+          <p className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2">
             الأسعار: <span className="bg-slate-100 px-2 rounded">A4 = {settings.a4_price}</span>
+            <span className="bg-slate-100 px-2 rounded">A5 = {Number(settings.a5_price) > 0 ? settings.a5_price : 'غير محدد'}</span>
             {isDynamicApplied ?
               <span className="bg-[#E8B4BC]/15 text-[#171717] px-2 rounded font-bold flex items-center gap-1"><Sparkles size={12} /> 4×6 = {active4x6Price}</span> :
               <span className="bg-slate-100 px-2 rounded">4×6 = {settings.photo_4x6_price}</span>
@@ -733,7 +740,7 @@ export default function NewOrder() {
           {/* تفاصيل الصور */}
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2"><Tag className="text-[#E8B4BC]" /> تفاصيل الصور</h3>
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[#171717] block text-center flex items-center justify-center gap-2">
                   عدد 4×6 {isDynamicApplied && <Sparkles size={14} className="text-amber-400 animate-pulse" />}
@@ -742,6 +749,16 @@ export default function NewOrder() {
                   className={`w-full bg-white border-2 rounded-2xl px-2 py-4 text-center font-black text-3xl shadow-sm outline-none focus:ring-4 placeholder-[#E8B4BC]/30 ${isDynamicApplied ? 'border-[#C6A56B] text-[#C6A56B] focus:ring-[#C6A56B]/20' : 'border-[#E8B4BC] text-[#171717] focus:ring-[#E8B4BC]/20'}`}
                   placeholder="0" />
                 <div className="text-center text-[10px] text-slate-400 font-medium mt-1">مخزون: {inventory.find(i => i.item_name === 'ورق 4x6')?.quantity || '-'}</div>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="a5Qty" className="text-sm font-bold text-[#171717] block text-center">عدد A5</label>
+                <input id="a5Qty" type="number" min="0" step="1" {...register('a5Qty', {
+                  validate: value => !value || (Number.isInteger(Number(value)) && Number(value) >= 0) || 'أدخل عدداً صحيحاً غير سالب',
+                })}
+                  className="w-full bg-white border-2 border-[#171717]/25 rounded-2xl px-2 py-4 text-center font-black text-3xl text-[#171717] shadow-sm outline-none focus:ring-4 focus:ring-[#C6A56B]/20"
+                  placeholder="0" />
+                {errors.a5Qty && <p className="text-xs text-red-600">{errors.a5Qty.message}</p>}
+                <div className="text-center text-[10px] text-slate-400 font-medium mt-1">مخزون: {inventory.find(i => i.item_name === 'ورق A5')?.quantity ?? '-'}</div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[#171717] block text-center">عدد A4</label>
@@ -767,8 +784,8 @@ export default function NewOrder() {
 
             <div className="space-y-3 text-sm">
               <div className="flex justify-between text-[#171717]/80">
-                <span>صور (A4 + 4x6)</span>
-                <span>{((Number(a4Qty || 0) * settings.a4_price) + (Number(photo4x6Qty || 0) * active4x6Price)).toFixed(2)}</span>
+                <span>صور (A4 + A5 + 4x6)</span>
+                <span>{subtotal.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center text-[#171717]/80 pt-2">

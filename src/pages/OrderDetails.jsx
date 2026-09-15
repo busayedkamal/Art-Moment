@@ -75,7 +75,7 @@ export default function OrderDetails() {
   const [loading, setLoading] = useState(true);
   
   const [appSettings, setAppSettings] = useState(null);
-  const [prices, setPrices] = useState({ a4: 0, photo4x6: 0 });
+  const [prices, setPrices] = useState({ a4: 0, a5: 0, photo4x6: 0 });
 
   const CITIES = ['الرميلة', 'المبرز', 'الهفوف', 'الدمام', 'الخبر', 'العمران', 'أخرى'];
 
@@ -113,7 +113,7 @@ export default function OrderDetails() {
 
   const [isEditingProduction, setIsEditingProduction] = useState(false);
   const [productionData, setProductionData] = useState({
-    a4_qty: 0, photo_4x6_qty: 0, album_qty: 0, album_price: 0
+    a4_qty: 0, a5_qty: 0, photo_4x6_qty: 0, album_qty: 0, album_price: 0
   });
 
   // لمنع تكرار ضغط زر التحويل
@@ -249,6 +249,7 @@ export default function OrderDetails() {
         setAppSettings(settingsData);
         setPrices({
           a4: Number(settingsData.a4_price || 0),
+          a5: Number(settingsData.a5_price || 0),
           photo4x6: Number(settingsData.photo_4x6_price || 0)
         });
       }
@@ -264,6 +265,7 @@ export default function OrderDetails() {
 
       setProductionData({
         a4_qty: orderData.a4_qty || 0,
+        a5_qty: orderData.a5_qty || 0,
         photo_4x6_qty: orderData.photo_4x6_qty || 0,
         album_qty: orderData.album_qty || 0,
         album_price: orderData.album_price || 0
@@ -467,10 +469,14 @@ export default function OrderDetails() {
       let newSubtotal = Number(order.subtotal || 0);
       let active4x6Price = Number(order.photo_4x6_unit_price || prices.photo4x6 || 0);
       const activeA4Price = Number(order.a4_unit_price || prices.a4 || 0);
+      const activeA5Price = Number(order.a5_unit_price ?? prices.a5 ?? 0);
 
       // نحسب من جديد فقط إذا قمنا بتعديل محتويات الطلب (A4, 4x6, الخ)
-      if ('a4_qty' in overrides || 'photo_4x6_qty' in overrides || 'album_qty' in overrides || 'album_price' in overrides) {
+      if ('a4_qty' in overrides || 'a5_qty' in overrides || 'photo_4x6_qty' in overrides || 'album_qty' in overrides || 'album_price' in overrides) {
         const currentA4 = overrides.a4_qty ?? order.a4_qty;
+        const currentA5 = Number(overrides.a5_qty ?? order.a5_qty ?? 0);
+        if (!Number.isInteger(currentA5) || currentA5 < 0) throw new Error('أدخل عدداً صحيحاً غير سالب');
+        if (currentA5 > 0 && activeA5Price <= 0) throw new Error('حدد سعر طباعة A5 في الإعدادات أولاً');
         const current4x6 = overrides.photo_4x6_qty ?? order.photo_4x6_qty;
         const currentAlbumQty = overrides.album_qty ?? order.album_qty;
         const currentAlbumPrice = overrides.album_price ?? order.album_price;
@@ -485,7 +491,7 @@ export default function OrderDetails() {
            }
         }
         
-        const productsTotal = (Number(currentA4) * prices.a4) + (Number(current4x6) * active4x6Price);
+        const productsTotal = (Number(currentA4) * activeA4Price) + (currentA5 * activeA5Price) + (Number(current4x6) * active4x6Price);
         const albumsTotal = (Number(currentAlbumQty) * Number(currentAlbumPrice));
         newSubtotal = productsTotal + albumsTotal;
       }
@@ -516,11 +522,13 @@ export default function OrderDetails() {
       const updatedData = {
         financial_schema_version: 2,
         a4_qty: overrides.a4_qty ?? order.a4_qty,
+        a5_qty: overrides.a5_qty ?? order.a5_qty ?? 0,
         photo_4x6_qty: overrides.photo_4x6_qty ?? order.photo_4x6_qty,
         album_qty: overrides.album_qty ?? order.album_qty,
         album_price: overrides.album_price ?? order.album_price,
         photo_4x6_unit_price: active4x6Price,
         a4_unit_price: activeA4Price,
+        a5_unit_price: Number(overrides.a5_qty ?? order.a5_qty ?? 0) > 0 ? activeA5Price : order.a5_unit_price ?? null,
         delivery_fee: currentDelivery,
         direct_discount_amount: safeDirectDiscount,
         coupon_discount_amount: safeCouponDiscount,
@@ -659,6 +667,7 @@ export default function OrderDetails() {
   const handleSaveProduction = async () => {
     const success = await recalculateAndSaveTotal({
       a4_qty: Number(productionData.a4_qty),
+      a5_qty: Number(productionData.a5_qty),
       photo_4x6_qty: Number(productionData.photo_4x6_qty),
       album_qty: Number(productionData.album_qty),
       album_price: Number(productionData.album_price)
@@ -1142,6 +1151,7 @@ export default function OrderDetails() {
               <div class="field"><span>حالة الطلب</span><b>${escapeLabelHtml(statusLabel)}</b></div>
               <div class="field"><span>صور 4×6</span><b>${escapeLabelHtml(order?.photo_4x6_qty || 0)}</b></div>
               <div class="field"><span>صور A4</span><b>${escapeLabelHtml(order?.a4_qty || 0)}</b></div>
+              <div class="field"><span>صور A5</span><b>${escapeLabelHtml(order?.a5_qty || 0)}</b></div>
             </div>
             <div class="field notes"><span>ملاحظات الطلب</span><b>${escapeLabelHtml(order?.notes || 'لا توجد ملاحظات')}</b></div>
             <div class="footer">Art Moment · art-moment.com</div>
@@ -1523,7 +1533,7 @@ export default function OrderDetails() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="bg-[#FAF9F7] p-2 rounded text-center">
                   <span className="text-xs block text-[#171717]/55">4x6</span>
                   {isEditingProduction ? (
@@ -1535,6 +1545,18 @@ export default function OrderDetails() {
                     />
                   ) : (
                     <span className="font-bold text-xl">{order.photo_4x6_qty}</span>
+                  )}
+                </div>
+
+                <div className="bg-[#FAF9F7] p-2 rounded text-center">
+                  <label htmlFor="productionA5" className="text-xs block text-[#171717]/55">A5</label>
+                  {isEditingProduction ? (
+                    <input id="productionA5" type="number" min="0" step="1"
+                      value={productionData.a5_qty}
+                      onChange={e => setProductionData({ ...productionData, a5_qty: e.target.value })}
+                      className="w-full min-h-11 text-center" />
+                  ) : (
+                    <span className="font-bold text-xl">{order.a5_qty || 0}</span>
                   )}
                 </div>
 

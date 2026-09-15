@@ -25,7 +25,7 @@ export default function Reports() {
   const [expenses, setExpenses] = useState([]);
   const [wallets, setWallets] = useState([]);
   const [packageTransactions, setPackageTransactions] = useState([]);
-  const [settings, setSettings] = useState({ a4_price: 0, photo_4x6_price: 0 });
+  const [settings, setSettings] = useState({ a4_price: 0, a5_price: 0, photo_4x6_price: 0 });
   const [expandedMonth, setExpandedMonth] = useState(null);
 
   useEffect(() => {
@@ -65,6 +65,7 @@ export default function Reports() {
     const productsStats = {
       '4x6': { name: 'صور 4x6', sales: 0, revenue: 0, profit: 0 },
       'A4': { name: 'صور A4', sales: 0, revenue: 0, profit: 0 },
+      'A5': { name: 'صور A5', sales: 0, revenue: 0, profit: 0 },
       'Albums': { name: 'ألبومات', sales: 0, revenue: 0, profit: 0 }
     };
     const customerLastOrder = {};
@@ -114,6 +115,7 @@ export default function Reports() {
 
       const q4x6 = Number(o.photo_4x6_qty) || 0;
       const qA4 = Number(o.a4_qty) || 0;
+      const qA5 = Number(o.a5_qty) || 0;
       const qAlbum = Number(o.album_qty) || 0;
       const pAlbum = Number(o.album_price) || 0;
 
@@ -126,6 +128,10 @@ export default function Reports() {
       const revA4 = qA4 * (settings.a4_price || 2);
       productsStats['A4'].revenue += revA4;
       productsStats['A4'].profit += (revA4 * 0.65);
+      productsStats['A5'].sales += qA5;
+      const revA5 = qA5 * Number(o.a5_unit_price ?? settings.a5_price ?? 0);
+      productsStats['A5'].revenue += revA5;
+      productsStats['A5'].profit += (revA5 * 0.65);
 
       productsStats['Albums'].sales += qAlbum;
       const revAlbum = qAlbum * pAlbum;
@@ -261,12 +267,14 @@ export default function Reports() {
                     phone: o.phone,
                     totalPhotos: 0,
                     totalA4: 0,
+                    totalA5: 0,
                     lastOrderDate: new Date(o.created_at)
                 };
             }
             
             customersMap[o.phone].totalPhotos += Number(o.photo_4x6_qty || 0);
             customersMap[o.phone].totalA4 += Number(o.a4_qty || 0);
+            customersMap[o.phone].totalA5 += Number(o.a5_qty || 0);
             
             const orderDate = new Date(o.created_at);
             if (orderDate > customersMap[o.phone].lastOrderDate) {
@@ -286,7 +294,7 @@ export default function Reports() {
     }
 
     const targetCustomer = eligibleCustomers[0];
-    const savings = ((targetCustomer.totalPhotos * settings.photo_4x6_price) + (targetCustomer.totalA4 * settings.a4_price)).toFixed(0);
+    const savings = ((targetCustomer.totalPhotos * settings.photo_4x6_price) + (targetCustomer.totalA4 * settings.a4_price) + (targetCustomer.totalA5 * Number(settings.a5_price || 0))).toFixed(0);
 
     const msg = `أهلاً بك عميلنا العزيز ${targetCustomer.name} 👋\nنفتقدك في لحظة فن! 🎨\n\nلقد طبعنا لك مسبقاً أكثر من ${targetCustomer.totalPhotos} صورة، ووفرت معنا أكثر من ${savings} ريال.\n\nرجعنا لك بعرض خاص لفترة محدودة:\nاطبع 50 صورة بـ 49 ريال فقط بدلاً من 100 ريال! 🎁\n\nللطلب أرسل صورك الآن:\nhttps://wa.me/966560301744`;
     
@@ -295,19 +303,21 @@ export default function Reports() {
   };
 
   const customerInsights = useMemo(() => {
-    let totalA4 = 0; let total4x6 = 0; let totalAlbums = 0;
+    let totalA4 = 0; let totalA5 = 0; let total4x6 = 0; let totalAlbums = 0;
     orders.forEach(order => {
       totalA4 += Number(order.a4_qty || 0);
+      totalA5 += Number(order.a5_qty || 0);
       total4x6 += Number(order.photo_4x6_qty || 0);
       totalAlbums += Number(order.album_qty || 0);
     });
-    return { totalA4, total4x6, totalAlbums };
+    return { totalA4, totalA5, total4x6, totalAlbums };
   }, [orders]);
 
   const PIE_COLORS = ['#E8B4BC', '#C6A56B', '#171717'];
   const pieData = useMemo(() => [
     { name: 'صور 4x6', value: customerInsights.total4x6 },
     { name: 'صور A4', value: customerInsights.totalA4 },
+    { name: 'صور A5', value: customerInsights.totalA5 },
     { name: 'الألبومات', value: customerInsights.totalAlbums }
   ].filter(d => d.value > 0), [customerInsights]);
 

@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     const supabase = getServiceClient();
     const { data, error } = await supabase
       .from('settings')
-      .select('a4_price, photo_4x6_price, delivery_fee_default, is_dynamic_pricing_enabled, tier_1_limit, tier_1_price, tier_2_limit, tier_2_price, tier_3_price')
+      .select('a4_price, a5_price, photo_4x6_price, delivery_fee_default, is_dynamic_pricing_enabled, tier_1_limit, tier_1_price, tier_2_limit, tier_2_price, tier_3_price')
       .eq('id', 1)
       .single();
 

@@ -31,24 +31,30 @@ function transactionTotal(transactions, type) {
 function buildPrintLineItems(order, subtotal) {
   const photoQty = Number(order.photo_4x6_qty || 0);
   const a4Qty = Number(order.a4_qty || 0);
+  const a5Qty = Number(order.a5_qty || 0);
   const albumQty = Number(order.album_qty || 0);
   const albumUnitPrice = positiveMoney(order.album_price);
   const albumTotal = roundMoney(albumQty * albumUnitPrice);
 
   let photoUnitPrice = Number(order.photo_4x6_unit_price);
   let a4UnitPrice = Number(order.a4_unit_price);
+  let a5UnitPrice = Number(order.a5_unit_price);
   photoUnitPrice = Number.isFinite(photoUnitPrice) && photoUnitPrice > 0 ? roundMoney(photoUnitPrice) : null;
   a4UnitPrice = Number.isFinite(a4UnitPrice) && a4UnitPrice > 0 ? roundMoney(a4UnitPrice) : null;
+  a5UnitPrice = Number.isFinite(a5UnitPrice) && a5UnitPrice > 0 ? roundMoney(a5UnitPrice) : null;
 
   const availablePhotosTotal = Math.max(0, roundMoney(subtotal - albumTotal));
 
-  if (photoQty > 0 && a4Qty === 0 && !photoUnitPrice) {
+  if (photoQty > 0 && a4Qty === 0 && a5Qty === 0 && !photoUnitPrice) {
     photoUnitPrice = roundMoney(availablePhotosTotal / photoQty);
   }
-  if (a4Qty > 0 && photoQty === 0 && !a4UnitPrice) {
+  if (a4Qty > 0 && photoQty === 0 && a5Qty === 0 && !a4UnitPrice) {
     a4UnitPrice = roundMoney(availablePhotosTotal / a4Qty);
   }
-  if (photoQty > 0 && a4Qty > 0) {
+  if (a5Qty > 0 && photoQty === 0 && a4Qty === 0 && !a5UnitPrice) {
+    a5UnitPrice = roundMoney(availablePhotosTotal / a5Qty);
+  }
+  if (photoQty > 0 && a4Qty > 0 && a5Qty === 0) {
     if (photoUnitPrice && !a4UnitPrice) {
       a4UnitPrice = roundMoney((availablePhotosTotal - photoQty * photoUnitPrice) / a4Qty);
     } else if (a4UnitPrice && !photoUnitPrice) {
@@ -73,6 +79,15 @@ function buildPrintLineItems(order, subtotal) {
       quantity: a4Qty,
       unitPrice: a4UnitPrice,
       lineTotal: a4UnitPrice ? roundMoney(a4Qty * a4UnitPrice) : null,
+    });
+  }
+  if (a5Qty > 0) {
+    lineItems.push({
+      key: 'a5',
+      label: 'طباعة صور A5',
+      quantity: a5Qty,
+      unitPrice: a5UnitPrice,
+      lineTotal: a5UnitPrice ? roundMoney(a5Qty * a5UnitPrice) : null,
     });
   }
   if (albumQty > 0) {
