@@ -446,7 +446,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#94a3b8'}}/>
                 <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#94a3b8'}} width={40}/>
-                <RechartsTooltip cursor={{fill: '#f8fafc', radius: 8}} contentStyle={{borderRadius: '14px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', padding: '10px 16px'}}/>
+                <RechartsTooltip cursor={{fill: '#f8fafc', radius: 8}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', padding: '10px 16px'}}/>
                 <Bar dataKey="sales" name="المبيعات" fill="#10b981" radius={[6, 6, 0, 0]} barSize={22}/>
                 <Bar dataKey="expenses" name="المصروفات" fill="#EF4444" radius={[6, 6, 0, 0]} barSize={22}/>
               </BarChart>

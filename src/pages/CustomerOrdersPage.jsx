@@ -109,12 +109,12 @@ function buildReceiptHtml(order) {
       <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
       <style>
         body { font-family:'Tajawal', Arial, sans-serif; background:#FAF9F7; color:#171717; margin:0; padding:32px; }
-        .receipt { max-width:760px; margin:auto; background:#fff; border:1px solid #ead8da; border-radius:24px; padding:28px; }
+        .receipt { max-width:760px; margin:auto; background:#fff; border:1px solid #ead8da; border-radius:8px; padding:28px; }
         h1 { margin:0 0 8px; font-size:28px; }
         .muted { color:#888; font-size:13px; }
         .brand { color:#C6A56B; font-weight:800; margin-bottom:20px; }
         .grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin:22px 0; }
-        .box { background:#FAF9F7; border-radius:16px; padding:14px; }
+        .box { background:#FAF9F7; border-radius:8px; padding:14px; }
         table { width:100%; border-collapse:collapse; margin:18px 0; }
         th, td { padding:12px; border-bottom:1px solid #f0e3e4; text-align:right; font-size:14px; }
         th { color:#9d6f74; }

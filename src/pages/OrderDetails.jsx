@@ -1115,16 +1115,16 @@ export default function OrderDetails() {
             @page { size: 100mm 150mm; margin: 7mm; }
             * { box-sizing: border-box; }
             body { margin: 0; color: #171717; font-family: Tajawal, Arial, sans-serif; }
-            .label { min-height: 136mm; border: 2px solid #E8B4BC; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+            .label { min-height: 136mm; border: 2px solid #E8B4BC; border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
             .brand { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E9D7D9; padding-bottom: 12px; }
             .brand img { width: 54px; height: 54px; object-fit: contain; }
             h1 { margin: 0; font-size: 23px; }
             .order-number { color: #B0873F; font-size: 25px; font-weight: 900; direction: ltr; text-align: right; }
-            .customer { background: #FAF9F7; border-radius: 12px; padding: 14px; }
+            .customer { background: #FAF9F7; border-radius: 8px; padding: 14px; }
             .customer strong { display: block; font-size: 23px; margin-bottom: 5px; }
             .phone { font-size: 18px; font-weight: 800; direction: ltr; text-align: right; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-            .field { border: 1px solid #E9D7D9; border-radius: 10px; padding: 10px; }
+            .field { border: 1px solid #E9D7D9; border-radius: 8px; padding: 10px; }
             .field span { display: block; color: #8F8585; font-size: 11px; margin-bottom: 4px; }
             .field b { font-size: 15px; }
             .notes { flex: 1; white-space: pre-wrap; }

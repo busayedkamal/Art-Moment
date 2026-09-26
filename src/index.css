@@ -85,8 +85,39 @@ video {
   --am-line:           rgba(23,23,23,0.10);
   --am-shadow-soft:    0 14px 36px rgba(23,23,23,0.07);
   --am-shadow-lift:    0 24px 64px rgba(23,23,23,0.16);
+  --radius-ui:         8px;
 }
 
+/* ─── نظام الزوايا الموحد ─────────────────────────
+   البطاقات والأزرار والحقول: 8px
+   الدوائر الحقيقية وشارات الحالة غير التفاعلية تحتفظ بـ rounded-full.
+────────────────────────────────────────────────── */
+@media screen {
+  :where(
+    .rounded-none,
+    .rounded-sm,
+    .rounded,
+    .rounded-md,
+    .rounded-lg,
+    .rounded-xl,
+    .rounded-2xl,
+    .rounded-3xl
+  ) {
+    border-radius: var(--radius-ui) !important;
+  }
+
+  [class*="rounded-["],
+  [class*="rounded-t-"],
+  [class*="rounded-b-"],
+  [class*="rounded-s-"],
+  [class*="rounded-e-"] {
+    border-radius: var(--radius-ui) !important;
+  }
+
+  :where(button, a, [role='button'])[class*="rounded"] {
+    border-radius: var(--radius-ui) !important;
+  }
+}
 /* ─── مكوّنات عامة — هوية لحظة فن ─────────────── */
 @layer components {
 
