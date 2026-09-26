@@ -1,5 +1,5 @@
 // src/components/layout/Layout.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -18,7 +18,8 @@ import {
   Bell,
   History,
   ClipboardList,
-  ChartNoAxesCombined
+  ChartNoAxesCombined,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -30,18 +31,30 @@ export default function Layout() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const storeNavItems = [
+    { path: '/app/products', label: 'المتجر', icon: <Package size={18} /> },
+    { path: '/app/store-orders', label: 'طلبات المتجر', icon: <ShoppingBag size={18} /> },
+    { path: '/app/store-growth', label: 'نمو المتجر', icon: <ChartNoAxesCombined size={18} /> },
+    { path: '/app/tasks', label: 'مهام تحتاج إجراء', icon: <ClipboardList size={18} /> },
+    { path: '/app/notifications', label: 'الإشعارات', icon: <Bell size={18} /> },
+    { path: '/app/activity', label: 'سجل النشاط', icon: <History size={18} /> },
+  ];
+  const isStoreSectionActive = storeNavItems.some((item) => location.pathname.startsWith(item.path));
+  const [isStoreMenuOpen, setIsStoreMenuOpen] = useState(isStoreSectionActive);
+
+  useEffect(() => {
+    if (isStoreSectionActive) setIsStoreMenuOpen(true);
+  }, [isStoreSectionActive]);
+
   const navItems = [
     { path: '/app/dashboard', label: 'الرئيسية',   icon: <LayoutDashboard size={20} /> },
-    { path: '/app/tasks', label: 'مهام تحتاج إجراء', icon: <ClipboardList size={20} /> },
     { path: '/app/orders',    label: 'الطلبات',    icon: <ShoppingCart size={20} /> },
     { path: '/app/customers', label: 'العملاء',    icon: <Users size={20} /> },
     { path: '/app/reports',   label: 'التقارير',   icon: <FileBarChart size={20} /> },
     { path: '/app/expenses',  label: 'المصروفات',  icon: <Wallet size={20} /> },
-    { path: '/app/products',     label: 'المتجر',         icon: <Package size={20} /> },
-    { path: '/app/store-orders', label: 'طلبات المتجر',  icon: <ShoppingBag size={20} /> },
-    { path: '/app/store-growth', label: 'نمو المتجر', icon: <ChartNoAxesCombined size={20} /> },
-    { path: '/app/notifications', label: 'الإشعارات', icon: <Bell size={20} /> },
-    { path: '/app/activity', label: 'سجل النشاط', icon: <History size={20} /> },
+  ];
+
+  const secondaryNavItems = [
     { path: '/track',         label: 'تتبع الطلب', icon: <Search size={20} /> },
     { path: '/app/settings',  label: 'الإعدادات',  icon: <Settings size={20} /> },
   ];
@@ -97,6 +110,69 @@ export default function Layout() {
                     ? 'bg-gradient-to-b from-[#E8B4BC] to-[#C6A56B] text-white shadow-lg shadow-[#E8B4BC]/25'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'}
                 `}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            );
+          })}
+
+          <div>
+            <button
+              type="button"
+              onClick={() => setIsStoreMenuOpen((open) => !open)}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
+                isStoreSectionActive
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+              }`}
+              aria-expanded={isStoreMenuOpen}
+              aria-controls="admin-store-menu"
+            >
+              <Package size={20} />
+              <span className="flex-1 text-start">إدارة المتجر</span>
+              <ChevronDown
+                size={17}
+                className={`transition-transform duration-200 ${isStoreMenuOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isStoreMenuOpen && (
+              <div id="admin-store-menu" className="mt-1 space-y-1 ps-3">
+                {storeNavItems.map((item) => {
+                  const isActive = location.pathname.startsWith(item.path);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-gradient-to-b from-[#E8B4BC] to-[#C6A56B] text-white shadow-lg shadow-[#E8B4BC]/25'
+                          : 'text-white/60 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {item.icon}
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {secondaryNavItems.map((item) => {
+            const isActive = location.pathname.startsWith(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-gradient-to-b from-[#E8B4BC] to-[#C6A56B] text-white shadow-lg shadow-[#E8B4BC]/25'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`}
               >
                 {item.icon}
                 {item.label}
