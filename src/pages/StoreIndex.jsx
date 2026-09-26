@@ -16,7 +16,7 @@ import {
   ArrowUpDown, ChevronDown, Printer
 } from 'lucide-react';
 import CustomerAuthModal from '../components/CustomerAuthModal';
-import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from '../utils/customerAuthPrompt';
+
 import { getCartLineKey, localizeProductOptions } from '../utils/productOptions';
 import { trackStoreEvent } from '../utils/storeAnalytics';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -116,16 +116,6 @@ export default function StoreIndex() {
 
   useEffect(() => {
     setCustomer(getCustomerSession());
-  }, []);
-
-  useEffect(() => {
-    if (!shouldAutoOpenCustomerAuth()) return undefined;
-
-    const timeoutId = window.setTimeout(() => {
-      markCustomerAuthPromptShown();
-      setIsAuthModalOpen(true);
-    }, 1200);
-    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {

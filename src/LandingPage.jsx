@@ -23,7 +23,7 @@ import {
 import CustomerAuthModal from './components/CustomerAuthModal';
 import PublicHeader from './components/PublicHeader';
 import SeoHead from './components/SeoHead';
-import { markCustomerAuthPromptShown, shouldAutoOpenCustomerAuth } from './utils/customerAuthPrompt';
+
 import { localizeProductOptions } from './utils/productOptions';
 import { useLanguage } from './contexts/LanguageContext';
 
@@ -200,16 +200,6 @@ export default function LandingPage() {
 
   useEffect(() => {
     setCustomer(getCustomerSession());
-  }, []);
-
-  useEffect(() => {
-    if (!shouldAutoOpenCustomerAuth()) return undefined;
-
-    const timeoutId = window.setTimeout(() => {
-      markCustomerAuthPromptShown();
-      setIsAuthModalOpen(true);
-    }, 1200);
-    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const handleLogout = () => {
