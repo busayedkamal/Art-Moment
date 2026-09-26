@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 function getServiceClient() {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const verifyToken = Deno.env.get("WHATSAPP_VERIFY_TOKEN");
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error("Supabase service configuration is missing.");
   }
