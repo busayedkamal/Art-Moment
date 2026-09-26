@@ -50,8 +50,8 @@ const VALID_TRANSITIONS = {
   returned:             [],
   // حالات النظام القديم
   new:      ['printing', 'done', 'delivered', 'confirmed', 'processing'],
-  printing: ['done', 'ready_for_delivery', 'delivered'],
-  done:     ['delivered', 'ready_for_delivery'],
+  printing: ['done', 'delivered'],
+  done:     ['delivered'],
 };
 
 const paymentAmountFormatter = new Intl.NumberFormat('en-US', {
