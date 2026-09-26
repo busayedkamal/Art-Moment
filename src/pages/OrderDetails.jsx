@@ -932,32 +932,21 @@ export default function OrderDetails() {
     }
   };
 
-  const sendAutoWhatsAppMessage = async (orderData) => {
+  const sendOrderStatusWhatsApp = async (statusLabel) => {
     try {
-      const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
-      if (!settings || !settings.whatsapp_enabled || !settings.whatsapp_instance_id || !settings.whatsapp_token) return;
-      if (!orderData.phone) return;
-
-      let phone = String(orderData.phone).replace(/\D/g, '');
-      if (phone.startsWith('0')) phone = '966' + phone.substring(1);
-
-      const msg =
-        `مرحباً ${orderData.customer_name} 🌸\n\n` +
-        `سعدنا بخدمتك في *لحظة فن*.\n\n` +
-        `يسرنا إخبارك بأن طلبك رقم *#${orderData.id.slice(0, 6)}* قد تم تسليمه/شحنه بنجاح! 📦✨`;
-
-      await fetch(`https://api.ultramsg.com/${settings.whatsapp_instance_id}/messages/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: settings.whatsapp_token, to: phone, body: msg })
+      const { error } = await supabase.functions.invoke('whatsapp-api', {
+        body: {
+          action: 'send_order_status',
+          orderType: 'print',
+          orderId: id,
+          statusLabel,
+        },
       });
-
-      toast.success('تم إرسال رسالة واتساب تلقائية 🚀');
+      if (error) throw error;
     } catch (error) {
-      console.error('WhatsApp Error:', error);
+      console.error('Automatic WhatsApp status notification failed:', error);
     }
   };
-
   const sendWhatsApp = (type) => {
     if (!order.phone) return toast.error('لا يوجد رقم');
     const cleanPhone = String(order.phone).replace(/\D/g, '');
@@ -1035,11 +1024,8 @@ export default function OrderDetails() {
         .insert({ order_id: id, old_status: oldStatus, new_status: newStatus, created_at: now });
       if (historyError) console.error('Order status history insert failed:', historyError);
 
-      setOrder(prev => {
-        const updated = { ...prev, status: newStatus, [dateField]: now };
-        if (newStatus === 'delivered') sendAutoWhatsAppMessage(updated);
-        return updated;
-      });
+      setOrder(prev => ({ ...prev, status: newStatus, [dateField]: now }));
+      void sendOrderStatusWhatsApp(STATUS_CONFIG[newStatus]?.label || newStatus);
 
       const { data: historyData } = await supabase
         .from('order_status_history')

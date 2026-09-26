@@ -5,6 +5,7 @@ import { isValidSaudiMobile, normalizeSaudiPhone, phoneVariants } from '../_shar
 import { calculateStoreCouponDiscount } from '../_shared/storeCoupons.ts';
 import { recalculatePrintDraft, verifyPrintDraftAccess } from '../_shared/printDrafts.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
+import { sendWhatsAppStatusTemplate } from '../_shared/whatsapp.ts';
 
 function generatePin() {
   const values = new Uint32Array(1);
@@ -90,40 +91,17 @@ function resolveProductOptions(
 }
 
 async function sendWhatsAppConfirmation(
+  supabase: ReturnType<typeof getServiceClient>,
   order: Record<string, unknown>,
-  trackingToken: string,
-  rewards?: { points?: number; value?: number },
 ) {
-  const enabled = Deno.env.get('WHATSAPP_ENABLED') === 'true';
-  const instanceId = Deno.env.get('ULTRAMSG_INSTANCE_ID');
-  const token = Deno.env.get('ULTRAMSG_TOKEN');
-
-  if (!enabled || !instanceId || !token) return;
-
-  const phone = formatWhatsAppPhone(String(order.phone));
-  const customerName = String(order.customer_name || 'عميلنا العزيز');
-  const orderNumber = String(order.short_id || order.id).slice(0, 6);
-  const totalAmount = Number(order.total_amount || 0).toFixed(2);
-  const rewardLine = Number(rewards?.points || 0) > 0
-    ? `النقاط المستخدمة: *${Number(rewards?.points || 0)} نقطة* (${Number(rewards?.value || 0).toFixed(2)} ريال)\n`
-    : '';
-  const message =
-    `مرحباً *${customerName}*\n\n` +
-    `تم استلام طلبك من متجر لحظة فن بنجاح.\n` +
-    `رقم الطلب: *#${orderNumber}*\n` +
-    `الإجمالي: *${totalAmount} ريال*\n` +
-    rewardLine +
-    `المتبقي للدفع: *${Math.max(0, Number(totalAmount) - Number(rewards?.value || 0)).toFixed(2)} ريال*\n` +
-    `رمز التتبع الآمن: *${trackingToken}*\n\n` +
-    `طلبك الآن بانتظار التأكيد. شكراً لاختيارك لحظة فن.`;
-
-  await fetch(`https://api.ultramsg.com/${instanceId}/messages/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, to: phone, body: message }),
+  return sendWhatsAppStatusTemplate(supabase, {
+    to: order.phone,
+    customerName: order.customer_name,
+    orderNumber: String(order.short_id || order.id).slice(0, 12),
+    statusLabel: 'بانتظار التأكيد',
+    trackingUrl: 'https://www.art-moment.com/track',
   });
 }
-
 function orderEmailHtml(
   order: Record<string, unknown>,
   trackingToken: string,
@@ -669,10 +647,8 @@ Deno.serve(async (req) => {
     createdGuestCustomerId = null;
 
     try {
-      await sendWhatsAppConfirmation(order, trackingToken, {
-        points: requestedRewardPoints,
-        value: pointsUsedAmount,
-      });
+      await sendWhatsAppConfirmation(supabase, order);
+
     } catch (notifyError) {
       console.error('store checkout notification error:', notifyError);
     }

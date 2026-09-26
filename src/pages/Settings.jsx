@@ -4,11 +4,12 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import {
   Save, Loader2, Settings as SettingsIcon, Package, AlertTriangle,
-  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator, MessageCircle,
+  Plus, Tag, Trash2, ToggleLeft, ToggleRight, Percent, Calculator,
   FileText, Edit3, XCircle, Mail, BellRing, Clock3, CreditCard, RotateCcw, Truck,
   Award, Coins, ShieldCheck, Grid3X3
 } from 'lucide-react';
 import RiyalSign from '../components/RiyalSign';
+import WhatsAppSettingsCard from '../components/WhatsAppSettingsCard';
 import {
   DEFAULT_OPERATION_RULES,
   getOperationRulesPayload,
@@ -111,10 +112,7 @@ export default function Settings() {
     tier_1_limit: 20, tier_1_price: 2,
     tier_2_limit: 50, tier_2_price: 1.5,
     tier_3_price: 1,
-    // حقول واتساب (جديد)
-    whatsapp_instance_id: '',
-    whatsapp_token: '',
-    whatsapp_enabled: false
+
   });
 
   // إعدادات المخزون
@@ -527,35 +525,7 @@ export default function Settings() {
 
             <hr className="border-[#E8B4BC]/15" />
 
-            {/* قسم واتساب الجديد */}
-            <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <MessageCircle size={18} className="text-emerald-600"/>
-                  <span className="font-bold text-[#171717] text-sm">ربط واتساب (API)</span>
-                </div>
-                <button type="button" onClick={() => setPrices({...prices, whatsapp_enabled: !prices.whatsapp_enabled})} className="text-emerald-600 hover:text-emerald-700">
-                  {prices.whatsapp_enabled ? <ToggleRight size={32}/> : <ToggleLeft size={32} className="text-[#171717]/50"/>}
-                </button>
-              </div>
-              
-              {prices.whatsapp_enabled && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                  <div>
-                    <label className="text-[10px] font-bold text-emerald-800 block mb-1">Instance ID</label>
-                    <input type="text" placeholder="instance..." value={prices.whatsapp_instance_id || ''} onChange={e => setPrices({...prices, whatsapp_instance_id: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:ring-1 focus:ring-emerald-500"/>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-emerald-800 block mb-1">Token</label>
-                    <input type="text" placeholder="token..." value={prices.whatsapp_token || ''} onChange={e => setPrices({...prices, whatsapp_token: e.target.value})} className="w-full bg-white border rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:ring-1 focus:ring-emerald-500"/>
-                  </div>
-                  <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                    سيتم إرسال رسائل تلقائية عند تغيير الحالة إلى "تم التسليم".
-                  </p>
-                </div>
-              )}
-            </div>
+            <WhatsAppSettingsCard />
 
             {/* قسم التسعير الديناميكي */}
             <div className="bg-[#E8B4BC]/10 p-4 rounded-xl border border-[#E8B4BC]/20">

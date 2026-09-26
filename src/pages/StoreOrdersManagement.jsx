@@ -585,38 +585,21 @@ export default function StoreOrdersManagement() {
 
   // ── WhatsApp tracking notification ────────────────────────────────────────
 
-  const sendTrackingWhatsApp = async (order, tracking, courier) => {
+  const sendOrderStatusWhatsApp = async (order, statusLabel) => {
     try {
-      const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
-      if (!settings || !settings.whatsapp_enabled || !settings.whatsapp_instance_id || !settings.whatsapp_token) return;
-
-      let formattedPhone = String(order.phone).replace(/\D/g, '');
-      if (formattedPhone.startsWith('0')) formattedPhone = '966' + formattedPhone.substring(1);
-
-      const trackingUrl = courier === 'سمسا'
-        ? `https://www.smsaexpress.com/sa/ar/trackingdetails?tracknumbers=${tracking}`
-        : courier === 'أرامكس'
-        ? `https://www.aramex.com/sa/ar/track/results?mode=0&ShipmentNumber=${tracking}`
-        : null;
-
-      const msg =
-        `مرحباً *${order.customer_name}* 📦\n\n` +
-        `تم شحن طلبك رقم *#${String(order.id).slice(0, 6)}* بنجاح!\n\n` +
-        `شركة الشحن: *${courier}*\n` +
-        `رقم التتبع: *${tracking}*\n` +
-        (trackingUrl ? `\nيمكنك تتبع مسار شحنتك لحظة بلحظة عبر الرابط التالي:\n${trackingUrl}\n` : '') +
-        `\nنسعد بخدمتكم في لحظة فن ✨`;
-
-      await fetch(`https://api.ultramsg.com/${settings.whatsapp_instance_id}/messages/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: settings.whatsapp_token, to: formattedPhone, body: msg })
+      const { error } = await supabase.functions.invoke('whatsapp-api', {
+        body: {
+          action: 'send_order_status',
+          orderType: 'store',
+          orderId: order.id,
+          statusLabel,
+        },
       });
+      if (error) throw error;
     } catch (error) {
-      console.error('Tracking WhatsApp Error:', error);
+      console.error('Automatic WhatsApp status notification failed:', error);
     }
   };
-
   const buildTemplateVariables = (order = selectedOrder, extra = {}) => {
     const total = Number(order?.total_amount || 0) + Number(order?.delivery_fee || 0);
     const cashPaid = Number(order?.amount_paid || 0);
@@ -980,9 +963,7 @@ export default function StoreOrdersManagement() {
       setSelectedOrder(updated);
       setOrders(prev => prev.map(o => o.id === selectedOrder.id ? updated : o));
 
-      if (newStatus === 'shipped' && trackingNumber.trim()) {
-        await sendTrackingWhatsApp(updated, trackingNumber.trim(), courierName);
-      }
+      void sendOrderStatusWhatsApp(updated, STATUS_CONFIG[newStatus]?.label || newStatus);
 
       await logAdminActivity({
         action: newStatus === 'shipped' ? 'store_order_shipping_updated' : 'store_order_status_updated',
