@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   wabaId: '',
   templateLanguage: 'ar',
   orderStatusTemplate: 'order_status_update',
+  receiptTemplate: 'receipt_issued',
   verifiedName: '',
   displayPhoneNumber: '',
   qualityRating: '',
@@ -167,6 +168,11 @@ export default function WhatsAppSettingsCard() {
           <label className="block text-[11px] font-bold text-[#171717]/65">
             قالب تحديث حالة الطلب
             <input dir="ltr" value={settings.orderStatusTemplate} onChange={(event) => update('orderStatusTemplate', event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} className="mt-1 w-full border bg-white px-3 py-2 font-mono text-xs outline-none focus:border-emerald-500" placeholder="order_status_update" />
+          </label>
+
+          <label className="block text-[11px] font-bold text-[#171717]/65">
+            قالب إرسال إيصال القبض
+            <input dir="ltr" value={settings.receiptTemplate} onChange={(event) => update('receiptTemplate', event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} className="mt-1 w-full border bg-white px-3 py-2 font-mono text-xs outline-none focus:border-emerald-500" placeholder="receipt_issued" />
           </label>
 
           <div className={`flex items-start gap-2 border p-3 text-xs ${settings.accessTokenConfigured ? 'border-emerald-200 bg-white text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>

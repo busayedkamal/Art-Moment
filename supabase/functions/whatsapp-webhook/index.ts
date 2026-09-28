@@ -68,6 +68,17 @@ Deno.serve(async (req) => {
       }
       const { error } = await supabase.from('customer_message_logs').update(update).eq('provider_id', providerId);
       if (error) console.error('WhatsApp webhook log update failed:', error);
+
+      const receiptUpdate: Record<string, unknown> = {
+        whatsapp_status: status === 'failed' ? 'failed' : 'sent',
+        whatsapp_error: status === 'failed' ? update.error_message : null,
+      };
+      if (status === 'sent') receiptUpdate.whatsapp_sent_at = occurredAt;
+      const { error: receiptError } = await supabase.from('receipts')
+        .update(receiptUpdate).eq('whatsapp_provider_id', providerId);
+      if (receiptError && !/receipts|schema cache|relation|does not exist/i.test(receiptError.message || '')) {
+        console.error('WhatsApp receipt status update failed:', receiptError);
+      }
     }
     return response('ok');
   } catch (error) {

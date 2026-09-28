@@ -19,7 +19,8 @@ import {
   History,
   ClipboardList,
   ChartNoAxesCombined,
-  ChevronDown
+  ChevronDown,
+  ReceiptText
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -50,6 +51,7 @@ export default function Layout() {
     { path: '/app/dashboard', label: 'الرئيسية',   icon: <LayoutDashboard size={20} /> },
     { path: '/app/orders',    label: 'الطلبات',    icon: <ShoppingCart size={20} /> },
     { path: '/app/customers', label: 'العملاء',    icon: <Users size={20} /> },
+    { path: '/app/receipts',  label: 'إيصالات القبض', icon: <ReceiptText size={20} /> },
     { path: '/app/reports',   label: 'التقارير',   icon: <FileBarChart size={20} /> },
     { path: '/app/expenses',  label: 'المصروفات',  icon: <Wallet size={20} /> },
   ];

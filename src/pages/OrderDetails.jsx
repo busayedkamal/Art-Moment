@@ -13,6 +13,7 @@ import logo from '../assets/logo-art-moment.svg';
 import logoPng from '../assets/logo.png';
 import RiyalSign from '../components/RiyalSign';
 import OrderFinancialBreakdown from '../components/OrderFinancialBreakdown';
+import ReceiptsPanel from '../components/ReceiptsPanel';
 import { getPrintOrderFinancials, roundMoney } from '../utils/orderFinancials';
 import { choosePreferredWallet } from '../utils/walletBalances';
 import {
@@ -2004,6 +2005,8 @@ export default function OrderDetails() {
           </div>
           {/* نهاية بطاقة الحسابات */}
         </div>
+
+        <ReceiptsPanel customerId={order.customer_id} customerName={order.customer_name} customerPhone={order.phone} orderType="print" orderId={order.id} />
 
         {/* الفاتورة القابلة للطباعة */}
         <div id="printable-invoice" className="hidden print:block bg-white text-black print-no-extra-space">

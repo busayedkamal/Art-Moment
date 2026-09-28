@@ -9,6 +9,7 @@ export type WhatsAppSettings = {
   wabaId: string;
   templateLanguage: string;
   orderStatusTemplate: string;
+  receiptTemplate: string;
   verifiedName?: string;
   displayPhoneNumber?: string;
   qualityRating?: string;
@@ -24,6 +25,7 @@ const SETTINGS_COLUMNS = [
   'whatsapp_waba_id',
   'whatsapp_template_language',
   'whatsapp_order_status_template',
+  'whatsapp_receipt_template',
   'whatsapp_last_tested_at',
   'whatsapp_last_test_status',
   'whatsapp_verified_name',
@@ -64,6 +66,7 @@ export async function getWhatsAppSettings(supabase: SupabaseClientLike): Promise
     wabaId: clean(data?.whatsapp_waba_id, 80),
     templateLanguage: clean(data?.whatsapp_template_language, 20) || 'ar',
     orderStatusTemplate: clean(data?.whatsapp_order_status_template, 120) || 'order_status_update',
+    receiptTemplate: clean(data?.whatsapp_receipt_template, 120) || 'receipt_issued',
     verifiedName: clean(data?.whatsapp_verified_name, 160),
     displayPhoneNumber: clean(data?.whatsapp_display_phone_number, 80),
     qualityRating: clean(data?.whatsapp_quality_rating, 40),
@@ -146,6 +149,61 @@ export async function sendWhatsAppStatusTemplate(
         name: settings.orderStatusTemplate,
         language: { code: settings.templateLanguage },
         components: [{ type: 'body', parameters }],
+      },
+    }),
+  });
+
+  return {
+    skipped: false,
+    providerMessageId: clean(payload?.messages?.[0]?.id, 200),
+    recipient: to,
+  };
+}
+export async function sendWhatsAppReceiptTemplate(
+  supabase: SupabaseClientLike,
+  input: {
+    to: unknown;
+    customerName: unknown;
+    receiptNumber: unknown;
+    amountLabel: unknown;
+    paymentDate: unknown;
+    documentUrl: unknown;
+  },
+) {
+  const settings = await getWhatsAppSettings(supabase);
+  if (!settings.enabled) return { skipped: true, reason: 'whatsapp_disabled' };
+  if (!settings.phoneNumberId) throw new Error('meta_phone_number_id_missing');
+  if (!settings.accessTokenConfigured) throw new Error('meta_access_token_missing');
+
+  const to = normalizeWhatsAppPhone(input.to);
+  if (!/^\d{10,15}$/.test(to)) throw new Error('invalid_whatsapp_phone');
+  const documentUrl = clean(input.documentUrl, 1500);
+  if (!/^https:\/\//i.test(documentUrl)) throw new Error('invalid_receipt_document_url');
+
+  const bodyParameters = [
+    clean(input.customerName, 160) || 'عميل لحظة فن',
+    clean(input.receiptNumber, 80),
+    clean(input.amountLabel, 80),
+    clean(input.paymentDate, 80),
+  ].map((text) => ({ type: 'text', text }));
+
+  const payload = await graphRequest(settings, `${encodeURIComponent(settings.phoneNumberId)}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'template',
+      template: {
+        name: settings.receiptTemplate,
+        language: { code: settings.templateLanguage },
+        components: [
+          {
+            type: 'header',
+            parameters: [{ type: 'document', document: { link: documentUrl, filename: `${clean(input.receiptNumber, 80)}.pdf` } }],
+          },
+          { type: 'body', parameters: bodyParameters },
+        ],
       },
     }),
   });

@@ -9,6 +9,7 @@ import {
   RotateCcw, AlertTriangle, Tag, Megaphone, Send, History
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
+import ReceiptsPanel from "../components/ReceiptsPanel";
 import { RewardPointsSummary } from "../components/RewardPointsSummary";
 import { logAdminActivity } from "../utils/adminActivity";
 import { getPreferredWallets } from "../utils/walletBalances";
@@ -1709,7 +1710,12 @@ export default function Customers() {
                       </div>
                     </div>
                   )}
-                  <CustomerActivityPanel logs={customerActivityLogs} loading={customerActivityLoading} />
+                  <div className="mt-4">
+                    <ReceiptsPanel customerId={customer.customerId} customerName={customer.name} customerPhone={customer.phone} compact />
+                  </div>
+                  <div className="mt-4">
+                    <CustomerActivityPanel logs={customerActivityLogs} loading={customerActivityLoading} />
+                  </div>
                   {/* العنوان والملاحظات */}
                   <div className="space-y-3">
                     <div>
@@ -2077,6 +2083,10 @@ export default function Customers() {
                                   )}
                                 </div>
                               )}
+
+                              <div className="mt-4">
+                                <ReceiptsPanel customerId={customer.customerId} customerName={customer.name} customerPhone={customer.phone} compact />
+                              </div>
 
                               <div className="mt-4">
                                 <CustomerActivityPanel logs={customerActivityLogs} loading={customerActivityLoading} />

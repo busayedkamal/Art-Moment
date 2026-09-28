@@ -27,6 +27,7 @@ import {
   PRINT_ITEM_STATUSES,
   PRODUCT_ITEM_STATUSES,
 } from '../utils/storeOrderItemStatus';
+import ReceiptsPanel from '../components/ReceiptsPanel';
 
 // ─── FSM Configuration ────────────────────────────────────────────────────────
 
@@ -1615,6 +1616,8 @@ export default function StoreOrdersManagement() {
                     </>
                   )}
                 </div>
+
+                <ReceiptsPanel customerId={selectedOrder.customer_id || selectedOrder.customer?.id} customerName={selectedOrder.customer_name} customerPhone={selectedOrder.phone} orderType="store" orderId={selectedOrder.id} compact />
 
                 {/* ── Shipping & Tracking ── */}
                 <div className="bg-[#FAF9F7] rounded-2xl p-4">

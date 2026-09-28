@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
         whatsapp_waba_id: clean(body?.settings?.wabaId, 80) || null,
         whatsapp_template_language: clean(body?.settings?.templateLanguage, 20) || 'ar',
         whatsapp_order_status_template: clean(body?.settings?.orderStatusTemplate, 120) || 'order_status_update',
+        whatsapp_receipt_template: clean(body?.settings?.receiptTemplate, 120) || 'receipt_issued',
       };
       const { error } = await supabase.from('settings').update(payload).eq('id', 1);
       if (error) throw error;

@@ -23,6 +23,7 @@ const CustomerOrdersPage = lazy(() => import('./pages/CustomerOrdersPage.jsx'))
 const CustomerAccountPage = lazy(() => import('./pages/CustomerAccountPage.jsx'))
 const StorePaymentResult = lazy(() => import('./pages/StorePaymentResult.jsx'))
 const MarketingUnsubscribePage = lazy(() => import('./pages/MarketingUnsubscribePage.jsx'))
+const ReceiptVerificationPage = lazy(() => import('./pages/ReceiptVerificationPage.jsx'))
 const ProductManagement = lazy(() => import('./pages/ProductManagement.jsx'))
 const StoreOrdersManagement = lazy(() => import('./pages/StoreOrdersManagement.jsx'))
 const ManualStoreOrder = lazy(() => import('./pages/ManualStoreOrder.jsx'))
@@ -41,6 +42,7 @@ const Customers = lazy(() => import('./pages/Customers.jsx'))
 const Reports = lazy(() => import('./pages/Reports.jsx'))
 const Settings = lazy(() => import('./pages/Settings.jsx'))
 const Expenses = lazy(() => import('./pages/Expenses.jsx'))
+const Receipts = lazy(() => import('./pages/Receipts.jsx'))
 
 // الإطار العام
 const Layout = lazy(() => import('./components/layout/Layout.jsx'))
@@ -90,6 +92,7 @@ function AppRoutes() {
       <Route path="/store/orders" element={<CustomerOrdersPage />} />
       <Route path="/store/orders/:orderId" element={<CustomerOrdersPage />} />
       <Route path="/marketing/unsubscribe" element={<MarketingUnsubscribePage />} />
+      <Route path="/receipt/:receiptNumber/:token" element={<ReceiptVerificationPage />} />
       
       {/* 2. صفحة دخول الأدمن */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -111,7 +114,8 @@ function AppRoutes() {
         <Route path="orders/:id" element={<OrderDetails />} />
         <Route path="customers" element={<Customers />} />
         <Route path="reports" element={<Reports />} />
-        <Route path="expenses" element={<Expenses />} /> {/* 👈 2. هذا السطر كان ناقصاً (تفعيل الرابط) */}
+        <Route path="expenses" element={<Expenses />} />
+        <Route path="receipts" element={<Receipts />} />
         <Route path="settings" element={<Settings />} />
         <Route path="products" element={<ProductManagement />} />
         <Route path="store-orders" element={<StoreOrdersManagement />} />
@@ -135,6 +139,7 @@ const PRIVATE_ROUTE_PREFIXES = [
   '/store/payment',
   '/track',
   '/marketing/unsubscribe',
+  '/receipt',
 ]
 
 const PUBLIC_ROUTE_META = {
