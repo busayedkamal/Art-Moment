@@ -3,7 +3,7 @@ import { Ban, Banknote, CheckCircle2, Download, FileText, Landmark, Loader2, Plu
 import toast from 'react-hot-toast';
 import RiyalSign from './RiyalSign';
 import { createReceiptPdfBase64 } from '../utils/receiptPdf';
-import { RECEIPT_STATUS_META, downloadReceipt, invokeReceipt, receiptOrderLabel } from '../utils/receiptApi';
+import { RECEIPT_STATUS_META, downloadReceipt, formatOrderReference, invokeReceipt, receiptOrderLabel } from '../utils/receiptApi';
 
 export default function ReceiptsPanel({ customerId, customerName = '', customerPhone = '', compact = false, orderType = null, orderId = null }) {
   const defaultOrderValue = orderType && orderId ? `${orderType}:${orderId}` : '';
@@ -45,11 +45,11 @@ export default function ReceiptsPanel({ customerId, customerName = '', customerP
   const orderOptions = useMemo(() => [
     ...context.printOrders.map((order) => ({
       value: `print:${order.id}`,
-      label: `طباعة #${String(order.id).slice(0, 6)} — ${Number(order.total_amount || 0).toFixed(2)} ر.س`,
+      label: `طباعة ${formatOrderReference(order.id)} — ${Number(order.total_amount || 0).toFixed(2)} ر.س`,
     })),
     ...context.storeOrders.map((order) => ({
       value: `store:${order.id}`,
-      label: `متجر #${order.short_id || String(order.id).slice(0, 6)} — ${(Number(order.total_amount || 0) + Number(order.delivery_fee || 0)).toFixed(2)} ر.س`,
+      label: `متجر ${formatOrderReference(order.short_id || order.id)} — ${(Number(order.total_amount || 0) + Number(order.delivery_fee || 0)).toFixed(2)} ر.س`,
     })),
   ], [context.printOrders, context.storeOrders]);
 

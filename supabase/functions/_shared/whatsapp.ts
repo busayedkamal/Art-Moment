@@ -98,6 +98,37 @@ async function graphRequest(settings: WhatsAppSettings, path: string, init?: Req
   return payload;
 }
 
+async function uploadWhatsAppDocument(
+  settings: WhatsAppSettings,
+  documentUrl: string,
+  filename: string,
+) {
+  const source = await fetch(documentUrl, { signal: AbortSignal.timeout(30_000) });
+  if (!source.ok) throw new Error(`receipt_document_fetch_failed:${source.status}`);
+  const blob = await source.blob();
+  if (!blob.size || blob.size > 10 * 1024 * 1024) throw new Error('invalid_receipt_document_size');
+
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('type', 'application/pdf');
+  form.append('file', new File([blob], filename, { type: 'application/pdf' }));
+  const response = await fetch(
+    `https://graph.facebook.com/${settings.apiVersion}/${encodeURIComponent(settings.phoneNumberId)}/media`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getAccessToken()}` },
+      body: form,
+    },
+  );
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload?.error?.message || `meta_media_http_${response.status}`;
+    throw new Error(`meta_whatsapp_media_error:${message}`);
+  }
+  const mediaId = clean(payload?.id, 200);
+  if (!mediaId) throw new Error('meta_media_id_missing');
+  return mediaId;
+}
 export async function testWhatsAppConnection(supabase: SupabaseClientLike) {
   const settings = await getWhatsAppSettings(supabase);
   if (!settings.phoneNumberId) throw new Error('meta_phone_number_id_missing');
@@ -180,9 +211,11 @@ export async function sendWhatsAppReceiptTemplate(
   const documentUrl = clean(input.documentUrl, 1500);
   if (!/^https:\/\//i.test(documentUrl)) throw new Error('invalid_receipt_document_url');
 
+  const receiptNumber = clean(input.receiptNumber, 80);
+  const mediaId = await uploadWhatsAppDocument(settings, documentUrl, `${receiptNumber}.pdf`);
   const bodyParameters = [
     clean(input.customerName, 160) || 'عميل لحظة فن',
-    clean(input.receiptNumber, 80),
+    receiptNumber,
     clean(input.amountLabel, 80),
     clean(input.paymentDate, 80),
   ].map((text) => ({ type: 'text', text }));
@@ -200,7 +233,7 @@ export async function sendWhatsAppReceiptTemplate(
         components: [
           {
             type: 'header',
-            parameters: [{ type: 'document', document: { link: documentUrl, filename: `${clean(input.receiptNumber, 80)}.pdf` } }],
+            parameters: [{ type: 'document', document: { id: mediaId, filename: `${receiptNumber}.pdf` } }],
           },
           { type: 'body', parameters: bodyParameters },
         ],
@@ -212,5 +245,6 @@ export async function sendWhatsAppReceiptTemplate(
     skipped: false,
     providerMessageId: clean(payload?.messages?.[0]?.id, 200),
     recipient: to,
+    mediaId,
   };
 }

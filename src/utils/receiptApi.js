@@ -7,7 +7,13 @@ export const RECEIPT_STATUS_META = {
 };
 
 export async function invokeReceipt(body) {
-  const { data, error } = await supabase.functions.invoke('receipt-api', { body });
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) throw new Error('تتطلب العملية جلسة إدارة صالحة');
+  const { data, error } = await supabase.functions.invoke('receipt-api', {
+    headers: { Authorization: 'Bearer ' + accessToken },
+    body,
+  });
   if (error) {
     let message = error.message || 'تعذر تنفيذ العملية';
     try { message = (await error.context?.clone?.().json?.())?.error || message; } catch { /* no-op */ }
@@ -17,10 +23,16 @@ export async function invokeReceipt(body) {
   return data;
 }
 
+export function formatOrderReference(value) {
+  const normalized = String(value || '').trim().replace(/^AM-/i, '').slice(0, 12).toUpperCase();
+  return normalized ? `AM-${normalized}` : '';
+}
+
 export function receiptOrderLabel(receipt) {
   if (!receipt.order_type) return 'غير مرتبط بطلب';
-  if (receipt.order_type === 'store') return `طلب متجر #${receipt.order?.short_id || String(receipt.store_order_id || '').slice(0, 6)}`;
-  return `طلب طباعة #${String(receipt.print_order_id || '').slice(0, 6)}`;
+  const reference = receipt.order_reference
+    || formatOrderReference(receipt.order?.short_id || receipt.print_order_id || receipt.store_order_id);
+  return `${receipt.order_type === 'store' ? 'طلب متجر' : 'طلب طباعة'} ${reference}`;
 }
 
 export async function downloadReceipt(receipt) {

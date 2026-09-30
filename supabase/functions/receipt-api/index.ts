@@ -6,6 +6,11 @@ function clean(value: unknown, max = 500) {
   return String(value ?? '').trim().slice(0, max);
 }
 
+function formatOrderReference(value: unknown) {
+  const normalized = clean(value, 12).replace(/^AM-/i, '').toUpperCase();
+  return normalized ? 'AM-' + normalized : null;
+}
+
 function getBearerToken(req: Request) {
   return (req.headers.get('authorization') || '').match(/^Bearer\s+(.+)$/i)?.[1] || '';
 }
@@ -18,7 +23,7 @@ async function getAdminActor(req: Request, supabase: ReturnType<typeof getServic
   const { data: admins, error: adminError } = await supabase.from('admin_users').select('user_id, email');
   if (adminError) throw adminError;
   const email = String(data.user.email || '').toLowerCase();
-  const allowed = !admins?.length || admins.some((admin: Record<string, unknown>) => (
+  const allowed = Boolean(admins?.length) && admins.some((admin: Record<string, unknown>) => (
     String(admin.user_id || '') === data.user.id
     || String(admin.email || '').toLowerCase() === email
   ));
@@ -32,13 +37,6 @@ function decodeBase64(value: unknown) {
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
   return bytes;
-}
-
-function maskCustomerName(value: unknown) {
-  const parts = clean(value, 160).split(/\s+/).filter(Boolean);
-  if (!parts.length) return 'عميل لحظة فن';
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[1].slice(0, 1)}.`;
 }
 
 async function getReceiptContext(supabase: ReturnType<typeof getServiceClient>, receiptId: string) {
@@ -128,28 +126,6 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const action = clean(body?.action, 60);
 
-    if (action === 'verify') {
-      const receiptNumber = clean(body?.receiptNumber, 40);
-      const verificationToken = clean(body?.verificationToken, 80);
-      if (!receiptNumber || !verificationToken) return jsonResponse({ error: 'verification_data_required' }, 400);
-      const { data, error } = await supabase.from('receipts')
-        .select('receipt_number, customer_id, amount, currency, payment_method, payment_date, status, issued_at, cancelled_at')
-        .eq('receipt_number', receiptNumber).eq('verification_token', verificationToken).maybeSingle();
-      if (error) throw error;
-      if (!data) return jsonResponse({ valid: false }, 404);
-      const { data: customer } = await supabase.from('customers').select('name').eq('id', data.customer_id).maybeSingle();
-      return jsonResponse({
-        valid: true,
-        receipt: {
-          receiptNumber: data.receipt_number,
-          customerName: maskCustomerName(customer?.name),
-          amount: Number(data.amount), currency: data.currency,
-          paymentMethod: data.payment_method, paymentDate: data.payment_date,
-          status: data.status, issuedAt: data.issued_at, cancelledAt: data.cancelled_at,
-        },
-      });
-    }
-
     const actor = await getAdminActor(req, supabase);
     if (!actor) return jsonResponse({ error: 'not_authorized' }, 403);
 
@@ -200,15 +176,19 @@ Deno.serve(async (req) => {
         if (existingReceipt.customer_id !== customerId) return jsonResponse({ error: 'issue_request_conflict' }, 409);
         return jsonResponse({ receipt: existingReceipt, reused: true });
       }
+      let orderReference = null;
       if (orderType) {
         const table = orderType === 'print' ? 'orders' : 'store_orders';
-        const { data: order } = await supabase.from(table).select('id, customer_id').eq('id', orderId).maybeSingle();
+        const columns = orderType === 'store' ? 'id, customer_id, short_id' : 'id, customer_id';
+        const { data: order } = await supabase.from(table).select(columns).eq('id', orderId).maybeSingle();
         if (!order || order.customer_id !== customerId) return jsonResponse({ error: 'order_customer_mismatch' }, 400);
+        orderReference = formatOrderReference(order.short_id || order.id);
       }
       const payload = {
         issue_request_id: issueRequestId,
         customer_id: customerId,
         order_type: orderType,
+        order_reference: orderReference,
         print_order_id: orderType === 'print' ? orderId : null,
         store_order_id: orderType === 'store' ? orderId : null,
         amount: Number(amount.toFixed(2)), currency: 'SAR', payment_method: paymentMethod,

@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import logoUrl from '../assets/logo-art-moment.svg';
+import logoDataUrl from '../assets/logo-art-moment-receipt.png?inline';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -18,6 +18,12 @@ function paymentMethodLabel(method) {
   return method === 'bank_transfer' ? 'تحويل مصرفي' : 'نقدًا';
 }
 
+function verificationCode(receipt) {
+  if (receipt.verification_code) return String(receipt.verification_code).toUpperCase();
+  const compact = String(receipt.verification_token || '').replaceAll('-', '').slice(0, 8).toUpperCase();
+  return compact ? `${compact.slice(0, 4)}-${compact.slice(4, 8)}` : '—';
+}
+
 export async function createReceiptPdfBase64(receipt, customer, orderLabel = '') {
   const verificationUrl = getReceiptVerificationUrl(receipt);
   const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
@@ -32,14 +38,14 @@ export async function createReceiptPdfBase64(receipt, customer, orderLabel = '')
   root.style.cssText = 'position:fixed;left:-12000px;top:0;width:794px;min-height:1123px;background:#FAF9F7;color:#171717;font-family:Arial,Tahoma,sans-serif;padding:64px;box-sizing:border-box;z-index:-1;';
   root.innerHTML = `
     <div style="position:relative;min-height:995px;border:1px solid #eadfe0;background:#fff;padding:44px;box-sizing:border-box;overflow:hidden;">
-      <img src="${logoUrl}" alt="" style="position:absolute;width:430px;height:430px;object-fit:contain;opacity:.035;left:50%;top:49%;transform:translate(-50%,-50%);" />
+      <img src="${logoDataUrl}" alt="" style="position:absolute;width:470px;height:470px;object-fit:contain;opacity:.045;left:50%;top:49%;transform:translate(-50%,-50%);" />
       <div style="position:relative;z-index:1;">
         <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #171717;padding-bottom:24px;">
           <div>
             <div style="font-size:30px;font-weight:900;">إيصال قبض</div>
             <div style="font-size:14px;color:#6B6561;margin-top:5px;letter-spacing:0;">PAYMENT RECEIPT</div>
           </div>
-          <img src="${logoUrl}" alt="Art Moment" style="width:150px;height:80px;object-fit:contain;" />
+          <div style="display:flex;align-items:center;gap:12px;"><img src="${logoDataUrl}" alt="Art Moment" style="width:78px;height:64px;object-fit:contain;" /><div style="text-align:right;"><strong style="display:block;font-size:18px;">لحظة فن</strong><span style="display:block;font-size:10px;color:#6B6561;margin-top:3px;">ART MOMENT</span></div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;font-size:15px;">
           <div style="border:1px solid #eee4e5;padding:14px;"><span style="color:#6B6561;">رقم الإيصال</span><strong style="display:block;margin-top:7px;direction:ltr;text-align:right;">${escapeHtml(receipt.receipt_number)}</strong></div>
@@ -67,7 +73,7 @@ export async function createReceiptPdfBase64(receipt, customer, orderLabel = '')
           <img src="${qrDataUrl}" alt="QR" style="width:120px;height:120px;" />
           <div style="max-width:300px;">
             <strong style="font-size:15px;">تحقق من صحة الإيصال</strong>
-            <p style="font-size:12px;color:#6B6561;line-height:1.8;margin:7px 0 0;">امسح الرمز لعرض السجل الأصلي من موقع Art Moment. لا يعرض الرابط رقم الجوال أو بيانات التحويل الحساسة.</p>
+            <p style="font-size:12px;color:#6B6561;line-height:1.8;margin:7px 0 0;">امسح الرمز لعرض السجل الأصلي من موقع Art Moment. لا يعرض الرابط رقم الجوال أو بيانات التحويل الحساسة.</p><div style="display:flex;align-items:center;justify-content:flex-start;gap:6px;font-size:12px;font-weight:800;margin-top:8px;"><span>رمز التحقق:</span><strong dir="ltr">${escapeHtml(verificationCode(receipt))}</strong></div>
           </div>
         </div>
         <div style="text-align:center;color:#6B6561;font-size:12px;margin-top:24px;">Art Moment · Printing & Painting · www.art-moment.com</div>
