@@ -1,6 +1,7 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 import { sendWhatsAppReceiptTemplate } from '../_shared/whatsapp.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.89.0';
 
 function clean(value: unknown, max = 500) {
   return String(value ?? '').trim().slice(0, max);
@@ -20,14 +21,17 @@ async function getAdminActor(req: Request, supabase: ReturnType<typeof getServic
   if (!token) return null;
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data?.user) return null;
-  const { data: admins, error: adminError } = await supabase.from('admin_users').select('user_id, email');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!supabaseUrl || !anonKey) throw new Error('Supabase user configuration is missing.');
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: allowed, error: adminError } = await userClient.rpc('is_admin');
   if (adminError) throw adminError;
   const email = String(data.user.email || '').toLowerCase();
-  const allowed = Boolean(admins?.length) && admins.some((admin: Record<string, unknown>) => (
-    String(admin.user_id || '') === data.user.id
-    || String(admin.email || '').toLowerCase() === email
-  ));
-  return allowed ? { id: data.user.id, email } : null;
+  return allowed === true ? { id: data.user.id, email } : null;
 }
 
 function decodeBase64(value: unknown) {
