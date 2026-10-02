@@ -57,7 +57,7 @@ export default function NewOrder() {
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
-      customerName: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
+      customerName: '', customerNickname: '', phone: '', deliveryDate: new Date().toISOString().slice(0, 10),
       source: 'الهفوف', sourceOther: '',
       a4Qty: '', a5Qty: '', photo4x6Qty: '', deliveryFee: 0, deposit: 0, notes: '',
       manualDiscount: 0, friendshipCode: ''
@@ -98,7 +98,7 @@ export default function NewOrder() {
         const { data: couponsData } = await supabase.from('coupons').select('*').eq('is_active', true);
         if (couponsData) setActiveCoupons(couponsData);
 
-        const { data: customersData } = await supabase.from('orders').select('customer_name, phone').order('created_at', { ascending: false });
+        const { data: customersData } = await supabase.from('orders').select('customer_id, customer_name, phone').order('created_at', { ascending: false });
         if (customersData) {
           const uniqueCustomers = [];
           const seenPhones = new Set();
@@ -106,7 +106,7 @@ export default function NewOrder() {
             const cleanPhone = normalizePhone(c.phone);
             if (cleanPhone && !seenPhones.has(cleanPhone)) {
               seenPhones.add(cleanPhone);
-              uniqueCustomers.push({ name: c.customer_name, phone: c.phone });
+              uniqueCustomers.push({ customerId: c.customer_id || null, name: c.customer_name, nickname: '', phone: c.phone });
             }
           });
           setPreviousCustomers(uniqueCustomers);
@@ -122,12 +122,38 @@ export default function NewOrder() {
             .not('subscription_code', 'is', null),
           supabase
             .from('customers')
-            .select('id, name, phone'),
+            .select('id, name, nickname, phone'),
         ]);
 
         if (friendshipWalletsError || customerDirectoryError) {
           console.error('Friendship code directory fetch failed:', friendshipWalletsError || customerDirectoryError);
         } else {
+          const mergedCustomers = [];
+          const seenCustomerPhones = new Set();
+          (customerDirectory || []).forEach((customer) => {
+            const phone = normalizePhone(customer.phone);
+            if (!phone || seenCustomerPhones.has(phone)) return;
+            seenCustomerPhones.add(phone);
+            mergedCustomers.push({
+              customerId: customer.id,
+              name: customer.name || 'عميل مسجل',
+              nickname: customer.nickname || '',
+              phone: customer.phone || '',
+            });
+          });
+          (customersData || []).forEach((customer) => {
+            const phone = normalizePhone(customer.phone);
+            if (!phone || seenCustomerPhones.has(phone)) return;
+            seenCustomerPhones.add(phone);
+            mergedCustomers.push({
+              customerId: customer.customer_id || null,
+              name: customer.customer_name || 'عميل طباعة',
+              nickname: '',
+              phone: customer.phone || '',
+            });
+          });
+          setPreviousCustomers(mergedCustomers);
+
           const customerNameById = new Map(
             (customerDirectory || []).map((customer) => [customer.id, customer.name || 'عميلة مسجلة'])
           );
@@ -166,7 +192,7 @@ export default function NewOrder() {
 
   useEffect(() => {
     if (showSuggestions === 'name' && nameWatcher) {
-      setFilteredSuggestions(previousCustomers.filter(c => c.name?.toLowerCase().includes(nameWatcher.toLowerCase())).slice(0, 5));
+      setFilteredSuggestions(previousCustomers.filter(c => `${c.name || ''} ${c.nickname || ''}`.toLowerCase().includes(nameWatcher.toLowerCase())).slice(0, 5));
     } else if (showSuggestions === 'phone' && phoneWatcher) {
       setFilteredSuggestions(previousCustomers.filter(c => c.phone?.includes(phoneWatcher)).slice(0, 5));
     } else {
@@ -184,6 +210,7 @@ export default function NewOrder() {
 
   const selectCustomer = (customer) => {
     setValue('customerName', customer.name);
+    setValue('customerNickname', customer.nickname || '');
     setValue('phone', customer.phone);
     setShowSuggestions(null);
     toast.success('تم اختيار بيانات العميل');
@@ -442,6 +469,18 @@ export default function NewOrder() {
       const { data: orderResult, error } = await supabase.from('orders').insert(cleanData).select().single();
       if (error) throw error;
 
+      const customerNickname = String(data.customerNickname || '').trim().slice(0, 80);
+      if (customerNickname && orderResult.customer_id) {
+        const { error: nicknameError } = await supabase
+          .from('customers')
+          .update({ nickname: customerNickname })
+          .eq('id', orderResult.customer_id);
+        if (nicknameError) {
+          console.error('Customer nickname update failed:', nicknameError);
+          toast.error('تم حفظ الطلب، وتعذر حفظ الاسم التعريفي');
+        }
+      }
+
       // تحديث المحفظة
       if (cleanPhone && (pointsDiscountValue > 0 || packageDiscountValue > 0)) {
         let currentWallet = wallet;
@@ -587,7 +626,7 @@ export default function NewOrder() {
               )}
             </div>
 
-            <div className={`grid gap-4 ${friendshipEligibility?.eligible ? 'md:grid-cols-3' : 'md:grid-cols-2'}`} ref={suggestionsRef}>
+            <div className={`grid gap-4 ${friendshipEligibility?.eligible ? 'md:grid-cols-4' : 'md:grid-cols-3'}`} ref={suggestionsRef}>
               {/* ── اسم العميل ── */}
               <div className="relative">
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#E8B4BC]/15 rounded-xl flex items-center justify-center pointer-events-none">
@@ -609,11 +648,27 @@ export default function NewOrder() {
                     {filteredSuggestions.map((c, idx) => (
                       <button key={idx} type="button" onClick={() => selectCustomer(c)}
                         className="w-full text-right px-4 py-3 hover:bg-[#E8B4BC]/10 transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group">
-                        <span className="font-bold text-sm">{c.name}</span>
+                        <span className="min-w-0"><span className="block truncate font-bold text-sm">{c.name}</span>{c.nickname && <span className="block truncate text-[11px] text-[#C6A56B]">{c.nickname}</span>}</span>
                         <span className="text-xs text-slate-400 group-hover:text-[#E8B4BC] dir-ltr">{c.phone}</span>
                       </button>
                     ))}
                   </div>
+                )}
+              </div>
+
+              {/* ── الاسم التعريفي الداخلي ── */}
+              <div className="relative">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#C6A56B]/12 rounded-xl flex items-center justify-center pointer-events-none">
+                  <Tag size={16} className="text-[#C6A56B]" />
+                </div>
+                <input
+                  {...register('customerNickname', { maxLength: { value: 80, message: 'الحد الأقصى 80 حرفًا' } })}
+                  className="w-full pr-14 pl-4 py-3.5 bg-[#FAF9F7] border-2 border-transparent rounded-2xl text-sm font-bold placeholder-slate-300 outline-none focus:border-[#C6A56B] focus:bg-white transition-all"
+                  placeholder="الاسم التعريفي (اختياري)"
+                  autoComplete="off"
+                />
+                {errors.customerNickname && (
+                  <p className="text-xs text-red-500 mt-1 pr-1">{errors.customerNickname.message}</p>
                 )}
               </div>
 
@@ -638,7 +693,7 @@ export default function NewOrder() {
                       <button key={idx} type="button" onClick={() => selectCustomer(c)}
                         className="w-full text-right px-4 py-3 hover:bg-[#E8B4BC]/10 transition-colors border-b border-slate-50 last:border-0 flex justify-between items-center group">
                         <span className="font-bold text-sm dir-ltr">{c.phone}</span>
-                        <span className="text-xs text-slate-400 group-hover:text-[#E8B4BC]">{c.name}</span>
+                        <span className="text-xs text-slate-400 group-hover:text-[#E8B4BC]">{c.nickname ? `${c.name} · ${c.nickname}` : c.name}</span>
                       </button>
                     ))}
                   </div>

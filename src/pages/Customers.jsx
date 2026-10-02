@@ -232,7 +232,7 @@ export default function Customers() {
   const [sortDesc, setSortDesc] = useState(true);
 
   const [expandedCustomerId, setExpandedCustomerId] = useState(null);
-  const [customerDetails, setCustomerDetails] = useState({ address: '', notes: '', adminStatus: 'active' });
+  const [customerDetails, setCustomerDetails] = useState({ nickname: '', address: '', notes: '', adminStatus: 'active' });
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
   const [reviewingDeletionFor, setReviewingDeletionFor] = useState(null);
@@ -312,7 +312,7 @@ export default function Customers() {
 
       const { data: storeCustomersData, error: storeCustomersError } = await supabase
         .from('customers')
-        .select('id, name, email, phone, marketing_opt_in, preferred_contact_method, saved_addresses, created_at, last_login_at, data_deletion_requested_at, data_deletion_reviewed_at, data_deletion_review_note, admin_notes, admin_status, admin_tags');
+        .select('id, name, nickname, email, phone, marketing_opt_in, preferred_contact_method, saved_addresses, created_at, last_login_at, data_deletion_requested_at, data_deletion_reviewed_at, data_deletion_review_note, admin_notes, admin_status, admin_tags');
       if (storeCustomersError) throw storeCustomersError;
 
       const { data: storeOrdersData, error: storeOrdersError } = await supabase
@@ -508,6 +508,7 @@ export default function Customers() {
         entry.phone = entry.phone || phoneWithZero(customer.phone);
         entry.cleanPhone = entry.cleanPhone || clean;
         entry.customerId = customer.id;
+        entry.nickname = customer.nickname || '';
         entry.email = customer.email || '';
         entry.hasStoreAccount = true;
         entry.marketingOptIn = Boolean(customer.marketing_opt_in);
@@ -712,6 +713,7 @@ export default function Customers() {
         const { error: customerError } = await supabase
           .from('customers')
           .update({
+            nickname: String(customerDetails.nickname || '').trim() || null,
             admin_notes: customerDetails.notes,
             admin_status: customerDetails.adminStatus || 'active',
           })
@@ -725,11 +727,13 @@ export default function Customers() {
         entityId: customer.customerId || customer.cleanPhone,
         entityLabel: customer.name || customer.phone || 'عميل',
         oldValues: {
+          nickname: customer.nickname || '',
           address: customer.address || '',
           notes: customer.adminNotes || customer.notes || '',
           admin_status: customer.adminStatus || 'active',
         },
         newValues: {
+          nickname: String(customerDetails.nickname || '').trim(),
           address: customerDetails.address || '',
           notes: customerDetails.notes || '',
           admin_status: customerDetails.adminStatus || 'active',
@@ -1081,6 +1085,7 @@ export default function Customers() {
     } else {
       setExpandedCustomerId(customer.id);
       setCustomerDetails({
+        nickname: customer.nickname || '',
         address: customer.address || '',
         notes: customer.adminNotes || customer.notes || '',
         adminStatus: customer.adminStatus || 'active',
@@ -1349,6 +1354,7 @@ export default function Customers() {
       const q = search.trim().toLowerCase();
       data = data.filter(c => (
         (c.name || "").toLowerCase().includes(q)
+        || (c.nickname || "").toLowerCase().includes(q)
         || (c.phone || "").toLowerCase().includes(q)
         || (c.email || "").toLowerCase().includes(q)
         || (c.cleanPhone || "").toLowerCase().includes(q)
@@ -1487,7 +1493,7 @@ export default function Customers() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="بحث بالاسم أو الجوال أو البريد أو رقم الاشتراك..."
+              placeholder="بحث بالاسم الرسمي أو التعريفي أو الجوال أو البريد..."
               className="w-full border border-[#E8B4BC]/20 rounded-xl px-4 py-2.5 pr-9 outline-none focus:border-[#E8B4BC] focus:ring-2 focus:ring-[#E8B4BC]/20 text-sm bg-[#FAF9F7]/40"
             />
           </div>
@@ -1548,6 +1554,7 @@ export default function Customers() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-[#171717] text-sm leading-tight">{customer.name}</span>
+                    {customer.nickname && <span className="text-[11px] font-bold text-[#C6A56B]">({customer.nickname})</span>}
                     {customer.isVip && <Crown size={12} className="text-amber-500 shrink-0"/>}
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black ${segment.className}`}>
                       <SegmentIcon size={10} /> {segment.label}
@@ -1719,6 +1726,13 @@ export default function Customers() {
                   {/* العنوان والملاحظات */}
                   <div className="space-y-3">
                     <div>
+                      <label className="flex items-center gap-1 text-[10px] font-bold text-[#171717]/60 mb-1"><Tag size={10}/> الاسم التعريفي الداخلي</label>
+                      <input type="text" maxLength={80} placeholder="مثال: أم محمد (اختياري)" value={customerDetails.nickname}
+                        disabled={!customer.customerId}
+                        onChange={(e) => setCustomerDetails({ ...customerDetails, nickname: e.target.value })}
+                        className="w-full bg-white border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#C6A56B] disabled:opacity-50"/>
+                    </div>
+                    <div>
                       <label className="flex items-center gap-1 text-[10px] font-bold text-[#171717]/60 mb-1"><MapPin size={10}/> العنوان</label>
                       <input type="text" placeholder="العنوان / موقع التوصيل" value={customerDetails.address}
                         onChange={(e) => setCustomerDetails({ ...customerDetails, address: e.target.value })}
@@ -1809,6 +1823,7 @@ export default function Customers() {
                                 </span>
                               )}
                             </div>
+                            {customer.nickname && <div className="mt-0.5 text-xs font-bold text-[#C6A56B]">{customer.nickname}</div>}
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-black ${segment.className}`}>
                                 <SegmentIcon size={10} /> {segment.label}
@@ -2113,6 +2128,20 @@ export default function Customers() {
                                 <StickyNote size={18} className="text-[#E8B4BC]" /> تفاصيل وشحن العميل
                               </h4>
                               <div className="space-y-4 flex-1">
+                                <div>
+                                  <label className="flex items-center gap-1 text-xs font-bold text-[#171717]/70 mb-1.5">
+                                    <Tag size={12} /> الاسم التعريفي الداخلي
+                                  </label>
+                                  <input
+                                    type="text"
+                                    maxLength={80}
+                                    placeholder="مثال: أم محمد (اختياري)"
+                                    value={customerDetails.nickname}
+                                    disabled={!customer.customerId}
+                                    onChange={(e) => setCustomerDetails({ ...customerDetails, nickname: e.target.value })}
+                                    className="w-full bg-[#FAF9F7] border border-[#E8B4BC]/20 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#C6A56B] transition-colors disabled:opacity-50"
+                                  />
+                                </div>
                                 <div>
                                   <label className="flex items-center gap-1 text-xs font-bold text-[#171717]/70 mb-1.5">
                                     <MapPin size={12} /> العنوان / موقع التوصيل

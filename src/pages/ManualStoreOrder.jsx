@@ -219,7 +219,7 @@ export default function ManualStoreOrder() {
     const [customersResult, productsResult, printOrdersResult, walletsResult] = await Promise.all([
       supabase
         .from('customers')
-        .select('id, name, email, phone, preferred_contact_method, marketing_opt_in, saved_addresses, admin_tags')
+        .select('id, name, nickname, email, phone, preferred_contact_method, marketing_opt_in, saved_addresses, admin_tags')
         .order('created_at', { ascending: false })
         .limit(500),
       supabase
@@ -280,7 +280,7 @@ export default function ManualStoreOrder() {
     if (query.length < 2 && phoneQuery.length < 3) return [];
 
     return customers.filter((customer) => {
-      const haystack = `${customer.name || ''} ${customer.email || ''} ${customer.subscription_code || ''}`.toLowerCase();
+      const haystack = `${customer.name || ''} ${customer.nickname || ''} ${customer.email || ''} ${customer.subscription_code || ''}`.toLowerCase();
       const matchesPhone = phoneQuery.length >= 3 && normalizePhone(customer.phone).includes(phoneQuery);
       return haystack.includes(query) || matchesPhone;
     }).slice(0, 6);
@@ -537,7 +537,7 @@ export default function ManualStoreOrder() {
                         className="flex w-full items-center justify-between gap-3 border-b border-[#E8B4BC]/10 px-4 py-3 text-right transition-colors last:border-0 hover:bg-[#FAF9F7]"
                       >
                         <span className="min-w-0">
-                          <span className="block truncate text-sm font-black">{customer.name || 'بدون اسم'}</span>
+                          <span className="block truncate text-sm font-black">{customer.name || 'بدون اسم'}</span>{customer.nickname && <span className="mt-0.5 block truncate text-[11px] font-bold text-[#C6A56B]">{customer.nickname}</span>}
                           <span className="mt-0.5 block truncate text-xs text-[#171717]/50">{customer.phone} {customer.email ? `• ${customer.email}` : ''}</span>
                         </span>
                         <span className="shrink-0 rounded-full bg-[#C6A56B]/10 px-3 py-1 text-[10px] font-black text-[#C6A56B]">استخدام</span>
