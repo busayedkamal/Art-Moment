@@ -4,6 +4,7 @@ const EMAIL_ERROR_MESSAGES = {
   email_sender_domain_not_verified: 'نطاق المرسل غير موثّق في Resend. وثّقي art-moment.com ثم أعيدي الإرسال.',
   email_testing_recipient_restricted: 'مرسل Resend التجريبي يسمح بالإرسال إلى بريد مالك الحساب فقط. يلزم توثيق art-moment.com للإرسال للعملاء.',
   email_sender_invalid: 'عنوان المرسل غير صالح. استخدم عنواناً من نطاق art-moment.com الموثّق.',
+  email_recipient_invalid: 'البريد الإلكتروني للعميل غير صالح. صحّح البريد في ملف العميل ثم أعد الإرسال.',
   email_rate_limited: 'تم تجاوز حد الإرسال المؤقت في Resend. حاول مرة أخرى بعد قليل.',
   email_validation_failed: 'رفض Resend بيانات الرسالة. راجع عنوان المرسل والبريد المستلم.',
   email_send_failed: 'رفض Resend إرسال الرسالة. راجع نطاق المرسل في إعدادات Resend.',

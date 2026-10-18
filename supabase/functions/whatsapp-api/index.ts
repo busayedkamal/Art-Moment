@@ -66,11 +66,15 @@ Deno.serve(async (req) => {
     if (action === 'save_settings') {
       const apiVersion = clean(body?.settings?.apiVersion, 16);
       if (!/^v\d+\.\d+$/.test(apiVersion)) return jsonResponse({ error: 'invalid_meta_api_version' }, 400);
+      const enabled = body?.settings?.enabled === true;
+      const phoneNumberId = clean(body?.settings?.phoneNumberId, 80);
+      if (enabled && !phoneNumberId) return jsonResponse({ error: 'meta_phone_number_id_required' }, 400);
+      if (phoneNumberId && !/^\d+$/.test(phoneNumberId)) return jsonResponse({ error: 'invalid_meta_phone_number_id' }, 400);
       const payload = {
-        whatsapp_enabled: body?.settings?.enabled === true,
+        whatsapp_enabled: enabled,
         whatsapp_provider: 'meta',
         whatsapp_meta_api_version: apiVersion,
-        whatsapp_phone_number_id: clean(body?.settings?.phoneNumberId, 80) || null,
+        whatsapp_phone_number_id: phoneNumberId || null,
         whatsapp_waba_id: clean(body?.settings?.wabaId, 80) || null,
         whatsapp_template_language: clean(body?.settings?.templateLanguage, 20) || 'ar',
         whatsapp_order_status_template: clean(body?.settings?.orderStatusTemplate, 120) || 'order_status_update',

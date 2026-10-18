@@ -41,6 +41,9 @@ function getEmailFailureCode(status: number, result: unknown) {
   if (/invalid.+from|from.+invalid|sender.+invalid/.test(message)) {
     return 'email_sender_invalid';
   }
+  if (/invalid.+to|to.+invalid|recipient.+invalid|email address.+invalid/.test(message)) {
+    return 'email_recipient_invalid';
+  }
   if (/validation_error|validation error/.test(message)) {
     return 'email_validation_failed';
   }
@@ -48,12 +51,16 @@ function getEmailFailureCode(status: number, result: unknown) {
 }
 
 export async function sendEmail({ to, subject, html, text, tags }: SendEmailInput) {
+  const recipient = String(to || '').trim().toLowerCase();
   const apiKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('RESEND_FROM') || 'Art Moment <onboarding@resend.dev>';
   const replyTo = Deno.env.get('RESEND_REPLY_TO') || 'art.moment26@gmail.com';
 
   if (!apiKey) {
     throw new Error('email_api_key_missing');
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+    throw new Error('email_recipient_invalid');
   }
 
   const response = await fetch(RESEND_EMAIL_ENDPOINT, {
@@ -64,7 +71,7 @@ export async function sendEmail({ to, subject, html, text, tags }: SendEmailInpu
     },
     body: JSON.stringify({
       from,
-      to: [to],
+      to: [recipient],
       subject,
       html,
       text,

@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { logAdminActivity } from '../utils/adminActivity';
 import { getEmailErrorMessage, isEmailConfigurationError } from '../utils/emailErrors';
+import { getWhatsAppErrorMessage, isWhatsAppConfigurationError } from '../utils/whatsappErrors';
 import {
   DEFAULT_OPERATION_RULES,
   getNotificationRetryCount,
@@ -95,6 +96,14 @@ function formatDate(value) {
 
 function getMetadata(log) {
   return log?.metadata && typeof log.metadata === 'object' ? log.metadata : {};
+}
+
+function getNotificationRetryKind(log) {
+  const metadata = getMetadata(log);
+  if (metadata.templateKey) return 'template';
+  if (log.channel === 'whatsapp' && log.type === 'order_status' && metadata.orderId) return 'whatsapp';
+  if (String(log.type || '').startsWith('reward_points_expiry_')) return 'reward_expiry';
+  return '';
 }
 
 export default function AdminNotifications() {
@@ -183,38 +192,34 @@ export default function AdminNotifications() {
     });
   }, [customersById, logs, searchTerm, statusFilter, typeFilter]);
 
-  const stats = useMemo(() => {
-    return logs.reduce((acc, log) => {
-      acc.total += 1;
-      acc.failed += log.status === 'failed' ? 1 : 0;
-      acc.sent += ['sent', 'completed'].includes(log.status) ? 1 : 0;
-      const metadata = getMetadata(log);
-      const canRetryLog = log.status === 'failed'
-        && metadata.templateKey
-        && log.customer_id
-        && getNotificationRetryCount(metadata) < retryLimit;
-      acc.retryable += canRetryLog ? 1 : 0;
-      return acc;
-    }, { total: 0, failed: 0, sent: 0, retryable: 0 });
-  }, [logs, retryLimit]);
+  const canRetry = (log) => Boolean(
+    log.status === 'failed'
+    && log.customer_id
+    && getNotificationRetryKind(log)
+    && getNotificationRetryCount(getMetadata(log)) < retryLimit
+  );
 
-  const canRetry = (log) => {
+  const stats = useMemo(() => logs.reduce((acc, log) => {
+    acc.total += 1;
+    acc.failed += log.status === 'failed' ? 1 : 0;
+    acc.sent += ['sent', 'completed'].includes(log.status) ? 1 : 0;
     const metadata = getMetadata(log);
-    return Boolean(
-      log.status === 'failed'
-      && metadata.templateKey
+    const retryable = log.status === 'failed'
       && log.customer_id
-      && getNotificationRetryCount(metadata) < retryLimit
-    );
-  };
+      && getNotificationRetryKind(log)
+      && getNotificationRetryCount(metadata) < retryLimit;
+    acc.retryable += retryable ? 1 : 0;
+    return acc;
+  }, { total: 0, failed: 0, sent: 0, retryable: 0 }), [logs, retryLimit]);
 
   const retryMessage = async (log) => {
     const metadata = getMetadata(log);
     const customer = customersById[log.customer_id] || {};
-
+    const kind = getNotificationRetryKind(log);
     const retryCount = getNotificationRetryCount(metadata);
-    if (!metadata.templateKey) {
-      toast.error('هذه الرسالة غير مرتبطة بقالب قابل لإعادة الإرسال');
+
+    if (!kind) {
+      toast.error('هذه الرسالة غير قابلة لإعادة الإرسال');
       return;
     }
     if (retryCount >= retryLimit) {
@@ -227,37 +232,47 @@ export default function AdminNotifications() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
-      const { error } = await supabase.functions.invoke('customer-marketing', {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-        body: {
-          action: 'send_template',
-          templateKey: metadata.templateKey,
-          customerId: log.customer_id,
-          email: customer.email || '',
-          customerName: customer.name || '',
-          variables: metadata.variables || {},
-          retryOfLogId: log.id,
-        },
-      });
+      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+      let functionName = 'customer-marketing';
+      let body = {
+        action: 'send_template',
+        templateKey: metadata.templateKey,
+        customerId: log.customer_id,
+        email: customer.email || '',
+        customerName: customer.name || '',
+        variables: metadata.variables || {},
+        retryOfLogId: log.id,
+      };
 
+      if (kind === 'whatsapp') {
+        functionName = 'whatsapp-api';
+        body = {
+          action: 'send_order_status',
+          orderId: metadata.orderId,
+          orderType: metadata.orderType || 'print',
+        };
+      } else if (kind === 'reward_expiry') {
+        functionName = 'reward-expiry-notifications';
+        body = { mode: 'manual', customerId: log.customer_id };
+      }
+
+      const { data, error } = await supabase.functions.invoke(functionName, { headers, body });
       if (error) throw new Error(await getFunctionError(error));
+      if (data?.result?.skipped) throw new Error(data.result.reason || 'whatsapp_disabled');
+      if (kind === 'reward_expiry' && Number(data?.failed || 0) > 0) {
+        throw new Error(data?.results?.find((result) => result.status === 'failed')?.reason || 'email_send_failed');
+      }
+
       await logAdminActivity({
         action: 'customer_notification_resent',
         entityType: 'customer_message_log',
         entityId: log.id,
         entityLabel: log.subject || MESSAGE_TYPE_LABELS[log.type] || 'إشعار عميل',
-        oldValues: {
-          status: log.status,
-          error_message: log.error_message || '',
-        },
-        newValues: {
-          template_key: metadata.templateKey,
-          customer_id: log.customer_id,
-        },
+        oldValues: { status: log.status, error_message: log.error_message || '' },
+        newValues: { retry_kind: kind, customer_id: log.customer_id },
         metadata: {
           source: 'admin_notifications',
           original_log_id: log.id,
-          variables: metadata.variables || {},
           retry_count: retryCount + 1,
           retry_limit: retryLimit,
         },
@@ -271,14 +286,8 @@ export default function AdminNotifications() {
         entityType: 'customer_message_log',
         entityId: log.id,
         entityLabel: log.subject || MESSAGE_TYPE_LABELS[log.type] || 'إشعار عميل',
-        oldValues: {
-          status: log.status,
-          error_message: log.error_message || '',
-        },
-        newValues: {
-          template_key: metadata.templateKey || '',
-          customer_id: log.customer_id || '',
-        },
+        oldValues: { status: log.status, error_message: log.error_message || '' },
+        newValues: { retry_kind: kind, customer_id: log.customer_id || '' },
         metadata: {
           source: 'admin_notifications',
           retry_error: error.message || 'retry_failed',
@@ -286,7 +295,10 @@ export default function AdminNotifications() {
           retry_limit: retryLimit,
         },
       });
-      toast.error(getEmailErrorMessage(error.message), { id: toastId });
+      const message = kind === 'whatsapp'
+        ? getWhatsAppErrorMessage(error.message)
+        : getEmailErrorMessage(error.message);
+      toast.error(message, { id: toastId });
     } finally {
       setRetryingId(null);
     }
@@ -382,8 +394,13 @@ export default function AdminNotifications() {
             const customer = customersById[log.customer_id] || {};
             const retryable = canRetry(log);
             const retryCount = getNotificationRetryCount(metadata);
-            const readableError = getEmailErrorMessage(log.error_message);
-            const configurationError = isEmailConfigurationError(log.error_message);
+            const isWhatsApp = log.channel === 'whatsapp';
+            const readableError = isWhatsApp
+              ? getWhatsAppErrorMessage(log.error_message)
+              : getEmailErrorMessage(log.error_message);
+            const configurationError = isWhatsApp
+              ? isWhatsAppConfigurationError(log.error_message)
+              : isEmailConfigurationError(log.error_message);
 
             return (
               <article key={log.id} className="rounded-3xl bg-white border border-[#E8B4BC]/15 p-4 shadow-sm">
@@ -420,12 +437,12 @@ export default function AdminNotifications() {
                         <p>{readableError}</p>
                         {configurationError && (
                           <a
-                            href="https://resend.com/domains"
-                            target="_blank"
-                            rel="noreferrer"
+                            href={isWhatsApp ? '/settings' : 'https://resend.com/domains'}
+                            target={isWhatsApp ? undefined : '_blank'}
+                            rel={isWhatsApp ? undefined : 'noreferrer'}
                             className="mt-2 inline-flex text-[#171717] underline underline-offset-2"
                           >
-                            فتح إعداد النطاق في Resend
+                            {isWhatsApp ? 'فتح إعدادات واتساب' : 'فتح إعداد النطاق في Resend'}
                           </a>
                         )}
                       </div>

@@ -5,6 +5,7 @@ import {
   ToggleLeft, ToggleRight, Wifi,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getWhatsAppErrorMessage } from '../utils/whatsappErrors';
 
 const DEFAULT_SETTINGS = {
   enabled: false,
@@ -29,7 +30,11 @@ async function invokeWhatsApp(body) {
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
     body,
   });
-  if (error) throw error;
+if (error) {
+    let message = error.message || 'whatsapp_api_failed';
+    try { message = (await error.context?.clone?.().json?.())?.error || message; } catch { /* no-op */ }
+    throw new Error(message);
+  }
   if (data?.error) throw new Error(data.error);
   return data;
 }
@@ -58,6 +63,10 @@ export default function WhatsAppSettingsCard() {
   const update = (key, value) => setSettings((current) => ({ ...current, [key]: value }));
 
   const save = async () => {
+    if (settings.enabled && !settings.phoneNumberId.trim()) {
+      toast.error(getWhatsAppErrorMessage('meta_phone_number_id_required'));
+      return;
+    }
     setAction('save');
     try {
       const data = await invokeWhatsApp({ action: 'save_settings', settings });
@@ -65,13 +74,17 @@ export default function WhatsAppSettingsCard() {
       toast.success('تم حفظ إعدادات واتساب');
     } catch (error) {
       console.error(error);
-      toast.error('تعذر حفظ إعدادات واتساب');
+      toast.error(getWhatsAppErrorMessage(error?.message));
     } finally {
       setAction('');
     }
   };
 
   const testConnection = async () => {
+    if (!settings.phoneNumberId.trim()) {
+      toast.error(getWhatsAppErrorMessage('meta_phone_number_id_missing'));
+      return;
+    }
     setAction('test');
     try {
       const data = await invokeWhatsApp({ action: 'test_connection' });
@@ -87,13 +100,17 @@ export default function WhatsAppSettingsCard() {
     } catch (error) {
       console.error(error);
       setSettings((current) => ({ ...current, lastTestStatus: 'failed' }));
-      toast.error('فشل اختبار اتصال Meta');
+      toast.error(getWhatsAppErrorMessage(error?.message));
     } finally {
       setAction('');
     }
   };
 
   const sendTest = async () => {
+    if (!settings.phoneNumberId.trim()) {
+      toast.error(getWhatsAppErrorMessage('meta_phone_number_id_missing'));
+      return;
+    }
     if (!testPhone.trim()) {
       toast.error('أدخل رقم الجوال المستلم للاختبار');
       return;
@@ -104,7 +121,7 @@ export default function WhatsAppSettingsCard() {
       toast.success('تم إرسال رسالة واتساب التجريبية');
     } catch (error) {
       console.error(error);
-      toast.error('تعذر إرسال الرسالة التجريبية');
+      toast.error(getWhatsAppErrorMessage(error?.message));
     } finally {
       setAction('');
     }
