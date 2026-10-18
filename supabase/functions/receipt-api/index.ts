@@ -7,11 +7,6 @@ function clean(value: unknown, max = 500) {
   return String(value ?? '').trim().slice(0, max);
 }
 
-function formatOrderReference(value: unknown) {
-  const normalized = clean(value, 12).replace(/^AM-/i, '').toUpperCase();
-  return normalized ? 'AM-' + normalized : null;
-}
-
 function getBearerToken(req: Request) {
   return (req.headers.get('authorization') || '').match(/^Bearer\s+(.+)$/i)?.[1] || '';
 }
@@ -105,7 +100,7 @@ async function enrichReceipts(supabase: ReturnType<typeof getServiceClient>, rec
   const storeIds = [...new Set(receipts.map((row) => clean(row.store_order_id, 80)).filter(Boolean))];
   const [{ data: customers }, { data: printOrders }, { data: storeOrders }] = await Promise.all([
     customerIds.length ? supabase.from('customers').select('id, name, phone').in('id', customerIds) : Promise.resolve({ data: [] }),
-    printIds.length ? supabase.from('orders').select('id, customer_name, total_amount').in('id', printIds) : Promise.resolve({ data: [] }),
+    printIds.length ? supabase.from('orders').select('id, short_id, customer_name, total_amount').in('id', printIds) : Promise.resolve({ data: [] }),
     storeIds.length ? supabase.from('store_orders').select('id, short_id, customer_name, total_amount, delivery_fee').in('id', storeIds) : Promise.resolve({ data: [] }),
   ]);
   const customerMap = new Map((customers || []).map((row: Record<string, unknown>) => [row.id, row]));
@@ -148,7 +143,7 @@ Deno.serve(async (req) => {
       if (!customerId) return jsonResponse({ error: 'customer_id_required' }, 400);
       const [{ data: customer }, { data: printOrders }, { data: storeOrders }, { data: receipts }] = await Promise.all([
         supabase.from('customers').select('id, name, phone').eq('id', customerId).maybeSingle(),
-        supabase.from('orders').select('id, customer_name, total_amount, created_at').eq('customer_id', customerId).order('created_at', { ascending: false }),
+        supabase.from('orders').select('id, short_id, customer_name, total_amount, created_at').eq('customer_id', customerId).order('created_at', { ascending: false }),
         supabase.from('store_orders').select('id, short_id, customer_name, total_amount, delivery_fee, created_at').eq('customer_id', customerId).order('created_at', { ascending: false }),
         supabase.from('receipts').select('*').eq('customer_id', customerId).order('created_at', { ascending: false }),
       ]);
@@ -183,10 +178,10 @@ Deno.serve(async (req) => {
       let orderReference = null;
       if (orderType) {
         const table = orderType === 'print' ? 'orders' : 'store_orders';
-        const columns = orderType === 'store' ? 'id, customer_id, short_id' : 'id, customer_id';
-        const { data: order } = await supabase.from(table).select(columns).eq('id', orderId).maybeSingle();
+        const { data: order } = await supabase.from(table).select('id, customer_id, short_id').eq('id', orderId).maybeSingle();
         if (!order || order.customer_id !== customerId) return jsonResponse({ error: 'order_customer_mismatch' }, 400);
-        orderReference = formatOrderReference(order.short_id || order.id);
+        orderReference = clean(order.short_id, 40) || null;
+        if (!orderReference) return jsonResponse({ error: 'order_short_id_missing' }, 409);
       }
       const payload = {
         issue_request_id: issueRequestId,

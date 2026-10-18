@@ -24,15 +24,14 @@ export async function invokeReceipt(body) {
 }
 
 export function formatOrderReference(value) {
-  const normalized = String(value || '').trim().replace(/^AM-/i, '').slice(0, 12).toUpperCase();
-  return normalized ? `AM-${normalized}` : '';
+  const normalized = String(value || '').trim().replace(/^#/, '');
+  return normalized ? `#${normalized}` : '';
 }
 
 export function receiptOrderLabel(receipt) {
   if (!receipt.order_type) return 'غير مرتبط بطلب';
-  const reference = receipt.order_reference
-    || formatOrderReference(receipt.order?.short_id || receipt.print_order_id || receipt.store_order_id);
-  return `${receipt.order_type === 'store' ? 'طلب متجر' : 'طلب طباعة'} ${reference}`;
+  const reference = receipt.order_reference || receipt.order?.short_id;
+  return `${receipt.order_type === 'store' ? 'طلب متجر' : 'طلب طباعة'} ${formatOrderReference(reference)}`;
 }
 
 export async function downloadReceipt(receipt) {

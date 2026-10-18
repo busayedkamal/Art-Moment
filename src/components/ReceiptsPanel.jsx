@@ -45,11 +45,11 @@ export default function ReceiptsPanel({ customerId, customerName = '', customerP
   const orderOptions = useMemo(() => [
     ...context.printOrders.map((order) => ({
       value: `print:${order.id}`,
-      label: `طباعة ${formatOrderReference(order.id)} — ${Number(order.total_amount || 0).toFixed(2)} ر.س`,
+      label: `طباعة ${formatOrderReference(order.short_id)} — ${Number(order.total_amount || 0).toFixed(2)} ر.س`,
     })),
     ...context.storeOrders.map((order) => ({
       value: `store:${order.id}`,
-      label: `متجر ${formatOrderReference(order.short_id || order.id)} — ${(Number(order.total_amount || 0) + Number(order.delivery_fee || 0)).toFixed(2)} ر.س`,
+      label: `متجر ${formatOrderReference(order.short_id)} — ${(Number(order.total_amount || 0) + Number(order.delivery_fee || 0)).toFixed(2)} ر.س`,
     })),
   ], [context.printOrders, context.storeOrders]);
 
