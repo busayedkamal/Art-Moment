@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin, LogIn, UserPlus, ShieldCheck, Pencil, Files, Package, ChevronLeft, Printer, BookOpen, Frame, Sparkles } from 'lucide-react';
+import { ArrowRight, Trash2, Plus, Minus, ShoppingBag, AlertCircle, Image as ImageIcon, CheckCircle, Loader2, Wallet, TicketPercent, X, MapPin, LogIn, UserPlus, ShieldCheck, Pencil, Files, Package, ChevronLeft, Printer, BookOpen, Frame, Sparkles, House } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CustomerAuthModal from '../components/CustomerAuthModal';
 import { supabase } from '../lib/supabase';
@@ -800,6 +800,9 @@ export default function StoreCart() {
             </Link>
             <Link to="/store" onClick={() => trackStoreEvent('empty_cart_store_click')} className="flex min-h-14 items-center justify-center gap-2 border border-[#171717] bg-transparent px-6 py-4 font-black text-[#171717] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A56B]">
               <ShoppingBag size={20} /> {isArabic ? 'تصفح المتجر' : 'Browse the store'}
+            </Link>
+            <Link to="/" onClick={() => trackStoreEvent('empty_cart_home_click')} className="flex min-h-12 items-center justify-center gap-2 border border-black/10 bg-white px-6 py-3 text-sm font-black text-[#171717]/70 transition-colors hover:border-[#C6A56B] hover:text-[#171717] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C6A56B] sm:col-span-2">
+              <House size={18} /> {isArabic ? 'الصفحة الرئيسية' : 'Home page'}
             </Link>
           </div>
 
