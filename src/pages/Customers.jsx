@@ -1,12 +1,13 @@
 // src/pages/Customers.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 import {
   Search, Users, Wallet, ShoppingBag, Sparkles, Crown,
   Phone, Gift, X, Loader2, ChevronDown, MapPin, StickyNote, Save,
   Edit2, Check, Package, Trash2, ArrowUpDown, Mail, ShieldCheck,
-  RotateCcw, AlertTriangle, Tag, Megaphone, Send, History
+  RotateCcw, AlertTriangle, Tag, Megaphone, Send, History, ArrowRight
 } from "lucide-react";
 import RiyalSign from "../components/RiyalSign";
 import ReceiptsPanel from "../components/ReceiptsPanel";
@@ -223,6 +224,9 @@ function deriveSegment(customer) {
 }
 
 export default function Customers() {
+  const navigate = useNavigate();
+  const { customerId: routeCustomerId } = useParams();
+  const isCustomerProfile = Boolean(routeCustomerId);
   const [customersData, setCustomersData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -1077,7 +1081,12 @@ export default function Customers() {
   };
 
   const handleExpandRow = (customer) => {
-    if (expandedCustomerId === customer.id) {
+    if (!isCustomerProfile) {
+      navigate(`/app/customers/${encodeURIComponent(customer.customerId || customer.id)}`);
+      return;
+    }
+
+    if (expandedCustomerId === customer.id && !isCustomerProfile) {
       setExpandedCustomerId(null);
       setEditingBalanceId(null);
       setCustomerActivityLogs([]);
@@ -1093,6 +1102,25 @@ export default function Customers() {
       fetchCustomerActivityLogs(customer);
     }
   };
+
+  useEffect(() => {
+    if (!isCustomerProfile || loading || expandedCustomerId) return;
+
+    const customer = customersData.find((item) => (
+      String(item.customerId || '') === String(routeCustomerId)
+      || String(item.id || '') === String(routeCustomerId)
+    ));
+
+    if (!customer) return;
+    setExpandedCustomerId(customer.id);
+    setCustomerDetails({
+      nickname: customer.nickname || '',
+      address: customer.address || '',
+      notes: customer.adminNotes || customer.notes || '',
+      adminStatus: customer.adminStatus || 'active',
+    });
+    fetchCustomerActivityLogs(customer);
+  }, [customersData, expandedCustomerId, isCustomerProfile, loading, routeCustomerId]);
 
   const handleChargePackage = async (e) => {
     e.preventDefault();
@@ -1346,6 +1374,12 @@ export default function Customers() {
 
   const filtered = useMemo(() => {
     let data = customersData;
+    if (isCustomerProfile) {
+      data = data.filter((customer) => (
+        String(customer.customerId || '') === String(routeCustomerId)
+        || String(customer.id || '') === String(routeCustomerId)
+      ));
+    }
     if (filter === "vip") data = data.filter(c => c.isVip);
     if (filter === "store") data = data.filter(c => c.isStoreCustomer);
     if (filter === "marketing") data = data.filter(c => c.marketingOptIn);
@@ -1375,7 +1409,7 @@ export default function Customers() {
       return sortDesc ? -comparison : comparison;
     });
     return data;
-  }, [customersData, search, filter, sortBy, sortDesc]);
+  }, [customersData, filter, isCustomerProfile, routeCustomerId, search, sortBy, sortDesc]);
 
   const stats = useMemo(() => {
     const totalCustomers = customersData.length;
@@ -1403,11 +1437,16 @@ export default function Customers() {
       <div className="flex justify-between items-start pt-1 gap-3">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-black text-[#171717] tracking-tight flex items-center gap-2">
-            <Users size={20} className="text-[#E8B4BC] shrink-0" /> سجل ولاء العملاء
+            {isCustomerProfile ? (
+              <button type="button" onClick={() => navigate('/app/customers')} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#E8B4BC]/20 bg-white text-[#171717] hover:border-[#E8B4BC]" aria-label="العودة إلى العملاء">
+                <ArrowRight size={19} />
+              </button>
+            ) : <Users size={20} className="text-[#E8B4BC] shrink-0" />}
+            {isCustomerProfile ? (filtered[0]?.name || 'ملف العميل') : 'سجل ولاء العملاء'}
           </h1>
-          <p className="text-xs sm:text-sm text-[#171717]/50 mt-0.5">إدارة متقدمة لبيانات ومحافظ العملاء</p>
+          <p className="text-xs sm:text-sm text-[#171717]/50 mt-0.5">{isCustomerProfile ? 'بيانات العميل ونشاطه وأرصدته وإيصالاته في صفحة واحدة' : 'إدارة متقدمة لبيانات ومحافظ العملاء'}</p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        {!isCustomerProfile && <div className="flex gap-2 shrink-0">
           <button
             onClick={() => setIsMarketingModalOpen(true)}
             className="inline-flex items-center gap-1.5 bg-emerald-600 text-white px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow hover:shadow-emerald-500/25 transition-all whitespace-nowrap"
@@ -1422,11 +1461,11 @@ export default function Customers() {
             <Package size={15} />
             <span className="hidden xs:inline sm:inline">شحن باقة /</span> عميل جديد
           </button>
-        </div>
+        </div>}
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className={`${isCustomerProfile ? 'hidden' : 'grid'} grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4`}>
         <div className="bg-white border border-[#E8B4BC]/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 text-[#171717]/50 text-xs font-bold mb-2">
             <Users size={13} /> إجمالي العملاء
@@ -1482,7 +1521,7 @@ export default function Customers() {
       </div>
 
       {/* Controls */}
-      <div className="bg-white border border-[#E8B4BC]/20 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
+      <div className={`${isCustomerProfile ? 'hidden' : 'flex'} bg-white border border-[#E8B4BC]/20 rounded-2xl p-4 shadow-sm flex-col md:flex-row gap-3 justify-between items-center`}>
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
           <div className="relative w-full md:w-80">
             {search ? (
@@ -1614,8 +1653,9 @@ export default function Customers() {
                   )}
                   <button
                     onClick={() => handleExpandRow(customer)}
-                    className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-[#E8B4BC]/15 text-[#E8B4BC] rotate-180' : 'text-[#171717]/40'}`}>
-                    <ChevronDown size={16}/>
+                    className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-[#E8B4BC]/15 text-[#E8B4BC]' : 'text-[#171717]/40'}`}
+                    aria-label={isCustomerProfile ? 'تفاصيل العميل' : 'عرض ملف العميل'}>
+                    {isCustomerProfile ? <ChevronDown size={16} className="rotate-180" /> : <ArrowRight size={16} />}
                   </button>
                 </div>
               </div>
@@ -1917,8 +1957,8 @@ export default function Customers() {
                               <Package size={18} />
                             </button>
                           )}
-                          <button className={`p-2 rounded-xl text-[#171717]/50 transition-all ${isExpanded ? 'bg-[#E8B4BC]/10 text-[#E8B4BC] rotate-180' : 'group-hover:bg-[#FAF9F7]'}`}>
-                            <ChevronDown size={18} />
+                          <button className={`p-2 rounded-xl text-[#171717]/50 transition-all ${isExpanded ? 'bg-[#E8B4BC]/10 text-[#E8B4BC]' : 'group-hover:bg-[#FAF9F7]'}`} aria-label={isCustomerProfile ? 'تفاصيل العميل' : 'عرض ملف العميل'}>
+                            {isCustomerProfile ? <ChevronDown size={18} className="rotate-180" /> : <ArrowRight size={18} />}
                           </button>
                         </div>
                       </td>

@@ -113,6 +113,7 @@ function AppRoutes() {
         <Route path="orders/new" element={<NewOrder />} />
         <Route path="orders/:id" element={<OrderDetails />} />
         <Route path="customers" element={<Customers />} />
+        <Route path="customers/:customerId" element={<Customers />} />
         <Route path="reports" element={<Reports />} />
         <Route path="expenses" element={<Expenses />} />
         <Route path="receipts" element={<Receipts />} />
