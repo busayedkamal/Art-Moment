@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from './lib/supabase';
 import RiyalSign from './components/RiyalSign';
@@ -173,8 +173,21 @@ const LANDING_COPY = {
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, direction } = useLanguage();
   const copy = LANDING_COPY[language] || LANDING_COPY.ar;
+
+  useEffect(() => {
+    if (!location.hash) return;
+
+    const sectionId = decodeURIComponent(location.hash.slice(1));
+    const frame = window.requestAnimationFrame(() => {
+      const section = document.getElementById(sectionId);
+      section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.hash]);
 
   // --- Store states ---
   const [products, setProducts]               = useState([]);
