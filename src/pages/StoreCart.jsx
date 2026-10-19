@@ -1204,14 +1204,17 @@ export default function StoreCart() {
             setCheckoutStep(2);
             checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }} className="art-cta flex min-h-12 w-full items-center justify-center gap-2 px-5 text-sm font-black">
-            متابعة إلى التوصيل <ChevronLeft size={17} />
+            متابعة <ChevronLeft size={17} />
           </button>
           </div>}
 
-          {/* بيانات التواصل والشحن */}
+          {/* بيانات الاستلام الاختيارية */}
           {checkoutStep === 2 && <div className="space-y-4">
           <div className="art-panel p-6 rounded-[1.5rem]">
-            <h2 className="font-black text-[#171717] mb-4">عنوان التوصيل</h2>
+            <div className="mb-4">
+              <h2 className="font-black text-[#171717]">بيانات الاستلام <span className="text-xs font-bold text-[#171717]/40">(اختياري)</span></h2>
+              <p className="mt-1 text-xs text-[#171717]/50">لا يتوفر الشحن حاليًا، ويمكنك إكمال الطلب دون تسجيل عنوان.</p>
+            </div>
             <div className="space-y-4">
               {savedAddresses.length > 0 ? (
                 <div className="rounded-2xl border border-[#E8B4BC]/15 bg-[#FAF9F7] p-3">
@@ -1244,7 +1247,7 @@ export default function StoreCart() {
               <div className="pt-4 mt-2 border-t border-[#E8B4BC]/20 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold mb-1.5 text-[#171717]">
-                    المدينة <span className="text-red-500">*</span>
+                    المدينة
                   </label>
                   <select
                     value={city}
@@ -1263,7 +1266,7 @@ export default function StoreCart() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1.5 text-[#171717]">
-                    الحي <span className="text-red-500">*</span>
+                    الحي
                   </label>
                   <input
                     type="text"
@@ -1275,7 +1278,7 @@ export default function StoreCart() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1.5 text-[#171717]">
-                    الشارع <span className="text-red-500">*</span>
+                    الشارع
                   </label>
                   <input
                     type="text"
@@ -1310,7 +1313,6 @@ export default function StoreCart() {
           <div className="flex gap-3">
             <button type="button" onClick={() => setCheckoutStep(1)} className="min-h-12 flex-1 border border-black/10 bg-white px-4 text-sm font-black">السابق</button>
             <button type="button" onClick={() => {
-              if (!city || !district.trim() || !street.trim()) return toast.error('أكملي عنوان التوصيل أولًا');
               setCheckoutStep(3);
               checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }} className="art-cta min-h-12 flex-[2] px-4 text-sm font-black">متابعة إلى الدفع</button>
@@ -1366,16 +1368,16 @@ export default function StoreCart() {
               {cart.filter(item => item.itemType !== 'print').map(item => (
                 <div key={getItemKey(item)} className="flex justify-between gap-4"><span><strong>{item.name}</strong><span className="block text-black/45">الكمية: {item.qty}</span></span><strong>{formatMoney(item.price * item.qty)} ر.س</strong></div>
               ))}
-              <div className="border-t border-black/10 pt-3"><span className="text-black/45">عنوان التوصيل</span><p className="mt-1 font-bold">{[city, district, street, buildingNumber, postalCode].filter(Boolean).join('، ')}</p></div>
+              <div className="border-t border-black/10 pt-3"><span className="text-black/45">بيانات الاستلام</span><p className="mt-1 font-bold">{[city, district, street, buildingNumber, postalCode].filter(Boolean).join('، ') || 'غير مسجلة (اختيارية)'}</p></div>
             </div>
           </div>
 
           <button type="button" onClick={() => setCheckoutStep(2)} className="min-h-11 w-full border border-black/10 bg-white px-4 text-sm font-black">العودة إلى التوصيل</button>
           <button
             onClick={handleCheckout}
-            disabled={hasAvailabilityIssues || !name || !phone || !email || !city || !district || !street || isSubmitting}
+            disabled={hasAvailabilityIssues || !name || !phone || !email || isSubmitting}
             className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg ${
-              name && phone && email && city && district && street && !isSubmitting
+              name && phone && email && !isSubmitting
                 ? 'art-cta'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
             }`}
