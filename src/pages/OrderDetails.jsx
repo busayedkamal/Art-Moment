@@ -831,10 +831,17 @@ export default function OrderDetails() {
   };
 
   const handleSaveDelivery = async () => {
-    const success = await recalculateAndSaveTotal({ delivery_fee: Number(deliveryFee) });
+    const nextDeliveryFee = Number(deliveryFee);
+    if (!Number.isFinite(nextDeliveryFee) || nextDeliveryFee < 0) {
+      toast.error('أدخل تكلفة إضافية صحيحة لا تقل عن صفر');
+      return;
+    }
+
+    const success = await recalculateAndSaveTotal({ delivery_fee: nextDeliveryFee });
     if (success) {
+      setDeliveryFee(nextDeliveryFee);
       setIsEditingDelivery(false);
-      toast.success('تم تحديث التوصيل');
+      toast.success('تم تحديث التوصيل أو التكاليف الإضافية');
     }
   };
 
@@ -1676,13 +1683,21 @@ export default function OrderDetails() {
                   ))}
                   <label className="block">
                     <span className="mb-1.5 block text-[11px] font-bold text-[#171717]/70">اسم كود الخصم</span>
-                    <input
-                      type="text"
+                    <select
                       value={financialEdit.couponCode}
                       onChange={event => setFinancialEdit(prev => ({ ...prev, couponCode: event.target.value }))}
-                      placeholder="بدون كود"
-                      className="w-full rounded-xl border border-[#E8B4BC]/30 bg-white px-3 py-2 text-center text-sm font-bold uppercase text-[#393737] outline-none transition focus:border-[#C6A56B] focus:ring-2 focus:ring-[#C6A56B]/15"
-                    />
+                      className="w-full rounded-xl border border-[#E8B4BC]/30 bg-white px-3 py-2 text-center text-sm font-bold text-[#393737] outline-none transition focus:border-[#C6A56B] focus:ring-2 focus:ring-[#C6A56B]/15"
+                    >
+                      <option value="">بدون كود</option>
+                      {financialEdit.couponCode && !activeCoupons.some(coupon => String(coupon.code || '').toUpperCase() === financialEdit.couponCode.toUpperCase()) && (
+                        <option value={financialEdit.couponCode}>{financialEdit.couponCode} — الكود المسجل حاليًا</option>
+                      )}
+                      {activeCoupons.map((coupon) => (
+                        <option key={coupon.id} value={coupon.code}>
+                          {coupon.code} — {coupon.discount_amount}{coupon.discount_type === 'percent' ? '%' : ' ر.س'}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
                 <div className="mt-4 flex justify-end gap-2">
@@ -1708,21 +1723,28 @@ export default function OrderDetails() {
                   <span>{Number(order.subtotal || 0).toFixed(2)}</span>
                 </div>
 
-                {/* التوصيل */}
-                <div className="flex justify-between items-center text-[#171717]/75 text-xs px-1">
-                  <span>التوصيل</span>
+                {/* التوصيل أو التكاليف الإضافية */}
+                <div className="flex flex-wrap justify-between items-center gap-2 rounded-lg border border-[#E8B4BC]/15 bg-white px-3 py-2 text-[#171717]/75 text-xs">
+                  <span className="font-bold">التوصيل أو التكاليف الإضافية</span>
                   {isEditingDelivery ? (
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-2">
                       <input
                         type="number"
+                        min="0"
+                        step="0.01"
                         value={deliveryFee}
-                        onChange={e => setDeliveryFee(Number(e.target.value))}
-                        className="w-16 rounded-lg border border-[#E8B4BC]/30 bg-[#FAF9F7] px-2 py-1 text-center text-xs text-[#393737] outline-none focus:border-[#C6A56B]"
+                        onChange={e => setDeliveryFee(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleSaveDelivery()}
+                        className="w-24 rounded-lg border border-[#E8B4BC]/30 bg-[#FAF9F7] px-2 py-1.5 text-center text-xs font-bold text-[#393737] outline-none focus:border-[#C6A56B]"
                       />
-                      <button onClick={handleSaveDelivery} className="text-[#E8B4BC] text-xs">ok</button>
+                      <button onClick={handleSaveDelivery} className="inline-flex items-center gap-1 rounded-lg bg-[#171717] px-2.5 py-1.5 font-bold text-white hover:bg-[#393737]">
+                        <Save size={12} /> حفظ
+                      </button>
                     </div>
                   ) : (
-                    <button onClick={() => setIsEditingDelivery(true)} className="text-xs">{deliveryFee}</button>
+                    <button onClick={() => setIsEditingDelivery(true)} className="inline-flex items-center gap-2 rounded-lg border border-[#E8B4BC]/20 bg-[#FAF9F7] px-3 py-1.5 font-black text-[#393737] hover:border-[#C6A56B]">
+                      {Number(deliveryFee || 0).toFixed(2)} <RiyalSign /> <Pencil size={12} className="text-[#C6A56B]" />
+                    </button>
                   )}
                 </div>
 
