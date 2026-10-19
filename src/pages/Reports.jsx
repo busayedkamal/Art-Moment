@@ -27,6 +27,7 @@ export default function Reports() {
   const [packageTransactions, setPackageTransactions] = useState([]);
   const [settings, setSettings] = useState({ a4_price: 0, a5_price: 0, photo_4x6_price: 0 });
   const [expandedMonth, setExpandedMonth] = useState(null);
+  const [expandedYear, setExpandedYear] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -342,6 +343,37 @@ export default function Reports() {
       return { ...row, incomeByCustomer, expensesByCategory };
     })
   ), [analytics.monthlyData, expenses, orders, payments]);
+
+  const yearlyMonthlyDetails = useMemo(() => {
+    const years = new Map();
+
+    monthlyDetails.forEach((row) => {
+      const year = isValid(row.date) ? String(row.date.getFullYear()) : String(row.name).slice(0, 4);
+      const current = years.get(year) || {
+        year,
+        months: [],
+        revenue: 0,
+        expenses: 0,
+        profit: 0,
+        orders: 0
+      };
+
+      current.months.push(row);
+      current.revenue += Number(row.revenue || 0);
+      current.expenses += Number(row.expenses || 0);
+      current.profit += Number(row.profit || 0);
+      current.orders += Number(row.orders || 0);
+      years.set(year, current);
+    });
+
+    return Array.from(years.values()).sort((a, b) => Number(b.year) - Number(a.year));
+  }, [monthlyDetails]);
+
+  useEffect(() => {
+    if (expandedYear === '' && yearlyMonthlyDetails.length > 0) {
+      setExpandedYear(yearlyMonthlyDetails[0].year);
+    }
+  }, [expandedYear, yearlyMonthlyDetails]);
 
   const renderMonthBreakdown = (row, compact = false) => (
     <div className={`grid grid-cols-1 md:grid-cols-2 ${compact ? 'gap-0' : 'gap-6'}`}>
@@ -749,101 +781,126 @@ export default function Reports() {
       {/* ✅ جدول التفاصيل الشهرية الديناميكي ✅ */}
       <div className="bg-white rounded-2xl border border-[#E8B4BC]/15 overflow-hidden">
         <div className="p-4 border-b border-[#E8B4BC]/10 bg-[#FAF9F7]/50"><h3 className="font-bold text-[#171717]/80 text-sm">التفاصيل الشهرية</h3></div>
-        <div className="md:hidden p-3 space-y-3">
-          {monthlyDetails.map((row) => {
-            const isExpanded = expandedMonth === row.name;
-            const monthLabel = isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name;
+        <div className="divide-y divide-[#E8B4BC]/15">
+          {yearlyMonthlyDetails.map((yearGroup) => {
+            const isYearExpanded = expandedYear === yearGroup.year;
 
             return (
-              <article key={row.name} className="rounded-xl border border-[#E8B4BC]/15 bg-white overflow-hidden shadow-sm">
+              <section key={yearGroup.year}>
                 <button
                   type="button"
-                  onClick={() => setExpandedMonth(isExpanded ? null : row.name)}
-                  className="w-full p-4 text-right"
-                  aria-expanded={isExpanded}
+                  onClick={() => setExpandedYear(isYearExpanded ? null : yearGroup.year)}
+                  className="w-full px-4 py-4 md:px-6 flex items-center justify-between gap-5 text-right hover:bg-[#FAF9F7]/70 transition-colors"
+                  aria-expanded={isYearExpanded}
                 >
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <span className="font-black text-sm text-[#171717]">{monthLabel}</span>
-                    <span className={`w-7 h-7 inline-flex items-center justify-center rounded-full text-[#E8B4BC] bg-[#E8B4BC]/10 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                      <ChevronDown size={15} />
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className={`w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-lg bg-[#E8B4BC]/10 text-[#C98F99] transition-transform duration-300 ${isYearExpanded ? 'rotate-180' : ''}`}>
+                      <ChevronDown size={17} />
                     </span>
-                  </div>
-                  <dl className="grid grid-cols-2 gap-x-5 gap-y-4 text-xs">
+                    <span>
+                      <span className="block font-black text-[#171717]">سنة {yearGroup.year}</span>
+                      <span className="block mt-1 text-xs text-[#171717]/45">{yearGroup.months.length} {yearGroup.months.length === 1 ? 'شهر' : 'أشهر'}</span>
+                    </span>
+                  </span>
+                  <dl className="hidden sm:grid grid-cols-3 gap-8 text-xs">
                     <div>
-                      <dt className="text-[#171717]/45 mb-1">الدخل</dt>
-                      <dd className="font-black text-emerald-600">{row.revenue.toLocaleString()} <RiyalSign /></dd>
+                      <dt className="text-[#171717]/40 mb-1">الدخل</dt>
+                      <dd className="font-black text-emerald-600">{yearGroup.revenue.toLocaleString()} <RiyalSign /></dd>
                     </div>
                     <div>
-                      <dt className="text-[#171717]/45 mb-1">المصروفات</dt>
-                      <dd className="font-black text-red-500">{row.expenses.toLocaleString()} <RiyalSign /></dd>
+                      <dt className="text-[#171717]/40 mb-1">الصافي</dt>
+                      <dd className={`font-black ${yearGroup.profit >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{yearGroup.profit.toLocaleString()} <RiyalSign /></dd>
                     </div>
                     <div>
-                      <dt className="text-[#171717]/45 mb-1">الصافي</dt>
-                      <dd className={`font-black ${(row.profit || 0) >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{(row.profit || 0).toLocaleString()} <RiyalSign /></dd>
-                    </div>
-                    <div>
-                      <dt className="text-[#171717]/45 mb-1">الطلبات</dt>
-                      <dd className="font-black text-[#171717]">{row.orders}</dd>
+                      <dt className="text-[#171717]/40 mb-1">الطلبات</dt>
+                      <dd className="font-black text-[#171717]">{yearGroup.orders}</dd>
                     </div>
                   </dl>
                 </button>
-                {isExpanded && (
-                  <div className="px-4 border-t border-[#E8B4BC]/10 bg-[#FAF9F7]/35 animate-in slide-in-from-top-2 fade-in duration-300">
-                    {renderMonthBreakdown(row, true)}
+
+                {isYearExpanded && (
+                  <div className="border-t border-[#E8B4BC]/10 animate-in slide-in-from-top-2 fade-in duration-300">
+                    <div className="md:hidden p-3 space-y-3 bg-[#FAF9F7]/35">
+                      {yearGroup.months.map((row) => {
+                        const isExpanded = expandedMonth === row.name;
+                        const monthLabel = isValid(row.date) ? format(row.date, 'MMMM', { locale: arSA }) : row.name;
+
+                        return (
+                          <article key={row.name} className="rounded-lg border border-[#E8B4BC]/15 bg-white overflow-hidden shadow-sm">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedMonth(isExpanded ? null : row.name)}
+                              className="w-full p-4 text-right"
+                              aria-expanded={isExpanded}
+                            >
+                              <div className="flex items-center justify-between gap-3 mb-4">
+                                <span className="font-black text-sm text-[#171717]">{monthLabel}</span>
+                                <span className={`w-7 h-7 inline-flex items-center justify-center rounded-lg text-[#E8B4BC] bg-[#E8B4BC]/10 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                                  <ChevronDown size={15} />
+                                </span>
+                              </div>
+                              <dl className="grid grid-cols-2 gap-x-5 gap-y-4 text-xs">
+                                <div><dt className="text-[#171717]/45 mb-1">الدخل</dt><dd className="font-black text-emerald-600">{row.revenue.toLocaleString()} <RiyalSign /></dd></div>
+                                <div><dt className="text-[#171717]/45 mb-1">المصروفات</dt><dd className="font-black text-red-500">{row.expenses.toLocaleString()} <RiyalSign /></dd></div>
+                                <div><dt className="text-[#171717]/45 mb-1">الصافي</dt><dd className={`font-black ${(row.profit || 0) >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{(row.profit || 0).toLocaleString()} <RiyalSign /></dd></div>
+                                <div><dt className="text-[#171717]/45 mb-1">الطلبات</dt><dd className="font-black text-[#171717]">{row.orders}</dd></div>
+                              </dl>
+                            </button>
+                            {isExpanded && (
+                              <div className="px-4 border-t border-[#E8B4BC]/10 bg-[#FAF9F7]/35 animate-in slide-in-from-top-2 fade-in duration-300">
+                                {renderMonthBreakdown(row, true)}
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-right text-sm min-w-[500px]">
+                        <thead className="bg-[#FAF9F7] text-[#171717]/60">
+                          <tr>
+                            <th className="px-6 py-4">الشهر</th>
+                            <th className="px-6 py-4">الدخل</th>
+                            <th className="px-6 py-4">المصروفات</th>
+                            <th className="px-6 py-4">الصافي</th>
+                            <th className="px-6 py-4">الطلبات</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E8B4BC]/10">
+                          {yearGroup.months.map((row) => {
+                            const isExpanded = expandedMonth === row.name;
+
+                            return (
+                              <React.Fragment key={row.name}>
+                                <tr onClick={() => setExpandedMonth(isExpanded ? null : row.name)} className="hover:bg-[#FAF9F7] cursor-pointer transition-colors group">
+                                  <td className="px-6 py-4 font-bold flex items-center gap-2">
+                                    <span className={`p-1 rounded-lg transition-colors ${isExpanded ? 'bg-[#E8B4BC] text-white' : 'bg-[#E8B4BC]/10 text-[#E8B4BC] group-hover:bg-[#E8B4BC] group-hover:text-white'}`}>
+                                      <ChevronDown size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                                    </span>
+                                    {isValid(row.date) ? format(row.date, 'MMMM', { locale: arSA }) : row.name}
+                                  </td>
+                                  <td className="px-6 py-4 text-emerald-600">{row.revenue.toLocaleString()}</td>
+                                  <td className="px-6 py-4 text-red-500">{row.expenses.toLocaleString()}</td>
+                                  <td className={`px-6 py-4 font-bold ${(row.profit || 0) >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{(row.profit || 0).toLocaleString()}</td>
+                                  <td className="px-6 py-4">{row.orders}</td>
+                                </tr>
+                                {isExpanded && (
+                                  <tr className="bg-[#FAF9F7]/40 border-b-2 border-[#E8B4BC]/20">
+                                    <td colSpan="5" className="p-0"><div className="p-6 animate-in slide-in-from-top-2 fade-in duration-300">{renderMonthBreakdown(row)}</div></td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
-              </article>
+              </section>
             );
           })}
-        </div>
-
-        <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-right text-sm min-w-[500px]">
-          <thead className="bg-[#FAF9F7] text-[#171717]/60">
-            <tr>
-              <th className="px-6 py-4">الشهر</th>
-              <th className="px-6 py-4">الدخل</th>
-              <th className="px-6 py-4">المصروفات</th>
-              <th className="px-6 py-4">الصافي</th>
-              <th className="px-6 py-4">الطلبات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E8B4BC]/10">
-            {monthlyDetails.map((row) => {
-              const isExpanded = expandedMonth === row.name;
-
-              return (
-                <React.Fragment key={row.name}>
-                  <tr 
-                    onClick={() => setExpandedMonth(isExpanded ? null : row.name)}
-                    className="hover:bg-[#FAF9F7] cursor-pointer transition-colors group"
-                  >
-                    <td className="px-6 py-4 font-bold flex items-center gap-2">
-                      <div className={`p-1 rounded-full transition-colors ${isExpanded ? 'bg-[#E8B4BC] text-white' : 'bg-[#E8B4BC]/10 text-[#E8B4BC] group-hover:bg-[#E8B4BC] group-hover:text-white'}`}>
-                         <ChevronDown size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                      </div>
-                      {isValid(row.date) ? format(row.date, 'MMMM yyyy', { locale: arSA }) : row.name}
-                    </td>
-                    <td className="px-6 py-4 text-emerald-600">{row.revenue.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-red-500">{row.expenses.toLocaleString()}</td>
-                    <td className={`px-6 py-4 font-bold ${(row.profit || 0) >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{(row.profit || 0).toLocaleString()}</td>
-                    <td className="px-6 py-4">{row.orders}</td>
-                  </tr>
-
-                  {isExpanded && (
-                    <tr className="bg-[#FAF9F7]/40 border-b-2 border-[#E8B4BC]/20">
-                      <td colSpan="5" className="p-0">
-                        <div className="p-6 animate-in slide-in-from-top-2 fade-in duration-300">
-                          {renderMonthBreakdown(row)}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
         </div>
       </div>
 
