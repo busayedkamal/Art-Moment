@@ -1104,7 +1104,13 @@ export default function Customers() {
   };
 
   useEffect(() => {
-    if (!isCustomerProfile || loading || expandedCustomerId) return;
+    if (!isCustomerProfile) {
+      if (expandedCustomerId !== null) setExpandedCustomerId(null);
+      if (customerActivityLogs.length > 0) setCustomerActivityLogs([]);
+      return;
+    }
+
+    if (loading || expandedCustomerId) return;
 
     const customer = customersData.find((item) => (
       String(item.customerId || '') === String(routeCustomerId)
@@ -1120,7 +1126,7 @@ export default function Customers() {
       adminStatus: customer.adminStatus || 'active',
     });
     fetchCustomerActivityLogs(customer);
-  }, [customersData, expandedCustomerId, isCustomerProfile, loading, routeCustomerId]);
+  }, [customerActivityLogs.length, customersData, expandedCustomerId, isCustomerProfile, loading, routeCustomerId]);
 
   const handleChargePackage = async (e) => {
     e.preventDefault();
@@ -1578,7 +1584,7 @@ export default function Customers() {
           const segment = getSegmentMeta(customer.segment);
           const SegmentIcon = segment.icon;
           return (
-            <div key={customer.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isExpanded ? 'border-[#E8B4BC]/40' : 'border-[#E8B4BC]/20'}`}>
+            <div key={customer.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isCustomerProfile ? 'border-[#E8B4BC]/30' : 'border-[#E8B4BC]/20'}`}>
               {/* صف رئيسي */}
               <div
                 onClick={() => handleExpandRow(customer)}
@@ -1651,17 +1657,16 @@ export default function Customers() {
                       <Gift size={15}/>
                     </button>
                   )}
-                  <button
-                    onClick={() => handleExpandRow(customer)}
-                    className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-[#E8B4BC]/15 text-[#E8B4BC]' : 'text-[#171717]/40'}`}
-                    aria-label={isCustomerProfile ? 'تفاصيل العميل' : 'عرض ملف العميل'}>
-                    {isCustomerProfile ? <ChevronDown size={16} className="rotate-180" /> : <ArrowRight size={16} />}
-                  </button>
+                  {!isCustomerProfile && (
+                    <button onClick={() => handleExpandRow(customer)} className="p-2 rounded-xl text-[#171717]/40 transition-all" aria-label="عرض ملف العميل">
+                      <ArrowRight size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
 
               {/* التفاصيل الموسّعة — جوال */}
-              {isExpanded && (
+              {isCustomerProfile && isExpanded && (
                 <div className="border-t border-[#E8B4BC]/15 bg-[#FAF9F7]/50 p-4 space-y-4 animate-in slide-in-from-top-1 fade-in duration-200">
                   {/* رقم الاشتراك إذا لم يكن موجوداً */}
                   {!customer.subscriptionCode && (
@@ -1809,10 +1814,10 @@ export default function Customers() {
       </div>
 
       {/* ══ جدول الديسكتوب (md فأعلى) ══ */}
-      <div className="hidden md:block bg-white border border-[#E8B4BC]/20 rounded-2xl shadow-sm overflow-hidden">
+      <div className={`hidden md:block bg-white border rounded-2xl shadow-sm overflow-hidden ${isCustomerProfile ? 'border-[#E8B4BC]/30' : 'border-[#E8B4BC]/20'}`}>
         <div className="overflow-x-auto">
         <table className="min-w-full text-right">
-          <thead className="bg-[#FAF9F7] border-b border-[#E8B4BC]/20">
+          <thead className={`${isCustomerProfile ? 'hidden' : ''} bg-[#FAF9F7] border-b border-[#E8B4BC]/20`}>
             <tr className="text-sm font-bold text-[#171717]/70 select-none">
               <th className="px-6 py-4 cursor-pointer hover:bg-[#E8B4BC]/10 transition-colors" onClick={() => handleSort('name')}>
                 <div className="flex items-center gap-2">بيانات العميل <ArrowUpDown size={12} className={sortBy === 'name' ? 'text-[#E8B4BC]' : 'opacity-30'} /></div>
@@ -1847,7 +1852,7 @@ export default function Customers() {
                   <React.Fragment key={customer.id}>
                     <tr
                       onClick={() => handleExpandRow(customer)}
-                      className={`hover:bg-[#FAF9F7] cursor-pointer transition-colors group ${isExpanded ? 'bg-[#FAF9F7]/50' : ''}`}
+                      className={`${isCustomerProfile ? 'bg-white' : 'hover:bg-[#FAF9F7] cursor-pointer'} transition-colors group ${isExpanded ? 'bg-[#FAF9F7]/50' : ''}`}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -1957,18 +1962,20 @@ export default function Customers() {
                               <Package size={18} />
                             </button>
                           )}
-                          <button className={`p-2 rounded-xl text-[#171717]/50 transition-all ${isExpanded ? 'bg-[#E8B4BC]/10 text-[#E8B4BC]' : 'group-hover:bg-[#FAF9F7]'}`} aria-label={isCustomerProfile ? 'تفاصيل العميل' : 'عرض ملف العميل'}>
-                            {isCustomerProfile ? <ChevronDown size={18} className="rotate-180" /> : <ArrowRight size={18} />}
-                          </button>
+                          {!isCustomerProfile && (
+                            <button className="p-2 rounded-xl text-[#171717]/50 transition-all group-hover:bg-[#FAF9F7]" aria-label="عرض ملف العميل">
+                              <ArrowRight size={18} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
 
                     {/* القائمة المنسدلة */}
-                    {isExpanded && (
+                    {isCustomerProfile && isExpanded && (
                       <tr className="bg-[#FAF9F7]/40 border-b-2 border-[#E8B4BC]/20">
                         <td colSpan="6" className="p-0">
-                          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-top-2 fade-in duration-300">
+                          <div className="p-5 xl:p-7 grid grid-cols-1 xl:grid-cols-2 gap-5 xl:gap-7 animate-in slide-in-from-top-2 fade-in duration-300">
 
                             {/* القسم الأيمن */}
                             <div className="bg-white p-5 rounded-2xl border border-[#E8B4BC]/20 shadow-sm">
